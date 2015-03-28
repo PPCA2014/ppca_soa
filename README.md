@@ -1,7 +1,7 @@
 # ppca_soa
 Barramento SOA da Turma PPCA 2014
 
-ppca_soa é um framework SOA desenvolvido pelos alunos nas aulas de Construção de Software da Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília. É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que o torna ppca_soa diferente de outros barramentos SOA é a facilidade de configuração e uso.
+ppca_soa é um framework SOA desenvolvido nas aulas de Construção de Software da Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília. É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que o torna ppca_soa diferente de outros barramentos SOA é a facilidade de configuração e uso.
 
 
 60 segundos Quickstart
