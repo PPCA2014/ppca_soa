@@ -25,7 +25,7 @@ O nome do projeto deve ser um atom Erlang (o nome deve iniciar com caracter em c
 
 
 
-Dependencies
+Dependências
 ------------
 
 * Erlang R16B or later -
