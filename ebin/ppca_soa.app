@@ -1,0 +1,9 @@
+{application,ppca_soa,
+             [{description,[]},
+              {vsn,"1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {mod,{ppca_soa_app,[]}},
+              {env,[]},
+              {modules,[ppca_request,ppca_server,ppca_soa,ppca_soa_app,
+                        ppca_soa_sup,ppca_util]}]}.
