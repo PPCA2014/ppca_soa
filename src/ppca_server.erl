@@ -23,11 +23,15 @@ loop() ->
 		{ Client, { start_listen, Port } } ->
  			case start_server(Port) of
 				{ok, Reason} ->
-					Client ! {self(), {ok, Reason}},
-					ppca_util:sleep(infinity);
+					Client ! {self(), ok},
+					%ppca_util:sleep(infinity);
+					loop();
 				{error, Reason} ->
 					Client ! {self(), {error, Reason}}
-			end
+			end;
+			
+		{ Client, { stop_listen, Port } } ->				
+			Client ! {self(), ok}
 	end,
 	loop().
 
@@ -39,7 +43,7 @@ start_server(Port) ->
 		{ok, Listen} ->
 		    RequestHandler = spawn(ppca_request, init, []),
 		    spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
-			{ok, "Listener iniciado"};
+			{ok, "Listener iniciado na porta "++ Port};
 		{error, Reason} -> 
 			{error, Reason} 
 	end.	
@@ -66,7 +70,7 @@ get_request(Socket, RequestHandler, L) ->
 					get_request(Socket, RequestHandler, L1);
 				{Request, _Rest} ->
 					%% header is complete
-					got_request_from_client(Request, Socket, RequestHandler)
+					trata_request(Request, Socket, RequestHandler)
 			end;
 
 		{tcp_closed, Socket} ->
@@ -86,7 +90,7 @@ split([], _)              -> more.
 
 
 
-got_request_from_client(Request, Socket, RequestHandler) ->
+trata_request(Request, Socket, RequestHandler) ->
     Cmds = string:tokens(Request, "\r\n"),
     Cmds1 = lists:map(fun(I) -> tokens(I, " ") end, Cmds),
 	io:format("~p~n", [Cmds1]),
