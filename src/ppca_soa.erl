@@ -7,12 +7,13 @@
 %%---
 -module(ppca_soa).
 
--export([start/0, start_listen/2]).
+-export([start/1, start_listen/2]).
 
 
-start() -> 
+start(Port) -> 
 	io:format("PPCA_SOA - Barramento SOA da Turma PPCA 2014~n"),
-	spawn(ppca_server, init, []).
+	Server = spawn(ppca_server, init, []),
+	start_listen(Server, Port).
 
 
 
