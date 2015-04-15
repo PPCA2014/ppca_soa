@@ -8,67 +8,93 @@
 
 -module(ppca_event_mq).
 
--export([start/0, adiciona_evento/2, registra_interesse/2, lista_evento/1, lista_interesse/1, loop/2]).
+-export([start/0, 
+		 adiciona_evento/1, 
+		 registra_interesse/1, 
+		 lista_evento/0, 
+		 lista_interesse/0, 
+		 notifica_evento/1, 
+		 loop/2]).
 
 
 start() ->
     ListaEvento = [],
     ListaInteresse = [],
-	spawn(ppca_event_mq, loop, [ListaEvento, ListaInteresse]).
+	Pid = spawn(ppca_event_mq, loop, [ListaEvento, ListaInteresse]),
+	register(ppca_event, Pid).
 	
 
-adiciona_evento(Pid, Evento) ->
-	Pid ! {self(), {adiciona_evento, Evento}},
+adiciona_evento(Evento) ->
+	ppca_event ! {self(), {adiciona_evento, Evento}},
 	receive
-		{Pid, Msg} -> Msg
+		Msg -> Msg
 	end.
 	
 
-registra_interesse(Pid, {Evento, URI, Metodo}) ->
-	Pid ! {self(), {registra_interesse, {Evento, URI, Metodo}}},
+registra_interesse({Evento, Fun}) ->
+	ppca_event ! {self(), {registra_interesse, {Evento, Fun}}},
 	receive
-		{Pid, Msg} -> Msg
+		Msg -> Msg
 	end.
 
 
-lista_evento(Pid) ->
-	Pid ! {self(), lista_evento},
+lista_evento() ->
+	ppca_event ! {self(), lista_evento},
 	receive
-		{Pid, Msg} -> Msg
+		Msg -> Msg
 	end.
 
 
-lista_interesse(Pid) ->
-	Pid ! {self(), lista_interesse},
+lista_interesse() ->
+	ppca_event ! {self(), lista_interesse},
 	receive
-		{Pid, Msg} -> Msg
+		Msg -> Msg
 	end.
 
+
+notifica_evento(QualEvento) ->
+	ppca_event ! {self(), {notifica_evento, QualEvento}},
+	receive
+		ok -> ok;
+		{error, Reason} -> Reason
+	end.
+	
 
 loop(ListaEvento, ListaInteresse) ->
 	receive
 		{From, {adiciona_evento, Evento}} ->
 			case lists:member(Evento, ListaEvento) of
 				true -> 
-					From ! {self(), ok},
+					From ! ok,
 					loop(ListaEvento, ListaInteresse);
 				false -> 
-					From ! {self(), ok},
+					From ! ok,
 					loop([Evento|ListaEvento], ListaInteresse)
 			end;
-		{From, {registra_interesse, {Evento, URI, Metodo}}} ->
-			case lists:member({Evento, URI, Metodo}, ListaInteresse) of
+		{From, {notifica_evento, QualEvento}} ->
+			case lists:member(QualEvento, ListaEvento) of
 				true -> 
-					From ! {self(), ok},
+					[io:format("~p~n", [Interesse]) || Interesse <- ListaInteresse],
+					From ! ok;
+				false -> 
+					From ! {error, enotsubscribe}
+			end,
+			loop(ListaEvento, ListaInteresse);
+		{From, {registra_interesse, {Evento, Fun}}} ->
+			case lists:member({Evento, Fun}, ListaInteresse) of
+				true -> 
+					From ! ok,
 					loop(ListaEvento, ListaInteresse);
 				false -> 
-					From ! {self(), ok},
-					loop(ListaEvento, [{Evento, URI, Metodo}|ListaInteresse])
+					From ! ok,
+					loop(ListaEvento, [{Evento, Fun}|ListaInteresse])
 			end;
 		{From, lista_evento} ->
-			From ! {self(), ListaEvento};
+			From ! ListaEvento,
+			loop(ListaEvento, ListaInteresse);
 		{From, lista_interesse} ->
-			From ! {self(), ListaInteresse}
+			From ! ListaInteresse,
+			loop(ListaEvento, ListaInteresse)
 	end.
 	
 
