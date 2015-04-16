@@ -10,10 +10,10 @@
 
 -export([start/0, 
 		 adiciona_evento/1, 
-		 registra_interesse/1, 
+		 registra_interesse/2, 
 		 lista_evento/0, 
 		 lista_interesse/0, 
-		 notifica_evento/1, 
+		 notifica_evento/2, 
 		 loop/2]).
 
 
@@ -31,10 +31,11 @@ adiciona_evento(Evento) ->
 	end.
 	
 
-registra_interesse({Evento, Fun}) ->
+registra_interesse(Evento, Fun) ->
 	ppca_event ! {self(), {registra_interesse, {Evento, Fun}}},
 	receive
-		Msg -> Msg
+		ok -> ok;
+		{error, Reason} -> Reason
 	end.
 
 
@@ -52,8 +53,8 @@ lista_interesse() ->
 	end.
 
 
-notifica_evento(QualEvento) ->
-	ppca_event ! {self(), {notifica_evento, QualEvento}},
+notifica_evento(QualEvento, Motivo) ->
+	ppca_event ! {self(), {notifica_evento, QualEvento, Motivo}},
 	receive
 		ok -> ok;
 		{error, Reason} -> Reason
@@ -71,23 +72,29 @@ loop(ListaEvento, ListaInteresse) ->
 					From ! ok,
 					loop([Evento|ListaEvento], ListaInteresse)
 			end;
-		{From, {notifica_evento, QualEvento}} ->
+		{From, {notifica_evento, QualEvento, Motivo}} ->
 			case lists:member(QualEvento, ListaEvento) of
 				true -> 
-					[io:format("~p~n", [Interesse]) || Interesse <- ListaInteresse],
+					[Fun(QualEvento, Motivo) || {Interesse, Fun} <- ListaInteresse, Interesse == QualEvento],
 					From ! ok;
 				false -> 
 					From ! {error, enotsubscribe}
 			end,
 			loop(ListaEvento, ListaInteresse);
 		{From, {registra_interesse, {Evento, Fun}}} ->
-			case lists:member({Evento, Fun}, ListaInteresse) of
+			case lists:member(Evento, ListaEvento) of
 				true -> 
-					From ! ok,
-					loop(ListaEvento, ListaInteresse);
+					case lists:member({Evento, Fun}, ListaInteresse) of
+						true -> 
+							From ! ok,
+							loop(ListaEvento, ListaInteresse);
+						false -> 
+							From ! ok,
+							loop(ListaEvento, [{Evento, Fun}|ListaInteresse])
+					end;
 				false -> 
-					From ! ok,
-					loop(ListaEvento, [{Evento, Fun}|ListaInteresse])
+					From ! {error, eeventnotexist},
+					loop(ListaEvento, ListaInteresse)
 			end;
 		{From, lista_evento} ->
 			From ! ListaEvento,
