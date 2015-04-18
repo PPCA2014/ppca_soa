@@ -89,21 +89,27 @@ split([H|T], L)           -> split(T, [H|L]);
 split([], _)              -> more.
 
 
-
 trata_request(Request, Socket, RequestHandler) ->
-    Cmds = string:tokens(Request, "\r\n"),
-    Cmds1 = lists:map(fun(I) -> tokens(I, " ") end, Cmds),
-	io:format("~p~n", [Cmds1]),
-    gen_tcp:send(Socket, [response("Hello World!!!")]).
+    [H|T] = string:tokens(Request, "\r\n"),
+    [Metodo|[Url|_]]= string:tokens(H, " "),
+    {Codigo, Response} = processa_request(Request, Metodo, Url, ""),
+    gen_tcp:send(Socket, [response(Codigo, Response)]).
+ 
 
+processa_request(Request, Metodo, Url, Payload) ->
+    Request ! {self(), { processa_request, {Metodo, Url, Payload}}},
+    receive
+		{ ok, Response } -> { 200, Response };
+		{ Erro, Reason } -> { Erro, Reason }
+    end.
+	
 
-
-response(Str) ->
+response(Codigo, Str) ->
     B = iolist_to_binary(Str),
     iolist_to_binary(
       io_lib:fwrite(
-         "HTTP/1.0 200 OK\nContent-Type: text/html\nContent-Length: ~p\n\n~s",
-         [size(B), B])).
+         "HTTP/1.0 ~p OK\nContent-Type: text/html\nContent-Length: ~p\n\n~s",
+         [Codigo, size(B), B])).
 
 
 

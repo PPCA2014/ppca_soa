@@ -16,6 +16,13 @@ init() ->
 
 loop() ->
 	receive
+		{ From, { processa_request, {Metodo, Url, Payload}}} ->
+			io:format("fazer lookup tabela de rotas passando metodo e url e retonar rota", []),
+			% Response = chamar funcao associada metodo/url
+			% enviar mensagem de volta para From
+			Response = "hello",
+			From ! { ok, Response};
+		
 		_ -> io:format("message~n", [])
 	end,
 	loop().
