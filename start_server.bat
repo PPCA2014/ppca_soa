@@ -1,11 +1,15 @@
 
+@echo off
+rem # ---
+rem  #  PPCA_SOA
+rem  #  Inicia o barramento PPCA_SOA na porta 2301
+rem  #  Mestrado em Computação Aplicada - Universidade de Brasília
+rem  #  Turma de Construção de Software / PPCA 2014
+rem  #  Professor: Rodrigo Bonifacio de Almeida
+rem  # ---
 
-# ---
-#  PPCA_SOA
-#  Inicia o barramento PPCA_SOA na porta 2301
-#  Mestrado em Computação Aplicada - Universidade de Brasília
-#  Turma de Construção de Software / PPCA 2014
-#  Professor: Rodrigo Bonifacio de Almeida
-# ---
-erl  -pa ..\ebin -eval "ppca_soa:start(2301)"
-	
+set dir_ppca_soa = .\ 
+rem set =  \desv\ppca_soa-clone\ppca_soa
+cd %dir_ppca_soa%
+erl  -pa ebin -eval "ppca_soa:start(2301)"
+pause	
