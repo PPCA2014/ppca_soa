@@ -38,9 +38,9 @@ loop() ->
 
 
 start_server(Port) ->
-	case gen_tcp:listen(Port, [binary, {packet, 0},
-  						     		   {reuseaddr, true},
-			    					   {active, true}]) of
+	case gen_tcp:listen(Port, [binary, {packet, 0}, 
+								{reuseaddr, true},
+								{active, true}]) of
 		{ok, Listen} ->
 		    RequestHandler = spawn(ppca_request, init, []),
 		    spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
@@ -54,11 +54,11 @@ start_server(Port) ->
 aceita_conexoes(Listen, RequestHandler) ->
 	{ok, Socket} = gen_tcp:accept(Listen),
 	io:format("Nova requisição em ~p.~n", [erlang:localtime()]),    
-    spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
-    inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
-    {Header, Payload} = get_request(Socket, []),
-    Response = trata_request(RequestHandler, Header, Payload),
-    gen_tcp:send(Socket, [Response]).
+	spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+	inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
+	{Header, Payload} = get_request(Socket, []),
+	Response = trata_request(RequestHandler, Header, Payload),
+	gen_tcp:send(Socket, [Response]).
     
 
 	
@@ -96,18 +96,18 @@ trata_request(RequestHandler, Header, Payload) ->
 	ListaHeader = string:tokens(Header, "\r\n"),
 	io:format("Header: ~p~n", [ListaHeader]),
 	io:format("Payload: ~p~n", [Payload]),
-    [Metodo|[Url|_]]= string:tokens(hd(ListaHeader), " "),
-    {Codigo, Corpo} = processa_request(RequestHandler, Metodo, Url, Payload),
-    response(Codigo, Corpo).
+	[Metodo|[Url|_]]= string:tokens(hd(ListaHeader), " "),
+	{Codigo, Corpo} = processa_request(RequestHandler, Metodo, Url, Payload),
+	response(Codigo, Corpo).
    
  
 
 processa_request(RequestHandler, Metodo, Url, Payload) ->
-    RequestHandler ! {self(), { processa_request, {Metodo, Url, Payload}}},
-    receive
+	RequestHandler ! {self(), { processa_request, {Metodo, Url, Payload}}},
+	receive
 		{ ok, Response } -> { 200, Response };
 		{ Erro, Reason } -> { Erro, Reason }
-    end.
+	end.
 	
 
 response(Codigo, Str) ->
