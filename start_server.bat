@@ -9,7 +9,7 @@ rem  #  Professor: Rodrigo Bonifacio de Almeida
 rem  # ---
 
 set dir_ppca_soa = .\ 
-rem set =  \desv\ppca_soa-clone\ppca_soa
+rem set  dir_ppca_soa=  \desv\ppca_soa-clone\ppca_soa
 cd %dir_ppca_soa%
 erl  -pa ebin -eval "ppca_soa:start(2301)"
 pause	
