@@ -6,9 +6,8 @@
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%---
 -module(ppca_server).
-
-
--export([init/0]).
+-include("../include/ppca_config.hrl").
+-export([init/0, is_content_length_valido/1]).
 -import(string, [tokens/2]).
 -import(lists, [reverse/1, map/2]).
 
@@ -53,7 +52,6 @@ start_server(Port) ->
 
 aceita_conexoes(Listen, RequestHandler) ->
 	{ok, Socket} = gen_tcp:accept(Listen),
-	io:format("Nova requisição em ~p.~n", [erlang:localtime()]),    
 	spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
 	inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
 	{Header, Payload} = get_request(Socket, []),
@@ -66,19 +64,30 @@ get_request(Socket, L) ->
     receive
 		{tcp, Socket, Bin} -> 
 				L1 = L ++ binary_to_list(Bin),
-				%% split verifica quando o cabeçalho está completo
-				case split(L1, []) of
+				%% is_fim_header verifica quando o cabeçalho está completo
+				case is_fim_header(L1, []) of
 					more ->
 						%% o cabeçalho está incompleto e precisa mais dados
 						get_request(Socket, L1);
 					{Header, Payload} ->
 						%% cabeçalho completo
+						io:format("~p~n", [Header]),
 						HeaderDict = get_http_header(Header),
-						{ok, Content_Length} = dict:find("Content-Length", HeaderDict), 
-						if length(Payload) == Content_Length -> 
-								{HeaderDict, Payload};
-							true -> 
-								{HeaderDict, get_request_payload(Socket, Content_Length, Payload)}
+						case dict:fetch("Metodo", HeaderDict) of
+							"POST" -> 
+								case dict:find("Content-Length", HeaderDict) of
+									{ok, Content_Length} when Content_Length == 0 ->
+										{HeaderDict, ""};
+									{ok, Content_Length} ->
+										if length(Payload) == Content_Length -> 
+												{HeaderDict, Payload};
+											true -> 
+												{HeaderDict, get_request_payload(Socket, Content_Length, Payload)}
+										end;
+									error -> 
+										{HeaderDict, ""}
+								end;
+							_ -> {HeaderDict, ""}
 						end
 				end;
 
@@ -111,44 +120,45 @@ get_request_payload(Socket, Length, L) ->
     end.
 
 
+
+-spec get_http_header(Header::list()) -> dict:dict().
 get_http_header(Header) ->
-	Headers = map(fun(P) -> string:tokens(P, ":") end, string:tokens(Header, "\r\n")),
-	FmtParamValue = fun(ParamName, Value) -> if Value /= []  -> V1 = string:strip(hd(Value)); 
-												true 		 -> V1 = ""
-											 end,
-											 if ParamName == "Content-Length" -> V2 = list_to_integer(V1);
-												true		   				  -> V2 = V1
-											 end,
-											 V2
+	[H|H1] = string:tokens(Header, "\r\n"),
+	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(H, " "),
+	H2 = map(fun(P) -> string:tokens(P, ":") end, H1),
+	FmtValue = fun(P, V) -> 
+					if V /= [] -> V1 = string:strip(hd(V)); 
+					   true ->  V1 = ""
 					end,
-	
-	dict:from_list([{Param, FmtParamValue(Param, Value)} || [Param|Value] <- Headers]).
-
-
-split("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
-split([H|T], L)           -> split(T, [H|L]);
-split([], _)              -> more.
+					if P == "Content-Length" -> 
+							V2 = list_to_integer(V1),
+							case is_content_length_valido(V2) of
+								true -> V2;
+								false -> 0
+							end;
+					   true -> 
+							V1
+					end
+				end,
+	dict:from_list([{"Metodo", Metodo},  
+					{"Url", Url},
+					{"Versao_HTTP", Versao_HTTP}] ++ 
+					[{P, FmtValue(P, V)} || [P|V] <- H2]).
 
 
 
 trata_request(RequestHandler, Header, Payload) ->
+	%% imprime cabecalho e payload para fins de depuração
+	io:format("Nova requisição ~p ~p em ~p.~n", [dict:fetch("Metodo", Header), 
+												 dict:fetch("Url", Header), 
+												 erlang:localtime()]),    
 	io:format("Header: ~n", []),
-	io:format("\tContent-Length:  ~p~n", [dict:find("Content-Length", Header)]),
-	io:format("\tAccept-Encoding:  ~p~n", [dict:find("Accept-Encoding", Header)]),
-	io:format("\tHost:  ~p~n", [dict:find("Host", Header)]),
-	io:format("\tAccept-Language:  ~p~n", [dict:find("Accept-Language", Header)]),
-	io:format("\tConnection:  ~p~n", [dict:find("Connection", Header)]),
-	io:format("\tPragma:  ~p~n", [dict:find("Pragma", Header)]),
-	io:format("\tCache-Control:  ~p~n", [dict:find("Cache-Control", Header)]),
-	io:format("\tAccept:  ~p~n", [dict:find("Accept", Header)]),
-	io:format("\tUser-Agent:  ~p~n", [dict:find("User-Agent", Header)]),
-	io:format("\tCookie:  ~p~n", [dict:find("Cookie", Header)]),
+	[ io:format("\t~p:  ~p~n", [P, dict:fetch(P, Header)]) || P <- dict:fetch_keys(Header)],
 	io:format("Payload: ~p~n", [Payload]),
-	%ListaHeader = string:tokens(Header, "\r\n"),
-	%io:format("Header: ~p~n", [ListaHeader]),
-	%io:format("Payload: ~p~n", [Payload]),
-	%[Metodo|[Url|_]]= string:tokens(hd(ListaHeader), " "),
+
+	%% Processa o request e obtém o código de retorno e corpo do response
 	{Codigo, Corpo} = processa_request(RequestHandler, "Metodo", "Url", Payload),
+
 	response(Codigo, Corpo).
    
 
@@ -164,8 +174,16 @@ response(Codigo, Str) ->
     B = iolist_to_binary(Str),
     iolist_to_binary(
       io_lib:fwrite(
-         "HTTP/1.0 ~p OK\nContent-Type: text/html\nContent-Length: ~p\n\n~s",
+         "HTTP/1.1 ~p OK\nContent-Type: text/html\nContent-Length: ~p\n\n~s",
          [Codigo, size(B), B])).
 
+
+is_fim_header("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
+is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);
+is_fim_header([], _)              -> more.
+
+
+is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
+is_content_length_valido(_) -> true.
 
 
