@@ -99,7 +99,8 @@ get_request(Socket, L) ->
 									{ok, Content_Length} when Content_Length == 0 ->
 										{HeaderDict, ""};
 									{ok, Content_Length} ->
-										if length(Payload) == Content_Length -> 
+										if 
+											length(Payload) == Content_Length -> 
 												{HeaderDict, Payload};
 											true -> 
 												{HeaderDict, get_request_payload(Socket, Content_Length, Payload)}
@@ -125,7 +126,9 @@ get_request_payload(Socket, Length, L) ->
     receive
 		{tcp, Socket, Bin} -> 
 				L1 = L ++ binary_to_list(Bin),
-				if length(L1) == Length -> L1;
+				if 
+					length(L1) == Length -> 
+						L1;
 					true -> 
 						get_request_payload(Socket, Length, L1)
 				end;
@@ -147,16 +150,24 @@ get_http_header(Header) ->
 	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(H, " "),
 	H2 = map(fun(P) -> string:tokens(P, ":") end, H1),
 	FmtValue = fun(P, V) -> 
-					if V /= [] -> V1 = string:strip(hd(V)); 
-					   true ->  V1 = ""
+					if 
+						V /= [] -> 
+							V1 = string:strip(hd(V)); 
+					    true ->
+							V1 = ""
 					end,
-					if P == "Content-Length" -> 
-							V2 = list_to_integer(V1),
-							case is_content_length_valido(V2) of
-								true -> V2;
-								false -> 0
+					if 
+						P == "Content-Length" -> 
+							if 
+								Metodo == "POST" ->
+									V2 = list_to_integer(V1),
+									case is_content_length_valido(V2) of
+										true -> V2;
+										false -> 0
+									end;
+							    true -> 0
 							end;
-					   true -> 
+					    true -> 
 							V1
 					end
 				end,
