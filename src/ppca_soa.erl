@@ -38,6 +38,6 @@ start_listen(Port) ->
 stop_listen(Port) ->
 	ppca_server ! { self(), {stop_listen, Port}},
 	receive
-		ok -> ok;
-		{error, Reason} -> {error, Reason}
+		ok -> io:format("Porta ~p fechada.~n", [Port]);
+		{error, Reason} -> io:format("Erro ao fechar porta ~p: Motivo: ~p.~n", [Port, Reason])
 	end.
