@@ -6,33 +6,47 @@
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%---
 -module(ppca_server).
+
 -include("../include/ppca_config.hrl").
+
 -export([init/0, is_content_length_valido/1]).
 -import(string, [tokens/2]).
--import(lists, [reverse/1, map/2]).
+-import(lists, [reverse/1, map/2, filter/2]).
+
+
+% Tipo para armazenar o estado do servidor
+-record(state, {listener=[]}).
 
 
 init() ->
 	io:format("Módulo ppca_server carregado.~n"),
-	loop().
+	loop(#state{}).
 
 
-loop() ->
+loop(State) ->
 	receive
-		{ Client, { start_listen, Port } } ->
+		{ From, { start_listen, Port } } ->
  			case start_server(Port) of
-				ok ->
-					Client ! {self(), ok},
-					%ppca_util:sleep(infinity);
-					loop();
+				{ok, Listen} ->
+					From ! ok,
+					State1 = State#state{listener=[{Listen, Port}|State#state.listener]},
+					loop(State1);
 				{error, Reason} ->
-					Client ! {self(), {error, Reason}}
+					From ! {error, Reason}
 			end;
 			
-		{ Client, { stop_listen, _Port } } ->				
-			Client ! {self(), ok}
+		{From, {stop_listen, Port}} ->				
+			case [ S || {S,P} <- State#state.listener, P == Port] of
+				[Listen|_] ->
+					stop_server(Listen),
+					State1 = State#state{listener=lists:delete({Listen, Port}, State#state.listener)},
+					loop(State1),
+					From ! ok;
+				_ -> 
+					From ! {error, enolisten}
+			end
 	end,
-	loop().
+	loop(State).
 
 
 
@@ -43,20 +57,26 @@ start_server(Port) ->
 		{ok, Listen} ->
 		    RequestHandler = spawn(ppca_request, init, []),
 		    spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
-			ok;
+			{ok, Listen};
 		{error, Reason} -> 
 			{error, Reason} 
 	end.	
 
+stop_server(Listen) ->
+	gen_tcp:close(Listen).
 
 
 aceita_conexoes(Listen, RequestHandler) ->
-	{ok, Socket} = gen_tcp:accept(Listen),
-	spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
-	inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
-	{Header, Payload} = get_request(Socket, []),
-	Response = trata_request(RequestHandler, Header, Payload),
-	gen_tcp:send(Socket, [Response]).
+	case gen_tcp:accept(Listen) of
+		{ok, Socket} -> 
+			spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+			inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
+			{Header, Payload} = get_request(Socket, []),
+			Response = trata_request(RequestHandler, Header, Payload),
+			gen_tcp:send(Socket, [Response]);
+		{error, closed} -> 
+			ok
+	end.
     
 
 	

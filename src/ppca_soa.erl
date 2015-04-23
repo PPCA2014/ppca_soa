@@ -8,41 +8,36 @@
 
 -module(ppca_soa).
 
--export([start/0, start/1, start_listen/2, stop_listen/2]).
+-export([start/0, start/1, start_listen/1, stop_listen/1]).
 
 -include("../include/ppca_config.hrl").
 
 
--spec start(integer()) -> pid().
+-spec start(pos_integer()) -> void.
 start(Port) -> 
 	io:format("PPCA_SOA - Barramento SOA da Turma PPCA 2014~n"),
-	Server = spawn(ppca_server, init, []),
-	case start_listen(Server, Port) of
-		ok -> io:format("Escutando na porta ~p.~n", [Port]);
-		{error, Reason} -> io:format("Não foi possível escutar na porta ~p. Motivo: ~p.~n", [Port, Reason])
-	end,
-	Server.
+	register(ppca_server, spawn(fun() -> ppca_server:init() end)),
+	start_listen(Port).
 
 
--spec start() -> pid().
+-spec start() -> void.
 start() ->
 	start(?CONF_PORT).
 
 
--spec start_listen(Server::pid(), Port::integer()) -> ok | {error, Reason::string()}.
-start_listen(Server, Port) ->
-	Server ! { self(), {start_listen, Port}},
+-spec start_listen(Port::pos_integer()) -> ok | {error, Reason::string()}.
+start_listen(Port) ->
+	ppca_server ! { self(), {start_listen, Port}},
 	receive
-		{ Server, ok } -> ok;
-		{ Server, {error, Reason} } -> {error, Reason}
+		ok -> io:format("Escutando na porta ~p.~n", [Port]);
+		{error, Reason} -> io:format("Não foi possível escutar na porta ~p. Motivo: ~p.~n", [Port, Reason])
 	end.
 
 
--spec stop_listen(Server::pid(), Port::integer()) -> ok | {error, Reason::string()}.
-stop_listen(Server, Port) ->
-	Server ! { self(), {stop_listen, Port}},
+-spec stop_listen(Port::pos_integer()) -> ok | {error, Reason::string()}.
+stop_listen(Port) ->
+	ppca_server ! { self(), {stop_listen, Port}},
 	receive
-		{ Server, ok } -> ok;
-		{ Server, {error, Reason} } -> {errpr, Reason}
+		ok -> ok;
+		{error, Reason} -> {error, Reason}
 	end.
-
