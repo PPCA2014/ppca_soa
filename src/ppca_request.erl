@@ -10,13 +10,12 @@
 -export([init/0]).
 
 init() ->
-	io:format("Request handler carregado.~n"),
 	loop().
 
 
 loop() ->
 	receive
-		{ From, { processa_request, {Metodo, Url, Payload}}} ->
+		{ From, { processa_request, {_Metodo, _Url, _Payload}}} ->
 			io:format("fazer lookup tabela de rotas passando metodo e url e retonar rota", []),
 			% Response = chamar funcao associada metodo/url
 			% enviar mensagem de volta para From
