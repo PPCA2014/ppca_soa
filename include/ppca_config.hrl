@@ -10,11 +10,20 @@
 % Seta a porta default do barramento SOA
 -define(CONF_PORT, 2301).
 
+
 % Seta o tamanho máximo do payload do POST. Por default é 1M.
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
+
 % Define um rota
 -record(rota, {metodo="GET", url, async, funcao}).
+
+
+% Definições para o logger do PPCA_SOA
+-record(logger, {filename="./log/server.log",
+				 logger_level,
+				 tam_max_logfile="1M"
+				}).
 
 
 -define(

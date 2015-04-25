@@ -5,5 +5,6 @@
               {applications,[kernel,stdlib]},
               {mod,{ppca_soa_app,[]}},
               {env,[]},
-              {modules,[ppca_request,ppca_server,ppca_soa,ppca_soa_app,
-                        ppca_soa_sup,ppca_util]}]}.
+              {modules,[ppca_event_mq,ppca_request,ppca_route,ppca_server,
+                        ppca_soa,ppca_soa_app,ppca_soa_sup,ppca_util,
+                        test_ppca_route]}]}.
