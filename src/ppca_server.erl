@@ -39,9 +39,9 @@ loop(State) ->
 			case [ S || {S,P} <- State#state.listener, P == Port] of
 				[Listen|_] ->
 					stop_server(Listen),
-					From ! ok,
-					State1 = State#state{listener=[L || {_,P} = L <- State#state.listener, P /= Port]},
-					loop(State1);
+					State1 = State#state{listener=lists:delete({Listen, Port}, State#state.listener)},
+					loop(State1),
+					From ! ok;
 				_ -> 
 					From ! {error, enolisten}
 			end
@@ -51,6 +51,9 @@ loop(State) ->
 
 
 start_server(Port) ->
+	% Usando a operação gen_tcp:listen do OTP, informando a porta 
+	% e mais alguns dados de configuração. Depois vamos otimizas as 
+	% opções de configuração. 
 	case gen_tcp:listen(Port, [binary, {packet, 0}, 
 								{reuseaddr, true},
 								{active, true}]) of
@@ -91,16 +94,14 @@ get_request(Socket, L) ->
 						get_request(Socket, L1);
 					{Header, Payload} ->
 						%% cabeçalho completo
-						io:format("~p~n", [Header]),
 						HeaderDict = get_http_header(Header),
 						case dict:fetch("Metodo", HeaderDict) of
 							"POST" -> 
 								case dict:find("Content-Length", HeaderDict) of
-									{ok, Content_Length} when Content_Length == 0 ->
+									{ok, 0} ->
 										{HeaderDict, ""};
 									{ok, Content_Length} ->
-										if 
-											length(Payload) == Content_Length -> 
+										if length(Payload) == Content_Length -> 
 												{HeaderDict, Payload};
 											true -> 
 												{HeaderDict, get_request_payload(Socket, Content_Length, Payload)}
@@ -150,24 +151,16 @@ get_http_header(Header) ->
 	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(H, " "),
 	H2 = map(fun(P) -> string:tokens(P, ":") end, H1),
 	FmtValue = fun(P, V) -> 
-					if 
-						V /= [] -> 
-							V1 = string:strip(hd(V)); 
-					    true ->
-							V1 = ""
+					if V /= [] -> V1 = string:strip(hd(V)); 
+					   true ->  V1 = ""
 					end,
-					if 
-						P == "Content-Length" -> 
-							if 
-								Metodo == "POST" ->
-									V2 = list_to_integer(V1),
-									case is_content_length_valido(V2) of
-										true -> V2;
-										false -> 0
-									end;
-							    true -> 0
+					if P == "Content-Length" -> 
+							V2 = list_to_integer(V1),
+							case is_content_length_valido(V2) of
+								true -> V2;
+								false -> 0
 							end;
-					    true -> 
+					   true -> 
 							V1
 					end
 				end,
