@@ -1,0 +1,12 @@
+{application, ppca_soa,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { ppca_soa_app, []}},
+  {env, []}
+ ]}.
