@@ -19,11 +19,18 @@
 -record(rota, {metodo="GET", url, async, funcao}).
 
 
-% Definições para o logger do PPCA_SOA
--record(logger, {filename="./log/server.log",
-				 logger_level,
-				 tam_max_logfile="1M"
+% Configurações para o logger do PPCA_SOA
+-record(logger, {%% nome do arquivo do logger
+				 filename="server.log",   
+				 
+				 %% de quanto em quanto tempo vai descarregar o buffer do log em disco
+				 checkpoint_timeout = 6000,  %% 6 segundos
+				 
+				 %% de quanto em quanto tempo vai rotacionar o arquivo. 
+				 rotacao_timeout = 1000 * 60 * 60 * 24   %% 24h
 				}).
+
+
 
 
 -define(
