@@ -42,9 +42,9 @@ Dependências
   * Erlang bin directory must be in PATH.
 
 
-* Apache CouchDB -
+* jiffy - encode/decore de JSON
 
-    <http://couchdb.apache.org/>
+    <https://github.com/davisp/jiffy>
 
 
 
