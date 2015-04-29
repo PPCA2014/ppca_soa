@@ -27,7 +27,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {checkpoint, rotacao_timeout, buffer = [], filename}).
+-record(state, {buffer = [], checkpoint = false}).
 
 
 %%====================================================================
@@ -66,14 +66,7 @@ sync() ->
 %%====================================================================
  
 init([]) ->
-	Filename = get_filename_logger(),
-    RotacaoTimeout = get_rotacao_timeout_logger(),
-    Checkpoint = get_checkpoint_timeout_logger(),
-	NewState = #state{filename=Filename, 
-					  checkpoint = Checkpoint, 
-					  rotacao_timeout = RotacaoTimeout},
-    erlang:send_after(RotacaoTimeout, self(), rotacao),
-    {ok, NewState}.
+    {ok, #state{}}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State}.
@@ -86,13 +79,12 @@ handle_call(sync_buffer, _From, State) ->
 	NewState = sync_buffer(State),
 	{reply, ok, NewState}.
 
-handle_info(sync, State) ->
+handle_info(checkpoint, State) ->
    NewState = sync_buffer(State),
    {noreply, NewState};
 
 handle_info(rotacao, State) ->
-   NewState = sync_buffer(State),
-   rotacao(State),
+   NewState = rotacao(State),
    {noreply, NewState}.
  
 terminate(_Reason, _State) ->
@@ -120,25 +112,47 @@ get_checkpoint_timeout_logger() ->
 get_rotacao_timeout_logger() ->
 	Conf = get_logger_conf(),
 	Conf#logger.rotacao_timeout.
+
+get_new_filename_logger() ->
+	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
+	lists:flatten(io_lib:format("server_~p~p~p_~p~p~p.log", [Ano, Mes, Dia, Hora, Min, Seg])).
+    
+set_checkpoint_timeout(#state{checkpoint = false}) ->    
+    Checkpoint = get_checkpoint_timeout_logger(),
+	erlang:send_after(Checkpoint, self(), checkpoint);
+
+set_checkpoint_timeout(_State) ->    
+	ok.
+
+set_rotacao_timeout() ->    
+    Rotacao = get_rotacao_timeout_logger(),
+	erlang:send_after(Rotacao, self(), rotacao).
     
 write_msg(error, Msg, State) ->
 	Msg1 = lists:concat(["Erro  ", ppca_util:timestamp_str(), "  ", Msg]),
-	erlang:send_after(State#state.checkpoint, self(), sync),
-	State#state{buffer = [Msg1|State#state.buffer]};
+	set_checkpoint_timeout(State),
+	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true};
 	
 write_msg(warn, Msg, State) ->
 	Msg1 = lists:concat(["Warn  ", ppca_util:timestamp_str(), "  ", Msg]),
-	erlang:send_after(State#state.checkpoint, self(), sync),
-	State#state{buffer = [Msg1|State#state.buffer]};
+	set_checkpoint_timeout(State),
+	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true};
 
 write_msg(info, Msg, State) ->
 	Msg1 = lists:concat(["Info  ", ppca_util:timestamp_str(), "  ", Msg]),
-	erlang:send_after(State#state.checkpoint, self(), sync),
-	State#state{buffer = [Msg1|State#state.buffer]}.
+	set_checkpoint_timeout(State),
+	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true}.
 
 sync_buffer(State) ->
-	file:write_file(State#state.filename, map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
-	State#state{buffer=[]}.
+	FileName = get_filename_logger(),
+	file:write_file(FileName, map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
+	#state{}.
 
-rotacao(_State) ->
-	ok.
+rotacao(State) ->
+	NewState = sync_buffer(State),	
+	FileName = get_filename_logger(),
+	NewFileName = get_new_filename_logger(),
+	file:rename(FileName, NewFileName),
+	set_rotacao_timeout(),
+	NewState.
+
