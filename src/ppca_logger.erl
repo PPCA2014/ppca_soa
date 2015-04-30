@@ -7,7 +7,9 @@
 %%---
 
 -module(ppca_logger).
--behavior(gen_server).
+
+%% Template Generico 
+-behavior(gen_server). 
 
 -include("../include/ppca_config.hrl").
 
@@ -27,14 +29,14 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {buffer = [], checkpoint = false}).
+-record(state, {buffer = [], checkpoint = false}). %  Record que guarda o estado para o ppca_logger. Ele só precisa armazenar uma lista de strings  e um flag se um checkpoint está em andamento
 
 
 %%====================================================================
 %% Server API
 %%====================================================================
 
-start() ->
+start() -> % cria o processo e devolve o pid
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
     io:format("ppca_logger iniciado.~n", []),
     Result.
@@ -66,7 +68,7 @@ sync() ->
 %%====================================================================
  
 init([]) ->
-    {ok, #state{}}.
+    {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State}.
