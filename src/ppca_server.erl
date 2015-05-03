@@ -13,15 +13,12 @@
 -import(string, [tokens/2]).
 -import(lists, [reverse/1, map/2, filter/2]).
 
-
-% Tipo para armazenar o estado do servidor
+% Record o estado do servidor
 -record(state, {listener=[]}).
 
-
 init() ->
-	io:format("Módulo ppca_server carregado.~n"),
+	ppca_logger:info_msg("ppca_server carregado."),
 	loop(#state{}).
-
 
 loop(State) ->
 	receive
@@ -34,7 +31,6 @@ loop(State) ->
 				{error, Reason} ->
 					From ! {error, Reason}
 			end;
-			
 		{From, {stop_listen, Port}} ->				
 			case [ S || {S,P} <- State#state.listener, P == Port] of
 				[Listen|_] ->
@@ -48,11 +44,9 @@ loop(State) ->
 	end,
 	loop(State).
 
-
-
 start_server(Port) ->
 	% Usando a operação gen_tcp:listen do OTP, informando a porta 
-	% e mais alguns dados de configuração. Depois vamos otimizas as 
+	% e mais alguns dados de configuração. Depois vamos otimizar as 
 	% opções de configuração. 
 	case gen_tcp:listen(Port, [binary, {packet, 0}, 
 								{reuseaddr, true},
@@ -68,7 +62,6 @@ start_server(Port) ->
 stop_server(Listen) ->
 	gen_tcp:close(Listen).
 
-
 aceita_conexoes(Listen, RequestHandler) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} -> 
@@ -80,48 +73,35 @@ aceita_conexoes(Listen, RequestHandler) ->
 		{error, closed} -> 
 			ok
 	end.
-    
-
 	
 get_request(Socket, L) ->
     receive
 		{tcp, Socket, Bin} -> 
-				L1 = L ++ binary_to_list(Bin),
-				%% is_fim_header verifica quando o cabeçalho está completo
-				case is_fim_header(L1, []) of
-					more ->
-						%% o cabeçalho está incompleto e precisa mais dados
-						get_request(Socket, L1);
-					{Header, Payload} ->
-						%% cabeçalho completo
-						HeaderDict = get_http_header(Header),
-						case dict:fetch("Metodo", HeaderDict) of
-							"POST" -> 
-								case dict:find("Content-Length", HeaderDict) of
-									{ok, 0} ->
-										{HeaderDict, ""};
-									{ok, Content_Length} ->
-										if length(Payload) == Content_Length -> 
-												{HeaderDict, Payload};
-											true -> 
-												{HeaderDict, get_request_payload(Socket, Content_Length, Payload)}
-										end;
-									error -> 
-										{HeaderDict, ""}
-								end;
-							_ -> {HeaderDict, ""}
-						end
-				end;
-
+			L1 = L ++ binary_to_list(Bin),
+			%% is_fim_header verifica quando o cabeçalho está completo
+			case is_fim_header(L1, []) of
+				more ->
+					%% o cabeçalho está incompleto e precisa mais dados
+					get_request(Socket, L1);
+				{Header, Payload} ->
+					%% cabeçalho completo
+					HeaderDict = get_http_header(Header),
+					case dict:find("Content-Length", HeaderDict) of
+						{ok, 0} ->
+							{HeaderDict, ""};
+						{ok, Content_Length} when length(Payload) == Content_Length ->
+							{HeaderDict, Payload};
+						{ok, Content_Length} ->
+							{HeaderDict, get_request_payload(Socket, Content_Length, Payload)};
+						error -> 
+							{HeaderDict, ""}
+					end
+			end;
 		{tcp_closed, Socket} ->
 		    void;
-
 		_Any  ->
-		    %% skip this
 		    get_request(Socket, L)
     end.
-
-
 
 get_request_payload(Socket, Length, L) ->
     receive
@@ -133,58 +113,52 @@ get_request_payload(Socket, Length, L) ->
 					true -> 
 						get_request_payload(Socket, Length, L1)
 				end;
-
 		{tcp_closed, Socket} ->
 		    void;
-
 		_Any  ->
-		    %% skip this
 		    get_request_payload(Socket, Length, L)
-
     end.
-
-
 
 -spec get_http_header(Header::list()) -> dict:dict().
 get_http_header(Header) ->
-	[H|H1] = string:tokens(Header, "\r\n"),
-	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(H, " "),
-	H2 = map(fun(P) -> string:tokens(P, ":") end, H1),
-	FmtValue = fun(P, V) -> 
-					if V /= [] -> V1 = string:strip(hd(V)); 
-					   true ->  V1 = ""
-					end,
-					if P == "Content-Length" -> 
-							V2 = list_to_integer(V1),
-							case is_content_length_valido(V2) of
-								true -> V2;
-								false -> 0
-							end;
-					   true -> 
-							V1
-					end
-				end,
-	dict:from_list([{"Metodo", Metodo},  
-					{"Url", Url},
-					{"Versao_HTTP", Versao_HTTP}] ++ 
-					[{P, FmtValue(P, V)} || [P|V] <- H2]).
+	[Principal|Outros] = string:tokens(Header, "\r\n"),
+	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(Principal, " "),
+	[Url2|QueryString] = string:tokens(Url, "?"),
+	Outros2 = get_http_header_adicionais(Outros),
+	ppca_logger:info_msg(QueryString),
+	QueryString2 = parse_query_string(QueryString),
+	dict:from_list([{"Metodo", Metodo}, 
+					{"Url", Url2}, 
+					{"HTTP-Version", Versao_HTTP},
+					{"Query", QueryString2}]
+					++ Outros2).
 
+get_http_header_adicionais(Header) ->
+	Header2 = map(fun(P) -> string:tokens(P, ":") end, Header),
+	Header3 = [{P, format_header_value(P, V)} || [P|[V]] <- Header2],
+	Header3.
 
+format_header_value("Content-Length", Value) ->
+	Value1 = string:strip(Value),
+	Value2 = list_to_integer(Value1),
+	case is_content_length_valido(Value2) of
+		true -> Value2;
+		false -> 0
+	end;
+
+format_header_value(_, Value) -> 
+	string:strip(Value).
 
 trata_request(RequestHandler, Header, Payload) ->
-	%% imprime cabecalho e payload para fins de depuração
-	io:format("Nova requisição ~p ~p em ~p.~n", [dict:fetch("Metodo", Header), 
-												 dict:fetch("Url", Header), 
-												 erlang:localtime()]),    
-	io:format("Header: ~n", []),
-	[ io:format("\t~p:  ~p~n", [P, dict:fetch(P, Header)]) || P <- dict:fetch_keys(Header)],
-	io:format("Payload: ~p~n", [Payload]),
-
-	%% Processa o request e obtém o código de retorno e corpo do response
+	print_requisicao_debug(Header, Payload),
 	{Codigo, Corpo} = processa_request(RequestHandler, "Metodo", "Url", Payload),
-
 	response(Codigo, Corpo).
-   
+
+print_requisicao_debug(Header, Payload) ->
+	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", Header), dict:fetch("Url", Header)]),    
+	ppca_logger:info_msg("Header:", []),
+	[ ppca_logger:info_msg("\t~s:  ~p", [P, dict:fetch(P, Header)]) || P <- dict:fetch_keys(Header)],
+	ppca_logger:info_msg("Payload: ~p", [Payload]).
 
 processa_request(RequestHandler, Metodo, Url, Payload) ->
 	RequestHandler ! {self(), { processa_request, {Metodo, Url, Payload}}},
@@ -192,7 +166,6 @@ processa_request(RequestHandler, Metodo, Url, Payload) ->
 		{ ok, Response } -> { 200, Response };
 		{ Erro, Reason } -> { Erro, Reason }
 	end.
-	
 
 response(Codigo, Str) ->
     B = iolist_to_binary(Str),
@@ -201,13 +174,18 @@ response(Codigo, Str) ->
          "HTTP/1.1 ~p OK\nContent-Type: text/html\nContent-Length: ~p\n\n~s",
          [Codigo, size(B), B])).
 
-
 is_fim_header("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
 is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);
 is_fim_header([], _)              -> more.
 
-
 is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
 
-
+parse_query_string([]) ->
+	[];
+	
+parse_query_string([Querystring]) ->
+	Q1 = string:tokens(Querystring, "&"),
+	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
+	Q3 = lists:map(fun([P|V]) -> {P, ppca_util:hd_or_empty(V)} end, Q2),
+	Q3.
