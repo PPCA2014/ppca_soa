@@ -16,6 +16,7 @@
 -spec start(pos_integer()) -> void.
 start(Port) -> 
 	io:format("PPCA_SOA - Barramento SOA da Turma PPCA 2014~n"),
+	ppca_logger:start(),
 	register(ppca_server, spawn(fun() -> ppca_server:init() end)),
 	start_listen(Port).
 
@@ -29,8 +30,8 @@ start() ->
 start_listen(Port) ->
 	ppca_server ! { self(), {start_listen, Port}},
 	receive
-		ok -> io:format("Escutando na porta ~p.~n", [Port]);
-		{error, Reason} -> io:format("Não foi possível escutar na porta ~p. Motivo: ~p.~n", [Port, Reason])
+		ok -> ppca_logger:info_msg("Escutando na porta ~p", [Port]);
+		{error, Reason} -> ppca_logger:erro_msg("Não foi possível escutar na porta ~p. Motivo: ~p.", [Port, Reason])
 	end.
 
 
@@ -38,6 +39,6 @@ start_listen(Port) ->
 stop_listen(Port) ->
 	ppca_server ! { self(), {stop_listen, Port}},
 	receive
-		ok -> io:format("Porta ~p fechada.~n", [Port]);
-		{error, Reason} -> io:format("Erro ao fechar porta ~p: Motivo: ~p.~n", [Port, Reason])
+		ok -> ppca_logger:info_msg("Porta ~p fechada.~n", [Port]);
+		{error, Reason} -> ppca_logger:erro_msg("Erro ao fechar porta ~p: Motivo: ~p.", [Port, Reason])
 	end.
