@@ -8,7 +8,6 @@
 
 -module(ppca_logger).
 
-%% Template Generico 
 -behavior(gen_server). 
 
 -include("../include/ppca_config.hrl").
@@ -18,8 +17,11 @@
 
 %% Client API
 -export([error_msg/1, 
+		 error_msg/2, 
 		 info_msg/1, 
+		 info_msg/2, 
 		 warn_msg/1,
+		 warn_msg/2,
 		 sync/0]).
 
 %% gen_server callbacks
@@ -29,7 +31,12 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {buffer = [], checkpoint = false}). %  Record que guarda o estado para o ppca_logger. Ele só precisa armazenar uma lista de strings  e um flag se um checkpoint está em andamento
+%  Armazena o estado do ppca_logger. 
+-record(state, {% buffer para lista de mensagens. As mensagens vão primeiro para um buffer. 
+				buffer = [],         
+			    % em intervalores configuravel ocorre um checkpoint para descarregar o buffer no arquivo de log
+			    checkpoint = false   
+ 			   }). 
 
 
 %%====================================================================
@@ -52,12 +59,21 @@ stop() ->
 error_msg(Msg) -> 
 	gen_server:call(?SERVER, {write_msg, error, Msg}). 
 
+error_msg(Msg, Params) -> 
+	gen_server:call(?SERVER, {write_msg, error, Msg, Params}). 
+
 warn_msg(Msg) -> 
 	gen_server:call(?SERVER, {write_msg, warn, Msg}). 
 
+warn_msg(Msg, Params) -> 
+	gen_server:call(?SERVER, {write_msg, warn, Msg, Params}). 
+
 info_msg(Msg) -> 
 	gen_server:call(?SERVER, {write_msg, info, Msg}). 
-	
+
+info_msg(Msg, Params) -> 
+	gen_server:call(?SERVER, {write_msg, info, Msg, Params}). 
+
 sync() ->
 	gen_server:call(?SERVER, sync_buffer). 		
 
@@ -77,6 +93,10 @@ handle_call({write_msg, Tipo, Msg}, _From, State) ->
 	NewState = write_msg(Tipo, Msg, State),
 	{reply, ok, NewState};
 
+handle_call({write_msg, Tipo, Msg, Params}, _From, State) ->
+	NewState = write_msg(Tipo, Msg, Params, State),
+	{reply, ok, NewState};
+
 handle_call(sync_buffer, _From, State) ->
 	NewState = sync_buffer(State),
 	{reply, ok, NewState}.
@@ -90,7 +110,7 @@ handle_info(rotacao, State) ->
    {noreply, NewState}.
  
 terminate(_Reason, _State) ->
-    io:format("ppca_event_mq finalizado.~n"),
+    io:format("ppca_logger finalizado.~n"),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -130,20 +150,18 @@ set_rotacao_timeout() ->
     Rotacao = get_rotacao_timeout_logger(),
 	erlang:send_after(Rotacao, self(), rotacao).
     
-write_msg(error, Msg, State) ->
-	Msg1 = lists:concat(["Erro  ", ppca_util:timestamp_str(), "  ", Msg]),
-	set_checkpoint_timeout(State),
-	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true};
-	
-write_msg(warn, Msg, State) ->
-	Msg1 = lists:concat(["Warn  ", ppca_util:timestamp_str(), "  ", Msg]),
-	set_checkpoint_timeout(State),
-	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true};
-
-write_msg(info, Msg, State) ->
-	Msg1 = lists:concat(["Info  ", ppca_util:timestamp_str(), "  ", Msg]),
+write_msg(Tipo, Msg, State) ->
+	io:format(Msg ++ "~n"),
+	Msg1 = lists:concat([atom_to_list(Tipo), ppca_util:timestamp_str(), "  ", Msg]),
 	set_checkpoint_timeout(State),
 	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true}.
+	
+write_msg(Tipo, Msg, Params, State) ->
+	Msg1 = io_lib:format(Msg, Params),
+	io:format(Msg1 ++ "~n"),
+	Msg2 = lists:concat([atom_to_list(Tipo), ppca_util:timestamp_str(), "  ", Msg1]),
+	set_checkpoint_timeout(State),
+	State#state{buffer = [Msg2|State#state.buffer], checkpoint = true}.
 
 sync_buffer(State) ->
 	FileName = get_filename_logger(),
