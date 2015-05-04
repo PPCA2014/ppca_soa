@@ -17,7 +17,7 @@
 -record(state, {listener=[]}).
 
 init() ->
-	ppca_logger:info_msg("ppca_server carregado."),
+	ppca_logger:info_msg("ppca_server iniciado."),
 	loop(#state{}).
 
 loop(State) ->
@@ -67,9 +67,15 @@ aceita_conexoes(Listen, RequestHandler) ->
 		{ok, Socket} -> 
 			spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
 			inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
-			{Header, Payload} = get_request(Socket, []),
-			Response = trata_request(RequestHandler, Header, Payload),
-			gen_tcp:send(Socket, [Response]);
+			case get_request(Socket, []) of
+				{ok, HeaderDict, Payload} ->
+					Response = trata_request(RequestHandler, HeaderDict, Payload),
+					gen_tcp:send(Socket, [Response]);
+				{error, _Reason} ->
+					gen_tcp:send(Socket, [error_415_invalid_media_type()]);
+				tcp_closed ->
+					ok
+			end;
 		{error, closed} -> 
 			ok
 	end.
@@ -88,36 +94,40 @@ get_request(Socket, L) ->
 					HeaderDict = get_http_header(Header),
 					case dict:find("Content-Length", HeaderDict) of
 						{ok, 0} ->
-							{HeaderDict, ""};
-						{ok, Content_Length} when length(Payload) == Content_Length ->
-							{HeaderDict, Payload};
+							{ok, HeaderDict, ""};
 						{ok, Content_Length} ->
-							{HeaderDict, get_request_payload(Socket, Content_Length, Payload)};
+							case get_request_payload(Socket, Content_Length, Payload) of
+								{ok , Payload1} ->
+									{ok, HeaderDict, Payload1};
+								{error, Reason} ->
+									{error, Reason}
+							end;
 						error -> 
-							{HeaderDict, ""}
+							% Tudo ok, somente POST e PUT possuem payload
+							{ok, HeaderDict, ""}
 					end
 			end;
 		{tcp_closed, Socket} ->
-		    void;
+		    tcp_closed;
 		_Any  ->
 		    get_request(Socket, L)
     end.
 
-get_request_payload(Socket, Length, L) ->
+get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length ->
     receive
 		{tcp, Socket, Bin} -> 
-				L1 = L ++ binary_to_list(Bin),
-				if 
-					length(L1) == Length -> 
-						L1;
-					true -> 
-						get_request_payload(Socket, Length, L1)
-				end;
+			L1 = L ++ binary_to_list(Bin),
+			get_request_payload(Socket, Content_Length, L1);
 		{tcp_closed, Socket} ->
-		    void;
+		    [];
 		_Any  ->
-		    get_request_payload(Socket, Length, L)
-    end.
+		    get_request_payload(Socket, Content_Length, L)
+    end;
+    
+get_request_payload(_Socket, _Content_Length, L) ->    
+	PayloadJson = list_to_binary(L),
+	Result = ppca_util:json_decode(PayloadJson),
+	Result.
 
 -spec get_http_header(Header::list()) -> dict:dict().
 get_http_header(Header) ->
@@ -125,7 +135,6 @@ get_http_header(Header) ->
 	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(Principal, " "),
 	[Url2|QueryString] = string:tokens(Url, "?"),
 	Outros2 = get_http_header_adicionais(Outros),
-	ppca_logger:info_msg(QueryString),
 	QueryString2 = parse_query_string(QueryString),
 	dict:from_list([{"Metodo", Metodo}, 
 					{"Url", Url2}, 
@@ -149,18 +158,14 @@ format_header_value("Content-Length", Value) ->
 format_header_value(_, Value) -> 
 	string:strip(Value).
 
-trata_request(RequestHandler, Header, Payload) ->
-	print_requisicao_debug(Header, Payload),
-	{Codigo, Corpo} = processa_request(RequestHandler, "Metodo", "Url", Payload),
-	response(Codigo, Corpo).
+trata_request(RequestHandler, HeaderDict, Payload) ->
+	print_requisicao_debug(HeaderDict, Payload),
+	{Codigo, Result} = processa_request(RequestHandler, HeaderDict, Payload),
+	response(Codigo, Result).
 
-print_requisicao_debug(Header, Payload) ->
-	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", Header), dict:fetch("Url", Header)]),    
-	ppca_logger:info_msg("Header:", []),
-	[ ppca_logger:info_msg("\t~s:  ~p", [P, dict:fetch(P, Header)]) || P <- dict:fetch_keys(Header)],
-	ppca_logger:info_msg("Payload: ~p", [Payload]).
-
-processa_request(RequestHandler, Metodo, Url, Payload) ->
+processa_request(RequestHandler, HeaderDict, Payload) ->
+	Metodo = dict:fetch("Metodo", HeaderDict),
+	Url = dict:fetch("Url", HeaderDict),
 	RequestHandler ! {self(), { processa_request, {Metodo, Url, Payload}}},
 	receive
 		{ ok, Response } -> { 200, Response };
@@ -189,3 +194,22 @@ parse_query_string([Querystring]) ->
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
 	Q3 = lists:map(fun([P|V]) -> {P, ppca_util:hd_or_empty(V)} end, Q2),
 	Q3.
+
+error_415_invalid_media_type() ->
+	Response = response(415, "{\"error\":\"415\",\"message\":\"HTTP ERROR 415 - Unsupported Media Type: Tipos dados suportado: JSON\"}"),
+	Response.
+	
+print_requisicao_debug(HeaderDict, Payload) ->
+	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
+	ppca_logger:info_msg("Header:", []),
+	[ ppca_logger:info_msg("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
+	print_requisicao_payload_debug(Payload).
+
+print_requisicao_payload_debug([]) ->
+	ok;
+
+print_requisicao_payload_debug(Payload) ->
+	ppca_logger:info_msg("Payload: ~s", [ppca_util:json_encode(Payload)]).
+	
+	
+	
