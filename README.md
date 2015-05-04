@@ -10,8 +10,8 @@ O projeto tem propósito acadêmico. Seu objetivo é permitir invocar serviços 
 O barramento aceita requisições ao estilo REST e suporta dados no formato JSON.
 
 
-60 segundos Quickstart
---------------------
+Executando o barramento
+-----------------------
 
 Para iniciar o PPCA_SOA no Linux:
 
@@ -27,6 +27,7 @@ start-server.bat
 
 Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser. Parabéns, o barramento SOA estará respondendo suas requisições na porta 2301.
 
+OBS.: Antes de executar, será necessário primeiramente fazer o build. Consulte a wiki "Get 
 
 
 Dependências
