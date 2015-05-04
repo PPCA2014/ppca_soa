@@ -70,7 +70,7 @@ Bons estudos e boa programação!!!
 ```
 Att.
 Everton de Vargas Agilar
-Arquiteto de Turma de Construção de Software
+Arquiteto da Turma de Construção de Software
 Mestrando em Computação Aplicada - Turma PPCA 2014
 Universidade de Brasília
 2015 / Brasília / DF
