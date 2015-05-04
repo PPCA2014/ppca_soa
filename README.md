@@ -1,7 +1,6 @@
 # PPCA->SOA
-Barramento SOA da Turma de Construção de Software do Mestrado em Computação Aplicada da Universidade de Brasília.
 
-PPCA->SOA é um barramento orientado a serviço que está sendo desenvolvido nas aulas de Construção de Software. 
+PPCA->SOA é um barramento orientado a serviço da Turma de Construção de Software do Mestrado em Computação Aplicada da Universidade de Brasília.
 
 A linguagem de programação escolhida para o projeto foi Erlang, uma linguagem funcional e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
 
