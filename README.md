@@ -64,6 +64,7 @@ http://learnyousomeerlang.com/>
 Bons estudos e boa programação!!!
 
 Att.
+
 Everton de Vargas Agilar
 
 Mestrando em Computação Aplicada - Turma PPCA 2014
