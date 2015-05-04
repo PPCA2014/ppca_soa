@@ -5,7 +5,7 @@ PPCA->SOA é um barramento orientado a serviço que está sendo desenvolvido nas
 
 A linguagem de programação escolhida para o projeto foi Erlang, uma linguagem funcional e um ambiente de execução para criação de aplicações distribuídas, altamente escalável.
 
-O projeto tem um propósito puramente acadêmico. Seu ojetivo principal é permitir invocar serviços no barramento, implementados através de módulos Erlang, mas que futuramente possam ser implementados também em outras linguagens, como Java. 
+O projeto tem propósito acadêmico. Seu objetivo é permitir invocar serviços no barramento, implementados através de módulos Erlang, mas que futuramente possam ser implementados também em outras linguagens, como Java. 
 
 O barramento aceita requisições ao estilo REST e suporta dados no formato JSON.
 
@@ -70,6 +70,7 @@ Bons estudos e boa programação!!!
 ```
 Att.
 Everton de Vargas Agilar
+Arquiteto de Turma de Construção de Software
 Mestrando em Computação Aplicada - Turma PPCA 2014
 Universidade de Brasília
 2015 / Brasília / DF
