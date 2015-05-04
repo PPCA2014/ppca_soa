@@ -1,29 +1,27 @@
 # PPCA_SOA
-Barramento SOA da Turma PPCA 2014
+Barramento SOA da Turma de Construção de Software :: Mestrado em Computação Aplicada - PPCA 2014
 
-PPCA_SOA é um barramento orientado a serviço desenvolvido nas aulas de Construção de Software da Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília. 
+PPCA_SOA é um barramento orientado a serviço desenvolvido nas aulas de Construção de Software da Turma de Construção de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília. 
 
-É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que o torna diferente de outros barramentos SOA é a facilidade de configuração e uso.
+Está sendo desenvolvido na linguagem de programação em Erlang com fins puramente acadêmicos. O objetivo principal do projeto é tratar consumir serviços. É aceito requisições ao estilo REST com JSON.
 
 
 60 segundos Quickstart
 --------------------
 
-Após download e extrair, digite
+Para iniciar o PPCA_SOA no Linux:
 
 ```console
 ./start-server.sh
 ```
 
-For Windows, type
+No Windows, digite:
 
 ```console
 start-server.bat
 ```
 
-Então visite http://sistemas.unb.br:2301/about em seu browser. Parabéns, você tem o barramento SOA funcionando. Deve haver um monte de relatórios de progressos em seu console mas tudo deve estar executando de acordo.
-
-O nome do projeto deve ser um atom Erlang (o nome deve iniciar com caracter em caixa baixa). Para facilitar recomenda-se a pasta e o nome do projeto sejam iguais.
+Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser. Parabéns, o barramento SOA estará respondendo suas requisições na porta 2301.
 
 
 
@@ -39,32 +37,16 @@ Dependências
 
 * On Windows Vista or Windows 7 -
 
-  * Erlang bin directory must be in PATH.
+  * Erlang e Rebar bin devem estar no diretório PATH.
 
 
-* jiffy - encode/decore de JSON
+* jsx - encode/decore JSON
 
-    <https://github.com/davisp/jiffy>
-
-
-
-
-Configuração do Banco de Dados
---------------
-
-ppca_soa utiliza o Apache CouchDB para armazenamentos dos dados. Para iniciar a configuração, veja README_DATABASE
-
-
-Filosofia e Recursos
------------------------
-
-ppca_soa obtêm as vantagens da programação funcional em Erlang ao entregar um barramento orientado a serviço simples e ao mesmo tempo funcional. A melhor parte deste projeto é oferecer comunicação 100% assíncrona quando necessário.
-
-
+    <https://github.com/talentdeficit/jsx>
 
 
 Documentação sobre programação funcional
----------------
+-----------------------------------------
 
 Documentação sobre Erlang
 
@@ -75,4 +57,11 @@ Para quem quiser iniciar na programação Erlang, visite este livro:
 http://learnyousomeerlang.com/>
 
 
+Bons estudos e boa programação!!!
+
+Att.
+Everton de Vargas Agilar
+Mestrando em Computação Aplicada
+Universidade de Brasília
+2015 / Brasília / DF
 
