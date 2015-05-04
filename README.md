@@ -3,11 +3,11 @@ Barramento SOA da Turma de Construção de Software do Mestrado em Computação 
 
 PPCA->SOA é um barramento orientado a serviço que está sendo desenvolvido nas aulas de Construção de Software. 
 
-A linguagem de programação escolhida para o projeto foi Erlang, uma linguagem funcional e um ambiente de execução para criação de aplicações distribuídas, altamente escalável.
+A linguagem de programação escolhida para o projeto foi Erlang, uma linguagem funcional e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
 
-O projeto tem propósito acadêmico. Seu objetivo é permitir invocar serviços no barramento, implementados através de módulos Erlang, mas que futuramente possam ser implementados também em outras linguagens, como Java. 
+O projeto tem propósito acadêmico. Seu objetivo é permitir invocar serviços no barramento, implementados através de módulos Erlang, mas que futuramente possam ser implementados em outras linguagens, como Java. 
 
-O barramento aceita requisições ao estilo REST e suporta dados no formato JSON.
+O barramento aceita requisições ao estilo REST e suporta dados no formato JSON. Um requisito básico do projeto é evitar o uso de bibliotecas de terceiros, para maximar o aprendizado na plataforma Erlang.
 
 
 Executando o barramento
