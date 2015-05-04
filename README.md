@@ -27,7 +27,7 @@ start-server.bat
 
 Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser. Parabéns, o barramento SOA estará respondendo suas requisições na porta 2301.
 
-OBS.: Antes de executar, será necessário primeiramente fazer o build. Consulte a wiki "Get 
+OBS.: Antes de executar, será necessário primeiramente fazer o build do projeto. Consulte a wiki "Getting-Started" em <https://github.com/PPCA2014/ppca_soa/wiki/Getting-Started>.
 
 
 Dependências
