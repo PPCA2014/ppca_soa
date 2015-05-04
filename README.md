@@ -27,7 +27,8 @@ start-server.bat
 
 Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser. Parabéns, o barramento SOA estará respondendo suas requisições na porta 2301.
 
-OBS.: Antes de executar, será necessário primeiramente fazer o build do projeto. Consulte a wiki "Getting-Started" em <https://github.com/PPCA2014/ppca_soa/wiki/Getting-Started>.
+####OBS.: 
+Antes de executar, será necessário primeiramente fazer o build do projeto. Consulte a wiki "Getting-Started" em <https://github.com/PPCA2014/ppca_soa/wiki/Getting-Started>.
 
 
 Dependências
@@ -57,7 +58,7 @@ Documentação sobre Erlang
 
 <http://www.erlang.org/>
 
-Para quem quiser iniciar na programação Erlang, visite este livro:
+Para quem quiser iniciar na programação Erlang, visite este livro online:
 
 <http://learnyousomeerlang.com/>
 
