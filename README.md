@@ -32,7 +32,7 @@ Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser. Par
 Dependências
 ------------
 
-* Erlang R16B or later -
+* Erlang R17B ou versão mais recente -
 
     <http://www.erlang.org/download.html>
 
