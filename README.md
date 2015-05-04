@@ -58,7 +58,11 @@ Documentação sobre Erlang
 
 Para quem quiser iniciar na programação Erlang, visite este livro:
 
-http://learnyousomeerlang.com/>
+<http://learnyousomeerlang.com/>
+
+Lista de artigos sobre Erlang
+
+<https://github.com/0xAX/erlang-bookmarks/blob/master/ErlangBookmarks.md>
 
 
 Bons estudos e boa programação!!!
