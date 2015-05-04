@@ -1,5 +1,5 @@
 # PPCA->SOA
-Barramento SOA da Turma de Construção de Software :: Mestrado em Computação Aplicada - PPCA 2014
+Barramento SOA da Turma de Construção de Software do Mestrado em Computação Aplicada - Universidade de Brasília.
 
 PPCA_SOA é um barramento orientado a serviço desenvolvido nas aulas de Construção de Software da Turma de Construção de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília. 
 
@@ -61,7 +61,7 @@ Bons estudos e boa programação!!!
 
 Att.
 Everton de Vargas Agilar
-Mestrando em Computação Aplicada
+Mestrando em Computação Aplicada - Turma PPCA 2014
 Universidade de Brasília
 2015 / Brasília / DF
 
