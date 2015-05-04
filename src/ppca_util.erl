@@ -23,13 +23,16 @@ timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	lists:flatten(io_lib:format("~p/~p/~p ~p:~p:~p", [Dia, Mes, Ano, Hora, Min, Seg])).
 	
-json_encode(_Json)->
-	%jiffy:encode(Json).
-	"".
+json_encode(JSON)->
+	jsx:encode(JSON).
 	
-json_decode(_IoData) ->
-	%jiffy:decode(IoData).
-	"".
+json_decode(JSON) ->
+	try
+		Result = jsx:decode(JSON),
+		{ok, Result}
+	catch
+		_Exception:_Reason -> {error, einvalid_json}
+	end.
 
 hd_or_empty(List) when length(List) > 0 -> 
 	hd(List);
