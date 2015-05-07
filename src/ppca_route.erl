@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([init/0,lookup_route/3,execute/3]).
+-export([init/0,lookup_route/2,execute/2]).
 -import(string, [sub_string/3]).
 
 
@@ -17,7 +17,7 @@
 %%-spec add_route(Route::[{route,string()},{module,string()},{function,string()}]) 
 %%								-> ok | {error, Reason::string()}.
 init() ->
-	io:format("Modulo de rotas carregado.~n"),
+	ppca_logger:info_msg("modulo de rotas carregado."),
 	TableRoute=ets:new(routes, [ordered_set]),
 	%% @todo Recuperar todas as rotas do serviço de persistencia e
 	%% e incluir no ets routes.
@@ -31,21 +31,21 @@ init() ->
 
 loop(TableRoute) ->
 	receive
-		{  Client, { test_route, {Router,From, "PUT",Url="/route"++ _, Payload} } } ->
+		{  Client, {Router,From, "PUT",Url="/route"++ _, Payload,HeadrDict}} ->
 			Client ! {self(), update_route(Url,Payload,TableRoute,From)},
-			io:format("Recebendo PUT.~n");
-		{  Client, { test_route, {Method="GET",Url="/route"++ _, Payload} } } ->
-			io:format("Recebendo GET.~n"),
-			Client ! {self(), lookup_route(Url,Method,TableRoute)};			
-		{  Client, { test_route, {Router,From, "POST","/route"++ _, Payload} } } ->			
+			ppca_logger:info_msg("recebendo PUT.");
+		{  Client, {Method="GET",Url="/route"++ _, Payload,HeaderDict}}  ->
+			ppca_logger:info_msg("recebendo GET."),
+			Client ! {self(), lookup_route(HeaderDict,TableRoute)};			
+		{  Client, {Router,From, "POST","/route"++ _, Payload,HeadrDict}} ->			
 			Client ! {self(), add_route(Payload,TableRoute,From)},
-			io:format("Recebendo POST.~n");
-		{  Client, { test_route, {Router,From, "DELETE",Url="/route"++ _, Payload} } } ->
+			ppca_logger:info_msg("recebendo POST.");
+		{  Client, {Router,From, "DELETE",Url="/route"++ _, Payload,HeadrDict}} ->
 			Client ! {self(), remove_route(Url,TableRoute,From)},
-			io:format("Recebendo DELETE.~n");
-		{ Client, { test_route, {Method, Url, Payload} } } ->
-			io:format("Localizando Rota.~n"),
-			Client ! {self(), {route_normal,Method,Url}}
+			ppca_logger:info_msg("recebendo DELETE.");
+		{ Client, {Method, Url, Payload,HeaderDict}} ->
+			ppca_logger:info_msg("looking for service."),
+			Client ! {self(), lookup_route(HeaderDict,TableRoute)}
  			
 			
 			
@@ -69,7 +69,7 @@ add_route(Payload,TableRoute,From) ->
 %-spec remove_route(Url::string()) -> {route_deleted,ok,Url::string()} | {error, Reason::string()}.
 remove_route(Url,TableRoute,From) -> 
 	 UrlToRemove = string:sub_string(Url, string:len("/route")+1, string:len(Url)),
-	 io:format(UrlToRemove ++ " URL.~n"),
+	 ppca_logger:info_msg(UrlToRemove ++ " URL."),
 	 TargetA = ets:lookup(TableRoute, UrlToRemove),
 	 io:format("Antes exclusao ~p~n", [TargetA]),
 	 ets:delete(TableRoute, UrlToRemove),
@@ -80,11 +80,15 @@ remove_route(Url,TableRoute,From) ->
 
 
 
-lookup_route(Url,Method,TableRoute) ->
-	Target = ets:lookup(TableRoute, Url),
+lookup_route(HeaderDict,TableRoute) ->
+	Target = ets:lookup(TableRoute, dict:fetch("Url", HeaderDict)),
 	io:format(" URL. ~p~n", [Target]),
-	ModuleFunction = element(2,lists:nth(1, Target)),
-	{route_founded,Method,Url,ModuleFunction}.
+	if  Target == [] ->
+            ModuleFunction = "";
+        true -> 
+            ModuleFunction = element(2,lists:nth(1, Target))
+	end,
+	{service_found,HeaderDict,ModuleFunction}.
 
 
 update_route(Url,Payload,TableRoute,From) ->
@@ -99,7 +103,10 @@ getUrl(Payload) ->
 getModuleFunction(Payload) ->
 			"ppca_login:do_login".
 
-execute(Url,Method,From) ->
-	Response = "url "++ Url ++"roteada  "++"~n",
+execute(HeaderDict,From) ->
+	Metodo = dict:fetch("Metodo", HeaderDict),
+	Url = dict:fetch("Url", HeaderDict),
+	%Response= ppca_util:json_encode([{<<"id">>,<<"Url">>}]),
+	Response = "url "++ Url ++" roteada  ",
 	From ! { ok, Response},
-	io:format("rota atingida " ++ Url ++" metodo "++ Method ++"~n").
+	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
