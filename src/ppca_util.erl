@@ -31,7 +31,10 @@ json_decode(JSON) ->
 		Result = jsx:decode(JSON),
 		{ok, Result}
 	catch
-		_Exception:_Reason -> {error, einvalid_json}
+		_Exception:_Reason -> 
+			_Reason,
+			
+			{error, einvalid_json}
 	end.
 
 hd_or_empty(List) when length(List) > 0 -> 
