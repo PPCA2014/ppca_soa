@@ -70,5 +70,9 @@ test_lookup(Url) ->
 			io:format("teste passou - url "++ Url ++" roteada para "++ Target++"~n")		
 	end.
 
-execute(Url,Method) ->
-	io:format("rota atingida " ++ Url ++" metodo "++ Method ++"~n").		
+execute(HeaderDict,From) ->
+	Metodo = dict:fetch("Metodo", HeaderDict),
+	Url = dict:fetch("Url", HeaderDict),
+	Response = "url "++ Url ++" roteada  ",
+	From ! { ok, Response},
+	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).	

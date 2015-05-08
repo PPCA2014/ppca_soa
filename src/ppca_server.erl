@@ -162,11 +162,13 @@ trata_request(RequestHandler, HeaderDict, Payload) ->
 	print_requisicao_debug(HeaderDict, Payload),
 	{Codigo, Result} = processa_request(RequestHandler, HeaderDict, Payload),
 	response(Codigo, Result).
+	%case dict:fetch("Url", HeaderDict) of
+	%	"faveicon.ico" -> response(200,"")		
+	%end.
+	
 
 processa_request(RequestHandler, HeaderDict, Payload) ->
-	Metodo = dict:fetch("Metodo", HeaderDict),
-	Url = dict:fetch("Url", HeaderDict),
-	RequestHandler ! {self(), { processa_request, {Metodo, Url, Payload}}},
+	RequestHandler ! {self(), { processa_request, {HeaderDict, Payload}}},
 	receive
 		{ ok, Response } -> { 200, Response };
 		{ Erro, Reason } -> { Erro, Reason }
