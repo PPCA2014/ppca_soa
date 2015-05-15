@@ -25,6 +25,10 @@ init() ->
 	ets:insert(TableRoute,{"/login","test_ppca_route:execute"}),
 	ets:insert(TableRoute,{"/route/login","ppca_route:execute"}),
 	ets:insert(TableRoute,{"/alunos","test_ppca_route:execute"}),
+  	%%
+      %% Rota abaixo para o autenticador inserida por Marçal
+	%%
+      ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
 	%% Fim
 	loop(TableRoute).
 
