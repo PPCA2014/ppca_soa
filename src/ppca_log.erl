@@ -7,24 +7,26 @@
 %%---
 
 -module(ppca_log).
--export([mensagem_erro/2, 
-		 mensagem_info/2, 
-		 mensagem_warn/2		
-		 ]).
+-export([mensagem_info/2, 
+         mensagem_warn/2,
+         mensagem_error/2]).
 
-mensagem_erro(Msg, Sistema) ->
-	Msg1 = "erro:" ++ timestamp_str() ++ ":" ++ Sistema ++ ":" ++ Msg,
+% Api do modulo
+mensagem_warn(Msg, Servico) ->
+  mensagem(warn, Msg, Servico).
+
+mensagem_info(Msg, Servico) ->
+  mensagem(info, Msg, Servico).
+
+mensagem_error(Msg, Servico) ->
+  mensagem(error, Msg, Servico).
+
+
+% funcoes interna
+
+mensagem(Tipo, Msg, Servico) ->
+	Msg1 = atom_to_list(Tipo) ++ ":" ++ timestamp_str() ++ ":" ++ Servico ++ ":" ++ Msg,
     file:write_file("log.txt", Msg1 ++ "\n", [append]),
-	io:format(Msg1).
-
-mensagem_info(Msg, Sistema) ->
-	Msg1 = "info:" ++ timestamp_str() ++ ":" ++ Sistema ++ ":" ++ Msg,
-	file:write_file("log.txt", Msg1 ++ "\n", [append]),
-	io:format(Msg1).
-
-mensagem_warn(Msg, Sistema) ->
-	Msg1 = "warn:" ++ timestamp_str() ++ ":" ++ Sistema ++ ":" ++ Msg,
-	file:write_file("log.txt", Msg1 ++ "\n", [append]),
 	io:format(Msg1).
 
 timestamp_str() ->
