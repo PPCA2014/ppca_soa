@@ -4,6 +4,8 @@
 %%  Mestrado em Computação Aplicada - Universidade de Brasília
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
+%%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
+%%          Eliene Vieira (elienev@gmail.com)
 %%---
 
 -module(ppca_logger).
