@@ -18,12 +18,17 @@
 %% O modulo autentica recebe na chamada um usuario e senha e faz a validacao
 %%
 autentica(HeaderDict,From) ->
+	%% Recupera o metodo da chamada
 	Metodo = dict:fetch("Metodo", HeaderDict),
-	Url = dict:fetch("Url", HeaderDict),
-	%Response= ppca_util:json_encode([{<<"id">>,<<"Url">>}]),
-	Response = "url "++ Url ++" roteada! Cheguei aqui!  ",
-	From ! { ok, Response},
-	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
+	%% So aceita chamadas com metodo POST
+	if Metodo == "POST" ->
+			Query = dict:fetch("Query", HeaderDict),
+			%Response= ppca_util:json_encode([{<<"id">>,<<"Url">>}]),
+			Response = "Query "++ Query ++" Autenticador!  ",
+			From ! { ok, Response}
+			%ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo )
+	end.
+	%% Outros metodos devem retornar erro
 	%% Implementar:
       %% 1- Abrir novo processo?
 	%% 2- Verificar se usuario+IP ja esta na lista de sessoes ativas
