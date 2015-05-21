@@ -1,13 +1,20 @@
-%% @author Drausio
-%% @doc  Modulo responsável por armazenar, remover e recuperar.
-
+%% ---
+%%  PPCA_SOA
+%%  Modulo responsável por armazenar, remover e recuperar rotas
+%%  Mestrado em Computação Aplicada - Universidade de Brasília
+%%  Turma de Construção de Software / PPCA 2014
+%%  Professor: Rodrigo Bonifacio de Almeida
+%%  Alunos:    Drausio Gomes dos Santos (drausiogs@gmail.com)
+%%			   Everton de Vargas Agilar (evertonagilar@gmail.com)
+%%             Eliene do Carmo Vieira	(elienev@gmail.com) 
+%%---
 
 -module(ppca_route).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([init/0,lookup_route/2,execute/2, load_catalogo/0]).
+-export([init/0,lookup_route/2,execute/2, load_catalogo/0, lista_catalogo/2]).
 -import(string, [sub_string/3]).
 
 
@@ -30,6 +37,7 @@ init() ->
 	ets:insert(TableRoute,{"/", "info_service:execute"}),	
 	ets:insert(TableRoute,{"/info", "info_service:execute"}),	
 	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
+	ets:insert(TableRoute,{"/catalogo", "ppca_route:lista_catalogo"}),
 
 
   	%%
@@ -128,13 +136,19 @@ execute(HeaderDict,From) ->
 	From ! { ok, Response},
 	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
 	
-	
+
 load_catalogo() ->
 	{ok, Dados} = file:read_file("./conf/catalogo.json"),
 	{ok, Cat} = ppca_util:json_decode_as_map(Dados),
 	Cat.
-	
 
+%% @doc Serviço que lista o catálogo no browser (URL: /catalogo)
+lista_catalogo(_HeaderDict, From) ->
+	Response = load_catalogo(),
+	From ! { ok, Response}.
+
+
+% Eliene, como acessar um campo
 %  maps:get(<<"querystring">>, Cat).
 
 	
