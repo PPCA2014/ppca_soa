@@ -1,5 +1,5 @@
 %% @author Drausio
-%% @doc  Modulo responsável por armazenar, remover e recuperar.
+%% @doc  Modulo responsÃ¡vel por armazenar, remover e recuperar.
 
 
 -module(ppca_route).
@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([init/0,lookup_route/2,execute/2]).
+-export([init/0,lookup_route/2,execute/2, load_catalogo/0]).
 -import(string, [sub_string/3]).
 
 
@@ -17,19 +17,32 @@
 %%-spec add_route(Route::[{route,string()},{module,string()},{function,string()}]) 
 %%								-> ok | {error, Reason::string()}.
 init() ->
-	ppca_logger:info_msg("modulo de rotas carregado."),
+	ppca_logger:info_msg("ppca_rota iniciado."),
 	TableRoute=ets:new(routes, [ordered_set]),
-	%% @todo Recuperar todas as rotas do serviço de persistencia e
+	%% @todo Recuperar todas as rotas do serviÃ§o de persistencia e
 	%% e incluir no ets routes.
 	%% Substituir abaixo
 	ets:insert(TableRoute,{"/login","test_ppca_route:execute"}),
 	ets:insert(TableRoute,{"/route/login","ppca_route:execute"}),
 	ets:insert(TableRoute,{"/alunos","test_ppca_route:execute"}),
+
+	% Adicionado por Everton
+	ets:insert(TableRoute,{"/", "info_service:execute"}),	
+	ets:insert(TableRoute,{"/info", "info_service:execute"}),	
+	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
+
+
   	%%
-      %% Rota abaixo para o autenticador inserida por Marçal
+      %% Rota abaixo para o autenticador inserida por MarÃ§al
 	%%
       ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
 	%% Fim
+
+
+	% Inicializa os serviÃ§os
+	info_service:start(),
+	helloworld_service:start(),
+	
 	loop(TableRoute).
 
 
@@ -67,7 +80,7 @@ add_route(Payload,TableRoute,From) ->
 	 Target = ets:lookup(TableRoute, Key),
 	 ModuleFunction = element(2,lists:nth(1, Target)),
 	 io:format("~p~n", [ModuleFunction]),
-	 %% @todo Incluir rota de forma persistente em dets ou serviço de persistencia
+	 %% @todo Incluir rota de forma persistente em dets ou serviÃ§o de persistencia
 	 {route_added,ok,From}.		
 	
 %-spec remove_route(Url::string()) -> {route_deleted,ok,Url::string()} | {error, Reason::string()}.
@@ -79,7 +92,7 @@ remove_route(Url,TableRoute,From) ->
 	 ets:delete(TableRoute, UrlToRemove),
 	 TargetD = ets:lookup(TableRoute, UrlToRemove),
 	 io:format("Depois exclusao ~p~n", [TargetD]),
-	  %% @todo Remover rota de forma persistente em dets ou serviço de persistencia
+	  %% @todo Remover rota de forma persistente em dets ou serviÃ§o de persistencia
 	 {route_deleted,ok,UrlToRemove,From}.	
 
 
@@ -114,3 +127,16 @@ execute(HeaderDict,From) ->
 	Response = "url "++ Url ++" roteada  ",
 	From ! { ok, Response},
 	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
+	
+	
+load_catalogo() ->
+	{ok, Dados} = file:read_file("./conf/catalogo.json"),
+	{ok, Cat} = ppca_util:json_decode_as_map(Dados),
+	Cat.
+	
+
+%  maps:get(<<"querystring">>, Cat).
+
+	
+
+	
