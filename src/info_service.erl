@@ -87,7 +87,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 do_info(_HeaderDict, State) ->
-	Response = "{\"Its works!!!\"}",
+	Response = "{\"message\": \"It works!!!\"}",
 	NewState = State#state{},
 	{Response, NewState}.
 
