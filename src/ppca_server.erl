@@ -172,18 +172,20 @@ trata_request(RequestHandler, HeaderDict, Payload) ->
 	
 
 processa_request(RequestHandler, HeaderDict, Payload) ->
-	RequestHandler ! {self(), { processa_request, {HeaderDict, Payload}}},
+	RequestHandler ! {self(), {processa_request, {HeaderDict, Payload}}},
 	receive
-		{ ok, Response } -> { 200, Response };
-		{ Erro, Reason } -> { Erro, Reason }
+		{ok, Response} ->
+			{ 200, Response };
+		{Erro, Reason } -> 
+			{ Erro, Reason }
 	end.
 
 response(Codigo, Str) ->
     B = iolist_to_binary(Str),
     iolist_to_binary(
       io_lib:fwrite(
-         "HTTP/1.1 ~p OK\nContent-Type: text/html\nContent-Length: ~p\n\n~s",
-         [Codigo, size(B), B])).
+         "HTTP/1.1 ~p OK\nServer: ~p\nContent-Type: application/json\nContent-Length: ~p\n\n~s",
+         [Codigo, ?SERVER_NAME, size(B), B])).
 
 is_fim_header("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
 is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);
