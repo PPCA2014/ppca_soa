@@ -18,8 +18,7 @@
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
     receive
-	    after T ->
-	       true
+	    after T -> true
     end.
 
 %% @doc Retorna o timestamp em formato texto
@@ -55,4 +54,7 @@ hd_or_empty(List) when length(List) > 0 ->
 
 %% @doc Retorna o primeiro item da lista ou vazio	
 hd_or_empty(_) -> [].
+
+%% @doc Retorna a string com aspas
+% quote(Str) -> [$", Str, $"].
 

@@ -5,7 +5,7 @@
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%          Drausio
+%%          Drausio Gomes dos Santos (drausiogs@gmail.com)
 %%---
 -module(ppca_request).
 

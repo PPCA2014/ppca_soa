@@ -1,13 +1,14 @@
 %% ---
-%%  PPCA_SOA
-%%  Implementa um servidor web capaz de atender múltiplas requisições
+%%  PPCA_SERVER
+%%  Servidor HTTP para atender solicitações REST.
 %%  Mestrado em Computação Aplicada - Universidade de Brasília
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%          Celson
-%%          Rafael
-%%          Felipe
+%%          Eliene do Carmo Vieira	 (elienev@gmail.com) 
+%%          Celson Junior			 (celson.jr@gmail.com)
+%%          Raphael Magalhães Hoed	 (raphael.hoed@gmail.com)
+%%          Felipe Fonseca			 (fellipe.alves@gmail.com)
 %%---
 -module(ppca_server).
 
@@ -180,12 +181,31 @@ processa_request(RequestHandler, HeaderDict, Payload) ->
 			{ Erro, Reason }
 	end.
 
-response(Codigo, Str) ->
-    B = iolist_to_binary(Str),
-    iolist_to_binary(
-      io_lib:fwrite(
-         "HTTP/1.1 ~p OK\nServer: ~p\nContent-Type: application/json\nContent-Length: ~p\n\n~s",
-         [Codigo, ?SERVER_NAME, size(B), B])).
+
+%% @doc Gera o response para enviar para o cliente
+response(<<Codigo/binary>>, <<Payload/binary>>) ->
+	PayloadLength = list_to_binary(integer_to_list(size(Payload))),
+	Response = [<<"HTTP/1.1 ">>, Codigo, <<" OK">>, <<"\n">>,
+				<<"Server: ">>, ?SERVER_NAME, <<"\n">>,
+				<<"Content-Type: application/json">>, <<"\n">>,
+				<<"Content-Length: ">>, PayloadLength, <<"\n\n">>, 
+	            Payload],
+	Response2 = iolist_to_binary(Response),
+	Response2;
+
+
+%% @doc Gera o response para enviar para o cliente
+response(Codigo, Payload) when is_map(Payload) ->
+    PayloadJSON = ppca_util:json_encode(Payload),
+    response(Codigo, PayloadJSON);
+
+
+%% @doc Gera o response para enviar para o cliente
+response(Codigo, Payload) ->
+    PayloadBin = iolist_to_binary(Payload),
+    CodigoBin = list_to_binary(integer_to_list(Codigo)),
+    response(CodigoBin, PayloadBin).
+
 
 is_fim_header("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
 is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);
@@ -204,7 +224,7 @@ parse_query_string([Querystring]) ->
 	Q3.
 
 error_415_invalid_media_type() ->
-	Response = response(415, "{\"error\":\"415\",\"message\":\"HTTP ERROR 415 - Unsupported Media Type: Tipos dados suportado: JSON\"}"),
+	Response = response(415, <<"{\"error\":\"415\",\"message\":\"HTTP ERROR 415 - Unsupported Media Type: Tipos dados suportado: JSON\"}">>),
 	Response.
 	
 print_requisicao_debug(HeaderDict, Payload) ->

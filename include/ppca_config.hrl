@@ -15,7 +15,7 @@
 % Seta o tamanho máximo do payload do POST. Por default é 1M.
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
--define(SERVER_NAME, "PPCA->SOA/1.0.0").
+-define(SERVER_NAME, <<"PPCA->SOA/1.0.0">>).
 
 
 % Define um rota
