@@ -4,8 +4,8 @@
 %%  Mestrado em Computação Aplicada - Universidade de Brasília
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
-%%  Alunos:    Drausio Gomes dos Santos (drausiogs@gmail.com)
-%%			   Everton de Vargas Agilar (evertonagilar@gmail.com)
+%%  Alunos:	   Drausio Gomes dos Santos (drausiogs@gmail.com)
+%%             Everton de Vargas Agilar (evertonagilar@gmail.com)
 %%             Eliene do Carmo Vieira	(elienev@gmail.com) 
 %%---
 
