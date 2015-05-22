@@ -32,7 +32,7 @@ loop() ->
 processa_servico(From, HeaderDict, Payload) ->
 	Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	ppca_route ! {self(), {Metodo, Url, Payload,HeaderDict}},
+	ppca_route ! {self(), {From,Metodo, Url, Payload,HeaderDict}},
 	receive
 		{_From1, {route_deleted, ok, UrlToRemove, From}}  -> 
 				Response = "serviço | " ++ UrlToRemove ++" | excluido~n",

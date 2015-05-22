@@ -25,25 +25,25 @@
 %%								-> ok | {error, Reason::string()}.
 init() ->
 	ppca_logger:info_msg("ppca_rota iniciado."),
-	TableRoute=ets:new(routes, [ordered_set]),
+	TableRoute=dets:open_file(routes, [{type,set}]),
 	%% @todo Recuperar todas as rotas do serviço de persistencia e
 	%% e incluir no ets routes.
 	%% Substituir abaixo
-	ets:insert(TableRoute,{"/login","test_ppca_route:execute"}),
-	ets:insert(TableRoute,{"/route/login","ppca_route:execute"}),
-	ets:insert(TableRoute,{"/alunos","test_ppca_route:execute"}),
+	dets:insert(routes,{"/login","test_ppca_route:execute"}),
+	dets:insert(routes,{"/route/login","ppca_route:execute"}),
+	dets:insert(routes,{"/alunos","test_ppca_route:execute"}),
 
 	% Adicionado por Everton
-	ets:insert(TableRoute,{"/", "info_service:execute"}),	
-	ets:insert(TableRoute,{"/info", "info_service:execute"}),	
-	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
-	ets:insert(TableRoute,{"/catalogo", "ppca_route:lista_catalogo"}),
+	dets:insert(routes,{"/", "info_service:execute"}),	
+	dets:insert(routes,{"/info", "info_service:execute"}),	
+	dets:insert(routes,{"/hello_world", "helloworld_service:execute"}),
+	dets:insert(routes,{"/catalogo", "ppca_route:lista_catalogo"}),
 
 
   	%%
       %% Rota abaixo para o autenticador inserida por Marçal
 	%%
-      ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
+      dets:insert(routes,{"/autentica","ppca_auth_user:autentica"}),
 	%% Fim
 
 
@@ -56,19 +56,19 @@ init() ->
 
 loop(TableRoute) ->
 	receive
-		{  Client, {Router,From, "PUT",Url="/route"++ _, Payload,HeadrDict}} ->
+		{  Client, {From, "PUT",Url="/route"++ _, Payload,HeadrDict}} ->
 			Client ! {self(), update_route(Url,Payload,TableRoute,From)},
 			ppca_logger:info_msg("recebendo PUT.");
-		{  Client, {Method="GET",Url="/route"++ _, Payload,HeaderDict}}  ->
+		{  Client, {From,Method="GET",Url="/route"++ _, Payload,HeaderDict}}  ->
 			ppca_logger:info_msg("recebendo GET."),
 			Client ! {self(), lookup_route(HeaderDict,TableRoute)};			
-		{  Client, {Router,From, "POST","/route"++ _, Payload,HeadrDict}} ->			
-			Client ! {self(), add_route(Payload,TableRoute,From)},
-			ppca_logger:info_msg("recebendo POST.");
-		{  Client, {Router,From, "DELETE",Url="/route"++ _, Payload,HeadrDict}} ->
+		{  Client, {From,"POST","/route"++ _, Payload,HeadrDict}} ->
+			ppca_logger:info_msg("recebendo POST."),
+			Client ! {self(), add_route(Payload,TableRoute,From)};
+		{  Client, {From, "DELETE",Url="/route"++ _, Payload,HeadrDict}} ->
 			Client ! {self(), remove_route(Url,TableRoute,From)},
 			ppca_logger:info_msg("recebendo DELETE.");
-		{ Client, {Method, Url, Payload,HeaderDict}} ->
+		{ Client, {From,Method, Url, Payload,HeaderDict}} ->
 			ppca_logger:info_msg("looking for service."),
 			Client ! {self(), lookup_route(HeaderDict,TableRoute)}
  			
@@ -83,11 +83,10 @@ loop(TableRoute) ->
 -spec add_route(Payload::string(),TableRoute::pid(),From::pid()) -> {route_added,ok} | {error, Reason::string()}.
 add_route(Payload,TableRoute,From) ->
 	 Key = getUrl(Payload),
-	 Value = getModuleFunction(Payload),
-	 ets:insert(TableRoute,{Key,Value}),
-	 Target = ets:lookup(TableRoute, Key),
-	 ModuleFunction = element(2,lists:nth(1, Target)),
-	 io:format("~p~n", [ModuleFunction]),
+	 dets:insert(routes,{Key,Payload}),
+	 %Target = dets:lookup(routes, Key),
+	 %ModuleFunction = element(2,lists:nth(1, Target)),
+	 %io:format("~p~n", [ModuleFunction]),
 	 %% @todo Incluir rota de forma persistente em dets ou serviço de persistencia
 	 {route_added,ok,From}.		
 	
@@ -95,10 +94,10 @@ add_route(Payload,TableRoute,From) ->
 remove_route(Url,TableRoute,From) -> 
 	 UrlToRemove = string:sub_string(Url, string:len("/route")+1, string:len(Url)),
 	 ppca_logger:info_msg(UrlToRemove ++ " URL."),
-	 TargetA = ets:lookup(TableRoute, UrlToRemove),
+	 TargetA = dets:lookup(routes, UrlToRemove),
 	 io:format("Antes exclusao ~p~n", [TargetA]),
-	 ets:delete(TableRoute, UrlToRemove),
-	 TargetD = ets:lookup(TableRoute, UrlToRemove),
+	 dets:delete(routes, UrlToRemove),
+	 TargetD = dets:lookup(routes, UrlToRemove),
 	 io:format("Depois exclusao ~p~n", [TargetD]),
 	  %% @todo Remover rota de forma persistente em dets ou serviço de persistencia
 	 {route_deleted,ok,UrlToRemove,From}.	
@@ -106,7 +105,7 @@ remove_route(Url,TableRoute,From) ->
 
 
 lookup_route(HeaderDict,TableRoute) ->
-	Target = ets:lookup(TableRoute, dict:fetch("Url", HeaderDict)),
+	Target = dets:lookup(routes, dict:fetch("Url", HeaderDict)),
 	io:format(" URL. ~p~n", [Target]),
 	if  Target == [] ->
             ModuleFunction = "";
@@ -117,13 +116,14 @@ lookup_route(HeaderDict,TableRoute) ->
 
 
 update_route(Url,Payload,TableRoute,From) ->
-	Target = ets:lookup(TableRoute, Url),
+	Target = dets:lookup(routes, Url),
 	ModuleFunction = element(2,lists:nth(1, Target)),
-	ets:insert(TableRoute,{Url,getModuleFunction(Payload)}),
+	dets:insert(routes,{Url,getModuleFunction(Payload)}),
 	{route_updated,Url,ModuleFunction,From}.
 
 getUrl(Payload) ->
-			"/login".
+	{ok, Service} = ppca_util:json_decode_as_map(Payload),
+	maps:get(<<"url">>, Service).
 
 getModuleFunction(Payload) ->
 			"ppca_login:do_login".
