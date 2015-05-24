@@ -5,7 +5,7 @@
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%          Eliene Vieira (elienev@gmail.com)
+%%          Eliene Vieira            (elienev@gmail.com)
 %%---
 
 -module(ppca_logger).
@@ -153,18 +153,15 @@ set_rotacao_timeout() ->
 	erlang:send_after(Rotacao, self(), rotacao).
     
 write_msg(Tipo, Msg, State) ->
-	io:format(Msg ++ "~n"),
-	Msg1 = lists:concat([atom_to_list(Tipo), ppca_util:timestamp_str(), "  ", Msg]),
+	io:format("~s~n", [Msg]),
+	Msg1 = lists:concat([atom_to_list(Tipo), " ", ppca_util:timestamp_str(), "  ", Msg]),
 	set_checkpoint_timeout(State),
 	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true}.
 	
 write_msg(Tipo, Msg, Params, State) ->
 	Msg1 = io_lib:format(Msg, Params),
-	io:format(Msg1 ++ "~n"),
-	Msg2 = lists:concat([atom_to_list(Tipo), ppca_util:timestamp_str(), "  ", Msg1]),
-	set_checkpoint_timeout(State),
-	State#state{buffer = [Msg2|State#state.buffer], checkpoint = true}.
-
+	write_msg(Tipo, Msg1, State).
+	
 sync_buffer(State) ->
 	FileName = get_filename_logger(),
 	file:write_file(FileName, map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
