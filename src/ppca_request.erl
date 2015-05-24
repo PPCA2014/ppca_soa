@@ -31,26 +31,24 @@ processa_servico(From, HeaderDict, Payload) ->
 	ppca_route ! {self(), {Metodo, Url, Payload, HeaderDict}},
 	receive
 		{_From1, {route_deleted, ok, UrlToRemove, From}}  -> 
-				Response = "serviço | " ++ UrlToRemove ++" | excluido~n",
-				From ! { ok, Response};
-			
+			Response = "serviço | " ++ UrlToRemove ++" | excluido~n",
+			From ! { ok, Response};
 		{_From1, {route_added, ok, From} } -> 
-				Response = "serviço adicionado~n",
-				From ! { ok, Response};
-
+			Response = "serviço adicionado~n",
+			From ! { ok, Response};
 		{ok, Target} -> 
-				case executa_servico(Target, [HeaderDict, From]) of
-					em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto
-					Error -> From ! Error
-				end;
+			case executa_servico(Target, [HeaderDict, From]) of
+				em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto
+				Error -> From ! Error
+			end;
 		{error, servico_nao_encontrado, ErroInterno} -> 
-				From ! {error, servico_nao_encontrado, ErroInterno};
+			From ! {error, servico_nao_encontrado, ErroInterno};
 		{_From1, {route_updated, Url, ModuleFunction, From}}  -> 
-				Response = "teste passou - rota "++ " atualizada " "para " ++ ModuleFunction ++"~n",
-				From ! { ok, Response};
+			Response = "teste passou - rota "++ " atualizada " "para " ++ ModuleFunction ++"~n",
+			From ! { ok, Response};
 		{_From1, {route_normal, _Method, Url}}  -> 
-				Response = "Hello" ,
-				From ! { ok, Response}
+			Response = "Hello" ,
+			From ! { ok, Response}
 	end.
 
 
