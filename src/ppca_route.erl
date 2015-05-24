@@ -17,6 +17,8 @@
 -export([init/0,lookup_route/2,execute/2, load_catalogo/0, lista_catalogo/2]).
 -import(string, [sub_string/3]).
 
+-include("../include/http_messages.hrl").
+
 
 %% ====================================================================
 %% Internal functions
@@ -61,7 +63,7 @@ loop(TableRoute) ->
 			ppca_logger:info_msg("recebendo PUT.");
 		{  Client, {Method="GET",Url="/route"++ _, Payload,HeaderDict}}  ->
 			ppca_logger:info_msg("recebendo GET."),
-			Client ! {self(), lookup_route(HeaderDict,TableRoute)};			
+			Client ! lookup_route(HeaderDict, TableRoute);			
 		{  Client, {Router,From, "POST","/route"++ _, Payload,HeadrDict}} ->			
 			Client ! {self(), add_route(Payload,TableRoute,From)},
 			ppca_logger:info_msg("recebendo POST.");
@@ -70,11 +72,8 @@ loop(TableRoute) ->
 			ppca_logger:info_msg("recebendo DELETE.");
 		{ Client, {Method, Url, Payload,HeaderDict}} ->
 			ppca_logger:info_msg("looking for service."),
-			Client ! {self(), lookup_route(HeaderDict,TableRoute)}
- 			
-			
-			
-		
+			Reply = lookup_route(HeaderDict, TableRoute),
+			Client ! Reply
 	end,
 	loop(TableRoute).
 
@@ -104,16 +103,19 @@ remove_route(Url,TableRoute,From) ->
 	 {route_deleted,ok,UrlToRemove,From}.	
 
 
-
-lookup_route(HeaderDict,TableRoute) ->
-	Target = ets:lookup(TableRoute, dict:fetch("Url", HeaderDict)),
-	io:format(" URL. ~p~n", [Target]),
+%-spec lookup_route(HeaderDict::dict, TableRoute::pid()) -> {service_found, Target:string()} | not_found.
+lookup_route(HeaderDict, TableRoute) ->
+	Url = dict:fetch("Url", HeaderDict),
+	Target = ets:lookup(TableRoute, Url),
+	io:format("URL. ~p~n", [Target]),
 	if  Target == [] ->
-            ModuleFunction = "";
+            ErroInterno = io_lib:format(?MSG_SERVICO_NAO_ENCONTRADO, [Url]),
+            {error, servico_nao_encontrado, ErroInterno};
         true -> 
-            ModuleFunction = element(2,lists:nth(1, Target))
-	end,
-	{service_found,HeaderDict,ModuleFunction}.
+			ModuleFunction = element(2, lists:nth(1, Target)),
+			{ok, ModuleFunction}
+	end.
+	
 
 
 update_route(Url,Payload,TableRoute,From) ->
@@ -137,6 +139,7 @@ execute(HeaderDict,From) ->
 	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
 	
 
+%% @doc Lê o catálogo do disco e retorna uma variável do tipo map
 load_catalogo() ->
 	{ok, Dados} = file:read_file("./conf/catalogo.json"),
 	{ok, Cat} = ppca_util:json_decode_as_map(Dados),

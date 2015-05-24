@@ -13,6 +13,7 @@
 -module(ppca_server).
 
 -include("../include/ppca_config.hrl").
+-include("../include/http_messages.hrl").
 
 -export([init/0, is_content_length_valido/1]).
 -import(string, [tokens/2]).
@@ -76,8 +77,6 @@ aceita_conexoes(Listen, RequestHandler) ->
 				{ok, HeaderDict, Payload} ->
 					Response = trata_request(RequestHandler, HeaderDict, Payload),
 					gen_tcp:send(Socket, [Response]);
-				{error, _Reason} ->
-					gen_tcp:send(Socket, [error_415_invalid_media_type()]);
 				tcp_closed ->
 					ok
 			end;
@@ -130,9 +129,8 @@ get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length 
     end;
     
 get_request_payload(_Socket, _Content_Length, L) ->    
-	PayloadJson = list_to_binary(L),
-	Result = ppca_util:json_decode(PayloadJson),
-	Result.
+	Payload = list_to_binary(L),
+	{ok, Payload}.
 
 -spec get_http_header(Header::list()) -> dict:dict().
 get_http_header(Header) ->
@@ -163,27 +161,54 @@ format_header_value("Content-Length", Value) ->
 format_header_value(_, Value) -> 
 	string:strip(Value).
 
-trata_request(RequestHandler, HeaderDict, Payload) ->
-	print_requisicao_debug(HeaderDict, Payload),
-	{Codigo, Result} = processa_request(RequestHandler, HeaderDict, Payload),
-	response(Codigo, Result).
-	%case dict:fetch("Url", HeaderDict) of
-	%	"faveicon.ico" -> response(200,"")		
-	%end.
-	
-
-processa_request(RequestHandler, HeaderDict, Payload) ->
-	RequestHandler ! {self(), {processa_request, {HeaderDict, Payload}}},
+%% @doc Trata o request e retorna o response do resultado
+trata_request_map(RequestHandler, HeaderDict, PayloadMap) ->
+	RequestHandler ! {self(), {processa_request, {HeaderDict, PayloadMap}}},
 	receive
-		{ok, Response} ->
-			{ 200, Response };
-		{Erro, Reason } -> 
-			{ Erro, Reason }
+		{ok, Resposta} ->
+			Response = encode_response(<<"200">>, Resposta),
+			{ok, Response};
+		{error, servico_nao_encontrado, ErroInterno} ->
+			Response = encode_response(<<"404">>, ?HTTP_ERROR_404),
+			{error, Response, ErroInterno};
+		{error, servico_falhou, ErroInterno} ->
+			Response = encode_response(<<"502">>, ?HTTP_ERROR_502(ErroInterno)),
+			{error, Response, ErroInterno};
+		{error, servico_nao_disponivel, ErroInterno} ->
+			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
+			{error, Response, ErroInterno}
 	end.
 
+%% @doc Trata o request e retorna o response do resultado
+trata_request(RequestHandler, HeaderDict, PayloadJSON) ->
+	print_requisicao_debug(HeaderDict, PayloadJSON),
+	case decode_payload(PayloadJSON) of
+		{ok, PayloadMap} ->
+			case trata_request_map(RequestHandler, HeaderDict, PayloadMap) of
+				{ok, Response} ->
+					ppca_logger:info_msg("Serviço atendido."),
+					Response;
+				{error, Response, ErroInterno} ->
+					ppca_logger:error_msg(ErroInterno),
+					Response
+			end;
+		invalid_payload ->
+			encode_response(<<"415">>, ?HTTP_ERROR_415)
+	end.
+
+%% @doc Decodifica o payload e transforma em um tipo Erlang
+decode_payload([]) ->
+	{ok, #{}};
+
+%% @doc Decodifica o payload e transforma em um tipo Erlang
+decode_payload(Payload) ->
+	case ppca_util:json_decode(Payload) of
+		{ok, PayloadJSON} -> {ok, PayloadJSON};
+		{error, _Reason} -> invalid_payload
+	end.
 
 %% @doc Gera o response para enviar para o cliente
-response(<<Codigo/binary>>, <<Payload/binary>>) ->
+encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 	PayloadLength = list_to_binary(integer_to_list(size(Payload))),
 	Response = [<<"HTTP/1.1 ">>, Codigo, <<" OK">>, <<"\n">>,
 				<<"Server: ">>, ?SERVER_NAME, <<"\n">>,
@@ -193,19 +218,15 @@ response(<<Codigo/binary>>, <<Payload/binary>>) ->
 	Response2 = iolist_to_binary(Response),
 	Response2;
 
+%% @doc Gera o response para enviar para o cliente
+encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
+    Payload = ppca_util:json_encode(PayloadMap),
+    encode_response(Codigo, Payload);
 
 %% @doc Gera o response para enviar para o cliente
-response(Codigo, Payload) when is_map(Payload) ->
-    PayloadJSON = ppca_util:json_encode(Payload),
-    response(Codigo, PayloadJSON);
-
-
-%% @doc Gera o response para enviar para o cliente
-response(Codigo, Payload) ->
-    PayloadBin = iolist_to_binary(Payload),
-    CodigoBin = list_to_binary(integer_to_list(Codigo)),
-    response(CodigoBin, PayloadBin).
-
+encode_response(Codigo, PayloadStr) ->
+    PayloadBin = iolist_to_binary(PayloadStr),
+    encode_response(Codigo, PayloadBin).
 
 is_fim_header("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
 is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);
@@ -223,10 +244,6 @@ parse_query_string([Querystring]) ->
 	Q3 = lists:map(fun([P|V]) -> {P, ppca_util:hd_or_empty(V)} end, Q2),
 	Q3.
 
-error_415_invalid_media_type() ->
-	Response = response(415, <<"{\"error\":\"415\",\"message\":\"HTTP ERROR 415 - Unsupported Media Type: Tipos dados suportado: JSON\"}">>),
-	Response.
-	
 print_requisicao_debug(HeaderDict, Payload) ->
 	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
 	ppca_logger:info_msg("Header:", []),
@@ -237,7 +254,7 @@ print_requisicao_payload_debug([]) ->
 	ok;
 
 print_requisicao_payload_debug(Payload) ->
-	ppca_logger:info_msg("Payload: ~s", [ppca_util:json_encode(Payload)]).
+	ppca_logger:info_msg("Payload: ~s", [Payload]).
 	
 	
 	
