@@ -15,7 +15,7 @@
 -include("../include/ppca_config.hrl").
 -include("../include/http_messages.hrl").
 
--export([init/0, is_content_length_valido/1]).
+-export([init/0, is_content_length_valido/1, remove_ult_backslash_url/1]).
 -import(string, [tokens/2]).
 -import(lists, [reverse/1, map/2, filter/2]).
 
@@ -137,10 +137,11 @@ get_http_header(Header) ->
 	[Principal|Outros] = string:tokens(Header, "\r\n"),
 	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(Principal, " "),
 	[Url2|QueryString] = string:tokens(Url, "?"),
+	Url3 = remove_ult_backslash_url(Url2),
 	Outros2 = get_http_header_adicionais(Outros),
 	QueryString2 = parse_query_string(QueryString),
 	dict:from_list([{"Metodo", Metodo}, 
-					{"Url", Url2}, 
+					{"Url", Url3}, 
 					{"HTTP-Version", Versao_HTTP},
 					{"Query", QueryString2}]
 					++ Outros2).
@@ -243,6 +244,13 @@ parse_query_string([Querystring]) ->
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
 	Q3 = lists:map(fun([P|V]) -> {P, ppca_util:hd_or_empty(V)} end, Q2),
 	Q3.
+
+%% @doc Remove o último backslash da Url
+remove_ult_backslash_url("/") -> "/";
+remove_ult_backslash_url(Url) -> remove_ult_backslash_url2(lists:reverse(Url)).
+remove_ult_backslash_url2("/" ++ T) -> lists:reverse(T);
+remove_ult_backslash_url2(Url) -> lists:reverse(Url).
+
 
 print_requisicao_debug(HeaderDict, Payload) ->
 	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
