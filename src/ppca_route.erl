@@ -154,6 +154,3 @@ lista_catalogo(_HeaderDict, From) ->
 % Eliene, como acessar um campo
 %  maps:get(<<"querystring">>, Cat).
 
-	
-
-	
