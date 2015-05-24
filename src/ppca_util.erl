@@ -13,7 +13,8 @@
 		 json_encode/1,
 		 json_decode/1,
 		 hd_or_empty/1,
-		 json_decode_as_map/1]).
+		 json_decode_as_map/1,
+		 remove_backslash/1]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -57,4 +58,14 @@ hd_or_empty(_) -> [].
 
 %% @doc Retorna a string com aspas
 % quote(Str) -> [$", Str, $"].
+
+%% @doc Remove o último backslash da string
+remove_backslash(List) -> remove_backslash2(List, []).
+
+remove_backslash2([], _) -> [];
+remove_backslash2([H|T], L) when T == "/" -> L;
+remove_backslash2([H|T], L) -> remove_backslash2(T, [H|L]).
+
+
+
 
