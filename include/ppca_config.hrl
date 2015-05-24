@@ -24,7 +24,7 @@
 
 % Configurações para o logger do PPCA_SOA
 -record(logger, {%% nome do arquivo do logger
-				 filename="server.log",   
+				 filename="logs/server.log",   
 				 
 				 %% de quanto em quanto tempo vai descarregar o buffer do log em disco
 				 checkpoint_timeout = 6000,  %% 6 segundos
@@ -35,23 +35,6 @@
 
 
 
-
--define(
-    tabela_rota,
-	[ #rota{metodo="GET"
-	        url="/hello_world", 
-			async=false, 
-			funcao=fun() -> io:format("Hello world") end
-			},
-	  #rota{metodo="POST",
-			url="/hello_world", 
-			async=true, 
-			funcao=fun() -> io:format("Hello world2") end
-			}
-			
-	]
-).
-	
 
 
 
