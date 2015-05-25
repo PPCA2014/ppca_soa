@@ -60,13 +60,13 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({info, HeaderDict, From}, State) ->
-	{Response, NewState} = do_info(HeaderDict, State),
-	From ! {ok, Response}, 
+	{Result, NewState} = do_info(HeaderDict, State),
+	From ! {ok, Result}, 
 	{noreply, NewState}.
     
 handle_call({info, HeaderDict}, _From, State) ->
-	{Response, NewState} = do_info(HeaderDict, State),
-	{reply, Response, NewState}.
+	{Result, NewState} = do_info(HeaderDict, State),
+	{reply, Result, NewState}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -87,7 +87,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 do_info(_HeaderDict, State) ->
-	Response = "{\"message\": \"It works!!!\"}",
+	Result = "{\"message\": \"It works!!!\"}",
 	NewState = State#state{},
-	{Response, NewState}.
+	{Result, NewState}.
 
