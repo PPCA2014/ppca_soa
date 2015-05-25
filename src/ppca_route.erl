@@ -38,6 +38,7 @@ init() ->
 	% Adicionado por Everton
 	ets:insert(TableRoute,{"/", "info_service:execute"}),	
 	ets:insert(TableRoute,{"/info", "info_service:execute"}),	
+	ets:insert(TableRoute,{"/favicon.ico", "favicon_service:execute"}),	
 	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
 	ets:insert(TableRoute,{"/catalogo", "ppca_route:lista_catalogo"}),
 
@@ -51,6 +52,7 @@ init() ->
 
 	% Inicializa os serviços
 	info_service:start(),
+	favicon_service:start(),
 	helloworld_service:start(),
 	
 	loop(TableRoute).

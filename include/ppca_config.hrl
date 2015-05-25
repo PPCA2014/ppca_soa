@@ -17,6 +17,7 @@
 
 -define(SERVER_NAME, <<"PPCA->SOA/1.0.0">>).
 
+-define(FAVICON_PATH, "./img/favicon.ico").
 
 % Define um rota
 -record(rota, {metodo="GET", url, async, funcao}).

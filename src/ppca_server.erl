@@ -166,8 +166,8 @@ format_header_value(_, Value) ->
 trata_request_map(RequestHandler, HeaderDict, PayloadMap) ->
 	RequestHandler ! {self(), {processa_request, {HeaderDict, PayloadMap}}},
 	receive
-		{ok, Resposta} ->
-			Response = encode_response(<<"200">>, Resposta),
+		{ok, Result} ->
+			Response = encode_response(<<"200">>, Result),
 			{ok, Response};
 		{error, servico_nao_encontrado, ErroInterno} ->
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404),
@@ -209,22 +209,30 @@ decode_payload(Payload) ->
 	end.
 
 %% @doc Gera o response para enviar para o cliente
-encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
+encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 	PayloadLength = list_to_binary(integer_to_list(size(Payload))),
 	Response = [<<"HTTP/1.1 ">>, Codigo, <<" OK">>, <<"\n">>,
 				<<"Server: ">>, ?SERVER_NAME, <<"\n">>,
-				<<"Content-Type: application/json">>, <<"\n">>,
+				<<"Content-Type: ">>, MimeType, <<"\n">>,
 				<<"Content-Length: ">>, PayloadLength, <<"\n\n">>, 
 	            Payload],
 	Response2 = iolist_to_binary(Response),
-	Response2;
+	Response2.
 
-%% @doc Gera o response para enviar para o cliente
+%% @doc Gera o response para o favicon
+encode_response(<<Codigo/binary>>, {favicon, Arquivo}) ->
+	encode_response(Codigo, Arquivo, <<"image/x-icon">>);
+
+%% @doc Gera o response para dados binário
+encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
+	encode_response(Codigo, Payload, <<"application/json">>);
+
+%% @doc Gera o response para dados Map (representação JSON em Erlang)
 encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
     Payload = ppca_util:json_encode(PayloadMap),
     encode_response(Codigo, Payload);
 
-%% @doc Gera o response para enviar para o cliente
+%% @doc Gera o response para dados texto
 encode_response(Codigo, PayloadStr) ->
     PayloadBin = iolist_to_binary(PayloadStr),
     encode_response(Codigo, PayloadBin).
