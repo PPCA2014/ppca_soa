@@ -247,10 +247,11 @@ parse_query_string([Querystring]) ->
 
 %% @doc Remove o último backslash da Url
 remove_ult_backslash_url("/") -> "/";
-remove_ult_backslash_url(Url) -> remove_ult_backslash_url2(lists:reverse(Url)).
-remove_ult_backslash_url2("/" ++ T) -> lists:reverse(T);
-remove_ult_backslash_url2(Url) -> lists:reverse(Url).
-
+remove_ult_backslash_url(Url) -> 
+	case lists:suffix("/", Url) of
+		true -> lists:droplast(Url);
+		false -> Url
+	end.
 
 print_requisicao_debug(HeaderDict, Payload) ->
 	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
