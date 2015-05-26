@@ -16,9 +16,13 @@
 
 -spec start(pos_integer()) -> void.
 start(Port) -> 
-	io:format("PPCA_SOA - Barramento SOA da Turma PPCA 2014~n"),
 	ppca_logger:start(),
+	ppca_logger:info_msg(?SERVER_NAME),
 	register(ppca_server, spawn(fun() -> ppca_server:init() end)),
+	ppca_info_service:start(),
+	ppca_favicon_service:start(),
+	ppca_catalogo_service:start(),
+	helloworld_service:start(),
 	start_listen(Port).
 
 

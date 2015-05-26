@@ -14,7 +14,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([init/0,lookup_route/2,execute/2, load_catalogo/0, lista_catalogo/2]).
+-export([init/0,lookup_route/2,execute/2]).
 -import(string, [sub_string/3]).
 
 -include("../include/http_messages.hrl").
@@ -31,16 +31,18 @@ init() ->
 	%% @todo Recuperar todas as rotas do serviço de persistencia e
 	%% e incluir no ets routes.
 	%% Substituir abaixo
+	rotas_servico(TableRoute),
+
 	ets:insert(TableRoute,{"/login","test_ppca_route:execute"}),
 	ets:insert(TableRoute,{"/route/login","ppca_route:execute"}),
 	ets:insert(TableRoute,{"/alunos","test_ppca_route:execute"}),
 
 	% Adicionado por Everton
-	ets:insert(TableRoute,{"/", "info_service:execute"}),	
-	ets:insert(TableRoute,{"/info", "info_service:execute"}),	
-	ets:insert(TableRoute,{"/favicon.ico", "favicon_service:execute"}),	
+	ets:insert(TableRoute,{"/", "ppca_info_service:execute"}),	
+	ets:insert(TableRoute,{"/info", "ppca_info_service:execute"}),	
+	ets:insert(TableRoute,{"/favicon.ico", "ppca_favicon_service:execute"}),	
 	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
-	ets:insert(TableRoute,{"/catalogo", "ppca_route:lista_catalogo"}),
+	ets:insert(TableRoute,{"/catalogo", "ppca_catalogo_service:lista_catalogo"}),
 
 
   	%%
@@ -49,12 +51,6 @@ init() ->
       ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
 	%% Fim
 
-
-	% Inicializa os serviços
-	info_service:start(),
-	favicon_service:start(),
-	helloworld_service:start(),
-	
 	loop(TableRoute).
 
 
@@ -141,18 +137,19 @@ execute(HeaderDict,From) ->
 	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
 	
 
-%% @doc Lê o catálogo do disco e retorna uma variável do tipo map
-load_catalogo() ->
-	{ok, Dados} = file:read_file("./conf/catalogo.json"),
-	{ok, Cat} = ppca_util:json_decode_as_map(Dados),
-	Cat.
-
-%% @doc Serviço que lista o catálogo no browser (URL: /catalogo)
-lista_catalogo(_HeaderDict, From) ->
-	Response = load_catalogo(),
-	From ! { ok, Response}.
 
 
-% Eliene, como acessar um campo
-%  maps:get(<<"querystring">>, Cat).
+%% @doc Preenche a tabela com as rotas de serviço disponíveis
+rotas_servico(TableRoute) ->
+	%ListaCatalogo = ppca_catalogo_service:get_catalogo(),
+	%lists:foreach(fun(S) -> add_rota_servico(S, TableRoute) end, ListaCatalogo),
+	ok.
+	
+add_rota_servico(Cat, TableRoute) ->
+	io:format("Rota \n").
+
+
+
+
+
 

@@ -1,6 +1,6 @@
 %% ---
-%%  PPCA_SOA
-%%  Publish and subscribe message queue
+%%  ppca_logger
+%%  Logger do barramento
 %%  Mestrado em Computação Aplicada - Universidade de Brasília
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
@@ -47,7 +47,7 @@
 
 start() -> % cria o processo e devolve o pid
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    io:format("ppca_logger iniciado.~n", []),
+    %io:format("ppca_logger iniciado.~n", []),
     Result.
  
 stop() ->
@@ -71,7 +71,7 @@ warn_msg(Msg, Params) ->
 	gen_server:call(?SERVER, {write_msg, warn, Msg, Params}). 
 
 info_msg(Msg) -> 
-	gen_server:call(?SERVER, {write_msg, info, Msg}). 
+	gen_server:call(?SERVER, {write_msg, info, Msg}).
 
 info_msg(Msg, Params) -> 
 	gen_server:call(?SERVER, {write_msg, info, Msg, Params}). 
@@ -112,7 +112,7 @@ handle_info(rotacao, State) ->
    {noreply, NewState}.
  
 terminate(_Reason, _State) ->
-    io:format("ppca_logger finalizado.~n"),
+    %io:format("ppca_logger finalizado.~n"),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -151,6 +151,10 @@ set_checkpoint_timeout(_State) ->
 set_rotacao_timeout() ->    
     Rotacao = get_rotacao_timeout_logger(),
 	erlang:send_after(Rotacao, self(), rotacao).
+    
+write_msg(Tipo, <<Msg/binary>>, State) ->
+	Msg1 = binary_to_list(Msg),
+    write_msg(Tipo, Msg1, State);
     
 write_msg(Tipo, Msg, State) ->
 	io:format("~s~n", [Msg]),

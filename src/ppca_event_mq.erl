@@ -37,7 +37,7 @@
 
 start() ->
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    io:format("ppca_event_mq iniciado.~n"),
+    ppca_logger:info_msg("ppca_event_mq iniciado."),
     Result.
  
 stop() ->
@@ -106,7 +106,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
  
 terminate(_Reason, _State) ->
-    io:format("ppca_event_mq finalizado.~n"),
+    ppca_logger:info_msg("ppca_event_mq finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
