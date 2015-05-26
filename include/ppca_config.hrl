@@ -11,16 +11,17 @@
 % Seta a porta default do barramento SOA
 -define(CONF_PORT, 2301).
 
-
 % Seta o tamanho máximo do payload do POST. Por default é 1M.
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
+% Nome do servidor
 -define(SERVER_NAME, <<"PPCA->SOA/1.0.0">>).
 
+% Local onde está o favicon
 -define(FAVICON_PATH, "./img/favicon.ico").
 
-% Define um rota
--record(rota, {metodo="GET", url, async, funcao}).
+% Local onde está o catálogo de serviços
+-define(CATALOGO_PATH, "./conf/catalogo.json").
 
 
 % Configurações para o logger do PPCA_SOA
