@@ -59,25 +59,25 @@ stop() ->
 %%====================================================================
  
 error_msg(Msg) -> 
-	gen_server:call(?SERVER, {write_msg, error, Msg}). 
+	gen_server:cast(?SERVER, {write_msg, error, Msg}). 
 
 error_msg(Msg, Params) -> 
-	gen_server:call(?SERVER, {write_msg, error, Msg, Params}). 
+	gen_server:cast(?SERVER, {write_msg, error, Msg, Params}). 
 
 warn_msg(Msg) -> 
-	gen_server:call(?SERVER, {write_msg, warn, Msg}). 
+	gen_server:cast(?SERVER, {write_msg, warn, Msg}). 
 
 warn_msg(Msg, Params) -> 
-	gen_server:call(?SERVER, {write_msg, warn, Msg, Params}). 
+	gen_server:cast(?SERVER, {write_msg, warn, Msg, Params}). 
 
 info_msg(Msg) -> 
-	gen_server:call(?SERVER, {write_msg, info, Msg}).
+	gen_server:cast(?SERVER, {write_msg, info, Msg}).
 
 info_msg(Msg, Params) -> 
-	gen_server:call(?SERVER, {write_msg, info, Msg, Params}). 
+	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
 
 sync() ->
-	gen_server:call(?SERVER, sync_buffer). 		
+	gen_server:cast(?SERVER, sync_buffer). 		
 
 
 
@@ -89,8 +89,20 @@ init([]) ->
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
-    {stop, normal, State}.
+    {stop, normal, State};
     
+handle_cast({write_msg, Tipo, Msg}, State) ->
+	NewState = write_msg(Tipo, Msg, State),
+	{noreply, NewState};
+
+handle_cast({write_msg, Tipo, Msg, Params}, State) ->
+	NewState = write_msg(Tipo, Msg, Params, State),
+	{noreply, NewState};
+
+handle_cast(sync_buffer, State) ->
+	NewState = sync_buffer(State),
+	{noreply, NewState}.
+
 handle_call({write_msg, Tipo, Msg}, _From, State) ->
 	NewState = write_msg(Tipo, Msg, State),
 	{reply, ok, NewState};
