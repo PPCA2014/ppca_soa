@@ -27,28 +27,28 @@
 %%								-> ok | {error, Reason::string()}.
 init() ->
 	ppca_logger:info_msg("ppca_rota iniciado."),
-	TableRoute=ets:new(routes, [ordered_set]),
+	TableRoute=dets:open_file(routes, [{type,set}]),
 	%% @todo Recuperar todas as rotas do serviço de persistencia e
 	%% e incluir no ets routes.
 	%% Substituir abaixo
 	rotas_servico(TableRoute),
 
-	ets:insert(TableRoute,{"/login","test_ppca_route:execute"}),
-	ets:insert(TableRoute,{"/route/login","ppca_route:execute"}),
-	ets:insert(TableRoute,{"/alunos","test_ppca_route:execute"}),
+	dets:insert(routes,{"/login","test_ppca_route:execute"}),
+	dets:insert(routes,{"/route/login","ppca_route:execute"}),
+	dets:insert(routes,{"/alunos","test_ppca_route:execute"}),
 
 	% Adicionado por Everton
-	ets:insert(TableRoute,{"/", "ppca_info_service:execute"}),	
-	ets:insert(TableRoute,{"/info", "ppca_info_service:execute"}),	
-	ets:insert(TableRoute,{"/favicon.ico", "ppca_favicon_service:execute"}),	
-	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
-	ets:insert(TableRoute,{"/catalogo", "ppca_catalogo_service:lista_catalogo"}),
+	dets:insert(routes,{"/", "ppca_info_service:execute"}),	
+	dets:insert(routes,{"/info", "ppca_info_service:execute"}),	
+	dets:insert(routes,{"/favicon.ico", "ppca_favicon_service:execute"}),	
+	dets:insert(routes,{"/hello_world", "helloworld_service:execute"}),
+	dets:insert(routes,{"/catalogo", "ppca_catalogo_service:lista_catalogo"}),
 
 
   	%%
       %% Rota abaixo para o autenticador inserida por Marçal
 	%%
-      ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
+      dets:insert(routes,{"/autentica","ppca_auth_user:autentica"}),
 	%% Fim
 
 	loop(TableRoute).
@@ -82,8 +82,8 @@ add_route(Payload,TableRoute,From) ->
 	 Key = getUrl(Payload),
 	 Value = getModuleFunction(Payload),
 	 ppca_logger:info_msg("---"++Key),
-	 ets:insert(TableRoute,{Key,Value}),
-	 Target = ets:lookup(TableRoute, Key),
+	 dets:insert(routes,{Key,Value}),
+	 Target = dets:lookup(routes, Key),
 	 ModuleFunction = element(2,lists:nth(1, Target)),
 	 io:format("~p~n", [ModuleFunction]),
 	 %% @todo Incluir rota de forma persistente em dets ou serviço de persistencia
@@ -92,20 +92,14 @@ add_route(Payload,TableRoute,From) ->
 %-spec remove_route(Url::string()) -> {route_deleted,ok,Url::string()} | {error, Reason::string()}.
 remove_route(Url,TableRoute,From) -> 
 	 UrlToRemove = string:sub_string(Url, string:len("/route")+1, string:len(Url)),
-	 ppca_logger:info_msg(UrlToRemove ++ " URL."),
-	 TargetA = ets:lookup(TableRoute, UrlToRemove),
-	 io:format("Antes exclusao ~p~n", [TargetA]),
-	 ets:delete(TableRoute, UrlToRemove),
-	 TargetD = ets:lookup(TableRoute, UrlToRemove),
-	 io:format("Depois exclusao ~p~n", [TargetD]),
-	  %% @todo Remover rota de forma persistente em dets ou serviço de persistencia
+	 dets:delete(routes, UrlToRemove),
 	 {route_deleted,ok,UrlToRemove,From}.	
 
 
 %-spec lookup_route(HeaderDict::dict, TableRoute::pid()) -> {service_found, Target:string()} | not_found.
 lookup_route(HeaderDict, TableRoute) ->
 	Url = dict:fetch("Url", HeaderDict),
-	Target = ets:lookup(TableRoute, Url),
+	Target = dets:lookup(routes, Url),
 	io:format("URL. ~p~n", [Target]),
 	if  Target == [] ->
             ErroInterno = io_lib:format(?MSG_SERVICO_NAO_ENCONTRADO, [Url]),
@@ -118,25 +112,29 @@ lookup_route(HeaderDict, TableRoute) ->
 
 
 update_route(Url,Payload,TableRoute,From) ->
-	Target = ets:lookup(TableRoute, Url),
+	Target = dets:lookup(routes, Url),
 	ModuleFunction = element(2,lists:nth(1, Target)),
-	ets:insert(TableRoute,{Url,getModuleFunction(Payload)}),
+	dets:insert(routes,{Url,getModuleFunction(Payload)}),
 	{route_updated,Url,ModuleFunction,From}.
 
 getUrl(Payload) ->
+			%IsJson = jsx:is_json(<<[Payload]>>),
+			%io:format("Se JSON:~p~n", [IsJson]),
+			%io:format("Se JSON:~p~n", [Payload]),
+			%ppca_logger:info_msg("---"++ IsJson ),
 			%{ok, Cat} = ppca_util:json_decode_as_map(Payload),
 			%Id=maps:get(<<"id">>, Cat),
 			%Id.
-"/login".
+            "/login".
 getModuleFunction(Payload) ->
 			"ppca_login:do_login".
 
 execute(HeaderDict,From) ->
 	Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	Id= Url,
-	Response= ppca_util:json_encode([{<<"id">>,Id}]),
-	%Response = "url "++ Url ++" roteada  ",
+	Target = dets:lookup(routes, Url),
+	ModuleFunction = element(2,lists:nth(1, Target)),
+	Response= ppca_util:json_encode([{<<"id">>,Url},{<<"servico">>,ModuleFunction}]),
 	From ! { ok, Response},
 	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
 	
