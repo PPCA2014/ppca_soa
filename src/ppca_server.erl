@@ -214,7 +214,9 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 	Response = [<<"HTTP/1.1 ">>, Codigo, <<" OK">>, <<"\n">>,
 				<<"Server: ">>, ?SERVER_NAME, <<"\n">>,
 				<<"Content-Type: ">>, MimeType, <<"\n">>,
-				<<"Content-Length: ">>, PayloadLength, <<"\n\n">>, 
+				<<"Content-Length: ">>, PayloadLength, <<"\n">>,
+				header_cache_control(MimeType),
+				<<"\n\n">>, 
 	            Payload],
 	Response2 = iolist_to_binary(Response),
 	Response2.
@@ -236,6 +238,12 @@ encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
 encode_response(Codigo, PayloadStr) ->
     PayloadBin = iolist_to_binary(PayloadStr),
     encode_response(Codigo, PayloadBin).
+
+header_cache_control(<<"image/x-icon">>) ->
+	<<"Cache-Control: max-age=290304000, public">>;
+
+header_cache_control(<<_MimeType/binary>>) ->
+	<<"Cache-Control: no-cache">>.
 
 is_fim_header("\r\n\r\n" ++ T, L) -> {lists:reverse(L), T};
 is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);

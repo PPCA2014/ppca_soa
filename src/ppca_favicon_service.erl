@@ -1,12 +1,12 @@
 %% ---
-%%  favicon_service
+%%  ppca_favicon_service
 %%  Mestrado em Computação Aplicada - Universidade de Brasília
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
 %%---
 
--module(favicon_service).
+-module(ppca_favicon_service).
 
 -behavior(gen_server). 
 
@@ -33,7 +33,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    io:format("favicon_service iniciado.~n", []),
+    ppca_logger:info_msg("ppca_favicon_service iniciado."),
     Result.
  
 stop() ->
@@ -54,19 +54,20 @@ execute(HeaderDict, From)	->
 %%====================================================================
  
 init([]) ->
-	NewState = get_favicon_from_disk(#state{}),
+	Arquivo = get_favicon_from_disk(),
+	NewState = #state{arquivo=Arquivo},
     {ok, NewState}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({favicon, HeaderDict, From}, State) ->
-	{Result, NewState} = get_favicon(HeaderDict, State),
+	{Result, NewState} = do_get_favicon(HeaderDict, State),
 	From ! {ok, Result}, 
 	{noreply, NewState}.
     
 handle_call({favicon, HeaderDict}, _From, State) ->
-	{Result, NewState} = get_favicon(HeaderDict, State),
+	{Result, NewState} = do_get_favicon(HeaderDict, State),
 	{reply, Result, NewState}.
 
 handle_info(State) ->
@@ -76,7 +77,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    io:format("favicon_service finalizado.~n"),
+    ppca_logger:info_msg("ppca_favicon_service finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -87,12 +88,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-get_favicon_from_disk(State)->
+get_favicon_from_disk()->
 	{ok, Arquivo} = file:read_file(?FAVICON_PATH),
-	NewState = State#state{arquivo=Arquivo},
-	NewState.
+	Arquivo.
     
-get_favicon(_HeaderDict, State) ->
+do_get_favicon(_HeaderDict, State) ->
 	Result = {favicon, State#state.arquivo},
 	{Result, State}.
 
