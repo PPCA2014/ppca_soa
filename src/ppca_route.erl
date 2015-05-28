@@ -56,19 +56,19 @@ init() ->
 
 loop(TableRoute) ->
 	receive
-		{  Client, {Router,From, "PUT",Url="/route"++ _, Payload,HeadrDict}} ->
+		{  Client, {From, "PUT",Url="/route"++ _, Payload,HeadrDict}} ->
 			Client ! {self(), update_route(Url,Payload,TableRoute,From)},
 			ppca_logger:info_msg("recebendo PUT.");
-		{  Client, {Method="GET",Url="/route"++ _, Payload,HeaderDict}}  ->
+		{  Client, {From,Method="GET",Url="/route"++ _, Payload,HeaderDict}}  ->
 			ppca_logger:info_msg("recebendo GET."),
 			Client ! lookup_route(HeaderDict, TableRoute);			
-		{  Client, {Router,From, "POST","/route"++ _, Payload,HeadrDict}} ->			
+		{  Client, {From,"POST","/route"++ _, Payload,HeadrDict}} ->			
 			Client ! {self(), add_route(Payload,TableRoute,From)},
 			ppca_logger:info_msg("recebendo POST.");
-		{  Client, {Router,From, "DELETE",Url="/route"++ _, Payload,HeadrDict}} ->
+		{  Client, {From, "DELETE",Url="/route"++ _, Payload,HeadrDict}} ->
 			Client ! {self(), remove_route(Url,TableRoute,From)},
 			ppca_logger:info_msg("recebendo DELETE.");
-		{ Client, {Method, Url, Payload,HeaderDict}} ->
+		{ Client, {From,Method, Url, Payload,HeaderDict}} ->
 			ppca_logger:info_msg("looking for service."),
 			Reply = lookup_route(HeaderDict, TableRoute),
 			Client ! Reply
@@ -81,6 +81,7 @@ loop(TableRoute) ->
 add_route(Payload,TableRoute,From) ->
 	 Key = getUrl(Payload),
 	 Value = getModuleFunction(Payload),
+	 ppca_logger:info_msg("---"++Key),
 	 ets:insert(TableRoute,{Key,Value}),
 	 Target = ets:lookup(TableRoute, Key),
 	 ModuleFunction = element(2,lists:nth(1, Target)),
@@ -123,16 +124,19 @@ update_route(Url,Payload,TableRoute,From) ->
 	{route_updated,Url,ModuleFunction,From}.
 
 getUrl(Payload) ->
-			"/login".
-
+			%{ok, Cat} = ppca_util:json_decode_as_map(Payload),
+			%Id=maps:get(<<"id">>, Cat),
+			%Id.
+"/login".
 getModuleFunction(Payload) ->
 			"ppca_login:do_login".
 
 execute(HeaderDict,From) ->
 	Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	%Response= ppca_util:json_encode([{<<"id">>,<<"Url">>}]),
-	Response = "url "++ Url ++" roteada  ",
+	Id= Url,
+	Response= ppca_util:json_encode([{<<"id">>,Id}]),
+	%Response = "url "++ Url ++" roteada  ",
 	From ! { ok, Response},
 	ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo ).
 	
