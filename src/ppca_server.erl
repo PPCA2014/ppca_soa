@@ -15,7 +15,7 @@
 -include("../include/ppca_config.hrl").
 -include("../include/http_messages.hrl").
 
--export([init/0, is_content_length_valido/1, remove_ult_backslash_url/1]).
+-export([init/0]).
 -import(string, [tokens/2]).
 -import(lists, [reverse/1, map/2, filter/2]).
 
