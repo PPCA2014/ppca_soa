@@ -36,7 +36,7 @@ start_listen(Port) ->
 	ppca_server ! { self(), {start_listen, Port}},
 	receive
 		ok -> ppca_logger:info_msg("Escutando na porta ~p", [Port]);
-		{error, Reason} -> ppca_logger:erro_msg("Não foi possível escutar na porta ~p. Motivo: ~p.", [Port, Reason])
+		{error, Reason} -> ppca_logger:error_msg("Não foi possível escutar na porta ~p. Motivo: ~p.", [Port, Reason])
 	end.
 
 
@@ -45,5 +45,5 @@ stop_listen(Port) ->
 	ppca_server ! { self(), {stop_listen, Port}},
 	receive
 		ok -> ppca_logger:info_msg("Porta ~p fechada.~n", [Port]);
-		{error, Reason} -> ppca_logger:erro_msg("Erro ao fechar porta ~p: Motivo: ~p.", [Port, Reason])
+		{error, Reason} -> ppca_logger:error_msg("Erro ao fechar porta ~p: Motivo: ~p.", [Port, Reason])
 	end.
