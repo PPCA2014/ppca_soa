@@ -15,7 +15,7 @@
 %% Server API
 -export([start/0, stop/0]).
 
-%% Cliente interno API
+%% Client
 -export([get_catalogo/0, lista_catalogo/2]).
 
 %% gen_server callbacks
@@ -63,10 +63,10 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({lista_catalogo, HeaderDict, From}, State) ->
+handle_cast({lista_catalogo, _HeaderDict, From}, State) ->
 	{Result, NewState} = do_lista_catalogo(State),
 	From ! {ok, Result}, 
-	{noreply, State}.
+	{noreply, NewState}.
     
 handle_call(lista_catalogo, _From, State) ->
 	{Result, NewState} = do_lista_catalogo(State),
