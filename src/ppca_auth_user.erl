@@ -8,23 +8,32 @@
 %%---
 -module(ppca_auth_user).
 
--export([autentica/2]).
+-export([autentica/3]).
 
 %%init() ->
 	%% Ao iniciar o modulo, zera a lista de sessoes ativas.     	
       %%loop().
 
 %%
-%% O modulo autentica recebe na chamada um usuario e senha e faz a validacao
+%% O modulo autentica e chamado por ppca_request:executa_servico
+%% No payload vem dois pares de chave/valor: "user" e "pass"
 %%
-autentica(HeaderDict,From) ->
+autentica(HeaderDict,From,Payload) ->
 	%% Recupera o metodo da chamada
 	Metodo = dict:fetch("Metodo", HeaderDict),
 	%% So aceita chamadas com metodo POST
 	if Metodo == "POST" ->
-			Query = dict:fetch("Query", HeaderDict),
+                  %% Teste de tamanho do Payload
+                  PayloadLength = size(Payload),
+                  io:format("To na area !!!~n", []),
+                  io:format("Tamanho: " ++ PayloadLength ++ "~n", []),
+   	            %% Separa a chave "user" 
+                  io:format("To na area !!!~n", []),
+                  {"user", Key} = lists:keyfind("user",1,json:parse(Payload)),
+                  io:format("To na area !!!~n", []),
+                  Response = "teste " ++ Metodo ++ " user: " ++ Key ++"~n",
+			%Query = dict:fetch("Query", HeaderDict),
 			%Response= ppca_util:json_encode([{<<"id">>,<<"Url">>}]),
-			Response = "Query "++ Query ++" Autenticador!  ",
 			From ! { ok, Response}
 			%ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo )
 	end.
