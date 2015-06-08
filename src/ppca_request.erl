@@ -29,14 +29,8 @@ loop() ->
 processa_request(From, HeaderDict, Payload) ->
 	Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	ppca_route ! {self(), {From,Metodo, Url, Payload, HeaderDict}},
+	ppca_route ! {self(), {From, Metodo, Url, Payload, HeaderDict}},
 	receive
-		{_From1, {route_deleted, ok, UrlToRemove, From}}  -> 
-			Response = "serviço | " ++ UrlToRemove ++" | excluido~n",
-			From ! { ok, Response};
-		{_From1, {route_added, ok, From} } -> 
-			Response = "serviço adicionado~n",
-			From ! { ok, Response};
 		{ok, Target}  when Metodo == "GET"-> 
 			processa_servico(Target, From, [HeaderDict, From]);
 		{ok, Target}  when Metodo == "POST"-> 
@@ -46,13 +40,7 @@ processa_request(From, HeaderDict, Payload) ->
 		{ok, Target}  when Metodo == "DELETE"-> 
 			processa_servico(Target, From, [HeaderDict, From]);
 		{error, servico_nao_encontrado, ErroInterno} -> 
-			From ! {error, servico_nao_encontrado, ErroInterno};
-		{_From1, {route_updated, Url, ModuleFunction, From}}  -> 
-			Response = "teste passou - rota "++ " atualizada " "para " ++ ModuleFunction ++"~n",
-			From ! { ok, Response};
-		{_From1, {route_normal, _Method, Url}}  -> 
-			Response = "Hello" ,
-			From ! { ok, Response}
+			From ! {error, servico_nao_encontrado, ErroInterno}
 	end.
 
 %% @doc Processa o serviço solicitado
@@ -63,12 +51,27 @@ processa_servico(Target, From, Params) ->
 	end.
 
 %% @doc Executa o serviço de forma assíncrona invocando o módulo correto
+executa_servico(Target, Params) when is_map(Target) ->
+	Module = ppca_catalogo:get_module(Target),
+	Function = ppca_catalogo:get_function(Target),
+	executa_servico_registrado(Module, Function, Params);
+
+%% @doc Executa o serviço de forma assíncrona invocando o módulo correto
 executa_servico(Target, Params) ->
 	[NomeModule, NomeFunction] = string:tokens(Target, ":"),
 	Module = list_to_atom(NomeModule),
 	Function = list_to_atom(NomeFunction),
+	executa_servico_registrado(Module, Function, Params).
+	
+executa_servico_registrado(Module, Function, Params) ->
 	try
-		apply(Module, Function, Params),
+		case whereis(Module) of
+			undefined -> 
+				Module:start(),
+				apply(Module, Function, Params);
+			Pid -> 
+				apply(Module, Function, Params)
+		end,
 		em_andamento
 	catch
 		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
