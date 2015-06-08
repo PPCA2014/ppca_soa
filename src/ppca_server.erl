@@ -4,11 +4,7 @@
 %%  Mestrado em Computação Aplicada - Universidade de Brasília
 %%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
-%%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%          Eliene do Carmo Vieira	 (elienev@gmail.com) 
-%%          Celson Junior			 (celson.jr@gmail.com)
-%%          Raphael Magalhães Hoed	 (raphael.hoed@gmail.com)
-%%          Felipe Fonseca			 (fellipe.alves@gmail.com)
+%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
 %%---
 -module(ppca_server).
 
@@ -232,6 +228,11 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 %% @doc Gera o response para dados Map (representação JSON em Erlang)
 encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
     Payload = ppca_util:json_encode(PayloadMap),
+    encode_response(Codigo, Payload);
+
+%% @doc Gera o response para dados list (representação JSON em Erlang)
+encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
+    Payload = ppca_util:json_encode(PayloadList),
     encode_response(Codigo, Payload);
 
 %% @doc Gera o response para dados texto
