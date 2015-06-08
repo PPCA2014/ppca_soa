@@ -6,7 +6,6 @@
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%  Alunos:	   Drausio Gomes dos Santos (drausiogs@gmail.com)
 %%             Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%             Eliene do Carmo Vieira	(elienev@gmail.com) 
 %%---
 
 -module(ppca_route).
@@ -28,9 +27,6 @@
 init() ->
 	ppca_logger:info_msg("ppca_rota iniciado."),
 	TableRoute = ets:new(routes, [ordered_set]),
-	%% @todo Recuperar todas as rotas do serviço de persistencia e
-	%% e incluir no ets routes.
-	%% Substituir abaixo
 	rotas_servico(TableRoute),
 
 	ets:insert(TableRoute,{"/login","test_ppca_route:execute"}),
@@ -41,7 +37,6 @@ init() ->
 	ets:insert(TableRoute,{"/", "ppca_info_service:execute"}),	
 	ets:insert(TableRoute,{"/info", "ppca_info_service:execute"}),	
 	ets:insert(TableRoute,{"/favicon.ico", "ppca_favicon_service:execute"}),	
-	ets:insert(TableRoute,{"/hello_world", "helloworld_service:execute"}),
 	ets:insert(TableRoute,{"/catalogo", "ppca_catalogo_service:lista_catalogo"}),
 
 
@@ -69,7 +64,6 @@ loop(TableRoute) ->
 			Client ! {self(), remove_route(Url, TableRoute, From)},
 			ppca_logger:info_msg("recebendo DELETE.");
 		{ Client, {_From, _Method, _Url, _Payload, HeaderDict}} ->
-			ppca_logger:info_msg("looking for service."),
 			Reply = lookup_route(HeaderDict, TableRoute),
 			Client ! Reply
 	end,
@@ -99,17 +93,19 @@ remove_route(Url,TableRoute,From) ->
 %-spec lookup_route(HeaderDict::dict, TableRoute::pid()) -> {service_found, Target:string()} | not_found.
 lookup_route(HeaderDict, TableRoute) ->
 	Url = dict:fetch("Url", HeaderDict),
-	Target = ets:lookup(TableRoute, Url),
-	io:format("URL. ~p~n", [Target]),
-	if  Target == [] ->
-            ErroInterno = io_lib:format(?MSG_SERVICO_NAO_ENCONTRADO, [Url]),
-            {error, servico_nao_encontrado, ErroInterno};
-        true -> 
-			ModuleFunction = element(2, lists:nth(1, Target)),
-			{ok, ModuleFunction}
-	end.
-	
+	Service = ets:lookup(TableRoute, Url),
+	lookup_route_target(Service, Url).
 
+lookup_route_target([], Url) ->
+	ErroInterno = io_lib:format(?MSG_SERVICO_NAO_ENCONTRADO, [Url]),
+	{error, servico_nao_encontrado, ErroInterno};
+
+lookup_route_target(Service, _Url) when is_map(Service) ->
+	{ok, Service};
+
+lookup_route_target(Service, _Url) ->
+	ModuleFunction = element(2, lists:nth(1, Service)),
+	{ok, ModuleFunction}.
 
 update_route(Url,Payload,TableRoute,From) ->
 	Target = ets:lookup(TableRoute, Url),
@@ -131,14 +127,20 @@ getModuleFunction(_Payload) ->
 
 
 %% @doc Preenche a tabela com as rotas de serviço disponíveis
-rotas_servico(_TableRoute) ->
-	%Catalogo = ppca_catalogo_service:get_catalogo(),
-	%io:format("aqui1\n"),
-	%maps:foreach(fun(S) -> add_rota_servico(S, TableRoute) end, Catalogo),
+rotas_servico(TableRoute) ->
+	Cat = ppca_catalogo_service:get_catalogo(),
+	%ppca_logger:info_msg("Iniciando tabela de rotas:"),
+	lists:foreach(fun(S) -> add_rota_servico(S, TableRoute) end, Cat),
 	ok.
 	
-%add_rota_servico(S, TableRoute) ->
-%	io:format("Rota \n").
+add_rota_servico(S, TableRoute) ->
+	Url = ppca_catalogo:get_url(S),
+	[Module, Function] = ppca_catalogo:get_service(S),
+	Rota = #{"url" => Url,
+			 "module" => Module,
+			 "function" => Function},
+	ets:insert(TableRoute, {Url, Rota}).
+	%ppca_logger:info_msg("\trota ~p ok.", [Url]).	
 
 
 
