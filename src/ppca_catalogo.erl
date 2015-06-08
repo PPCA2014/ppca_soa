@@ -23,44 +23,68 @@
 		 get_querystring/2,
 		 get_querystring_comment/1,
 		 get_querystring_name/1,
-		 get_querystring_type/1]).
+		 get_querystring_type/1,
+		 get_service/1,
+		 get_module/1,
+		 get_function/1]).
+
+get_value(Key, Cat) when is_binary(Key)->
+	V1 = maps:get(Key, Cat),
+	V2 = binary_to_list(V1),
+	V2;
+
+get_value(Key, Cat) ->
+	maps:get(Key, Cat).
 
 get_comment(Cat) ->	
-	maps:get(<<"comment">>, Cat).
+	get_value(<<"comment">>, Cat).
 	
 get_owner(Cat) ->	
-	maps:get(<<"owner">>, Cat).
+	get_value(<<"owner">>, Cat).
 	
 get_version(Cat) ->	
-	maps:get(<<"version">>, Cat).
+	get_value(<<"version">>, Cat).
 	
 get_url(Cat) ->	
-	maps:get(<<"url">>, Cat).
+	get_value(<<"url">>, Cat).
+
+get_service(Cat) ->	
+	Service = get_value(<<"service">>, Cat),
+	[NomeModule, NomeFunction] = string:tokens(Service, ":"),
+	Module = list_to_atom(NomeModule),
+	Function = list_to_atom(NomeFunction),
+	[Module, Function].
+
+get_module(Cat) -> 
+	get_value("module", Cat).
+
+get_function(Cat) -> 
+	get_value("function", Cat).
 	
 get_async(Cat) ->	
-	maps:get(<<"async">>, Cat).
+	get_value(<<"async">>, Cat).
 	
 get_url_callback(Cat) ->	
-	maps:get(<<"url_callback">>, Cat).
+	get_value(<<"url_callback">>, Cat).
 	
 get_type(Cat) ->	
-	maps:get(<<"type">>, Cat).
+	get_value(<<"type">>, Cat).
 	
 get_querystring(Cat) ->	
-	maps:get(<<"querystring">>, Cat).
+	get_value(<<"querystring">>, Cat).
 	
 get_querystring(Cat, <<QueryName/binary>>) ->	
 	[Query] = [Q || Q <- get_querystring(Cat), get_querystring_name(Q) == QueryName],
 	Query.
 	
 get_querystring_comment(Query) ->
-	maps:get(<<"comment">>, Query).
+	get_value(<<"comment">>, Query).
 	
 get_querystring_name(Query) ->
-	maps:get(<<"name">>, Query).
+	get_value(<<"name">>, Query).
 	
 get_querystring_type(Query) ->
-	maps:get(<<"type">>, Query).
+	get_value(<<"type">>, Query).
 	
 
 	
