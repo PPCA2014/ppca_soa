@@ -1,29 +1,41 @@
-{
-    "comment": "Listagem dos formandos por ano/semestre",
-    "owner": "SIGRA",
-    "version": "1",
-    "url": "/aluno/lista_formandos/tipo/",
-    "async": "true",
-    "url_callback": "/imprime_retorno_tela",
-    "type": "GET",
-    "params": [
-        {
-            "tipo": [
-                "sintetico",
-                "analitico"
-            ]
-        }
-    ],
-    "querystring": [
-        {
-            "name": "ano",
-            "type": "year",
-            "comment": "Ano de pesquisa"
-        },
-        {
-            "name": "semestre",
-            "type": "int",
-            "comment": "Semestre de pesquisa"
-        }
-    ]
-}
+[
+	{
+		"comment": "Retorna Ola Mundo!",
+		"owner": "Everton Agilar",
+		"version": "1",
+		"service" : "helloworld_service:execute",
+		"url": "/hello_world",
+		"async": "false",
+		"type": "GET"
+	},
+	{
+		"comment": "Listagem dos formandos por ano/semestre",
+		"owner": "SIGRA",
+		"version": "1",
+		"service" : "hello_world_service:execute",
+		"url": "/aluno/lista_formandos/tipo/",
+		"async": "true",
+		"url_callback": "/imprime_retorno_tela",
+		"type": "GET",
+		"params": [
+			{
+				"tipo": [
+					"sintetico",
+					"analitico"
+				]
+			}
+		],
+		"querystring": [
+			{
+				"name": "ano",
+				"type": "year",
+				"comment": "Ano de pesquisa"
+			},
+			{
+				"name": "semestre",
+				"type": "int",
+				"comment": "Semestre de pesquisa"
+			}
+		]
+	}
+]
