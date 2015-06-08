@@ -22,9 +22,8 @@ start(Port) ->
 	ppca_info_service:start(),
 	ppca_favicon_service:start(),
 	ppca_catalogo_service:start(),
-	helloworld_service:start(),
-	start_listen(Port).
-
+	start_listen(Port),
+	ppca_logger:info_msg("Aguardando requisições.").
 
 -spec start() -> void.
 start() ->
@@ -35,7 +34,7 @@ start() ->
 start_listen(Port) ->
 	ppca_server ! { self(), {start_listen, Port}},
 	receive
-		ok -> ppca_logger:info_msg("Escutando na porta ~p", [Port]);
+		ok -> ppca_logger:info_msg("Escutando na porta ~p.", [Port]);
 		{error, Reason} -> ppca_logger:error_msg("Não foi possível escutar na porta ~p. Motivo: ~p.", [Port, Reason])
 	end.
 
@@ -44,6 +43,6 @@ start_listen(Port) ->
 stop_listen(Port) ->
 	ppca_server ! { self(), {stop_listen, Port}},
 	receive
-		ok -> ppca_logger:info_msg("Porta ~p fechada.~n", [Port]);
+		ok -> ppca_logger:info_msg("Porta ~p fechada.", [Port]);
 		{error, Reason} -> ppca_logger:error_msg("Erro ao fechar porta ~p: Motivo: ~p.", [Port, Reason])
 	end.
