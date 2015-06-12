@@ -18,7 +18,7 @@
 start(Port) -> 
 	ppca_logger:start(),
 	ppca_logger:info_msg(?SERVER_NAME),
-	register(ppca_server, spawn(fun() -> ppca_server:init() end)),
+	ppca_server:start(),
 	ppca_info_service:start(),
 	ppca_favicon_service:start(),
 	ppca_catalogo_service:start(),
@@ -32,7 +32,7 @@ start() ->
 
 -spec start_listen(Port::pos_integer()) -> ok | {error, Reason::string()}.
 start_listen(Port) ->
-	ppca_server ! { self(), {start_listen, Port}},
+	ppca_server:start_listen(Port, self()),
 	receive
 		ok -> ppca_logger:info_msg("Escutando na porta ~p.", [Port]);
 		{error, Reason} -> ppca_logger:error_msg("Não foi possível escutar na porta ~p. Motivo: ~p.", [Port, Reason])
@@ -41,7 +41,7 @@ start_listen(Port) ->
 
 -spec stop_listen(Port::pos_integer()) -> ok | {error, Reason::string()}.
 stop_listen(Port) ->
-	ppca_server ! { self(), {stop_listen, Port}},
+	ppca_server:stop_listen(Port, self()),
 	receive
 		ok -> ppca_logger:info_msg("Porta ~p fechada.", [Port]);
 		{error, Reason} -> ppca_logger:error_msg("Erro ao fechar porta ~p: Motivo: ~p.", [Port, Reason])

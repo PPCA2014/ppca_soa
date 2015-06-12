@@ -8,43 +8,114 @@
 %%---
 -module(ppca_server).
 
+-behavior(gen_server). 
+
 -include("../include/ppca_config.hrl").
 -include("../include/http_messages.hrl").
 
--export([init/0]).
+%% Server API
+-export([start/0, stop/0]).
+
+%% Client API
+-export([start_listen/2, stop_listen/2]).
+
+%% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
+
 -import(string, [tokens/2]).
 -import(lists, [reverse/1, map/2, filter/2]).
 
-% Record o estado do servidor
+% estado do servidor
 -record(state, {listener=[]}).
 
-init() ->
-	ppca_logger:info_msg("ppca_server iniciado."),
-	loop(#state{}).
+-define(SERVER, ?MODULE).
 
-loop(State) ->
-	receive
-		{ From, { start_listen, Port } } ->
- 			case start_server(Port) of
-				{ok, Listen} ->
-					From ! ok,
-					State1 = State#state{listener=[{Listen, Port}|State#state.listener]},
-					loop(State1);
-				{error, Reason} ->
-					From ! {error, Reason}
-			end;
-		{From, {stop_listen, Port}} ->				
-			case [ S || {S,P} <- State#state.listener, P == Port] of
-				[Listen|_] ->
-					stop_server(Listen),
-					State1 = State#state{listener=lists:delete({Listen, Port}, State#state.listener)},
-					loop(State1),
-					From ! ok;
-				_ -> 
-					From ! {error, enolisten}
-			end
+%%====================================================================
+%% Server API
+%%====================================================================
+
+start() -> 
+    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
+    ppca_logger:info_msg("ppca_server iniciado."),
+    Result.
+ 
+stop() ->
+    gen_server:cast(?SERVER, shutdown).
+ 
+
+%%====================================================================
+%% Server API
+%%====================================================================
+ 
+start_listen(Port, From) ->
+	gen_server:cast(?SERVER, {start_listen, Port, From}).
+
+stop_listen(Port, From) ->
+	gen_server:cast(?SERVER, {stop_listen, Port, From}).
+	
+ 
+%%====================================================================
+%% gen_server callbacks
+%%====================================================================
+ 
+init([]) ->
+    {ok, #state{}}. 
+    
+handle_cast(shutdown, State) ->
+    {stop, normal, State};
+
+handle_cast({start_listen, Port, From}, State) ->
+	{Reply, NewState} = do_start_listen(Port, State),
+	From ! Reply, 
+	{noreply, NewState};
+    
+handle_cast({stop_listen, Port, From}, State) ->
+	{Reply, NewState} = do_stop_listen(Port, State),
+	From ! Reply, 
+	{noreply, NewState}.
+
+handle_call({start_listen, Port}, _From, State) ->
+	{Reply, NewState} = do_start_listen(Port, State),
+	{reply, Reply, NewState}.
+
+handle_info(State) ->
+   {noreply, State}.
+
+handle_info(_Msg, State) ->
+   {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ppca_logger:info_msg("ppca_server finalizado."),
+    ok.
+ 
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+	
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+do_start_listen(Port, State) ->
+	case start_server(Port) of
+		{ok, Listen} ->
+			NewState = State#state{listener=[{Listen, Port}|State#state.listener]},
+			Reply = {ok, NewState};
+		{error, Reason} ->
+			Reply = {{error, Reason}, State}
 	end,
-	loop(State).
+	Reply.
+
+do_stop_listen(Port, State) ->
+	case [ S || {S,P} <- State#state.listener, P == Port] of
+		[Listen|_] ->
+			stop_server(Listen),
+			NewState = State#state{listener=lists:delete({Listen, Port}, State#state.listener)},
+			Reply = {ok, NewState};
+		_ -> 
+			Reply = {{error, enolisten}, State}
+	end,
+	Reply.
 
 start_server(Port) ->
 	% Usando a operação gen_tcp:listen do OTP, informando a porta 
