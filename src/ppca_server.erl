@@ -137,20 +137,21 @@ stop_server(Listen) ->
 
 aceita_conexoes(Listen, RequestHandler) ->
 	case gen_tcp:accept(Listen) of
-		{ok, Socket} -> 
-			spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
-			inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
-			case get_request(Socket, []) of
-				{ok, HeaderDict, Payload} ->
-					Response = trata_request(RequestHandler, HeaderDict, Payload),
-					gen_tcp:send(Socket, [Response]);
-				tcp_closed ->
-					ok
-			end;
-		{error, closed} -> 
-			ok
+		{ok, Socket} -> processa_conexao(Listen, RequestHandler, Socket);
+		{error, closed} -> ok
 	end.
 	
+processa_conexao(Listen, RequestHandler, Socket) -> 
+  spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+  inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
+  case get_request(Socket, []) of
+     {ok, HeaderDict, Payload} ->
+	Response = trata_request(RequestHandler, HeaderDict, Payload),
+	gen_tcp:send(Socket, [Response]);
+     tcp_closed -> ok
+  end.
+
+
 get_request(Socket, L) ->
     receive
 		{tcp, Socket, Bin} -> 

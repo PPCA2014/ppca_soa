@@ -41,9 +41,9 @@ init() ->
 
 
   	%%
-      %% Rota abaixo para o autenticador inserida por Marçal
+        %% Rota abaixo para o autenticador inserida por Marçal
 	%%
-      ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
+        ets:insert(TableRoute,{"/autentica","ppca_auth_user:autentica"}),
 	%% Fim
 
 	loop(TableRoute).

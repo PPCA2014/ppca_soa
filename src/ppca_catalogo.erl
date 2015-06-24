@@ -85,10 +85,3 @@ get_querystring_name(Query) ->
 	
 get_querystring_type(Query) ->
 	get_value(<<"type">>, Query).
-	
-
-	
-	
-	
-
-
