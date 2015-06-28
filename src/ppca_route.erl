@@ -39,6 +39,7 @@ init() ->
 	ets:insert(TableRoute,{"/favicon.ico", "ppca_favicon_service:execute"}),	
 	ets:insert(TableRoute,{"/catalogo", "ppca_catalogo_service:lista_catalogo"}),
 
+	ets:insert(TableRoute,{"/logs/server.log", "static_file_service:execute"}),
 
   	%%
       %% Rota abaixo para o autenticador inserida por Marçal
@@ -134,11 +135,11 @@ rotas_servico(TableRoute) ->
 	ok.
 	
 add_rota_servico(S, TableRoute) ->
-	Url = ppca_catalogo:get_url(S),
-	[Module, Function] = ppca_catalogo:get_service(S),
-	Rota = #{"url" => Url,
-			 "module" => Module,
-			 "function" => Function},
+	Url = ppca_catalogo:get_value(<<"url">>, S),
+	{Module, Function} = ppca_catalogo:get_value(<<"service">>, S),
+	Rota = #{<<"url">> => Url,
+			 <<"module">> => Module,
+			 <<"function">> => Function},
 	ets:insert(TableRoute, {Url, Rota}).
 	%ppca_logger:info_msg("\trota ~p ok.", [Url]).	
 

@@ -23,6 +23,9 @@
 % Local onde está o catálogo de serviços
 -define(CATALOGO_PATH, "./conf/catalogo.json").
 
+% Local onde está o catálogo de serviços
+-define(STATIC_FILE_PATH, "./").
+
 
 % Configurações para o logger do PPCA_SOA
 -record(logger, {%% nome do arquivo do logger

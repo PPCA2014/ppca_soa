@@ -9,5 +9,5 @@
 # ---
 
 #erl  -pa ./ebin -eval "ppca_soa:start(2301)" -boot start_sasl -config elog
-erl -pa ebin deps/jsx/ebin -eval "ppca_soa:start(2301)"
+erl -pa ebin deps/jsx/ebin -eval "ppca_soa:start()"
 	

@@ -22,6 +22,7 @@ start(Port) ->
 	ppca_info_service:start(),
 	ppca_favicon_service:start(),
 	ppca_catalogo_service:start(),
+	static_file_service:start(),
 	start_listen(Port),
 	ppca_logger:info_msg("Aguardando requisições.").
 

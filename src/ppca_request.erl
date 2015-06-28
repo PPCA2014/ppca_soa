@@ -52,8 +52,8 @@ processa_servico(Target, From, Params) ->
 
 %% @doc Executa o serviço de forma assíncrona invocando o módulo correto
 executa_servico(Target, Params) when is_map(Target) ->
-	Module = ppca_catalogo:get_module(Target),
-	Function = ppca_catalogo:get_function(Target),
+	Module = ppca_catalogo:get_value(<<"module">>, Target),
+	Function = ppca_catalogo:get_value(<<"function">>, Target),
 	executa_servico_registrado(Module, Function, Params);
 
 %% @doc Executa o serviço de forma assíncrona invocando o módulo correto

@@ -12,80 +12,85 @@
 
 -include("../include/ppca_config.hrl").
 
--export([get_comment/1, 
-		 get_owner/1,
-		 get_version/1, 
-		 get_url/1, 
-		 get_async/1, 
-		 get_url_callback/1, 
-		 get_type/1,
-		 get_querystring/1,
-		 get_querystring/2,
-		 get_querystring_comment/1,
-		 get_querystring_name/1,
-		 get_querystring_type/1,
-		 get_service/1,
-		 get_module/1,
-		 get_function/1]).
+-export([lookup_re/2, 
+		 new_rota/3, 
+		 new_rota_re/3, 
+		 get_querystring/2, 
+		 get_value/2, test/0]).
 
-get_value(Key, Cat) when is_binary(Key)->
-	V1 = maps:get(Key, Cat),
-	V2 = binary_to_list(V1),
-	V2;
-
-get_value(Key, Cat) ->
-	maps:get(Key, Cat).
-
-get_comment(Cat) ->	
-	get_value(<<"comment">>, Cat).
-	
-get_owner(Cat) ->	
-	get_value(<<"owner">>, Cat).
-	
-get_version(Cat) ->	
-	get_value(<<"version">>, Cat).
-	
-get_url(Cat) ->	
-	get_value(<<"url">>, Cat).
-
-get_service(Cat) ->	
-	Service = get_value(<<"service">>, Cat),
+get_value(<<"service">>, Cat) ->
+	Service = binary_to_list(maps:get(<<"service">>, Cat)),
 	[NomeModule, NomeFunction] = string:tokens(Service, ":"),
 	Module = list_to_atom(NomeModule),
 	Function = list_to_atom(NomeFunction),
-	[Module, Function].
+	{Module, Function};
 
-get_module(Cat) -> 
-	get_value("module", Cat).
+get_value(Key, Cat) ->
+	V1 = maps:get(Key, Cat),
+	case is_binary(V1) of
+		true ->	binary_to_list(V1);
+		false -> V1
+	end.
 
-get_function(Cat) -> 
-	get_value("function", Cat).
-	
-get_async(Cat) ->	
-	get_value(<<"async">>, Cat).
-	
-get_url_callback(Cat) ->	
-	get_value(<<"url_callback">>, Cat).
-	
-get_type(Cat) ->	
-	get_value(<<"type">>, Cat).
-	
-get_querystring(Cat) ->	
-	get_value(<<"querystring">>, Cat).
-	
 get_querystring(Cat, <<QueryName/binary>>) ->	
-	[Query] = [Q || Q <- get_querystring(Cat), get_querystring_name(Q) == QueryName],
+	[Query] = [Q || Q <- get_value(<<"querystring">>, Cat), get_value(<<"comment">>, Q) == QueryName],
 	Query.
 	
-get_querystring_comment(Query) ->
-	get_value(<<"comment">>, Query).
+lookup(Url, Table) ->
+	case maps:find(Url, Table) of
+		{ok, Servico} -> {ok, Servico};
+		error -> notfound
+	end.
+
+lookup_re(_Url, []) ->
+	notfound;
+
+lookup_re(Url, [H|T]) ->
+	RE = maps:get(url_re_compiled, H),
+	case re:run(Url, RE, [{capture,all_names,binary}]) of
+		match -> {ok, H, []};
+		{match, Params} -> 
+			{namelist, ParamNames} = re:inspect(RE, namelist),
+			ParamsMap = lists:zip(ParamNames, Params),
+			{ok, H, ParamsMap};
+		nomatch -> lookup_re(Url, T);
+		{error, _ErrType} -> nofound
+	end.
+
+new_rota_re(Url, Module, Function) ->
+	{ok, Url_re_compiled} = re:compile(Url),
+	Rota = #{url => Url,
+			 module => Module,
+			 function => Function,
+			 url_re_compiled => Url_re_compiled},
+	Rota.
+
+new_rota(Url, Module, Function) ->
+	Rota = #{url => Url,
+			 module => Module,
+			 function => Function},
+	Rota.
+
+test() ->
+	%%  {T1, T2, R1, R2, R3} = rota_table:test().
+
+	R1 = new_rota_re("^/aluno/lista_formandos/(?P<tipo>(sintetico|analitico))$", aluno_service_report, function),
+	R2 = new_rota_re("^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", static_file_service, function),
+	R4 = new_rota_re("^/portal/", aluno_service_report, function),
 	
-get_querystring_name(Query) ->
-	get_value(<<"name">>, Query).
+	R3 = new_rota("/log/server.log", static_file_service, function),
 	
-get_querystring_type(Query) ->
-	get_value(<<"type">>, Query).
 	
+	T1 = [R1, R2, R4],
+	T2 = maps:from_list([{"/log/server.log", R3}]),
+	
+	io:format("\n\n"),
+	
+	lookup_re("/aluno/lista_formandos/tipo", T1),
+	lookup_re("/portal/index.html", T1),
+	lookup("/logs/server.log", T2),
+
+	{T1, T2, R1, R2, R3}.
 
 	
 	

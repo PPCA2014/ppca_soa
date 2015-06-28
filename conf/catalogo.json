@@ -8,6 +8,17 @@
 		"async": "false",
 		"type": "GET"
 	},
+
+	{
+		"comment": "Portal",
+		"owner": "Everton Agilar",
+		"version": "1",
+		"service" : "static_file_service:execute",
+		"url": "^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$",
+		"async": "false",
+		"type": "GET"
+	},
+
 	{
 		"comment": "Listagem dos formandos por ano/semestre",
 		"owner": "SIGRA",
