@@ -40,6 +40,12 @@ init() ->
 	ets:insert(TableRoute,{"/catalogo", "ppca_catalogo_service:lista_catalogo"}),
 
 	ets:insert(TableRoute,{"/logs/server.log", "static_file_service:execute"}),
+    
+    %% serviço do portal %
+    ets:insert(TableRoute,{"/portal/login.html", "static_file_service:execute"}),
+    ets:insert(TableRoute,{"/portal/static/css/fpc_concat.css", "static_file_service:execute"}),
+    ets:insert(TableRoute,{"/portal/static/css/fpc_concat.js", "static_file_service:execute"}),
+    %%
 
   	%%
       %% Rota abaixo para o autenticador inserida por Marçal

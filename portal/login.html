@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="pt-Br">
+<head>
+<meta charset="UTF-8">
+<title>Trabaho final para a monografia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Acesso">
+<meta name="author" content="Everton de Vargas Agilar">
+<link rel="stylesheet" href="static/css/fpc_concat.css">
+
+
+
+</head>
+<body>
+	<!-- Fixed navbar -->
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a id="nome_sistema" class="navbar-brand" href="#">
+             <strong>
+                Eliot
+             </strong>
+          </a>
+        </div>
+        <div id="fpc_menu" class="navbar-collapse collapse">
+          
+
+    <ul id="barra_nav" class="nav navbar-nav">
+      <li class="active"><a href="index.html">Autenticar</a></li>
+    </ul>
+
+
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="index.html"><span class="glyphicon glyphicon-home"></span> Dashboard</a></li>
+			<li><a href="fpc.views.fpc_logout"><span class="glyphicon glyphicon-off"></span> Logout</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+    <div id="painel_conteudo" class="container">
+    
+
+      <form id="f_login" class="form-signin">
+      	<input type='hidden' name='csrfmiddlewaretoken' value='Y43XZFrAMtm8Zy7tHqlSSe3R7fslAMwx' />
+        <h3>Autenticação</h3>
+	 	<div class="form-group">
+	        <label class="control-label"><span style="font-weight:bold">Usuário</span>
+	        	<input id="f_username" data-field="username" class="form-control" maxlength="30" style="width:200px;;" data-type="text" type="text">
+	        </label>
+		</div> 
+	 	<span class="fpc_nl"></span>
+	 	<div class="form-group">
+	        <label class="control-label"><span style="font-weight:bold">Senha</span>
+		        <input id="f_password" data-field="password" class="form-control" maxlength="10" style="width:200px;;" data-type="text" type="password">
+	        </label>
+		</div> 
+	 	<span class="fpc_nl"></span>
+	 	<div class="checkbox">
+          <label>
+            <input id="b_remember" value="remember-me" type="checkbox"> Lembrar senha
+          </label>
+        </div>
+        <button id="b_entrar" class="btn btn-default btn-xs" type="button" onclick="fpc.login()">Entrar</button>
+      </form>
+        
+
+    </div>
+	<div id="footer">
+      <div class="container">
+        <p class="pull-right"><a href="#">Voltar ao Topo</a></p>
+        <p><b>Copyright 2015 Everton de Vargas Agilar - Todos os direitos reservados.<br></p>
+      </div>
+    </div>    
+   <a id="btn_abrir_dialog" href="#openModal" style="display:none"></a>
+	<div id="f_dialog"></div>
+	<script type="application/javascript" async src="static/js/fpc_concat.js"></script>
+</body>
+</html>

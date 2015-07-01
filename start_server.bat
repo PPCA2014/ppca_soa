@@ -9,7 +9,7 @@ rem  #         Drausio Gomes dos Santos (drausiogs@gmail.com)
 rem  # ---
 
 rem set dir_ppca_soa = .\ 
-rem set  dir_ppca_soa=  \desv\ppca_soa-clone\ppca_soa
-rem cd %dir_ppca_soa%
+set  dir_ppca_soa=  \desv\git\ppca_soa
+cd %dir_ppca_soa% 
 erl  -pa ebin deps\jsx\ebin -eval "ppca_soa:start(2301)"
 pause	
