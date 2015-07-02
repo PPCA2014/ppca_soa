@@ -44,8 +44,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(HeaderDict, From)	->
-	gen_server:cast(?SERVER, {favicon, HeaderDict, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {favicon, Request, From}).
 	
 
 
@@ -61,13 +61,13 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({favicon, HeaderDict, From}, State) ->
-	{Result, NewState} = do_get_favicon(HeaderDict, State),
+handle_cast({favicon, Request, From}, State) ->
+	{Result, NewState} = do_get_favicon(Request, State),
 	From ! {ok, Result}, 
 	{noreply, NewState}.
     
-handle_call({favicon, HeaderDict}, _From, State) ->
-	{Result, NewState} = do_get_favicon(HeaderDict, State),
+handle_call({favicon, Request}, _From, State) ->
+	{Result, NewState} = do_get_favicon(Request, State),
 	{reply, Result, NewState}.
 
 handle_info(State) ->
@@ -92,7 +92,7 @@ get_favicon_from_disk()->
 	{ok, Arquivo} = file:read_file(?FAVICON_PATH),
 	Arquivo.
     
-do_get_favicon(_HeaderDict, State) ->
+do_get_favicon(Request, State) ->
 	Result = {favicon, State#state.arquivo},
 	{Result, State}.
 

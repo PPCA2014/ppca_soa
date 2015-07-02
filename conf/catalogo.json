@@ -20,6 +20,16 @@
 	},
 
 	{
+		"comment": "Serviço favicon.",
+		"owner": "ppca_soa",
+		"version": "1",
+		"service" : "ppca_favicon_service:execute",
+		"url": "/favicon",
+		"async": "false",
+		"type": "GET"
+	},
+
+	{
 		"comment": "Serviço de autenticação de usuário para o barramento.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -40,11 +50,12 @@
 	},
 
 	{
-		"comment": "Um serviço de exemplo: Retorna Ola Mundo!",
-		"owner": "Everton Agilar",
+		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
+		"owner": "portal",
 		"version": "1",
-		"service" : "helloworld_service:execute",
-		"url": "/hello_world",
+		"service" : "static_file_service:execute",
+		"url": "^/portal/",
+		"use_re" : "true",
 		"async": "false",
 		"type": "GET"
 	},
@@ -72,16 +83,16 @@
 			}
 		]
 	},
-	
+
 	{
-		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
+		"comment": "Um serviço de exemplo: Retorna Ola Mundo!",
 		"owner": "Everton Agilar",
 		"version": "1",
-		"service" : "static_file_service:execute",
-		"url": "^/portal/",
-		"use_re" : "true",
+		"service" : "helloworld_service:execute",
+		"url": "/hello_world",
 		"async": "false",
 		"type": "GET"
 	}
+
 	
 ]
