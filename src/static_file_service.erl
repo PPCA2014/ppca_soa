@@ -1,10 +1,10 @@
-%% ---
-%%  static_file_service
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo para gerenciamento de arquivos estáticos
+%% @version 1.0.0
+%% @doc Lê os arquivos do SO e envia para o servidor
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
 
 -module(static_file_service).
 
@@ -88,7 +88,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_get_file(Request) ->
-	FilePath = ?STATIC_FILE_PATH ++ ppca_util:get_request_property(<<"url">>, Request),
+	FilePath = ?STATIC_FILE_PATH ++ ppca_util:get_property_request(<<"url">>, Request),
 	case file:read_file(FilePath) of
 		{ok, Arquivo} -> 
 			ContentType = ppca_util:mime_type(filename:extension(FilePath)),
