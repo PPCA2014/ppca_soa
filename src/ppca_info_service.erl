@@ -44,8 +44,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(HeaderDict, From)	->
-	gen_server:cast(?SERVER, {info, HeaderDict, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {info, Request, From}).
 	
 
 
@@ -59,13 +59,13 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({info, HeaderDict, From}, State) ->
-	{Result, NewState} = do_info(HeaderDict, State),
+handle_cast({info, Request, From}, State) ->
+	{Result, NewState} = do_info(Request, State),
 	From ! {ok, Result}, 
 	{noreply, NewState}.
     
-handle_call({info, HeaderDict}, _From, State) ->
-	{Result, NewState} = do_info(HeaderDict, State),
+handle_call({info, Request}, _From, State) ->
+	{Result, NewState} = do_info(Request, State),
 	{reply, Result, NewState}.
 
 handle_info(State) ->
@@ -86,7 +86,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-do_info(_HeaderDict, State) ->
+do_info(_Request, State) ->
 	Result = <<"{\"message\": \"It works!!!\"}">>,
 	{Result, State}.
 
