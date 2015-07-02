@@ -11,5 +11,5 @@ rem  # ---
 rem set dir_ppca_soa = .\ 
 set  dir_ppca_soa=  \desv\git\ppca_soa
 cd %dir_ppca_soa% 
-erl  -pa ebin deps\jsx\ebin -eval "ppca_soa:start(2301)"
-pause	
+rebar clean compile
+

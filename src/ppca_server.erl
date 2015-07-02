@@ -300,6 +300,11 @@ encode_response(<<Codigo/binary>>, {favicon, Arquivo}) ->
 %% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 	encode_response(Codigo, Payload, <<"application/json">>);
+    %%encode_response(Codigo, Payload, <<"text/html">>);
+
+%% @doc Gera o response para dados html
+encode_response(<<Codigo/binary>>, <<PayloadHtml/binary>>) ->
+    encode_response(Codigo, PayloadHtml, <<"text/html">>);
 
 %% @doc Gera o response para dados Map (representação JSON em Erlang)
 encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
