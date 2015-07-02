@@ -1,52 +1,96 @@
 %% ---
-%%  PPCA_SOA
-%%  Autenticador de usuarios do barramento
-%%  Mestrado em Computacao Aplicada - Universidade de Brasilia
-%%  Turma de Construcao de Software / PPCA 2014
+%%  autentica_service
+%%  Mestrado em Computação Aplicada - Universidade de Brasília
+%%  Turma de Construção de Software / PPCA 2014
 %%  Professor: Rodrigo Bonifacio de Almeida
 %%  Alunos: Marcal de Lima Hokama (mhokama@hotmail.com)
+%%			Everton de Vargas Agilar (evertonagilar@gmail.com)
+%%  		
 %%---
+
 -module(ppca_auth_user).
 
--export([autentica/3]).
+-behavior(gen_server). 
 
-%%init() ->
-	%% Ao iniciar o modulo, zera a lista de sessoes ativas.     	
-      %%loop().
+-include("../include/ppca_config.hrl").
 
-%%
-%% O modulo autentica e chamado por ppca_request:executa_servico
-%% No payload vem dois pares de chave/valor: "user" e "pass"
-%%
-autentica(HeaderDict,From,Payload) ->
-	%% Recupera o metodo da chamada
-	Metodo = dict:fetch("Metodo", HeaderDict),
-	%% So aceita chamadas com metodo POST
-	if Metodo == "POST" ->
-                  %% Teste de tamanho do Payload
-                  PayloadLength = size(Payload),
-                  io:format("To na area !!!~n", []),
-                  io:format("Tamanho: " ++ PayloadLength ++ "~n", []),
-   	            %% Separa a chave "user" 
-                  io:format("To na area !!!~n", []),
-                  {"user", Key} = lists:keyfind("user",1,json:parse(Payload)),
-                  io:format("To na area !!!~n", []),
-                  Response = "teste " ++ Metodo ++ " user: " ++ Key ++"~n",
-			%Query = dict:fetch("Query", HeaderDict),
-			%Response= ppca_util:json_encode([{<<"id">>,<<"Url">>}]),
-			From ! { ok, Response}
-			%ppca_logger:info_msg("rota atingida " ++ Url ++" metodo "++ Metodo )
-	end.
-	%% Outros metodos devem retornar erro
-	%% Implementar:
-      %% 1- Abrir novo processo?
-	%% 2- Verificar se usuario+IP ja esta na lista de sessoes ativas
-	%%   2.1 - Se tiver, eliminar sessao da lista, pois havera nova autenticacao
-	%% 3- Decriptografar a senha (implementar posteriormente)
-	%% 4- Verificar em uma lista de usuario+senha persistida (implementar posteriormente em banco de dados)
-	%%    se existe um match
-	%%   4.1 - Se existir, insere na lista de sessoes ativas o usuario, o IP, e a hora de inicio da sessao
-	%%         e registra no log a autenticacao com sucesso
-	%%         e retorna mensagem de autenticacao com sucesso
-	%%   4.2 - Se nao existir, tem que retornar mensagem informando erro na autenticacao 
-	%%         e registra no log uma autenticacao mal-sucedida 
+%% Server API
+-export([start/0, stop/0]).
+
+%% Cliente interno API
+-export([autentica/2]).
+
+%% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
+
+-define(SERVER, ?MODULE).
+
+%  Armazena o estado do servico. 
+-record(state, {}). 
+
+
+%%====================================================================
+%% Server API
+%%====================================================================
+
+start() -> 
+    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
+    ppca_logger:info_msg("ppca_auth_user iniciado."),
+    Result.
+ 
+stop() ->
+    gen_server:cast(?SERVER, shutdown).
+ 
+ 
+%%====================================================================
+%% Cliente API
+%%====================================================================
+ 
+autentica(Request, From) ->
+	gen_server:cast(?SERVER, {autentica, Request, From}).
+	
+
+
+%%====================================================================
+%% gen_server callbacks
+%%====================================================================
+ 
+init([]) ->
+    {ok, #state{}}. 
+    
+handle_cast(shutdown, State) ->
+    {stop, normal, State};
+
+handle_cast({autentica, Request, From}, State) ->
+	{Response, NewState} = do_autentica(Request, State),
+	From ! {ok, Response}, 
+	{noreply, NewState}.
+    
+handle_call({autentica, Request}, _From, State) ->
+	{Response, NewState} = do_autentica(Request, State),
+	{reply, Response, NewState}.
+
+handle_info(State) ->
+   {noreply, State}.
+
+handle_info(_Msg, State) ->
+   {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ppca_logger:info_msg("ppca_auth_user finalizado."),
+    ok.
+ 
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+    
+    
+%%====================================================================
+%% Funções internas
+%%====================================================================
+    
+do_autentica(_Request, State) ->
+	Response = "{\"key\": \"123456789\"}",
+	NewState = State#state{},
+	{Response, NewState}.
+
+

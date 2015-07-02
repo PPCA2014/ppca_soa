@@ -125,8 +125,7 @@ start_server(Port) ->
 								{reuseaddr, true},
 								{active, true}]) of
 		{ok, Listen} ->
-		    RequestHandler = spawn(ppca_request, init, []),
-		    spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+		    spawn(fun() -> aceita_conexoes(Listen) end),
 			{ok, Listen};
 		{error, Reason} -> 
 			{error, Reason} 
@@ -135,14 +134,14 @@ start_server(Port) ->
 stop_server(Listen) ->
 	gen_tcp:close(Listen).
 
-aceita_conexoes(Listen, RequestHandler) ->
+aceita_conexoes(Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} -> 
-			spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+			spawn(fun() -> aceita_conexoes(Listen) end),
 			inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
 			case get_request(Socket, []) of
 				{ok, HeaderDict, Payload} ->
-					Response = trata_request(RequestHandler, HeaderDict, Payload),
+					Response = trata_request(HeaderDict, Payload),
 					gen_tcp:send(Socket, [Response]);
 				tcp_closed ->
 					ok
@@ -230,11 +229,14 @@ format_header_value(_, Value) ->
 	string:strip(Value).
 
 %% @doc Trata o request e retorna o response do resultado
-trata_request_map(RequestHandler, HeaderDict, PayloadMap) ->
-	RequestHandler ! {self(), {processa_request, {HeaderDict, PayloadMap}}},
+trata_request_map(HeaderDict, PayloadMap) ->
+	ppca_dispatcher:dispatch_request(self(), HeaderDict, PayloadMap),
 	receive
 		{ok, Result} ->
 			Response = encode_response(<<"200">>, Result),
+			{ok, Response};
+		{ok, Result, MimeType} ->
+			Response = encode_response(<<"200">>, Result, MimeType),
 			{ok, Response};
 		{error, servico_nao_encontrado, ErroInterno} ->
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404),
@@ -244,15 +246,18 @@ trata_request_map(RequestHandler, HeaderDict, PayloadMap) ->
 			{error, Response, ErroInterno};
 		{error, servico_nao_disponivel, ErroInterno} ->
 			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
+			{error, Response, ErroInterno};
+		{error, file_not_found, ErroInterno} ->
+			Response = encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 			{error, Response, ErroInterno}
 	end.
 
 %% @doc Trata o request e retorna o response do resultado
-trata_request(RequestHandler, HeaderDict, PayloadJSON) ->
+trata_request(HeaderDict, PayloadJSON) ->
 	print_requisicao_debug(HeaderDict, PayloadJSON),
 	case decode_payload(PayloadJSON) of
 		{ok, PayloadMap} ->
-			case trata_request_map(RequestHandler, HeaderDict, PayloadMap) of
+			case trata_request_map(HeaderDict, PayloadMap) of
 				{ok, Response} ->
 					ppca_logger:info_msg("Serviço atendido."),
 					Response;
