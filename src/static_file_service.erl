@@ -44,8 +44,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(HeaderDict, From)	->
-	gen_server:cast(?SERVER, {get_file, HeaderDict, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {get_file, Request, From}).
 	
 
 
@@ -60,14 +60,14 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({get_file, HeaderDict, From}, State) ->
-	{Result, NewState} = do_get_file(HeaderDict, State),
-	From ! {ok, Result}, 
-	{noreply, NewState}.
+handle_cast({get_file, Request, From}, State) ->
+	Result = do_get_file(Request),
+	From ! Result, 
+	{noreply, State}.
     
-handle_call({get_file, HeaderDict}, _From, State) ->
-	{Result, NewState} = do_get_file(HeaderDict, State),
-	{reply, Result, NewState}.
+handle_call({get_file, Request}, _From, State) ->
+	Result = do_get_file(Request),
+	{reply, Result, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -87,15 +87,15 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-get_file_from_disk(FilePath) ->
-	{ok, Arquivo} = file:read_file(FilePath),
-	Arquivo.
-    
-do_get_file(HeaderDict, State) ->
-	FilePath = ?STATIC_FILE_PATH ++ dict:fetch("Url", HeaderDict),
-	Arquivo = get_file_from_disk(FilePath),
-	{Arquivo, State}.
-
-
-	
+do_get_file(Request) ->
+	FilePath = ?STATIC_FILE_PATH ++ ppca_util:get_request_property(<<"url">>, Request),
+	case file:read_file(FilePath) of
+		{ok, Arquivo} -> 
+			ContentType = ppca_util:mime_type(filename:extension(FilePath)),
+			{ok, Arquivo, ContentType};
+		{error, enoent} -> 
+			{error, file_not_found, FilePath};
+		{error, Reason} -> 
+			{error, servico_falhou, Reason}
+	end.
 
