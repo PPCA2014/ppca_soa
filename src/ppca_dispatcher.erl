@@ -1,10 +1,11 @@
-%% ---
-%%  ppca_dispatcher
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo dispatcher do servidor http.
+%% @version 1.0.0
+%% @doc Faz o despacho das requisições para o serviço apropriado,
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
+
 -module(ppca_dispatcher).
 
 -behavior(gen_server). 
