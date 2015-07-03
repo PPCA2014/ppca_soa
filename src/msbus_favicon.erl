@@ -6,11 +6,11 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(ppca_favicon_service).
+-module(msbus_favicon).
 
 -behavior(gen_server). 
 
--include("../include/ppca_config.hrl").
+-include("../include/msbus_config.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -33,7 +33,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_favicon_service iniciado."),
+    msbus_logger:info("msbus_favicon iniciado."),
     Result.
  
 stop() ->
@@ -79,7 +79,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_favicon_service finalizado."),
+    msbus_logger:info("msbus_favicon finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->

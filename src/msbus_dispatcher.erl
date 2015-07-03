@@ -6,12 +6,12 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(ppca_dispatcher).
+-module(msbus_dispatcher).
 
 -behavior(gen_server). 
 
--include("../include/ppca_config.hrl").
--include("../include/http_messages.hrl").
+-include("../include/msbus_config.hrl").
+-include("../include/msbus_http_messages.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -33,7 +33,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_dispatcher iniciado."),
+    msbus_logger:info("msbus_dispatcher iniciado."),
     Result.
  
 stop() ->
@@ -74,7 +74,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_dispatcher finalizado."),
+    msbus_logger:info("msbus_dispatcher finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -89,7 +89,7 @@ code_change(_OldVsn, State, _Extra) ->
 do_dispatch_request(From, HeaderDict, Payload) ->
 	_Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	case ppca_catalogo_service:lookup(Url) of
+	case msbus_catalogo:lookup(Url) of
 		{ok, Servico} -> 
 			executa_servico(From, HeaderDict, Payload, Servico, []);
 		{ok, Servico, ParamsUrl} -> 
@@ -101,8 +101,8 @@ do_dispatch_request(From, HeaderDict, Payload) ->
 
 %% @doc Executa o serviço correspondente
 executa_servico(From, HeaderDict, Payload, Servico, ParamsUrl) ->
-	Module = ppca_catalogo_service:get_property_servico(<<"module">>, Servico),
-	Function = ppca_catalogo_service:get_property_servico(<<"function">>, Servico),
+	Module = msbus_catalogo:get_property_servico(<<"module">>, Servico),
+	Function = msbus_catalogo:get_property_servico(<<"function">>, Servico),
 	Request = encode_request(HeaderDict, Payload, Servico, ParamsUrl),
 	case executa_processo_erlang(Module, Function, Request, From) of
 		em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto

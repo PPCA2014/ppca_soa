@@ -6,7 +6,7 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(ppca_util).
+-module(msbus_util).
 
 -export([sleep/1,
 		 timestamp_str/0,
@@ -17,7 +17,7 @@
 		 get_property_request/2,
 		 mime_type/1]).
 
--include("../include/ppca_config.hrl").
+-include("../include/msbus_config.hrl").
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->

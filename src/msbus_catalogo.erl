@@ -1,16 +1,16 @@
-%% ---
-%%  ppca_catalogo_service
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo catálogo de serviços
+%% @version 1.0.0
+%% @doc Módulo responsável pelo gerenciamento do catálogo de serviços
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
 
--module(ppca_catalogo_service).
+-module(msbus_catalogo).
 
 -behavior(gen_server). 
 
--include("../include/ppca_config.hrl").
+-include("../include/msbus_config.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -40,7 +40,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_catalogo_service iniciado."),
+    msbus_logger:info("msbus_catalogo iniciado."),
     Result.
  
 stop() ->
@@ -86,7 +86,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_catalogo_service finalizado."),
+    msbus_logger:info("msbus_catalogo finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -117,7 +117,7 @@ get_catalogo() ->
 %% @doc Lê o catálogo do disco
 get_catalogo_from_disk() ->
 	{ok, Cat} = file:read_file(?CATALOGO_PATH),
-	{ok, Cat2} = ppca_util:json_decode_as_map(Cat),
+	{ok, Cat2} = msbus_util:json_decode_as_map(Cat),
 	Cat2.
 
 parse_catalogo([], Cat2, Cat3) ->
@@ -206,10 +206,10 @@ test() ->
 	%%  {T1, T2, R1, R2, R3} = rota_table:test().
 
 	R1 = new_servico_re("^/aluno/lista_formandos/(?P<tipo>(sintetico|analitico))$", aluno_service_report, function),
-	R2 = new_servico_re("^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", static_file_service, function),
+	R2 = new_servico_re("^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", msbus_static_file, function),
 	R4 = new_servico_re("^/portal/", aluno_service_report, function),
 	
-	R3 = new_servico("/log/server.log", static_file_service, function),
+	R3 = new_servico("/log/server.log", msbus_static_file, function),
 	
 	
 	T1 = [R1, R2, R4],

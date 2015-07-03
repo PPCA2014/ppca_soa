@@ -1,13 +1,11 @@
 #!/bin/sh
 
-# ---
-#  PPCA_SOA
-#  Inicia o barramento PPCA_SOA na porta 2301
-#  Mestrado em Computação Aplicada - Universidade de Brasília
-#  Turma de Construção de Software / PPCA 2014
-#  Autor: Everton de Vargas Agilar
-# ---
+#********************************************************************
+# @doc Módulo responsável pelo gerenciamendo dos nós do barramento.
+# @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+# @copyright erlangMS Team
+#********************************************************************
 
 #erl  -pa ./ebin -eval "ppca_soa:start(2301)" -boot start_sasl -config elog
-erl -pa ebin deps/jsx/ebin -eval "ppca_soa:start()"
+erl -pa ebin deps/jsx/ebin -eval "msbus_soa:start()"
 	

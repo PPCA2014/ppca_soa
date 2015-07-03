@@ -6,7 +6,8 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(ppca_event_mq).
+-module(msbus_pub_subscribe).
+
 -behavior(gen_server).
 
 %% Server API
@@ -36,7 +37,7 @@
 
 start() ->
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_event_mq iniciado."),
+    msbus_logger:info("msbus_pub_subscribe iniciado."),
     Result.
  
 stop() ->
@@ -105,7 +106,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
  
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_event_mq finalizado."),
+    msbus_logger:info("msbus_pub_subscribe finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->

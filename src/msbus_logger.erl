@@ -1,29 +1,22 @@
 %%********************************************************************
-%% @title Módulo de logger
+%% @title Módulo logger
 %% @version 1.0.0
 %% @doc Módulo responsável pelo componente de logger.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
-
--module(ppca_logger).
+-module(msbus_logger).
 
 -behavior(gen_server). 
 
--include("../include/ppca_config.hrl").
+-include("../include/msbus_config.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
 
 %% Client API
--export([error_msg/1, 
-		 error_msg/2, 
-		 info_msg/1, 
-		 info_msg/2, 
-		 warn_msg/1,
-		 warn_msg/2,
-		 sync/0]).
+-export([error/1, error/2, info/1, info/2, warn/1, warn/2, sync/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -32,7 +25,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do ppca_logger. 
+%  Armazena o estado do msbus_logger. 
 -record(state, {% buffer para lista de mensagens. As mensagens vão primeiro para um buffer. 
 				buffer = [],         
 			    % em intervalores configuravel ocorre um checkpoint para descarregar o buffer no arquivo de log
@@ -46,7 +39,7 @@
 
 start() -> % cria o processo e devolve o pid
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    %io:format("ppca_logger iniciado.~n", []),
+    %io:format("msbus_logger iniciado.~n", []),
     Result.
  
 stop() ->
@@ -57,22 +50,22 @@ stop() ->
 %% Client API
 %%====================================================================
  
-error_msg(Msg) -> 
+error(Msg) -> 
 	gen_server:cast(?SERVER, {write_msg, error, Msg}). 
 
-error_msg(Msg, Params) -> 
+error(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, error, Msg, Params}). 
 
-warn_msg(Msg) -> 
+warn(Msg) -> 
 	gen_server:cast(?SERVER, {write_msg, warn, Msg}). 
 
-warn_msg(Msg, Params) -> 
+warn(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, warn, Msg, Params}). 
 
-info_msg(Msg) -> 
+info(Msg) -> 
 	gen_server:cast(?SERVER, {write_msg, info, Msg}).
 
-info_msg(Msg, Params) -> 
+info(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
 
 sync() ->
@@ -123,7 +116,7 @@ handle_info(rotacao, State) ->
    {noreply, NewState}.
  
 terminate(_Reason, _State) ->
-    %io:format("ppca_logger finalizado.~n"),
+    %io:format("msbus_logger finalizado.~n"),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -169,7 +162,7 @@ write_msg(Tipo, <<Msg/binary>>, State) ->
     
 write_msg(Tipo, Msg, State) ->
 	io:format("~s~n", [Msg]),
-	Msg1 = lists:concat([atom_to_list(Tipo), " ", ppca_util:timestamp_str(), "  ", Msg]),
+	Msg1 = lists:concat([atom_to_list(Tipo), " ", msbus_util:timestamp_str(), "  ", Msg]),
 	set_checkpoint_timeout(State),
 	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true}.
 	

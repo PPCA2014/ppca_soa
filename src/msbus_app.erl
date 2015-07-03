@@ -1,4 +1,4 @@
--module(ppca_soa_app).
+-module(msbus_app).
 
 -behaviour(application).
 
@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    ppca_soa_sup:start_link().
+    msbus_sup:start_link().
 
 stop(_State) ->
     ok.

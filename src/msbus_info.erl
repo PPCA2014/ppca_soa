@@ -1,16 +1,16 @@
 %%********************************************************************
-%% @title Módulo para gerenciamento de arquivos estáticos
+%% @title Módulo info
 %% @version 1.0.0
-%% @doc Lê os arquivos do SO e envia para o servidor
+%% @doc Fornece informações sobre o erlangMS em tempo de execução.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(static_file_service).
+-module(msbus_info).
 
 -behavior(gen_server). 
 
--include("../include/ppca_config.hrl").
+-include("../include/msbus_config.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -33,7 +33,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("static_file_service iniciado."),
+    io:format("msbus_info iniciado.~n", []),
     Result.
  
 stop() ->
@@ -45,7 +45,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
-	gen_server:cast(?SERVER, {get_file, Request, From}).
+	gen_server:cast(?SERVER, {info, Request, From}).
 	
 
 
@@ -54,20 +54,19 @@ execute(Request, From)	->
 %%====================================================================
  
 init([]) ->
-	NewState = #state{},
-    {ok, NewState}. 
+    {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({get_file, Request, From}, State) ->
-	Result = do_get_file(Request),
-	From ! Result, 
-	{noreply, State}.
+handle_cast({info, Request, From}, State) ->
+	{Result, NewState} = do_info(Request, State),
+	From ! {ok, Result}, 
+	{noreply, NewState}.
     
-handle_call({get_file, Request}, _From, State) ->
-	Result = do_get_file(Request),
-	{reply, Result, State}.
+handle_call({info, Request}, _From, State) ->
+	{Result, NewState} = do_info(Request, State),
+	{reply, Result, NewState}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -76,7 +75,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("static_file_service finalizado."),
+    io:format("msbus_info finalizado.~n"),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -86,16 +85,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %% Funções internas
 %%====================================================================
-
-do_get_file(Request) ->
-	FilePath = ?STATIC_FILE_PATH ++ ppca_util:get_property_request(<<"url">>, Request),
-	case file:read_file(FilePath) of
-		{ok, Arquivo} -> 
-			ContentType = ppca_util:mime_type(filename:extension(FilePath)),
-			{ok, Arquivo, ContentType};
-		{error, enoent} -> 
-			{error, file_not_found, FilePath};
-		{error, Reason} -> 
-			{error, servico_falhou, Reason}
-	end.
+    
+do_info(_Request, State) ->
+	Result = <<"{\"message\": \"It works!!!\"}">>,
+	{Result, State}.
 

@@ -6,12 +6,12 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(ppca_server).
+-module(msbus_server).
 
 -behavior(gen_server). 
 
--include("../include/ppca_config.hrl").
--include("../include/http_messages.hrl").
+-include("../include/msbus_config.hrl").
+-include("../include/msbus_http_messages.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -36,7 +36,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_server iniciado."),
+    msbus_logger:info("msbus_server iniciado."),
     Result.
  
 stop() ->
@@ -85,7 +85,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_server finalizado."),
+    msbus_logger:info("msbus_server finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -230,7 +230,7 @@ format_header_value(_, Value) ->
 
 %% @doc Trata o request e retorna o response do resultado
 trata_request_map(HeaderDict, PayloadMap) ->
-	ppca_dispatcher:dispatch_request(self(), HeaderDict, PayloadMap),
+	msbus_dispatcher:dispatch_request(self(), HeaderDict, PayloadMap),
 	receive
 		{ok, Result} ->
 			Response = encode_response(<<"200">>, Result),
@@ -259,10 +259,10 @@ trata_request(HeaderDict, PayloadJSON) ->
 		{ok, PayloadMap} ->
 			case trata_request_map(HeaderDict, PayloadMap) of
 				{ok, Response} ->
-					ppca_logger:info_msg("Serviço atendido."),
+					msbus_logger:info("Serviço atendido."),
 					Response;
 				{error, Response, ErroInterno} ->
-					ppca_logger:error_msg(ErroInterno),
+					msbus_logger:error(ErroInterno),
 					Response
 			end;
 		invalid_payload ->
@@ -275,7 +275,7 @@ decode_payload([]) ->
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
 decode_payload(Payload) ->
-	case ppca_util:json_decode(Payload) of
+	case msbus_util:json_decode(Payload) of
 		{ok, PayloadJSON} -> {ok, PayloadJSON};
 		{error, _Reason} -> invalid_payload
 	end.
@@ -299,12 +299,12 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 
 %% @doc Gera o response para dados Map (representação JSON em Erlang)
 encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
-    Payload = ppca_util:json_encode(PayloadMap),
+    Payload = msbus_util:json_encode(PayloadMap),
     encode_response(Codigo, Payload);
 
 %% @doc Gera o response para dados list (representação JSON em Erlang)
 encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
-    Payload = ppca_util:json_encode(PayloadList),
+    Payload = msbus_util:json_encode(PayloadList),
     encode_response(Codigo, Payload);
 
 %% @doc Gera o response para dados texto
@@ -331,7 +331,7 @@ parse_query_string([]) ->
 parse_query_string([Querystring]) ->
 	Q1 = string:tokens(Querystring, "&"),
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
-	Q3 = lists:map(fun([P|V]) -> {P, ppca_util:hd_or_empty(V)} end, Q2),
+	Q3 = lists:map(fun([P|V]) -> {P, msbus_util:hd_or_empty(V)} end, Q2),
 	Q3.
 
 %% @doc Remove o último backslash da Url
@@ -343,16 +343,16 @@ remove_ult_backslash_url(Url) ->
 	end.
 
 print_requisicao_debug(HeaderDict, Payload) ->
-	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
-	ppca_logger:info_msg("Header:", []),
-	[ ppca_logger:info_msg("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
+	msbus_logger:info("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
+	msbus_logger:info("Header:", []),
+	[ msbus_logger:info("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
 	print_requisicao_payload_debug(Payload).
 
 print_requisicao_payload_debug([]) ->
 	ok;
 
 print_requisicao_payload_debug(Payload) ->
-	ppca_logger:info_msg("Payload: ~s", [Payload]).
+	msbus_logger:info("Payload: ~s", [Payload]).
 	
 	
 	

@@ -5,8 +5,9 @@
               {applications,[kernel,stdlib]},
               {mod,{ppca_soa_app,[]}},
               {env,[]},
-              {modules,[aluno,esb,helloworld_service,ppca_auth_user,
-                        ppca_catalogo_service,ppca_dispatcher,ppca_event_mq,
-                        ppca_favicon_service,ppca_info_service,ppca_logger,
-                        ppca_server,ppca_soa,ppca_soa_app,ppca_soa_sup,
-                        ppca_util,static_file_service]}]}.
+              {modules,[aluno,helloworld_service,msbus_app,msbus_auth_user,
+                        msbus_catalogo,msbus_clusterware,msbus_dispatcher,
+                        msbus_favicon,msbus_info,msbus_logger,
+                        msbus_pub_subscribe,msbus_server,msbus_soa,
+                        msbus_static_file,msbus_static_file_service,msbus_sup,
+                        msbus_util,ppca_soa_app,ppca_soa_sup]}]}.

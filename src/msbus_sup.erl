@@ -1,4 +1,4 @@
--module(ppca_soa_sup).
+-module(msbus_sup).
 
 -behaviour(supervisor).
 
