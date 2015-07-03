@@ -1,12 +1,12 @@
 # erlangMS
 
-erlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura Microservices composto por pequenos módulos que implementam serviços bem definidos e independentes, executam em seu próprio processo e se comunicam através dos mecanismos de mensagens da plataforam Erlang/OTP.
+erlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura microservices composto por pequenos módulos que implementam serviços bem definidos e independentes, executando em seu próprio processo e se comunicando através dos mecanismos de mensagens da plataforam Erlang/OTP.
 
 O code base inicial foi herdado do projeto PPCA->SOA, desenvolvido no Mestrado em Computação Aplicada da Universidade de Brasília pela Turma de Construção de Software de 2014.
 
 A linguagem de programação e plataforma escolhida para o projeto foi Erlang R17/OTP. Esta linguagem possui características funcionais e possui um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
 
-A principal interface de comunicação de erlangMS é REST, embora possa também se comportar como um servidor HTTP convencional, através dos seus módulos de serviços para gerenciamento de arquivos.
+A principal interface de comunicação de erlangMS é REST com JSON, embora possa se comportar também como um servidor Web convencional através dos seus módulos de serviços para gerenciamento de arquivos.
 
 
 Como iniciar erlangMS
@@ -26,11 +26,11 @@ start-server.bat
 
 Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser.
 
-Obs.: Veja como baixar o projeto, compilar e fazer deploy na Wiki do projeto no link  <https://github.com/PPCA2014/ppca_soa/wiki/Getting-Started>.
+Obs.: Veja como baixar o projeto, compilar e fazer deploy na Wiki do projeto.
 
 
-Dependências
-------------
+Dependências do projeto
+------------------------
 
 * Erlang R17B ou versão mais recente -
 
@@ -39,9 +39,9 @@ Dependências
   * Verifique com `erlang:system_info(otp_release)`.
 
 
-* On Windows Vista or Windows 7 -
+* No Windows -
 
-  * Erlang e Rebar bin devem estar no diretório PATH.
+  * Erlang e Rebar bin devem estar na variável PATH.
 
 
 * jsx - encode/decore JSON
@@ -63,15 +63,3 @@ Para quem quiser iniciar na programação Erlang, visite este livro online:
 Lista de artigos sobre Erlang
 
 <https://github.com/0xAX/erlang-bookmarks/blob/master/ErlangBookmarks.md>
-
-
-Bons estudos e boa programação!!!
-
-```
-Att.
-Everton de Vargas Agilar
-Arquiteto da Turma de Construção de Software
-Mestrando em Computação Aplicada - Turma PPCA 2014
-Universidade de Brasília
-2015 / Brasília / DF
-```
