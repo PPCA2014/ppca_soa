@@ -4,7 +4,7 @@ erlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura microservi
 
 O code base inicial foi herdado do projeto PPCA->SOA, desenvolvido no Mestrado em Computação Aplicada da Universidade de Brasília pela Turma de Construção de Software de 2014.
 
-A linguagem de programação e plataforma escolhida para o projeto foi Erlang R17/OTP. Esta linguagem possui fortes características funcionais e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
+A linguagem de programação e a plataforma escolhida para o projeto foi Erlang R17/OTP. Esta linguagem possui fortes características funcionais e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
 
 A principal interface de comunicação de erlangMS é REST com JSON, embora possa se comportar também como um servidor Web convencional através dos seus módulos de serviços para gerenciamento de arquivos.
 
