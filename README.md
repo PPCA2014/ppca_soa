@@ -1,32 +1,32 @@
-# PPCA->SOA
+# erlangMS
 
-PPCA->SOA é um barramento orientado a serviço da Turma de Construção de Software do Mestrado em Computação Aplicada da Universidade de Brasília.
+erlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura Microservices composto por pequenos módulos que implementam serviços bem definidos e independentes, executam em seu próprio processo e se comunicam através dos mecanismos de mensagens da plataforam Erlang/OTP.
 
-A linguagem de programação escolhida para o projeto foi Erlang, uma linguagem funcional e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
+O code base inicial foi herdado do projeto PPCA->SOA, desenvolvido no Mestrado em Computação Aplicada da Universidade de Brasília pela Turma de Construção de Software de 2014.
 
-O projeto tem propósito acadêmico. Seu objetivo é permitir invocar serviços no barramento, implementados através de módulos Erlang, mas que futuramente possam ser implementados em outras linguagens, como Java. 
+A linguagem de programação e plataforma escolhida para o projeto foi Erlang R17/OTP. Esta linguagem possui características funcionais e possui um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
 
-O barramento aceita requisições ao estilo REST e suporta dados no formato JSON. Um requisito básico do projeto é evitar o uso de bibliotecas de terceiros, para maximar o aprendizado na plataforma Erlang.
+A principal interface de comunicação de erlangMS é REST, embora possa também se comportar como um servidor HTTP convencional, através dos seus módulos de serviços para gerenciamento de arquivos.
 
 
-Executando o barramento
+Como iniciar erlangMS
 -----------------------
 
-Para iniciar o PPCA_SOA no Linux:
+Se estiver no Linux, digite:
 
 ```console
 ./start-server.sh
 ```
 
-No Windows, digite:
+Caso estiver no Windows, digite:
 
 ```console
 start-server.bat
 ```
 
-Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser. Parabéns, o barramento SOA estará respondendo suas requisições na porta 2301.
+Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser.
 
-Obs.: Antes de executar, primeiro deve-se fazer o build do projeto. Consulte a wiki "Getting-Started" em <https://github.com/PPCA2014/ppca_soa/wiki/Getting-Started>.
+Obs.: Veja como baixar o projeto, compilar e fazer deploy na Wiki do projeto no link  <https://github.com/PPCA2014/ppca_soa/wiki/Getting-Started>.
 
 
 Dependências
