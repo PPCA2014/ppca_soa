@@ -8,5 +8,5 @@
 #  Autor: Everton de Vargas Agilar
 # ---
 
-erl  -pa ebin deps/jsx/ebin test -eval "ppca_soa_tests:start()"
+erl -pa ebin deps/jsx/ebin test -eval "ppca_soa_tests:start()"
 

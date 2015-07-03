@@ -1,10 +1,10 @@
-%% ---
-%%  ppca_favicon_service
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo favicon
+%% @version 1.0.0
+%% @doc Módulo responsável pelo favicon do erlangMS.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
 
 -module(ppca_favicon_service).
 
@@ -44,8 +44,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(HeaderDict, From)	->
-	gen_server:cast(?SERVER, {favicon, HeaderDict, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {favicon, Request, From}).
 	
 
 
@@ -54,21 +54,23 @@ execute(HeaderDict, From)	->
 %%====================================================================
  
 init([]) ->
-	Arquivo = get_favicon_from_disk(),
-	NewState = #state{arquivo=Arquivo},
-    {ok, NewState}. 
+	case get_favicon_from_disk() of
+		{ok, Arquivo} ->  State = #state{arquivo=Arquivo};
+		{error, _Reason} -> State = #state{arquivo=null}
+    end,
+    {ok, State}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({favicon, HeaderDict, From}, State) ->
-	{Result, NewState} = do_get_favicon(HeaderDict, State),
-	From ! {ok, Result}, 
-	{noreply, NewState}.
+handle_cast({favicon, _Request, From}, State) ->
+	Reply = do_get_favicon(State),
+	From ! {ok, Reply}, 
+	{noreply, State}.
     
-handle_call({favicon, HeaderDict}, _From, State) ->
-	{Result, NewState} = do_get_favicon(HeaderDict, State),
-	{reply, Result, NewState}.
+handle_call({favicon, _Request}, _From, State) ->
+	Reply = do_get_favicon(State),
+	{reply, Reply, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -89,10 +91,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 get_favicon_from_disk()->
-	{ok, Arquivo} = file:read_file(?FAVICON_PATH),
-	Arquivo.
+	case file:read_file(?FAVICON_PATH) of
+		{ok, Arquivo} -> {ok, Arquivo};
+		{error, Reason} -> {error, Reason}
+	end.
     
-do_get_favicon(_HeaderDict, State) ->
-	Result = {favicon, State#state.arquivo},
-	{Result, State}.
+do_get_favicon(State) ->
+	{ok, State#state.arquivo, <<"image/x-icon">>}.
 

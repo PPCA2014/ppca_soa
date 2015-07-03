@@ -1,13 +1,12 @@
 %%********************************************************************
-%% @title Módulo auth_user
+%% @title Módulo para gerenciamento de arquivos estáticos
 %% @version 1.0.0
-%% @doc Módulo responsável pela autenticação dos usuários.
+%% @doc Lê os arquivos do SO e envia para o servidor
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
-
--module(ppca_auth_user).
+-module(static_file_service).
 
 -behavior(gen_server). 
 
@@ -17,7 +16,7 @@
 -export([start/0, stop/0]).
 
 %% Cliente interno API
--export([autentica/2]).
+-export([execute/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -34,7 +33,7 @@
 
 start() -> 
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_auth_user iniciado."),
+    ppca_logger:info_msg("static_file_service iniciado."),
     Result.
  
 stop() ->
@@ -45,8 +44,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-autentica(Request, From) ->
-	gen_server:cast(?SERVER, {autentica, Request, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {get_file, Request, From}).
 	
 
 
@@ -55,19 +54,20 @@ autentica(Request, From) ->
 %%====================================================================
  
 init([]) ->
-    {ok, #state{}}. 
+	NewState = #state{},
+    {ok, NewState}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({autentica, Request, From}, State) ->
-	{Response, NewState} = do_autentica(Request, State),
-	From ! {ok, Response}, 
-	{noreply, NewState}.
+handle_cast({get_file, Request, From}, State) ->
+	Result = do_get_file(Request),
+	From ! Result, 
+	{noreply, State}.
     
-handle_call({autentica, Request}, _From, State) ->
-	{Response, NewState} = do_autentica(Request, State),
-	{reply, Response, NewState}.
+handle_call({get_file, Request}, _From, State) ->
+	Result = do_get_file(Request),
+	{reply, Result, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -76,7 +76,7 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_auth_user finalizado."),
+    ppca_logger:info_msg("static_file_service finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -86,10 +86,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %% Funções internas
 %%====================================================================
-    
-do_autentica(_Request, State) ->
-	Response = "{\"key\": \"123456789\"}",
-	NewState = State#state{},
-	{Response, NewState}.
 
+do_get_file(Request) ->
+	FilePath = ?STATIC_FILE_PATH ++ ppca_util:get_property_request(<<"url">>, Request),
+	case file:read_file(FilePath) of
+		{ok, Arquivo} -> 
+			ContentType = ppca_util:mime_type(filename:extension(FilePath)),
+			{ok, Arquivo, ContentType};
+		{error, enoent} -> 
+			{error, file_not_found, FilePath};
+		{error, Reason} -> 
+			{error, servico_falhou, Reason}
+	end.
 

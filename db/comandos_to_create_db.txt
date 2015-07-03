@@ -1,0 +1,20 @@
+#########################################################################
+#  Purpose: Instruções para criar o banco de dados inicial ppca_soa.db
+#  Author Everton de Vargas Agilar
+#  Obs.: Testado em Ubuntu
+#########################################################################
+
+1) Dentro da pasta DB entre com o seguinte comando:
+erl -mnesia dir ./ppca_soa.db
+
+2) Após, entre com os seguintes comandos no interpretador erl
+
+1> mnesia:create_schema([node()]).
+ok
+2> init:stop().
+ok
+
+Isso é tudo!
+
+
+

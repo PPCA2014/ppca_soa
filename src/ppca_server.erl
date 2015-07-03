@@ -1,11 +1,11 @@
-%% ---
-%%  PPCA_SERVER
-%%  Servidor HTTP para atender solicitações REST.
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Servidor HTTP
+%% @version 1.0.0
+%% @doc Módulo responsável pelo processamento das requisições HTTP.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
+
 -module(ppca_server).
 
 -behavior(gen_server). 
@@ -44,7 +44,7 @@ stop() ->
  
 
 %%====================================================================
-%% Server API
+%% Client API
 %%====================================================================
  
 start_listen(Port, From) ->
@@ -125,8 +125,7 @@ start_server(Port) ->
 								{reuseaddr, true},
 								{active, true}]) of
 		{ok, Listen} ->
-		    RequestHandler = spawn(ppca_request, init, []),
-		    spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+		    spawn(fun() -> aceita_conexoes(Listen) end),
 			{ok, Listen};
 		{error, Reason} -> 
 			{error, Reason} 
@@ -135,23 +134,22 @@ start_server(Port) ->
 stop_server(Listen) ->
 	gen_tcp:close(Listen).
 
-aceita_conexoes(Listen, RequestHandler) ->
-	case gen_tcp:accept(Listen) of
-		{ok, Socket} -> processa_conexao(Listen, RequestHandler, Socket);
+aceita_conexoes(Listen) ->
+ 	case gen_tcp:accept(Listen) of
+		{ok, Socket} -> processa_conexao(Listen, Socket);
 		{error, closed} -> ok
 	end.
-	
-processa_conexao(Listen, RequestHandler, Socket) -> 
-  spawn(fun() -> aceita_conexoes(Listen, RequestHandler) end),
+
+processa_conexao(Listen, Socket) -> 
+  spawn(fun() -> aceita_conexoes(Listen) end),
   inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
   case get_request(Socket, []) of
      {ok, HeaderDict, Payload} ->
-	Response = trata_request(RequestHandler, HeaderDict, Payload),
-	gen_tcp:send(Socket, [Response]);
+		Response = trata_request(HeaderDict, Payload),
+		gen_tcp:send(Socket, [Response]);
      tcp_closed -> ok
-  end.
-
-
+  end.	
+	
 get_request(Socket, L) ->
     receive
 		{tcp, Socket, Bin} -> 
@@ -231,11 +229,14 @@ format_header_value(_, Value) ->
 	string:strip(Value).
 
 %% @doc Trata o request e retorna o response do resultado
-trata_request_map(RequestHandler, HeaderDict, PayloadMap) ->
-	RequestHandler ! {self(), {processa_request, {HeaderDict, PayloadMap}}},
+trata_request_map(HeaderDict, PayloadMap) ->
+	ppca_dispatcher:dispatch_request(self(), HeaderDict, PayloadMap),
 	receive
 		{ok, Result} ->
 			Response = encode_response(<<"200">>, Result),
+			{ok, Response};
+		{ok, Result, MimeType} ->
+			Response = encode_response(<<"200">>, Result, MimeType),
 			{ok, Response};
 		{error, servico_nao_encontrado, ErroInterno} ->
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404),
@@ -245,15 +246,18 @@ trata_request_map(RequestHandler, HeaderDict, PayloadMap) ->
 			{error, Response, ErroInterno};
 		{error, servico_nao_disponivel, ErroInterno} ->
 			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
+			{error, Response, ErroInterno};
+		{error, file_not_found, ErroInterno} ->
+			Response = encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 			{error, Response, ErroInterno}
 	end.
 
 %% @doc Trata o request e retorna o response do resultado
-trata_request(RequestHandler, HeaderDict, PayloadJSON) ->
+trata_request(HeaderDict, PayloadJSON) ->
 	print_requisicao_debug(HeaderDict, PayloadJSON),
 	case decode_payload(PayloadJSON) of
 		{ok, PayloadMap} ->
-			case trata_request_map(RequestHandler, HeaderDict, PayloadMap) of
+			case trata_request_map(HeaderDict, PayloadMap) of
 				{ok, Response} ->
 					ppca_logger:info_msg("Serviço atendido."),
 					Response;
@@ -288,10 +292,6 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 	            Payload],
 	Response2 = iolist_to_binary(Response),
 	Response2.
-
-%% @doc Gera o response para o favicon
-encode_response(<<Codigo/binary>>, {favicon, Arquivo}) ->
-	encode_response(Codigo, Arquivo, <<"image/x-icon">>);
 
 %% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->

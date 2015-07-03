@@ -1,12 +1,11 @@
-%% ---
-%%  ppca_logger
-%%  Logger do barramento
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%          Eliene Vieira            (elienev@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo de logger
+%% @version 1.0.0
+%% @doc Módulo responsável pelo componente de logger.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
+
 
 -module(ppca_logger).
 

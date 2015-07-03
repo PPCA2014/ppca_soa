@@ -1,11 +1,10 @@
-%% ---
-%%  helloworld_service
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
-
+%%********************************************************************
+%% @title Módulo helloworld_service
+%% @version 1.0.0
+%% @doc Módulo de serviço para o famoso hello world!!!
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
 -module(helloworld_service).
 
 -behavior(gen_server). 
@@ -44,8 +43,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(HeaderDict, From)	->
-	gen_server:cast(?SERVER, {hello_world, HeaderDict, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {hello_world, Request, From}).
 	
 
 
@@ -59,13 +58,13 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({hello_world, HeaderDict, From}, State) ->
-	{Response, NewState} = do_hello_world(HeaderDict, State),
+handle_cast({hello_world, Request, From}, State) ->
+	{Response, NewState} = do_hello_world(Request, State),
 	From ! {ok, Response}, 
 	{noreply, NewState}.
     
-handle_call({hello_world, HeaderDict}, _From, State) ->
-	{Response, NewState} = do_hello_world(HeaderDict, State),
+handle_call({hello_world, Request}, _From, State) ->
+	{Response, NewState} = do_hello_world(Request, State),
 	{reply, Response, NewState}.
 
 handle_info(State) ->
@@ -86,10 +85,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-do_hello_world(_HeaderDict, State) ->
-	% simular operação demorada
-	%timer:sleep(2 * 1000),
-	Response = "{\"message\": \"Ola mundo!!!\"}",
-	NewState = State#state{},
-	{Response, NewState}.
+do_hello_world(_Request, State) ->
+	Response = <<"{\"message\": \"Hello World!!!\"}">>,
+	{Response, State}.
 

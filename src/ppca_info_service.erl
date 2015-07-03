@@ -1,10 +1,11 @@
-%% ---
-%%  ppca_info_service
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo info
+%% @version 1.0.0
+%% @doc Fornece informações sobre o erlangMS em tempo de execução.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
+
 
 -module(ppca_info_service).
 
@@ -44,8 +45,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(HeaderDict, From)	->
-	gen_server:cast(?SERVER, {info, HeaderDict, From}).
+execute(Request, From)	->
+	gen_server:cast(?SERVER, {info, Request, From}).
 	
 
 
@@ -59,13 +60,13 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({info, HeaderDict, From}, State) ->
-	{Result, NewState} = do_info(HeaderDict, State),
+handle_cast({info, Request, From}, State) ->
+	{Result, NewState} = do_info(Request, State),
 	From ! {ok, Result}, 
 	{noreply, NewState}.
     
-handle_call({info, HeaderDict}, _From, State) ->
-	{Result, NewState} = do_info(HeaderDict, State),
+handle_call({info, Request}, _From, State) ->
+	{Result, NewState} = do_info(Request, State),
 	{reply, Result, NewState}.
 
 handle_info(State) ->
@@ -86,7 +87,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-do_info(_HeaderDict, State) ->
+do_info(_Request, State) ->
 	Result = <<"{\"message\": \"It works!!!\"}">>,
 	{Result, State}.
 

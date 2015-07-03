@@ -1,11 +1,11 @@
-%% ---
-%%  PPCA_SOA
-%%  Barramento SOA desenvolvido na disciplina de Construção de Software
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Alunos: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo soa
+%% @version 1.0.0
+%% @doc Módulo responsável por iniciar o erlangMS.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
+
 
 -module(ppca_soa).
 
@@ -19,11 +19,14 @@ start(Port) ->
 	ppca_logger:start(),
 	ppca_logger:info_msg(?SERVER_NAME),
 	ppca_server:start(),
+	ppca_catalogo_service:start(),
+	ppca_dispatcher:start(),
 	ppca_info_service:start(),
 	ppca_favicon_service:start(),
-	ppca_catalogo_service:start(),
+	static_file_service:start(),
+	ppca_auth_user:start(),
 	start_listen(Port),
-	ppca_logger:info_msg("Aguardando requisições.").
+	ppca_logger:info_msg("Aguardando requisições...").
 
 -spec start() -> void.
 start() ->

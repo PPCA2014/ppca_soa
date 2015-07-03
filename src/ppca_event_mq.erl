@@ -1,11 +1,10 @@
-%% ---
-%%  PPCA_SOA
-%%  Publish and subscribe message queue
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Módulo pub_subscribe
+%% @version 1.0.0
+%% @doc Módulo publisher/subscribe do erlangMS.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
 
 -module(ppca_event_mq).
 -behavior(gen_server).

@@ -1,30 +1,75 @@
 [
 	{
-		"comment": "Retorna Ola Mundo!",
-		"owner": "Everton Agilar",
+		"comment": "Responde / e retorna Its Works!!!",
+		"owner": "msbus",
 		"version": "1",
-		"service" : "helloworld_service:execute",
-		"url": "/hello_world",
+		"service" : "ppca_info_service:execute",
+		"url": "/",
 		"async": "false",
 		"type": "GET"
 	},
+
 	{
-		"comment": "Listagem dos formandos por ano/semestre",
-		"owner": "SIGRA",
+		"comment": "Responde /info e retorna informações sobre o barramento. Não está implementado.",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "ppca_info_service:execute",
+		"url": "/info",
+		"async": "false",
+		"type": "GET"
+	},
+
+	{
+		"comment": "Serviço favicon.",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "ppca_favicon_service:execute",
+		"url": "/favicon",
+		"async": "false",
+		"type": "GET"
+	},
+
+	{
+		"comment": "Serviço de autenticação de usuário para o barramento.",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "ppca_auth_user:autentica",
+		"url": "/autentica",
+		"async": "false",
+		"type": "GET"
+	},
+
+	{
+		"comment": "Responde /catalogo e retorna a lista do catálogo atual.",
+		"owner": "ppca_soa",
+		"version": "1",
+		"service" : "ppca_catalogo_service:lista_catalogo",
+		"url": "/catalogo",
+		"async": "false",
+		"type": "GET"
+	},
+
+	{
+		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "static_file_service:execute",
+		"url": "^/portal/",
+		"use_re" : "true",
+		"async": "false",
+		"type": "GET"
+	},
+
+	{
+		"comment": "Um serviço de exemplo: Listagem dos formandos por ano/semestre.",
+		"owner": "Everton Agilar",
 		"version": "1",
 		"service" : "hello_world_service:execute",
-		"url": "/aluno/lista_formandos/tipo/",
+		"url": "/aluno/lista_formandos/(?<tipo>(sintetico|analitico))",
+		"use_re" : "true",
 		"async": "true",
 		"url_callback": "/imprime_retorno_tela",
 		"type": "GET",
-		"params": [
-			{
-				"tipo": [
-					"sintetico",
-					"analitico"
-				]
-			}
-		],
 		"querystring": [
 			{
 				"name": "ano",
@@ -37,5 +82,17 @@
 				"comment": "Semestre de pesquisa"
 			}
 		]
+	},
+
+	{
+		"comment": "Um serviço de exemplo: Retorna Ola Mundo!",
+		"owner": "Everton Agilar",
+		"version": "1",
+		"service" : "helloworld_service:execute",
+		"url": "/hello_world",
+		"async": "false",
+		"type": "GET"
 	}
+
+	
 ]
