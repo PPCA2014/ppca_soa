@@ -1,12 +1,12 @@
-{application, ppca_soa,
+{application, msbus,
  [
-  {description, ""},
+  {description, "erlangMS Microservices"},
   {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
-  {mod, { ppca_soa_app, []}},
+  {mod, { msbus_app, []}},
   {env, []}
  ]}.

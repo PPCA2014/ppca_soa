@@ -14,7 +14,7 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, <<"erlang Micro Services (erlangMS 1.0)">>).
+-define(SERVER_NAME, <<"erlang Microservices (erlangMS 1.0)">>).
 
 % Local onde está o favicon do projeto
 -define(FAVICON_PATH, "./img/favicon.ico").

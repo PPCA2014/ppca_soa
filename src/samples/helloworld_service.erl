@@ -31,9 +31,7 @@
 %%====================================================================
 
 start() -> 
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("helloworld_service iniciado."),
-    Result.
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -74,7 +72,6 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("helloworld_service finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->

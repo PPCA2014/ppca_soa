@@ -21,8 +21,6 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--import(lists, [map/2]).
-
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do msbus_logger. 
@@ -37,10 +35,8 @@
 %% Server API
 %%====================================================================
 
-start() -> % cria o processo e devolve o pid
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    %io:format("msbus_logger iniciado.~n", []),
-    Result.
+start() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -116,7 +112,6 @@ handle_info(rotacao, State) ->
    {noreply, NewState}.
  
 terminate(_Reason, _State) ->
-    %io:format("msbus_logger finalizado.~n"),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -172,7 +167,7 @@ write_msg(Tipo, Msg, Params, State) ->
 	
 sync_buffer(State) ->
 	FileName = get_filename_logger(),
-	file:write_file(FileName, map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
+	file:write_file(FileName, lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
 	#state{}.
 
 rotacao(State) ->

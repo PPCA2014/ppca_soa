@@ -35,9 +35,7 @@
 %%====================================================================
 
 start() -> 
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    msbus_logger:info("msbus_server iniciado."),
-    Result.
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -59,7 +57,10 @@ stop_listen(Port, From) ->
 %%====================================================================
  
 init([]) ->
-    {ok, #state{}}. 
+	case do_start_listen(?CONF_PORT, #state{}) of
+		{ok, NewState} -> {ok, NewState};
+		{{error, _Reason}, NewState} -> {error, NewState}
+	end.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -85,7 +86,6 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    msbus_logger:info("msbus_server finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->

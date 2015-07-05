@@ -106,7 +106,6 @@ handle_info(_Info, State) ->
     {noreply, State}.
  
 terminate(_Reason, _State) ->
-    msbus_logger:info("msbus_pub_subscribe finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->

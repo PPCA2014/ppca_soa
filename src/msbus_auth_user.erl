@@ -75,7 +75,6 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    msbus_logger:info("msbus_auth_user finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
