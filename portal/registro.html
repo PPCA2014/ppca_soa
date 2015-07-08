@@ -8,59 +8,8 @@
 <meta name="description" content="Acesso">
 <meta name="author" content="Everton de Vargas Agilar">
 <link rel="stylesheet" href="static/css/fpc_concat.css">
-<script type="text/javascript">
-   window.onload=function(){
-	  document.getElementById("f_username").value="DIGITE O USUÁRIO";
-	  document.getElementById("f_username").style.color="gray";
-   
-   
-   
-   document.getElementById("f_password").value="DIGITE A SENHA";
-   document.getElementById("f_password").type="text";
-	  document.getElementById("f_password").style.color="gray";
-   }
-   
-   function escreveUser(){
-	   if (document.getElementById("f_username").value=="DIGITE O USUÁRIO"){
-	    document.getElementById("f_username").value="";   }
-		
-		
-	   
-   }
-   
-   function digiteUser(){
-	      if (document.getElementById("f_username").value==""){
-	    document.getElementById("f_username").value="DIGITE O USUÁRIO";   }
-		
-		
-    
-   }
-   
-   function escrevePassword(){
-	   if (document.getElementById("f_password").value=="DIGITE A SENHA"){
-	    document.getElementById("f_password").value="";   }
-		document.getElementById("f_password").type="password";
-		
-	   
-   }
-   
-   function digitePassword(){
-	      if (document.getElementById("f_password").value==""){
-	    document.getElementById("f_password").value="DIGITE A SENHA";  
-		document.getElementById("f_password").type="text";
-		 }
-		  else{
-			  
-			  document.getElementById("f_password").type="password";
-		  }
-		
-    
-   }
-   
-</script>
 
 
-</head>
 <body>
 	<!-- Fixed navbar -->
     <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -74,7 +23,7 @@
           </button>
           <a id="nome_sistema" class="navbar-brand" href="#">
              <strong>
-                Barramento de serviços
+                Registro em serviço
              </strong>
           </a>
         </div>
@@ -87,15 +36,16 @@
 
 
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="catalogo.html"><span class="glyphicon glyphicon-home"></span> Catalogo de serviços</a></li>
+            <li><a href="index.html"><span class="glyphicon glyphicon-home"></span> Barramento de serviços</a></li>
+			<li><a href="catalogo.html"><span class="glyphicon glyphicon-home"></span> Catálogo de serviços</a></li>
 			<li><a href="fpc.views.fpc_logout"><span class="glyphicon glyphicon-off"></span> Logout</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
     </div>
     <div id="painel_conteudo" class="container" style="text-align:center">
-    <h4>O que é :</h4>
-    <h4>Como utilizar:</h4>
+    <h4>Registro no serviço XXXXXXXXXXXXX</h4>
+    <h4>Obter a chave de utilização</h4>
 
      
     </div>
