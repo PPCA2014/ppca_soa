@@ -1,5 +1,8 @@
 [
 	{
+		
+		"id":"1",
+		"name":"Status barramento",
 		"comment": "Responde / e retorna Its Works!!!",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -10,6 +13,7 @@
 	},
 
 	{
+		"name":"Informações sobre o barramento",
 		"comment": "Responde /info e retorna informações sobre o barramento. Não está implementado.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -20,6 +24,7 @@
 	},
 
 	{
+		"name":"Serviço favicon",
 		"comment": "Serviço favicon.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -30,6 +35,7 @@
 	},
 
 	{
+		"name":"Autenticação no barramento",
 		"comment": "Serviço de autenticação de usuário para o barramento.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -40,6 +46,7 @@
 	},
 
 	{
+		"name":"Consulta ao catalógo de API",
 		"comment": "Responde /catalogo e retorna a lista do catálogo atual.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -50,6 +57,7 @@
 	},
 
 	{
+		"name":"Serviço de arquivos estáticos do barramento",
 		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
 		"owner": "portal",
 		"version": "1",
@@ -61,6 +69,7 @@
 	},
 
 	{
+		"name":"Listagem de formandos ano/semestre",
 		"comment": "Um serviço de exemplo: Listagem dos formandos por ano/semestre.",
 		"owner": "Everton Agilar",
 		"version": "1",
@@ -81,17 +90,20 @@
 				"type": "int",
 				"comment": "Semestre de pesquisa"
 			}
-		]
+		],
+        "APIkey":"true"
 	},
 
 	{
+		"name":"Olá MUndo",
 		"comment": "Um serviço de exemplo: Retorna Ola Mundo!",
 		"owner": "Everton Agilar",
 		"version": "1",
 		"service" : "helloworld_service:execute",
 		"url": "/hello_world",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey":"true"
 	}
 
 	
