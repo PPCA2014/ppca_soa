@@ -19,6 +19,7 @@
 
 <script type='text/javascript'>
 	//<![CDATA[ 
+	$('#table').hide();
 	$(window)
 			.load(
 					function() {
@@ -31,10 +32,20 @@
 													.each(
 															data,
 															function(i, val) {
-																var url = "<a href='registro.html?id="
+																var txt = "<span class='glyphicon glyphicon-folder-open' style='color:green'></span> Acesso livre";
+																var txt1 = "<a href='livreacesso.html?id="  ;
+																if(val.APIkey=='true'){
+																	txt="<span class='glyphicon glyphicon-book'></span> Registre-se";
+																	txt1 = "<a href='registro.html?id="  ;
+																};
+																if(val.id=='7'){
+                                                                    txt="<span class='glyphicon glyphicon-ok' style='color:green'></span> Já registrado";
+                                                                    txt1 = "<a href='jaregistrado.html?id="  ;
+                                                                };
+																url = txt1
 																		+ val.id
-																		+ "' class='btn'>"
-																		+ "<span class='glyphicon glyphicon-book'></span> Registre-se</a>";
+																		+ "' class='btn'>" + txt
+																		+ "</a>";
 																val.publisher = url;
 
 															});
@@ -76,7 +87,7 @@
 							class="glyphicon glyphicon-home"></span> Barramento de serviços</a></li>
 					<li><a href="login.html"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
 					<li><a href="fpc.views.fpc_logout"><span
-							class="glyphicon glyphicon-off"></span> Logout</a></li>
+							class="glyphicon glyphicon-log-out"></span> Logout</a></li>
 				</ul>
 			</div>
 			<!--/.nav-collapse -->
@@ -110,7 +121,12 @@
 		</div>
 	</div>
 
-
+<div id="footer">
+      <div class="container">
+        <p class="pull-right"><a href="#">Voltar ao Topo</a></p>
+       
+      </div>
+    </div>   
 	
 
 

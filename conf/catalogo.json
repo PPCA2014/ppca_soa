@@ -13,7 +13,8 @@
 	},
 
 	{
-		"name":"Informações sobre o barramento",
+		"id":"2",
+        "name":"Informações sobre o barramento",
 		"comment": "Responde /info e retorna informações sobre o barramento. Não está implementado.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -24,7 +25,8 @@
 	},
 
 	{
-		"name":"Serviço favicon",
+		"id":"3",
+        "name":"Serviço favicon",
 		"comment": "Serviço favicon.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -35,7 +37,8 @@
 	},
 
 	{
-		"name":"Autenticação no barramento",
+		"id":"4",
+        "name":"Autenticação no barramento",
 		"comment": "Serviço de autenticação de usuário para o barramento.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -46,7 +49,8 @@
 	},
 
 	{
-		"name":"Consulta ao catalógo de API",
+		"id":"5",
+        "name":"Consulta ao catalógo de API",
 		"comment": "Responde /catalogo e retorna a lista do catálogo atual.",
 		"owner": "ppca_soa",
 		"version": "1",
@@ -57,7 +61,8 @@
 	},
 
 	{
-		"name":"Serviço de arquivos estáticos do barramento",
+		"id":"6",
+        "name":"Serviço de arquivos estáticos do barramento",
 		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
 		"owner": "portal",
 		"version": "1",
@@ -69,7 +74,8 @@
 	},
 
 	{
-		"name":"Listagem de formandos ano/semestre",
+		"id":"7",
+        "name":"Listagem de formandos ano/semestre",
 		"comment": "Um serviço de exemplo: Listagem dos formandos por ano/semestre.",
 		"owner": "Everton Agilar",
 		"version": "1",
@@ -95,7 +101,8 @@
 	},
 
 	{
-		"name":"Olá MUndo",
+		"id":"8",
+        "name":"Olá MUndo",
 		"comment": "Um serviço de exemplo: Retorna Ola Mundo!",
 		"owner": "Everton Agilar",
 		"version": "1",

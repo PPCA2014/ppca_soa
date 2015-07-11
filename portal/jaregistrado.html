@@ -62,9 +62,9 @@
           </button>
           <a id="nome_sistema" class="navbar-brand" href="#">
           <span
-                            class="glyphicon glyphicon-book"></span>
+                            class="glyphicon glyphicon-ok"></span>
              <strong>
-                Registro em serviço
+                Serviço registrado
              </strong>
           </a>
         </div>
@@ -85,7 +85,7 @@
     </div>
     <div id="painel_conteudo" class="container" style="text-align:center">
     <div id="msgsucess" class="alert alert-success" style="display:none" role="alert">
-    <h4>Parabéns você acaba de efetuar o registro no serviço !!!</h4></div>
+    <h4>O seu registro neste serviço acaba de ser cancelado !!!</h4></div>
     <div id="msgkey" class="alert alert-info" style="display:none" role="alert">
     <h4 id="acesskey">Sua chave de acesso é : <strong>AXSDCFG12345JKRO</strong></h4></div>
     
@@ -131,7 +131,8 @@
     
     <hr/>
      <a class="btn-primary btn-lg" href="catalogo.html" role="button">Voltar</a>
-    <a class="btn-primary btn-lg" href="#" role="button" onclick="$('#msgsucess').show();$('#msgkey').show();">Registrar</a>
+    <a class="btn-primary btn-lg" href="#" role="button" onclick="$('#msgsucess').show();$('#msgkey').hide();">Cancelar registro</a>
+     <a class="btn-primary btn-lg" href="#" role="button" onclick="$('#msgsucess').hide();$('#msgkey').show();">Recuperar chave de acesso</a>
 
      
     </div>
