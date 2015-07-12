@@ -6,5 +6,6 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--record(user, {id, nome}).
+-record(sequence, {key, index}).
+-record(user, {id, nome, email}).
 

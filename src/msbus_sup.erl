@@ -21,6 +21,8 @@ start_link(Args) ->
 %% ===================================================================
 
 init([]) ->
+	msbus_database:start(),
+
 	{ok, {{one_for_one, 3, 10},
 			[{tag1,
 			  {msbus_logger, start, []},
@@ -53,17 +55,32 @@ init([]) ->
 			  worker,
 			  [msbus_favicon]},
 			 {tag6,
-   			{msbus_static_file, start, []},
-			  permanent,
-			  10000,
-			  worker,
-			  [msbus_static_file]},
+   			  {msbus_static_file, start, []},
+			   permanent,
+			   10000,
+			   worker,
+			   [msbus_static_file]},
 			 {tag7,
 			  {msbus_dispatcher, start, []},
-			  permanent,
-			  10000,
-			  worker,  
-			  [msbus_dispatcher]}
+			   permanent,
+			   10000,
+			   worker,  
+			   [msbus_dispatcher]},
+			 {msbus_user,
+			  {msbus_user, start, []},
+			   permanent,
+			   10000,
+			   worker,  
+			   [msbus_user]},
+
+			 %% Serviços REST
+			 {msbus_user_service,
+			  {msbus_user_service, start, []},
+			   permanent,
+			   10000,
+			   worker,  
+			   [msbus_user_service]}			  
+			   			  
  		    ]  
  		}
  	}.

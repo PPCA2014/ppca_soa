@@ -85,7 +85,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_get_file(Request) ->
-	FilePath = ?STATIC_FILE_PATH ++ msbus_util:get_property_request(<<"url">>, Request),
+	FilePath = ?STATIC_FILE_PATH ++ msbus_request:get_property_request(<<"url">>, Request),
 	case file:read_file(FilePath) of
 		{ok, Arquivo} -> 
 			ContentType = msbus_util:mime_type(filename:extension(FilePath)),

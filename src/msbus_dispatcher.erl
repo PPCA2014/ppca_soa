@@ -100,19 +100,11 @@ do_dispatch_request(From, HeaderDict, Payload) ->
 executa_servico(From, HeaderDict, Payload, Servico, ParamsUrl) ->
 	Module = msbus_catalogo:get_property_servico(<<"module">>, Servico),
 	Function = msbus_catalogo:get_property_servico(<<"function">>, Servico),
-	Request = encode_request(HeaderDict, Payload, Servico, ParamsUrl),
+	Request = msbus_request:encode_request(HeaderDict, Payload, Servico, ParamsUrl),
 	case executa_processo_erlang(Module, Function, Request, From) of
 		em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto
 		Error -> From ! Error
 	end.
-
-%% @doc Gera um objeto request com os dados da requisição
-encode_request(HeaderDict, Payload, Servico, ParamsUrl) ->
-	Request = #request{http_headers = HeaderDict,
-					   payload = Payload,
-					   servico = Servico,
-					   params_url = ParamsUrl},
-	Request.
 
 %% @doc Executa o processo erlang de um serviço
 executa_processo_erlang(Module, Function, Request, From) ->

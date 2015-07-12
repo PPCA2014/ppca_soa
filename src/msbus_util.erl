@@ -14,8 +14,8 @@
 		 json_decode/1,
 		 hd_or_empty/1,
 		 json_decode_as_map/1,
-		 get_property_request/2,
-		 mime_type/1]).
+		 mime_type/1,
+		 format/1]).
 
 -include("../include/msbus_config.hrl").
 
@@ -62,9 +62,13 @@ hd_or_empty(_) -> [].
 %% @doc Retorna a string com aspas
 % quote(Str) -> [$", Str, $"].
 
-%% @doc Lê a url do objeto request
-get_property_request(<<"url">>, Request) ->
-	dict:fetch("Url", Request#request.http_headers).
+format(List) -> format(List, []).
+format([], Results) -> Results;
+format([H|T], Results) -> format(T, [json(H)|Results]).
+
+json({_, Key, Content, Priority, Status}) ->
+   {Key, [Content, Priority, Status]}.
+
 
 %% @doc Retorna o mime-type do arquivo
 
