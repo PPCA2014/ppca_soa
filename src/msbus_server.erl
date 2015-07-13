@@ -46,10 +46,10 @@ stop() ->
 %%====================================================================
  
 start_listen(Port, From) ->
-	gen_server:cast(?SERVER, {start_listen, Port, From}).
+	gen_server:call(?SERVER, {start_listen, Port, From}).
 
 stop_listen(Port, From) ->
-	gen_server:cast(?SERVER, {stop_listen, Port, From}).
+	gen_server:call(?SERVER, {stop_listen, Port, From}).
 	
  
 %%====================================================================
