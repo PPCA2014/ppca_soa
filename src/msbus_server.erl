@@ -100,6 +100,7 @@ do_start_listen(Port, State) ->
 	case start_server(Port) of
 		{ok, Listen} ->
 			NewState = State#state{listener=[{Listen, Port}|State#state.listener]},
+			msbus_logger:info("Escutando na porta ~p~n", [Port]),
 			Reply = {ok, NewState};
 		{error, Reason} ->
 			Reply = {{error, Reason}, State}
@@ -111,6 +112,7 @@ do_stop_listen(Port, State) ->
 		[Listen|_] ->
 			stop_server(Listen),
 			NewState = State#state{listener=lists:delete({Listen, Port}, State#state.listener)},
+			msbus_logger:info("Parou de escutar na porta ~p~n", [Port]),
 			Reply = {ok, NewState};
 		_ -> 
 			Reply = {{error, enolisten}, State}

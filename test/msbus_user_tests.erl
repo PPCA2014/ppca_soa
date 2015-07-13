@@ -4,7 +4,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("stdlib/include/qlc.hrl").
--include("../include/db_schema.hrl").
+-include("../include/msbus_schema.hrl").
 
 start() ->
 	test_ins_update_call(),
