@@ -8,50 +8,31 @@
 <meta name="description" content="Acesso">
 <meta name="author" content="Everton de Vargas Agilar">
 <link rel="stylesheet" href="static/css/fpc_concat.css">
+<script type="text/javascript" src="static/js/jquery/jquery-2.1.3.min.js"></script>
 <script type="text/javascript">
-	window.onload = function() {
-		document.getElementById("f_username").value = "DIGITE O USUÁRIO";
-		document.getElementById("f_username").style.color = "gray";
-
-		document.getElementById("f_password").value = "DIGITE A SENHA";
-		document.getElementById("f_password").type = "text";
-		document.getElementById("f_password").style.color = "gray";
-	}
-
-	function escreveUser() {
-		if (document.getElementById("f_username").value == "DIGITE O USUÁRIO") {
-			document.getElementById("f_username").value = "";
-		}
-
-	}
-
-	function digiteUser() {
-		if (document.getElementById("f_username").value == "") {
-			document.getElementById("f_username").value = "DIGITE O USUÁRIO";
-		}
-
-	}
-
-	function escrevePassword() {
-		if (document.getElementById("f_password").value == "DIGITE A SENHA") {
-			document.getElementById("f_password").value = "";
-		}
-		document.getElementById("f_password").type = "password";
-
-	}
-
-	function digitePassword() {
-		if (document.getElementById("f_password").value == "") {
-			document.getElementById("f_password").value = "DIGITE A SENHA";
-			document.getElementById("f_password").type = "text";
-		} else {
-
-			document.getElementById("f_password").type = "password";
-		}
-
-	}
+window.onload=function(){
+	   document.getElementById("sobre").hidden=true;
+	   document.getElementById("utilizacao").hidden=true;
+   }
+$(document).ready(function(){
+	
+	
+	
+ 
+	$("#exibir_sobre").click(function(event){
+	  event.preventDefault();
+	  $("#sobre").show(500);
+	  $("#utilizacao").hide("slow");
+	});
+	
+	$("#como_utilizar").click(function(event){
+	  event.preventDefault();
+	  $("#utilizacao").show(500);
+	  $("#sobre").hide("slow");
+	});
+	
+});
 </script>
-
 
 </head>
 <body>
@@ -91,9 +72,21 @@
 		</div>
 	</div>
 	<div id="painel_conteudo" class="container" style="text-align: center">
-		<h4>O que é :</h4>
-		<h4>Como utilizar:</h4>
+    <h4><img style="width: 561px; height: 121px;" alt="Barramento de Serviços" src="static/img/barramento_de_servicos.gif"><br>
+</h4>
+		<h4><a href="#" id="exibir_sobre">O que é :</a></h4>
+        <div id="sobre" style="background-color: #D7EDF4; color:black; padding:10px; text-align:justify; display:none;">
+          <p>Este barramento orientado a serviços foi desenvolvido pela Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília.</p>
 
+<p>É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que torna este barramento diferente de outros barramentos SOA é a facilidade de configuração e uso.
+</p>
+        
+        </div>
+		<h4><a href="#" id="como_utilizar">Como utilizar:</a></h4>
+           <div id="utilizacao" style="background-color: #D7EDF4; color:black; padding:10px; text-align:justify; display:none;">
+          <p> Navegue a partir de <a href="catalogo.html">Catálogo de Serviços</a> para conhecer os serviços disponíveis em nosso barramento e usufruir os serviços desejados.
+        
+        </div>
 
 	</div>
 	<div id="footer">
@@ -106,9 +99,7 @@
 	</div>
 	<a id="btn_abrir_dialog" href="#openModal" style="display: none"></a>
 	<div id="f_dialog"></div>
-	<p style="text-align: center">
-		<a>Criar uma conta </a>
-	</p>
+	
 	<script type="application/javascript" async
 		src="static/js/fpc_concat.js"></script>
 </body>
