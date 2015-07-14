@@ -92,7 +92,7 @@ get_favicon_from_disk()->
 	{ok, Arquivo} = file:read_file(?FAVICON_PATH),
 	Arquivo.
     
-do_get_favicon(Request, State) ->
+do_get_favicon(_Request, State) ->
 	Result = {favicon, State#state.arquivo},
 	{Result, State}.
 

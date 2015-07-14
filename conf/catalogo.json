@@ -111,7 +111,18 @@
 		"async": "false",
 		"type": "GET",
 		"APIkey":"true"
+	},
+	
+	{
+		"id": "9",
+		"name":"Lista todos os usuários cadastrados",
+		"comment": "Lista todos os usuários cadastrados",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "msbus_user_service:all",
+		"url": "/user/all",
+		"type": "GET",
+		"APIkey":"true"
 	}
-
 	
 ]

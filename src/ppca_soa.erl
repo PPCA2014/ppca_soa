@@ -16,6 +16,7 @@
 
 -spec start(pos_integer()) -> void.
 start(Port) -> 
+	ppca_database:start(),
 	ppca_logger:start(),
 	ppca_logger:info_msg(?SERVER_NAME),
 	ppca_server:start(),
@@ -25,6 +26,8 @@ start(Port) ->
 	ppca_favicon_service:start(),
 	static_file_service:start(),
 	ppca_auth_user:start(),
+	ppca_user:start(),
+	ppca_user_service:start(),
 	start_listen(Port),
 	ppca_logger:info_msg("Aguardando requisições...").
 
