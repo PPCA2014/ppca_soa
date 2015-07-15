@@ -6,3 +6,4 @@ ebin/**
 #*
 .dialyzer.plt
 .rebar
+Mnesia.nonode@nohost

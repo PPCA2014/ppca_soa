@@ -295,6 +295,9 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 	Response2 = iolist_to_binary(Response),
 	Response2.
 
+encode_response(Codigo, []) ->
+	encode_response(Codigo, <<>>);
+	
 %% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 	encode_response(Codigo, Payload, <<"application/json">>);
@@ -309,10 +312,14 @@ encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
     Payload = msbus_util:json_encode(PayloadList),
     encode_response(Codigo, Payload);
 
+encode_response(Codigo, PayloadTuple) when is_tuple(PayloadTuple) ->
+    Payload = msbus_util:json_encode(PayloadTuple),
+    encode_response(Codigo, Payload);
+
 %% @doc Gera o response para dados texto
-encode_response(Codigo, PayloadStr) ->
-    PayloadBin = iolist_to_binary(PayloadStr),
-    encode_response(Codigo, PayloadBin).
+encode_response(Codigo, Payload) ->
+    Payload2 = msbus_util:json_encode(Payload),
+    encode_response(Codigo, Payload2).
 
 header_cache_control(<<"image/x-icon">>) ->
 	<<"Cache-Control: max-age=290304000, public">>;

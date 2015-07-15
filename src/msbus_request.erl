@@ -25,7 +25,9 @@ get_property_request(<<"payload">>, Request) ->
 %% @doc Retorna um parâmetro do request
 get_param_url(NomeParam, Request) ->
 	ParamsUrl = Request#request.params_url,
-	maps:get(NomeParam, ParamsUrl, "").
+	NomeParam2 = iolist_to_binary(NomeParam),
+	Value = maps:get(NomeParam2, ParamsUrl, ""),
+	binary_to_list(Value).
 
 %% @doc Gera um objeto request com os dados da requisição
 encode_request(HeaderDict, Payload, Servico, ParamsUrl) ->

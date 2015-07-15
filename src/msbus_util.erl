@@ -15,7 +15,10 @@
 		 hd_or_empty/1,
 		 json_decode_as_map/1,
 		 mime_type/1,
-		 format/1]).
+		 format/1,
+		 tuple_to_binlist/1, 
+		 list_to_binlist/1, 
+		 item_to_binary/1]).
 
 -include("../include/msbus_config.hrl").
 
@@ -30,9 +33,52 @@ timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	lists:flatten(io_lib:format("~p/~p/~p ~p:~p:~p", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+
+tuple_to_binlist(T) ->
+	L = tuple_to_list(T),
+	list_to_binlist(L).
+
+list_to_binlist([]) -> [];
+list_to_binlist(<<V/binary>>) -> [V];
+list_to_binlist([H|T]) -> [item_to_binary(H)|list_to_binlist(T)].
+
+item_to_binary([]) -> [];
+item_to_binary(<<I/binary>>) -> I;
+item_to_binary(T) when is_tuple(T) -> 
+	tuple_to_binlist(T);
+item_to_binary([[L] = Lista]) when is_list(L) -> 
+	list_to_binlist(Lista);
+item_to_binary([T] = Lista) when is_tuple(T) -> 
+	list_to_binlist(Lista);
+item_to_binary(I) when is_integer(I) -> 
+	I2 = integer_to_list(I),
+	iolist_to_binary(I2);
+item_to_binary(I) when is_atom(I) -> 
+	[I2] = io_lib:format("~p", [I]),
+	iolist_to_binary(I2);
+item_to_binary(I) when is_map(I) -> I;
+item_to_binary(I) -> iolist_to_binary(I).
+
+
 %% @doc Converte dados Erlang para JSON
-json_encode(JSON)->
-	jsx:encode(JSON).
+json_encode([]) -> [];
+
+json_encode(T) when is_tuple(T) ->
+	L = tuple_to_binlist(T),
+	jsx:encode(L);
+
+json_encode(L) when is_list(L) ->
+	case io_lib:printable_list(L) of
+		true -> L2 = iolist_to_binary(L);
+		false -> L2 = list_to_binlist(L)
+	end,
+	jsx:encode(L2);
+
+json_encode(L) when is_list(L) ->
+	jsx:encode(iolist_to_binary(L));
+	
+json_encode(Value)->
+	jsx:encode(Value).
 
 %% @doc Converte um JSON para dados Erlang usando map
 json_decode_as_map(JSON) ->

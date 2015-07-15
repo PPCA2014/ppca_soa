@@ -118,10 +118,13 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_all(_Request, _State) ->
 	msbus_user:call(all).
-
+	
 do_get(Request, _State) ->
 	Id = msbus_request:get_param_url(<<"id">>, Request),
-	msbus_user:call({get, Id}).
+	io:format("\nValor final ~p", [Id]),
+	Result = msbus_user:call({get, Id}),
+	io:format("\nValor result ~p", [Result]),
+	Result.
 
 do_insert(Request, _State) ->
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),

@@ -16,10 +16,9 @@
 
 %% Inits or resets a sequence to Value
 init_sequence(Name, Value) ->
-     {atomic, ok} =
-	mnesia:transaction(fun() ->
-				   mnesia:write(#sequence{key=Name, index=Value})
-			   end),
+     {atomic, ok} =	mnesia:transaction(fun() ->
+						mnesia:write(#sequence{key=Name, index=Value})
+					end),
      ok.
 
 %% Returns current value for sequence Name and increments

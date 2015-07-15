@@ -86,7 +86,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 do_autentica(_Request, State) ->
-	Response = "{\"key\": \"123456789\"}",
+	Response = {token, 123456789},
 	NewState = State#state{},
 	{Response, NewState}.
 

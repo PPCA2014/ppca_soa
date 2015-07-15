@@ -176,7 +176,7 @@ lookup_re(Url, [H|T]) ->
 		match -> {ok, H, []};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),
-			ParamsMap = lists:zip(ParamNames, Params),
+			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 			{ok, H, ParamsMap};
 		nomatch -> lookup_re(Url, T);
 		{error, _ErrType} -> nofound

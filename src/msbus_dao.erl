@@ -14,7 +14,11 @@
 
 -export([get/2, all/1, insert/1, update/1, delete/2]).
 
-get(RecordType, Id) ->
+get(RecordType, Id) when is_list(Id) ->
+	Id2 = list_to_integer(Id),
+	get(RecordType, Id2);
+
+get(RecordType, Id) when is_number(Id) ->
 	Query = fun() ->
 		mnesia:read(RecordType, Id)
 	end,
@@ -22,7 +26,10 @@ get(RecordType, Id) ->
 		{atomic, []} -> {erro, notfound};
 		{atomic, [Record|_]} -> {ok, Record};
 		{aborted, _Reason} -> {erro, aborted}
-	end.
+	end;
+
+get(_RecordType, _) -> {erro, notfound}.
+
 
 all(RecordType) ->
 	Query = fun() ->
