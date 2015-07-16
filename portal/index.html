@@ -3,40 +3,34 @@
 <html lang="pt-Br">
 <head>
 <meta charset="UTF-8">
-<title>PPCA SOA</title>
+<title>BARRAMENTO PPCA</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Acesso">
 <meta name="author" content="Everton de Vargas Agilar">
 <link rel="stylesheet" href="static/css/fpc_concat.css">
+<link rel="shortcut icon" href="static/img/favicon.ico" />
+
+    
+    <script async="" src="static/css/estilo_index/analytics.js"></script><script async="" src="static/css/estilo_index/cloudflare.min.js"></script>
+    <link rel="shortcut icon" href="">
+    <link href="static/css/estilo_index/css.css" rel="stylesheet" type="text/css">
+    <link href="static/css/estilo_index/css_2.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="static/css/estilo_index/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/estilo_index/font-awesome.css">
+    <link rel="stylesheet" href="static/css/estilo_index/flexslider.css">
+    <link id="theme-style" rel="stylesheet" href="static/css/estilo_index/styles-2.css">
+    <link id="theme-style" rel="stylesheet" href="static/css/estilo_index/linecons.css">
+    <link id="theme-style" rel="stylesheet" href="static/css/estilo_index/custom.css">
+    
+    
+    
+    
 <script type="text/javascript" src="static/js/jquery/jquery-2.1.3.min.js"></script>
-<script type="text/javascript">
-window.onload=function(){
-	   document.getElementById("sobre").hidden=true;
-	   document.getElementById("utilizacao").hidden=true;
-   }
-$(document).ready(function(){
-	
-	
-	
- 
-	$("#exibir_sobre").click(function(event){
-	  event.preventDefault();
-	  $("#sobre").show(500);
-	  $("#utilizacao").hide("slow");
-	});
-	
-	$("#como_utilizar").click(function(event){
-	  event.preventDefault();
-	  $("#utilizacao").show(500);
-	  $("#sobre").hide("slow");
-	});
-	
-});
-</script>
+
 
 </head>
-<body>
-	<!-- Fixed navbar -->
+<body class="home-page"> 
+
 	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
 		<div class="container">
 			<div class="navbar-header">
@@ -71,27 +65,170 @@ $(document).ready(function(){
 			<!--/.nav-collapse -->
 		</div>
 	</div>
-	<div id="painel_conteudo" class="container" style="text-align: center">
-    <h4><img style="width: 561px; height: 121px;" alt="Barramento de Serviços" src="static/img/barramento_de_servicos.gif"><br>
-</h4>
-		<h4><a href="#" id="exibir_sobre">O que é :</a></h4>
-        <div id="sobre" style="background-color: #D7EDF4; color:black; padding:10px; text-align:justify; display:none;">
-        <h5>A função essencial de um barramento de serviços é servir como ponte
+    
+    
+   
+   
+   
+            
+    
+   
+    
+    <div class="sections-wrapper">
+     
+        
+        <section id="why" class="section why">
+            <div class="container">
+               <p style="text-align:center"><img src="static/img/barramento_de_servicos.gif" alt="Barramento de Serviços"></p>
+                <h2 class="title text-center">O que é nosso Barramento de Serviços?</h2>
+                <p class="intro" style="text-align:justify">A função essencial de um barramento de serviços é servir como ponte
 entre a implementação de um serviço e a forma como ele é exposto
 para que seja consumido. Assim sendo, o barramento deve dispor de
 robustez, possuindo recursos que facilitem a exposição e composição
-de serviços, proporcionando a disponibilização de diversos serviços em um local único e centralizado, que vocês poderão encontrar <a href="catalogo.html">aqui</a>. </h5>
-          <h5>Este barramento orientado a serviços foi desenvolvido pela Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília.É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que torna este barramento diferente de outros barramentos SOA é a facilidade de configuração e uso.
-</h5>
-     
-        </div>
-		<h4><a href="#" id="como_utilizar">Como utilizar:</a></h4>
-           <div id="utilizacao" style="background-color: #D7EDF4; color:black; padding:10px; text-align:justify; display:none;">
-          <h5> Navegue a partir do nosso <a href="catalogo.html">Catálogo de Serviços</a> para conhecer os serviços disponíveis em nosso barramento e se registrar nos serviços desejados.
-        </h5>
-        </div>
+de serviços, proporcionando a disponibilização de diversos serviços em um local único e centralizado.
+          Este barramento orientado a serviços foi desenvolvido pela Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília.É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que torna este barramento diferente de outros barramentos SOA é a facilidade de configuração e uso.
+</p>
+                <div class="row item">
+                    <div class="content col-md-4 col-sm-12 col-xs-12">
+                        <h3 class="title">Versão 1.0 Lançada</h3>
+                        <div class="desc">
+                            <p>
+                               Atualmente possuímos xxx serviços disponíveis para você e mais xxx usuários!
+                            </p>
+                           <p> Você é novo por aqui e quer conhecer mais como o barramento de serviços pode contribuir para o desenvolvimento de suas aplicações?</p>
+                        </div>
+                                              
+                    </div>
+                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
+                        <img class="img-responsive" src="static/img/chat-icon.png" alt="Quero saber mais">
+                        <figcaption class="figure-caption">(Fique por dentro como nosso barramento pode te ajudar!) </figcaption>
+                    </figure>
+                </div>
+                
+                <div class="row item">
+                    <div class="content col-md-4 col-sm-12 col-xs-12 col-md-push-8 col-sm-push-0 col-xs-push-0">
+                        <h3 class="title">Quantidade de requisições aos nossos serviços</h3>
+                        <div class="desc">
+                            <p>
+                                Texto descritivo aqui sobre as requisições aos nossos serviços! xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            </p>
+                            <p>
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            </p>
+                            
+                        </div>
+                        
+                                           
+                    </div>
+                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-pull-5 col-sm-pull-0 col-xs-pull-0">
+                        <img class="img-responsive" src="static/img/teste_1.png" alt="">
+                        
+                    </figure>
+                </div>
+                
+                <div class="row item ">
+                    <div class="content col-md-4 col-sm-12 col-xs-12">
+                        <h3 class="title">Serviços mais utilizados</h3>
+                        <div class="desc">
+                            <p>
+                                Texto descritivo aqui sobre os serviços mais utilizados.
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxx
+                            </p>
+                            <p>
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                xxxxxxxxxxxxxxxxxxxxxxxxx
+                            </p>
+                        </div>
+                                   
+                    </div>
+                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
+                        <img class="img-responsive" style="margin-right:0px;" src="static/img/teste_2.png" alt="">
+                        
 
-	</div>
+                    </figure>
+                </div>
+
+                <div class="row item last-item">
+                    <div class="content col-md-4 col-sm-12 col-xs-12 col-md-push-8 col-sm-push-0 col-xs-push-0">
+                        <h3 class="title">Desempenho dos serviços</h3>
+                        <div class="desc">
+                            <p>
+                                Descrição sobre desempenho dos serviços
+                            </p>
+                            <p>
+                                xxxxxxxxxxxxx.
+                                xxxxxxxxxxxxx.
+                                xxxxxxxxxxxxx.
+                                xxxxxxxxxxxxx.
+                            </p>
+                            
+                        </div>
+                        
+                        
+                    </div>
+                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-pull-4 col-sm-pull-0 col-xs-pull-0">
+                        <img class="img-responsive" src="static/img/teste_3.gif" alt="">
+                    </figure>
+                </div>
+
+              <!--
+                <div class="row item ">
+                    <div class="content col-md-4 col-sm-12 col-xs-12">
+                        <h3 class="title">Outro Analytics</h3>
+                        <div class="desc">
+                            <p>
+                                Texto aqui 
+                            </p>
+                            <p>
+                                Texto aqui
+                            </p>
+                        </div>
+                                             
+                    </div>
+                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
+                        <img style="width:450px; margin-left: 180px;" class="img-responsive" src="" alt="">
+                        
+
+                    </figure>
+                </div>
+                
+                -->
+                
+                
+                <div class="feature-lead text-center">
+                    <h4 class="title">Quer conhecer em detalhes todos os nossos serviços?</h4>
+                    <p><a class="btn btn-cta btn-cta-secondary" href="catalogo.html">Catálogo de Serviços</a><br></p>
+                </div>
+            </div>
+        </section>  
+        
+        
+               
+        
+        
+        
+        
+        
+        
+    </div>
+   
+   
+   
+   
+   
+   
+   
+</div>
 	<div id="footer">
 		<div class="container">
 			<p class="pull-right">
