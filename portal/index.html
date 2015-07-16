@@ -80,13 +80,92 @@
         <section id="why" class="section why">
             <div class="container">
                <p style="text-align:center"><img src="static/img/barramento_de_servicos.gif" alt="Barramento de Serviços"></p>
+               
+               
+               <table style="width: 800px; height: 400px; text-align: left; margin-left: auto; margin-right: auto;" border="2" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Versão
+1.0 lançada!</span><br>
+<br>
+Atualmente
+possuímos <a href="catalogo.html">xxx serviços
+disponíveis</a>
+para você e mais xxxxx usuários!<br>
+<br>
+<table border="0">
+<tbody>
+<tr>
+<td><img alt="Requisições aos serviços do barramento" src="static/img/panda.gif">
+</td>
+<td><a href="#intro">Hmmm...
+Você é novo por aqui e quer conhecer mais sobre o
+barramento de serviços e como ele pode contribuir para o
+desenvolvimento das suas
+aplicações?</a></td>
+</tr>
+</tbody>
+</table>
+<br>
+</td>
+<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Quantidade de requisições aos
+nossos serviços:<br>
+<br>
+<img alt="Requisições aos serviços do barramento" src="static/img/analise1.jpg">
+<br>
+</span></td>
+<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Serviços mais utilizados:</span><br>
+<br>
+<img alt="Requisições aos serviços do barramento" src="static/img/analise2.jpg">
+</td>
+</tr>
+</tbody>
+</table>
+       <h4><a name="intro"></a><br>
+</h4>        
+               
                 <h2 class="title text-center">O que é nosso Barramento de Serviços?</h2>
-                <p class="intro" style="text-align:justify">A função essencial de um barramento de serviços é servir como ponte
-entre a implementação de um serviço e a forma como ele é exposto
-para que seja consumido. Assim sendo, o barramento deve dispor de
-robustez, possuindo recursos que facilitem a exposição e composição
-de serviços, proporcionando a disponibilização de diversos serviços em um local único e centralizado.
-          Este barramento orientado a serviços foi desenvolvido pela Turma de Engenharia de Software do Mestrado Profissional em Computação Aplicada (MPCA) da Universidade de Brasília.É escrito em Erlang e permite manipular grande quantidade de requisições sem perda de performance. O que torna este barramento diferente de outros barramentos SOA é a facilidade de configuração e uso.
+                <p style="text-align:justify; color: #999999; margin: 0 auto;">Este projeto é a implementação do conceito de "barramento de serviços" (ou <span style="font-style: italic;">Enterprise Service Bus</span>
+- ESB), uma camada intermediadora entre componentes de software
+(denominandos "serviços") e aplicações que consomem estes serviços. O
+barramento de serviços provê uma interface unificada para o acesso a
+esses serviços.<br><br>A utilização do barramento de serviços de forma apropriada poderá possibilitar, entre outras vantagens:<br><br>1)
+Promover a reusabilidade de componentes de software - implementando os
+componentes na forma de serviços, uma vez que o serviço esteja
+publicado no barramento de serviços, ele poderá ser acessado por
+diversas outras aplicações, inclusive outras que não estavam previstas
+inicialmente para utilizar o serviço. Com a existência de um catálogo
+de serviços, a equipe de desenvolvimento de uma nova aplicação pode
+reutilizar componentes disponíveis no portal ao invés de realizar um
+novo desenvolvimento destes componentes, reduzindo prazos e custos no
+projeto da aplicação.<br><br>2) Promover a integração entre aplicações
+- independentemente da arquitetura em que o serviço foi desenvolvido,
+uma vez publicado no barramento, o acesso ao mesmo é feito por uma
+interface padronizada, possibilitando o seu consumo por aplicações
+desenvolvidos em diferentes tecnologias.<br><br>3) Controle de acesso
+centralizado aos serviços - o controle de acesso aos serviços do
+barramento é centralizado e é estabelecido por uma "assinatura" do
+serviço pela aplicação. Também é possível limitar a utilização de um
+serviço somente para determinadas aplicações.<br>&nbsp;<br>4) Monitorar
+o consumo dos serviços - todas as chamadas aos serviços do barramento
+são monitoradas e podem ser visualizadas posteriormente por usuários
+autorizados. <br>&nbsp;<br>5) Diagnosticar pontos de "gargalo" na
+chamada aos serviços - O monitoramento do consumo dos serviços do
+barramento permite a detecção de "gargalos" que podem originar do
+consumo excessivo de um determinado serviço.<br><br>6) Controlar a
+disponibilização e versionamento de serviços - Com o barramento de
+serviços, a equipe de desenvolvimento responsável pela
+manutenção/atualização de um determinado serviço poderá verificar quais
+aplicações serão afetadas por essa operação. E uma vez substituído o
+serviço, não é necessário realizar&nbsp; alterações nessas aplicações.
+Se for o caso, versões futuras do serviço também podem ser publicadas
+como serviços independentes (sem substituição do serviço anterior).<br><br>Este barramento orientado a serviços foi
+desenvolvido pela Turma de Engenharia de Software do Mestrado
+Profissional em Computação Aplicada (MPCA) da Universidade de
+Brasília.É escrito em Erlang e permite manipular grande quantidade de
+requisições sem perda de performance. O que torna este barramento
+diferente de outros barramentos SOA é a facilidade de configuração e
+uso, além de diversos controles visuais para acompanhar a utilização dos serviços, como por exemplo:<br>&nbsp;
 </p>
                 <div class="row item">
                     <div class="content col-md-4 col-sm-12 col-xs-12">
@@ -207,7 +286,7 @@ de serviços, proporcionando a disponibilização de diversos serviços em um lo
                 
                 <div class="feature-lead text-center">
                     <h4 class="title">Quer conhecer em detalhes todos os nossos serviços?</h4>
-                    <p><a class="btn btn-cta btn-cta-secondary" href="catalogo.html">Catálogo de Serviços</a><br></p>
+                    <p><a class="btn-cta btn-cta-secondary" href="catalogo.html">Catálogo de Serviços</a><br></p>
                 </div>
             </div>
         </section>  
