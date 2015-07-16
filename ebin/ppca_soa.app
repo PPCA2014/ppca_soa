@@ -5,7 +5,7 @@
               {applications,[kernel,stdlib]},
               {mod,{ppca_soa_app,[]}},
               {env,[]},
-              {modules,[aluno,helloworld_service,ppca_auth_user,
+              {modules,[aluno,helloworld_service,ppca_auth_user,ppca_catalogo,
                         ppca_catalogo_service,ppca_dao,ppca_database,
                         ppca_dispatcher,ppca_event_mq,ppca_favicon_service,
                         ppca_info_service,ppca_logger,ppca_request,ppca_route,

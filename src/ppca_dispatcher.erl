@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo dispatcher do servidor http.
+%% @title Módulo dispatcher
 %% @version 1.0.0
-%% @doc Faz o despacho das requisições para o serviço apropriado,
+%% @doc Módulo responsável pelo componente dispatcher do erlangMS.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -32,9 +32,7 @@
 %%====================================================================
 
 start() -> 
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_dispatcher iniciado."),
-    Result.
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -74,7 +72,6 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_dispatcher finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -87,9 +84,9 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Despacha a requisição para o serviço correspondente
 do_dispatch_request(From, HeaderDict, Payload) ->
-	_Metodo = dict:fetch("Metodo", HeaderDict),
+	Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	case ppca_catalogo_service:lookup(Url) of
+	case ppca_catalogo:lookup(Url, Metodo) of
 		{ok, Servico} -> 
 			executa_servico(From, HeaderDict, Payload, Servico, []);
 		{ok, Servico, ParamsUrl} -> 
@@ -101,21 +98,13 @@ do_dispatch_request(From, HeaderDict, Payload) ->
 
 %% @doc Executa o serviço correspondente
 executa_servico(From, HeaderDict, Payload, Servico, ParamsUrl) ->
-	Module = ppca_catalogo_service:get_property_servico(<<"module">>, Servico),
-	Function = ppca_catalogo_service:get_property_servico(<<"function">>, Servico),
-	Request = encode_request(HeaderDict, Payload, Servico, ParamsUrl),
+	Module = ppca_catalogo:get_property_servico(<<"module">>, Servico),
+	Function = ppca_catalogo:get_property_servico(<<"function">>, Servico),
+	Request = ppca_request:encode_request(HeaderDict, Payload, Servico, ParamsUrl),
 	case executa_processo_erlang(Module, Function, Request, From) of
 		em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto
 		Error -> From ! Error
 	end.
-
-%% @doc Gera um objeto request com os dados da requisição
-encode_request(HeaderDict, Payload, Servico, ParamsUrl) ->
-	Request = #request{http_headers = HeaderDict,
-					   payload = Payload,
-					   servico = Servico,
-					   params_url = ParamsUrl},
-	Request.
 
 %% @doc Executa o processo erlang de um serviço
 executa_processo_erlang(Module, Function, Request, From) ->

@@ -24,7 +24,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
-	
+
 %  Armazena o estado do servico. 
 -record(state, {}). 
 
@@ -125,8 +125,43 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_get(Id) -> ppca_dao:get(user, Id).
-do_insert(User) -> ppca_dao:insert(User).
-do_update(User) -> ppca_dao:update(User).
+
+do_insert(User) -> 
+	case valida(User, insert) of
+		ok -> ppca_dao:insert(User);
+		Error -> Error
+	end.
+
+do_update(User) -> 
+	case valida(User, update) of
+		ok -> ppca_dao:update(User);
+		Error -> Error
+	end.
+
 do_all() -> ppca_dao:all(user).
-do_delete(Id) -> ppca_dao:delete(user, Id).
+
+do_delete(Id) -> 
+	case valida(null, delete) of
+		ok -> 
+			ppca_dao:delete(user, Id);
+		Error -> Error
+	end.
+
+valida(User, insert) ->
+	Msgs = ppca_util:mensagens(
+				[ppca_util:msg_campo_obrigatorio("nome", User#user.nome),
+				 ppca_util:msg_campo_obrigatorio("email", User#user.email),
+				 ppca_util:msg_email_invalido("email", User#user.email)]),
+	case Msgs of
+		[] -> ok;
+		_ -> {error, Msgs}
+	end;
+
+valida(User, update) ->	valida(User, insert);
+
+valida(_User, delete) -> ok.	
+	
+
+
+
 

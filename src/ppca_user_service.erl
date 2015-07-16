@@ -118,24 +118,28 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_all(_Request, _State) ->
 	ppca_user:call(all).
-
+	
 do_get(Request, _State) ->
 	Id = ppca_request:get_param_url(<<"id">>, Request),
-	ppca_user:call({get, Id}).
+	Result = ppca_user:call({get, Id}),
+	Result.
 
 do_insert(Request, _State) ->
 	UserJson = ppca_request:get_property_request(<<"payload">>, Request),
-	NomeUser = maps:get(<<"nome">>, UserJson),
-	User = #user{nome = NomeUser},
+	User = #user{nome  = maps:get(<<"nome">>, UserJson, ""),
+				 email = maps:get(<<"email">>, UserJson, "")},
 	ppca_user:call({insert, User}).
 
 do_update(Request, _State) ->
 	Id = ppca_request:get_param_url(<<"id">>, Request),
 	UserJson = ppca_request:get_property_request(<<"payload">>, Request),
-	NomeUser = maps:get(<<"nome">>, UserJson),
-	User = ppca_user:call({get, Id}),
-	User2 = User#user{nome = NomeUser},
-	ppca_user:call({update, User2}).
+	case ppca_user:call({get, Id}) of
+		{ok, User} -> 
+			User2 = User#user{nome  = maps:get(<<"nome">>, UserJson, User#user.nome),
+							  email = maps:get(<<"email">>, UserJson, User#user.email)},
+			ppca_user:call({update, User2});
+		Error -> Error
+	end.
 
 do_delete(Request, _State) ->
 	Id = ppca_request:get_param_url(<<"id">>, Request),

@@ -32,9 +32,7 @@
 %%====================================================================
 
 start() -> 
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("static_file_service iniciado."),
-    Result.
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -76,7 +74,6 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("static_file_service finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -88,7 +85,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_get_file(Request) ->
-	FilePath = ?STATIC_FILE_PATH ++ ppca_util:get_property_request(<<"url">>, Request),
+	FilePath = ?STATIC_FILE_PATH ++ ppca_request:get_property_request(<<"url">>, Request),
 	case file:read_file(FilePath) of
 		{ok, Arquivo} -> 
 			ContentType = ppca_util:mime_type(filename:extension(FilePath)),

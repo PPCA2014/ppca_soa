@@ -20,7 +20,7 @@ start(Port) ->
 	ppca_logger:start(),
 	ppca_logger:info_msg(?SERVER_NAME),
 	ppca_server:start(),
-	ppca_catalogo_service:start(),
+	ppca_catalogo:start(),
 	ppca_dispatcher:start(),
 	ppca_info_service:start(),
 	ppca_favicon_service:start(),

@@ -11,6 +11,12 @@
 
 -export([init/0]).
 
+-export([get_property_request/2, 
+		 get_param_url/2, 
+		 encode_request/4]).
+
+-include("../include/ppca_config.hrl").
+
 init() ->
 	register(ppca_route, spawn(fun() -> ppca_route:init() end)),
 	loop().
@@ -77,3 +83,26 @@ executa_servico_registrado(Module, Function, Params) ->
 		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
 	end.
 
+
+%% @doc Retorna a URL do request
+get_property_request(<<"url">>, Request) ->
+	dict:fetch("Url", Request#request.http_headers);
+
+%% @doc Retorna o payload do request
+get_property_request(<<"payload">>, Request) ->
+	Request#request.payload.
+
+%% @doc Retorna um parâmetro do request
+get_param_url(NomeParam, Request) ->
+	ParamsUrl = Request#request.params_url,
+	NomeParam2 = iolist_to_binary(NomeParam),
+	Value = maps:get(NomeParam2, ParamsUrl, ""),
+	binary_to_list(Value).
+
+%% @doc Gera um objeto request com os dados da requisição
+encode_request(HeaderDict, Payload, Servico, ParamsUrl) ->
+	Request = #request{http_headers = HeaderDict,
+					   payload = Payload,
+					   servico = Servico,
+					   params_url = ParamsUrl},
+	Request.

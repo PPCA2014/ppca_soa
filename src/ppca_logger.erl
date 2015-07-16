@@ -26,6 +26,13 @@
 		 warn_msg/2,
 		 sync/0]).
 
+-export([error/1, 
+		 error/2, 
+		 info/1, 
+		 info/2, 
+		 warn/1,
+		 warn/2]).
+
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -64,16 +71,34 @@ error_msg(Msg) ->
 error_msg(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, error, Msg, Params}). 
 
+error(Msg) -> 
+	gen_server:cast(?SERVER, {write_msg, error, Msg}). 
+
+error(Msg, Params) -> 
+	gen_server:cast(?SERVER, {write_msg, error, Msg, Params}). 
+
 warn_msg(Msg) -> 
 	gen_server:cast(?SERVER, {write_msg, warn, Msg}). 
 
 warn_msg(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, warn, Msg, Params}). 
 
+warn(Msg) -> 
+	gen_server:cast(?SERVER, {write_msg, warn, Msg}). 
+
+warn(Msg, Params) -> 
+	gen_server:cast(?SERVER, {write_msg, warn, Msg, Params}). 
+
 info_msg(Msg) -> 
 	gen_server:cast(?SERVER, {write_msg, info, Msg}).
 
 info_msg(Msg, Params) -> 
+	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
+
+info(Msg) -> 
+	gen_server:cast(?SERVER, {write_msg, info, Msg}).
+
+info(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
 
 sync() ->
