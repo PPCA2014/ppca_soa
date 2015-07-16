@@ -52,6 +52,10 @@ update(Record) ->
 	Write = fun() -> mnesia:write(Record) end,
 	mnesia:transaction(Write),
 	ok.
+
+delete(RecordType, Id) when is_list(Id) ->
+	Id2 = list_to_integer(Id),
+	delete(RecordType, Id2);
 	
 delete(RecordType, Id) ->
 	Delete = fun() -> mnesia:delete({RecordType, Id}) end,

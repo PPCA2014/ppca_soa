@@ -121,15 +121,13 @@ do_all(_Request, _State) ->
 	
 do_get(Request, _State) ->
 	Id = msbus_request:get_param_url(<<"id">>, Request),
-	io:format("\nValor final ~p", [Id]),
 	Result = msbus_user:call({get, Id}),
-	io:format("\nValor result ~p", [Result]),
 	Result.
 
 do_insert(Request, _State) ->
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),
-	NomeUser = maps:get(<<"nome">>, UserJson),
-	User = #user{nome = NomeUser},
+	User = #user{nome  = maps:get(<<"nome">>, UserJson),
+				 email = maps:get(<<"email">>, UserJson, "")},
 	msbus_user:call({insert, User}).
 
 do_update(Request, _State) ->
@@ -141,7 +139,9 @@ do_update(Request, _State) ->
 	msbus_user:call({update, User2}).
 
 do_delete(Request, _State) ->
+	io:format("\n\naqui\n\n"),
 	Id = msbus_request:get_param_url(<<"id">>, Request),
+	io:format("\n\naqui  ~p\n\n", [Id]),
 	msbus_user:call({delete, Id}).
 	
 

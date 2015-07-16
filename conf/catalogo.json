@@ -105,10 +105,20 @@
 	},
 
 	{
+		"comment": "Excluir um usuário pelo seu Id",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "msbus_user_service:delete",
+		"url": "/user/(?<id>[0-9]{1,20})$",
+		"use_re" : "true",
+		"type": "DELETE"
+	},
+
+	{
 		"comment": "Inserir um novo usuário",
 		"owner": "msbus",
 		"version": "1",
-		"service" : "msbus_user:insert",
+		"service" : "msbus_user_service:insert",
 		"url": "/user",
 		"type": "POST"
 	},
@@ -129,7 +139,10 @@
 		"service" : "msbus_user_service:all",
 		"url": "/user/all",
 		"type": "GET"
-	}
+	},
+	
+	{ "service" : "msbus_user_service:all",	"url": "/user" }
+	
 	
 
 ]

@@ -84,9 +84,9 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Despacha a requisição para o serviço correspondente
 do_dispatch_request(From, HeaderDict, Payload) ->
-	_Metodo = dict:fetch("Metodo", HeaderDict),
+	Metodo = dict:fetch("Metodo", HeaderDict),
 	Url = dict:fetch("Url", HeaderDict),
-	case msbus_catalogo:lookup(Url) of
+	case msbus_catalogo:lookup(Url, Metodo) of
 		{ok, Servico} -> 
 			executa_servico(From, HeaderDict, Payload, Servico, []);
 		{ok, Servico, ParamsUrl} -> 

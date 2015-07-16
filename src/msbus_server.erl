@@ -277,7 +277,7 @@ decode_payload([]) ->
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
 decode_payload(Payload) ->
-	case msbus_util:json_decode(Payload) of
+	case msbus_util:json_decode_as_map(Payload) of
 		{ok, PayloadJSON} -> {ok, PayloadJSON};
 		{error, _Reason} -> invalid_payload
 	end.
