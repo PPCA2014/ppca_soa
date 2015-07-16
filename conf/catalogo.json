@@ -113,16 +113,89 @@
 		"APIkey":"true"
 	},
 	
+
 	{
-		"id": "9",
-		"name":"Lista todos os usuários cadastrados",
-		"comment": "Lista todos os usuários cadastrados",
-		"owner": "msbus",
+		"id":"9",
+        "name":"Index",
+		"comment": "Redireciona para o portal",
+		"owner": "portal",
+		"service" : "ppca_redirect:execute",
+		"url": "/index.html",
+		"redirect" : "/portal/index.html",
+		"type": "GET"
+	},
+
+	{
+		"id": "10",
+        "name":"get_user",
+		"comment": "Retorna um usuário através de seu Id",
+		"owner": "ppca",
 		"version": "1",
-		"service" : "msbus_user_service:all",
+		"service" : "ppca_user_service:get",
+		"url": "/user/(?<id>[0-9]{1,20})$",
+		"use_re" : "true",
+		"type": "GET",
+		"APIkey":"true"
+	},
+
+	{
+		"id": "11",
+        "name":"exclui_user",
+		"comment": "Excluir um usuário pelo seu Id",
+		"owner": "ppca",
+		"version": "1",
+		"service" : "ppca_user_service:delete",
+		"url": "/user/(?<id>[0-9]{1,20})$",
+		"use_re" : "true",
+		"type": "DELETE",
+		"APIkey":"true"
+	},
+
+	{
+		"id": "12",
+		"name":"inserir_user",
+		"comment": "Inserir um novo usuário",
+		"owner": "ppca",
+		"version": "1",
+		"service" : "ppca_user_service:insert",
+		"url": "/user",
+		"type": "POST",
+		"APIkey":"true"
+	},
+	
+	{
+		"id": "13",
+		"name":"update_user",
+		"comment": "Atualizar um usuário existente",
+		"service" : "ppca_user_service:update",
+		"url": "/user/(?<id>[0-9]{1,20})$",
+		"use_re" : "true",
+		"type": "PUT",
+		"APIkey":"true"
+	},
+
+	{
+		"id": "14",
+		"name":"lista_users",
+		"comment": "Lista todos os usuários cadastrados",
+		"owner": "ppca",
+		"version": "1",
+		"service" : "ppca_user_service:all",
 		"url": "/user/all",
 		"type": "GET",
 		"APIkey":"true"
+	},
+	
+	{	
+		"id": "15",
+		"name":"lista_users2",
+		"comment": "Lista todos os usuários cadastrados",
+		"service" : "ppca_user_service:all",	
+		"url": "/user",
+		"APIkey":"true"
 	}
+
 	
 ]
+
+
