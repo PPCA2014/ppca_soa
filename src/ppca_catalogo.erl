@@ -23,7 +23,7 @@
 		 get_property_servico/2, 
 		 get_property_servico/3, 
 		 test/0, 
-		 list_cat2/0, list_cat3/0, new_id_servico/2]).
+		 list_cat2/0, list_cat3/0]).
 
 
 %% gen_server callbacks
@@ -194,8 +194,6 @@ lookup_re(_Url, _Type, []) ->
 lookup_re(Url, Type, [H|T]) ->
 	RE = maps:get(<<"id_re_compiled">>, H),
 	Id = new_id_servico(Url, Type),
-	IdMap = maps:get(<<"id">>, H),
-	io:format("este eh o id: ~p e este eh do map: ~p", [Id, IdMap]),
 	case re:run(Id, RE, [{capture,all_names,binary}]) of
 		match -> {ok, H, []};
 		{match, Params} -> 
