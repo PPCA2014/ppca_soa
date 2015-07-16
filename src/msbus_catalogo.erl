@@ -16,8 +16,9 @@
 -export([start/0, stop/0]).
 
 %% Client
--export([lookup/2, 
-		 lista_catalogo/2, 
+-export([lista_catalogo/2, 
+		 update_catalogo/0,
+		 lookup/2, 
 		 get_querystring/2, 
 		 get_property_servico/2, 
 		 get_property_servico/3, 
@@ -52,6 +53,9 @@ stop() ->
  
 lista_catalogo(Request, From) ->
 	gen_server:cast(?SERVER, {lista_catalogo, Request, From}).
+
+update_catalogo() ->
+	gen_server:cast(?SERVER, update_catalogo).
 	
 lookup(Url, Type) ->	
 	gen_server:call(?SERVER, {lookup, Url, Type}).
@@ -68,16 +72,19 @@ list_cat3() ->
  
 init([]) ->
 	%% Cat1 = JSON catalog, Cat2 = parsed catalog, Cat3 = regular expression parsed catalog
-	{Cat1, Cat2, Cat3} = get_catalogo(),
-	NewState = #state{cat1=Cat1, cat2=Cat2, cat3=Cat3},
+	NewState = get_catalogo(),
     {ok, NewState}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({lista_catalogo, _Request, From}, State) ->
-	{Result, NewState} = do_lista_catalogo(State),
-	From ! {ok, Result}, 
+	Cat = do_lista_catalogo(State),
+	From ! {ok, Cat}, 
+	{noreply, State};
+
+handle_cast(update_catalogo, _State) ->
+	NewState = get_catalogo(),
 	{noreply, NewState}.
     
 handle_call({lookup, Url, Type}, _From, State) ->
@@ -108,22 +115,20 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 %% @doc Serviço que lista o catálogo
-do_lista_catalogo(State) ->
-	Cat = State#state.cat1,
-	{Cat, State}.
+do_lista_catalogo(State) -> State#state.cat1.
 
 do_lookup(Url, Type, State) ->
 	Id = new_id_servico(Url, Type),
 	case lookup_by_id(Id, State#state.cat2) of
 		{ok, Servico} -> {ok, Servico};
-		notfound -> lookup_re_by_id(Id, State#state.cat3)
+		notfound -> lookup_re_by_id(Url, Type, State#state.cat3)
 	end.
 
-%% @doc Lê o catálogo
+%% @doc Obtém o catálogo
 get_catalogo() -> 
 	Cat1 = get_catalogo_from_disk(),
 	{Cat2, Cat3} = parse_catalogo(Cat1, [], []),
-	{Cat1, Cat2, Cat3}.
+	#state{cat1=Cat1, cat2=Cat2, cat3=Cat3}.
 
 %% @doc Lê o catálogo do disco
 get_catalogo_from_disk() ->
@@ -183,18 +188,19 @@ lookup_by_id(Id, Cat) ->
 		error -> notfound
 	end.
 
-lookup_re_by_id(_Id, []) ->
+lookup_re_by_id(_Url, _Type, []) ->
 	notfound;
 
-lookup_re_by_id(Id, [H|T]) ->
+lookup_re_by_id(Url, Type, [H|T]) ->
 	RE = maps:get(<<"id_re_compiled">>, H),
+	Id = new_id_servico(Url, Type),
 	case re:run(Id, RE, [{capture,all_names,binary}]) of
 		match -> {ok, H, []};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 			{ok, H, ParamsMap};
-		nomatch -> lookup_re_by_id(Id, T);
+		nomatch -> lookup_re_by_id(Url, Type, T);
 		{error, _ErrType} -> nofound 
 	end.
 
@@ -221,7 +227,6 @@ new_servico(Id, Url, Module, Function, Type) ->
 			    <<"use_re">> => false},
 	Servico.
 
-
 test() ->
 	%%  {T1, T2, R1, R2, R3} = rota_table:test().
 
@@ -242,9 +247,9 @@ test() ->
 	
 	io:format("\n\n"),
 	
-	lookup_re_by_id("/aluno/lista_formandos/tipo", T1),
-	lookup_re_by_id("/portal/index.html", T1),
-	lookup_by_id("/logs/server.log", T2),
+	lookup_re_by_id("/aluno/lista_formandos/tipo", <<"GET">>, T1),
+	lookup_re_by_id("/portal/index.html", <<"GET">>, T1),
+	lookup_by_id(<<"GET#logs/server.log">>, T2),
 
 	{T1, T2, R1, R2, R3}.
 

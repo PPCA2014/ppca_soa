@@ -51,6 +51,7 @@ insert(Request, From)	->
 	gen_server:cast(?SERVER, {insert, Request, From}).
 
 update(Request, From)	->
+	io:format("chegou aqui\n\n"),
 	gen_server:cast(?SERVER, {update, Request, From}).
 
 delete(Request, From)	->
@@ -126,22 +127,24 @@ do_get(Request, _State) ->
 
 do_insert(Request, _State) ->
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),
-	User = #user{nome  = maps:get(<<"nome">>, UserJson),
+	User = #user{nome  = maps:get(<<"nome">>, UserJson, ""),
 				 email = maps:get(<<"email">>, UserJson, "")},
 	msbus_user:call({insert, User}).
 
 do_update(Request, _State) ->
 	Id = msbus_request:get_param_url(<<"id">>, Request),
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),
-	NomeUser = maps:get(<<"nome">>, UserJson),
-	User = msbus_user:call({get, Id}),
-	User2 = User#user{nome = NomeUser},
-	msbus_user:call({update, User2}).
+	case msbus_user:call({get, Id}) of
+		{ok, User} -> 
+			User2 = User#user{nome  = maps:get(<<"nome">>, UserJson, User#user.nome),
+							  email = maps:get(<<"email">>, UserJson, User#user.email)},
+			io:format("agora ficou: ~p\n", [User2]),
+			msbus_user:call({update, User2});
+		Error -> Error
+	end.
 
 do_delete(Request, _State) ->
-	io:format("\n\naqui\n\n"),
 	Id = msbus_request:get_param_url(<<"id">>, Request),
-	io:format("\n\naqui  ~p\n\n", [Id]),
 	msbus_user:call({delete, Id}).
 	
 

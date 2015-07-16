@@ -125,10 +125,9 @@
 	
 	{
 		"comment": "Atualizar um usuário existente",
-		"owner": "msbus",
-		"version": "1",
-		"service" : "msbus_user:update",
-		"url": "/user/[0-9]{1,20}$",
+		"service" : "msbus_user_service:update",
+		"url": "/user/(?<id>[0-9]{1,20})$",
+		"use_re" : "true",
 		"type": "PUT"
 	},
 
@@ -141,7 +140,9 @@
 		"type": "GET"
 	},
 	
-	{ "service" : "msbus_user_service:all",	"url": "/user" }
+	{	"service" : "msbus_user_service:all",	
+		"url": "/user" 
+	}
 	
 	
 

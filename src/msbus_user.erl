@@ -125,8 +125,44 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_get(Id) -> msbus_dao:get(user, Id).
-do_insert(User) -> msbus_dao:insert(User).
-do_update(User) -> msbus_dao:update(User).
+
+do_insert(User) -> 
+	case valida(User, insert) of
+		ok -> msbus_dao:insert(User);
+		Error -> Error
+	end.
+
+do_update(User) -> 
+	case valida(User, update) of
+		ok -> msbus_dao:update(User);
+		Error -> 
+			io:format("\n~p", [Error]),
+		Error
+	end.
+
 do_all() -> msbus_dao:all(user).
-do_delete(Id) -> msbus_dao:delete(user, Id).
+
+do_delete(Id) -> 
+	case valida(null, delete) of
+		ok -> msbus_dao:delete(user, Id);
+		Error -> Error
+	end.
+
+valida(User, insert) ->
+	Msgs = msbus_util:mensagens(
+				[msbus_util:msg_campo_obrigatorio("nome", User#user.nome),
+				 msbus_util:msg_campo_obrigatorio("email", User#user.email),
+				 msbus_util:msg_email_invalido("email", User#user.email)]),
+	case Msgs of
+		[] -> ok;
+		_ -> {error, Msgs}
+	end;
+
+valida(User, update) ->	valida(User, insert);
+
+valida(_User, delete) ->	[].	
+	
+
+
+
 
