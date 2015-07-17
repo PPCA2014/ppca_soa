@@ -59,8 +59,8 @@
             'legend':'left',
             'title':' TOP 5 Servicos mais Acessados',
             'is3D':false,
-            'width':700,
-            'height':300
+            'width':400,
+            'height':200
           }
  
           
@@ -87,7 +87,7 @@
 
         var options = {
           title: 'TOP 5 Servicos mais Acessados',
-          width: 700,
+          width: 400,
           legend: { position: 'none' },
           chart: { title: 'TOP 5 Servicos mais Acessados',
                    subtitle: 'Quantidade de Acessos' },
@@ -150,8 +150,8 @@
          title: 'Total de requisicoes no portal no ultimo mes',
          subtitle: 'em milhares'
        },
-       width: 700,
-       height: 500
+       width: 400,
+       height: 400
      };      var chart = new google.charts.Line(document.getElementById('linechart_material'));      chart.draw(data, options);
    }
  </script>
@@ -236,15 +236,15 @@ aplicações?</a></td>
 </table>
 <br>
 </td>
-<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Serviços Mais Utilizados<br>
+<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Serviços Mais Utilizados&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
 <br>
-<a href="#requisicao_pizza"><img alt="Requisições aos serviços do barramento" src="static/img/analise1.jpg"></a>
-<a href="#requisicao_barra"><img alt="Requisições aos serviços do barramento" src="static/img/analise2.jpg"></a>
+<div id="chart_div" style="width:300; height:200"></div>
+<div id="top_x_div" style="width: 300px; height: 300px;"></div>
 <br>
 </span></td>
 <td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Requisições no Portal no Último Mês</span><br>
 <br>
-<a href="#requisicao_tempo"><img alt="Requisições aos serviços do barramento" src="static/img/analise3.jpg"></a>
+<div id="linechart_material"></div>
 <br>
 </td>
 </tr>
@@ -311,11 +311,13 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
                                    
                     </div>
                     <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
-                        <div id="chart_div" style="width:700; height:400"></div>
+                        <img src="static/img/analise1.jpg">
                         
 
                     </figure>
                 </div>
+                
+                
                 <h4><a name="requisicao_barra"></a></h4><br>
                 <div class="row item last-item">
                     <div class="content col-md-4 col-sm-12 col-xs-12 col-md-push-8 col-sm-push-0 col-xs-push-0">
@@ -329,7 +331,7 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
                         
                     </div>
                     <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-pull-4 col-sm-pull-0 col-xs-pull-0">
-                        <div id="top_x_div" style="width: 700px; height: 500px;"></div>
+                        <img src="static/img/analise2.jpg">
                         
                     </figure>
                 </div>
@@ -348,7 +350,7 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
                                              
                     </div>
                     <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
-                        <div id="linechart_material"></div>
+                        <img src="static/img/analise3.jpg">
                         
 
                     </figure>
