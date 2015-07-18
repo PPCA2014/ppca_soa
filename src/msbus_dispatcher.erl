@@ -17,7 +17,7 @@
 -export([start/0, stop/0]).
 
 %% Client API
--export([dispatch_request/3]).
+-export([dispatch_request/6]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -42,8 +42,8 @@ stop() ->
 %% Client API
 %%====================================================================
 
-dispatch_request(From, HeaderDict, Payload) -> 
-	gen_server:cast(?SERVER, {dispatch_request, HeaderDict, Payload, From}).
+dispatch_request(RID, Url, Metodo, From, HeaderDict, Payload) -> 
+	gen_server:cast(?SERVER, {dispatch_request, RID, Url, Metodo, HeaderDict, Payload, From}).
 
 	
  
@@ -57,12 +57,12 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({dispatch_request, HeaderDict, Payload, From}, State) ->
-	do_dispatch_request(From, HeaderDict, Payload),
+handle_cast({dispatch_request, RID, Url, Metodo, HeaderDict, Payload, From}, State) ->
+	do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From),
 	{noreply, State}.
     
-handle_call({dispatch_request, HeaderDict, Payload}, From, State) ->
-	do_dispatch_request(From, HeaderDict, Payload),
+handle_call({dispatch_request, RID, Url, Metodo, HeaderDict, Payload}, From, State) ->
+	do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From),
 	{reply, ok, State}.
 
 handle_info(State) ->
@@ -83,34 +83,35 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 %% @doc Despacha a requisição para o serviço correspondente
-do_dispatch_request(From, HeaderDict, Payload) ->
-	Metodo = dict:fetch("Metodo", HeaderDict),
-	Url = dict:fetch("Url", HeaderDict),
+do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From) ->
 	case msbus_catalogo:lookup(Url, Metodo) of
-		{ok, Servico} -> 
-			executa_servico(From, HeaderDict, Payload, Servico, []);
 		{ok, Servico, ParamsUrl} -> 
-			executa_servico(From, HeaderDict, Payload, Servico, ParamsUrl);
+			Id = msbus_catalogo:get_property_servico(<<"id">>, Servico),
+			msbus_health:collect(RID, request_dispatch, {Id, Url, ParamsUrl, Payload}),
+			executa_servico(RID, From, HeaderDict, Payload, Servico, ParamsUrl);
 		notfound -> 
+			msbus_health:collect(RID, notfound, {Url, Metodo}),
 			ErroInterno = io_lib:format(?MSG_SERVICO_NAO_ENCONTRADO, [Url]),
 			From ! {error, servico_nao_encontrado, ErroInterno}
 	end.
 
 %% @doc Executa o serviço correspondente
-executa_servico(From, HeaderDict, Payload, Servico, ParamsUrl) ->
+executa_servico(RID, From, HeaderDict, Payload, Servico, ParamsUrl) ->
+	NomeModule = msbus_catalogo:get_property_servico(<<"nome_module">>, Servico),
 	Module = msbus_catalogo:get_property_servico(<<"module">>, Servico),
 	Function = msbus_catalogo:get_property_servico(<<"function">>, Servico),
 	Request = msbus_request:encode_request(HeaderDict, Payload, Servico, ParamsUrl),
-	case executa_processo_erlang(Module, Function, Request, From) of
+	case executa_processo_erlang(RID, NomeModule, Module, Function, Request, From) of
 		em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto
 		Error -> From ! Error
 	end.
 
 %% @doc Executa o processo erlang de um serviço
-executa_processo_erlang(Module, Function, Request, From) ->
+executa_processo_erlang(RID, NomeModule, Module, Function, Request, From) ->
 	try
 		case whereis(Module) of
 			undefined -> 
+				msbus_health:collect(RID, module_not_loaded, NomeModule),
 				Module:start(),
 				apply(Module, Function, [Request, From]);
 			Pid -> 

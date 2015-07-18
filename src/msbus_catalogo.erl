@@ -23,7 +23,7 @@
 		 get_property_servico/2, 
 		 get_property_servico/3, 
 		 test/0, 
-		 list_cat2/0, list_cat3/0]).
+		 list_cat2/0, list_cat3/0, new_id_servico/2]).
 
 
 %% gen_server callbacks
@@ -88,7 +88,7 @@ handle_cast(update_catalogo, _State) ->
 	{noreply, NewState}.
     
 handle_call({lookup, Url, Type}, _From, State) ->
-	Reply = do_lookup(Url, Type, State),
+	Reply = lookup(Url, Type, State),
 	{reply, Reply, State};
 
 handle_call(list_cat2, _From, State) ->
@@ -117,13 +117,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Serviço que lista o catálogo
 do_lista_catalogo(State) -> State#state.cat1.
 
-do_lookup(Url, Type, State) ->
-	Id = new_id_servico(Url, Type),
-	case lookup_by_id(Id, State#state.cat2) of
-		{ok, Servico} -> {ok, Servico};
-		notfound -> lookup_re_by_id(Url, Type, State#state.cat3)
-	end.
-
 %% @doc Obtém o catálogo
 get_catalogo() -> 
 	Cat1 = get_catalogo_from_disk(),
@@ -141,16 +134,16 @@ parse_catalogo([], Cat2, Cat3) ->
 
 parse_catalogo([H|T], Cat2, Cat3) ->
 	Url = get_property_servico(<<"url">>, H),
-	{Module, Function} = get_property_servico(<<"service">>, H),
+	{NomeModule, NomeFunction, Module, Function} = get_property_servico(<<"service">>, H),
 	Use_re = get_property_servico(<<"use_re">>, H, false),
 	Type = get_property_servico(<<"type">>, H, <<"GET">>),
 	Id = new_id_servico(Url, Type),
 	case Use_re of
 		true -> 
-			Servico = new_servico_re(Id, Url, Module, Function, Type),
+			Servico = new_servico_re(Id, Url, NomeModule, NomeFunction, Module, Function, Type),
 			parse_catalogo(T, Cat2, [Servico|Cat3]);
 		false -> 
-			Servico = new_servico(Id, Url, Module, Function, Type),
+			Servico = new_servico(Id, Url, NomeModule, NomeFunction, Module, Function, Type),
 			parse_catalogo(T, [{Id, Servico}|Cat2], Cat3)
 	end.	
 
@@ -159,7 +152,7 @@ get_property_servico(<<"service">>, Servico) ->
 	[NomeModule, NomeFunction] = string:tokens(Service, ":"),
 	Module = list_to_atom(NomeModule),
 	Function = list_to_atom(NomeFunction),
-	{Module, Function};
+	{NomeModule, NomeFunction, Module, Function};
 
 get_property_servico(Key, Servico) ->
 	Result = get_property_servico(Key, Servico, null),
@@ -182,16 +175,17 @@ get_querystring(Cat, <<QueryName/binary>>) ->
 	[Query] = [Q || Q <- get_property_servico(<<"querystring">>, Cat), get_property_servico(<<"comment">>, Q) == QueryName],
 	Query.
 	
-lookup_by_id(Id, Cat) ->
-	case maps:find(Id, Cat) of
-		{ok, Servico} -> {ok, Servico};
-		error -> notfound
+lookup(Url, Type, State) ->
+	Id = new_id_servico(Url, Type),
+	case maps:find(Id, State#state.cat2) of
+		{ok, Servico} -> {ok, Servico, []};
+		error -> lookup_re(Url, Type, State#state.cat3)
 	end.
 
-lookup_re_by_id(_Url, _Type, []) ->
+lookup_re(_Url, _Type, []) ->
 	notfound;
 
-lookup_re_by_id(Url, Type, [H|T]) ->
+lookup_re(Url, Type, [H|T]) ->
 	RE = maps:get(<<"id_re_compiled">>, H),
 	Id = new_id_servico(Url, Type),
 	case re:run(Id, RE, [{capture,all_names,binary}]) of
@@ -200,28 +194,36 @@ lookup_re_by_id(Url, Type, [H|T]) ->
 			{namelist, ParamNames} = re:inspect(RE, namelist),
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 			{ok, H, ParamsMap};
-		nomatch -> lookup_re_by_id(Url, Type, T);
+		nomatch -> lookup_re(Url, Type, T);
 		{error, _ErrType} -> nofound 
 	end.
 
 new_id_servico(Url, Type) ->	
-	iolist_to_binary([Type, <<"#">>, Url]).
+	[PrefixUrl|Url2] = Url,
+	case PrefixUrl of
+		$^ -> iolist_to_binary([Type, <<"#">>, Url2]);
+		_  -> iolist_to_binary([Type, <<"#">>, Url])
+	end.
 
-new_servico_re(Id, Url, Module, Function, Type) ->
+new_servico_re(Id, Url, NomeModule, NomeFunction, Module, Function, Type) ->
 	{ok, Id_re_compiled} = re:compile(Id),
 	Servico = #{<<"id">> => Id,
 				<<"url">> => Url,
 				<<"type">> => Type,
+			    <<"nome_module">> => NomeModule,
+			    <<"nome_function">> => NomeFunction,
 			    <<"module">> => Module,
 			    <<"function">> => Function,
 			    <<"use_re">> => true,
 			    <<"id_re_compiled">> => Id_re_compiled},
 	Servico.
 
-new_servico(Id, Url, Module, Function, Type) ->
+new_servico(Id, Url, NomeModule, NomeFunction, Module, Function, Type) ->
 	Servico = #{<<"id">> => Id,
 				<<"url">> => Url,
 				<<"type">> => Type,
+			    <<"nome_module">> => NomeModule,
+			    <<"nome_function">> => NomeFunction,
 			    <<"module">> => Module,
 			    <<"function">> => Function,
 			    <<"use_re">> => false},
@@ -234,12 +236,12 @@ test() ->
 	Id2 = new_id_servico("^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", <<"GET">>),
 	Id4 = new_id_servico("^/portal/", <<"GET">>),
 	
-	R1 = new_servico_re(Id1, "^/aluno/lista_formandos/(?P<tipo>(sintetico|analitico))$", aluno_service_report, function, <<"GET">>),
-	R2 = new_servico_re(Id2, "^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", msbus_static_file, function, <<"GET">>),
-	R4 = new_servico_re(Id4, "^/portal/", aluno_service_report, function, <<"GET">>),
+	R1 = new_servico_re(Id1, "^/aluno/lista_formandos/(?P<tipo>(sintetico|analitico))$", aluno_service_report, function, aluno_service_report, function, <<"GET">>),
+	R2 = new_servico_re(Id2, "^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", msbus_static_file, function, msbus_static_file, function, <<"GET">>),
+	R4 = new_servico_re(Id4, "^/portal/", aluno_service_report, function, aluno_service_report, function, <<"GET">>),
 
 	Id3 = new_id_servico("/log/server.log", <<"GET">>),
-	R3 = new_servico(Id3, "/log/server.log", msbus_static_file, function, <<"GET">>),
+	R3 = new_servico(Id3, "/log/server.log", msbus_static_file, function, msbus_static_file, function, <<"GET">>),
 	
 	
 	T1 = [R1, R2, R4],
@@ -247,9 +249,9 @@ test() ->
 	
 	io:format("\n\n"),
 	
-	lookup_re_by_id("/aluno/lista_formandos/tipo", <<"GET">>, T1),
-	lookup_re_by_id("/portal/index.html", <<"GET">>, T1),
-	lookup_by_id(<<"GET#logs/server.log">>, T2),
+	lookup_re("/aluno/lista_formandos/tipo", <<"GET">>, T1),
+	lookup_re("/portal/index.html", <<"GET">>, T1),
+	lookup(<<"GET#logs/server.log">>, T2),
 
 	{T1, T2, R1, R2, R3}.
 

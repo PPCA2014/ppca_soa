@@ -54,7 +54,7 @@
 		"owner": "msbus",
 		"version": "1",
 		"service" : "msbus_static_file:execute",
-		"url": "^/portal/",
+		"url": "/portal/",
 		"use_re" : "true",
 		"async": "false",
 		"type": "GET"

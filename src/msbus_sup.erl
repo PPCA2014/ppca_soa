@@ -72,6 +72,15 @@ init([]) ->
 			   10000,
 			   worker,  
 			   [msbus_user]},
+			 {msbus_health,
+			  {msbus_health, start, []},
+			   permanent,
+			   10000,
+			   worker,  
+			   [msbus_health]},
+			   
+			   
+
 
 			 %% Serviços REST
 			 {msbus_user_service,

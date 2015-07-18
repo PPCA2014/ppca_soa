@@ -208,10 +208,12 @@ get_http_header(Header) ->
 	Url3 = remove_ult_backslash_url(Url2),
 	Outros2 = get_http_header_adicionais(Outros),
 	QueryString2 = parse_query_string(QueryString),
+	RID = {now(), node()},
 	dict:from_list([{"Metodo", Metodo}, 
 					{"Url", Url3}, 
 					{"HTTP-Version", Versao_HTTP},
-					{"Query", QueryString2}]
+					{"Query", QueryString2},
+					{<<"RID">>, RID}]
 					++ Outros2).
 
 get_http_header_adicionais(Header) ->
@@ -232,24 +234,35 @@ format_header_value(_, Value) ->
 
 %% @doc Trata o request e retorna o response do resultado
 trata_request_map(HeaderDict, PayloadMap) ->
-	msbus_dispatcher:dispatch_request(self(), HeaderDict, PayloadMap),
+	RID = dict:fetch(<<"RID">>, HeaderDict),	
+	Url = dict:fetch("Url", HeaderDict),
+	Metodo = dict:fetch("Metodo", HeaderDict),
+	User_Agent = dict:fetch("User-Agent", HeaderDict),
+	msbus_dispatcher:dispatch_request(RID, Url, Metodo, self(), HeaderDict, PayloadMap),
+	msbus_health:collect(RID, request_submit, {Url, Metodo, User_Agent}),
 	receive
 		{ok, Result} ->
+			msbus_health:collect(RID, request_success, {}),
 			Response = encode_response(<<"200">>, Result),
 			{ok, Response};
 		{ok, Result, MimeType} ->
+			msbus_health:collect(RID, request_success, MimeType),
 			Response = encode_response(<<"200">>, Result, MimeType),
 			{ok, Response};
 		{error, servico_nao_encontrado, ErroInterno} ->
+			msbus_health:collect(RID, request_error, {<<"404">>, servico_nao_encontrado}),
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404),
 			{error, Response, ErroInterno};
 		{error, servico_falhou, ErroInterno} ->
+			msbus_health:collect(RID, request_error, {<<"502">>, servico_falhou, ErroInterno}),
 			Response = encode_response(<<"502">>, ?HTTP_ERROR_502(ErroInterno)),
 			{error, Response, ErroInterno};
 		{error, servico_nao_disponivel, ErroInterno} ->
+			msbus_health:collect(RID, request_error, {<<"503">>, servico_nao_disponivel}),
 			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
 			{error, Response, ErroInterno};
 		{error, file_not_found, ErroInterno} ->
+			msbus_health:collect(RID, request_error, {<<"404">>, file_not_found}),
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 			{error, Response, ErroInterno}
 	end.

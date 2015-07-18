@@ -135,16 +135,15 @@ do_insert(User) ->
 do_update(User) -> 
 	case valida(User, update) of
 		ok -> msbus_dao:update(User);
-		Error -> 
-			io:format("\n~p", [Error]),
-		Error
+		Error -> Error
 	end.
 
 do_all() -> msbus_dao:all(user).
 
 do_delete(Id) -> 
 	case valida(null, delete) of
-		ok -> msbus_dao:delete(user, Id);
+		ok -> 
+			msbus_dao:delete(user, Id);
 		Error -> Error
 	end.
 
@@ -160,7 +159,7 @@ valida(User, insert) ->
 
 valida(User, update) ->	valida(User, insert);
 
-valida(_User, delete) ->	[].	
+valida(_User, delete) -> ok.	
 	
 
 

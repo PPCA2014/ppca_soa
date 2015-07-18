@@ -51,7 +51,6 @@ insert(Request, From)	->
 	gen_server:cast(?SERVER, {insert, Request, From}).
 
 update(Request, From)	->
-	io:format("chegou aqui\n\n"),
 	gen_server:cast(?SERVER, {update, Request, From}).
 
 delete(Request, From)	->
@@ -138,7 +137,6 @@ do_update(Request, _State) ->
 		{ok, User} -> 
 			User2 = User#user{nome  = maps:get(<<"nome">>, UserJson, User#user.nome),
 							  email = maps:get(<<"email">>, UserJson, User#user.email)},
-			io:format("agora ficou: ~p\n", [User2]),
 			msbus_user:call({update, User2});
 		Error -> Error
 	end.
