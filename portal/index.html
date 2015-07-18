@@ -31,44 +31,6 @@
 
 
 <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <script type="text/javascript">
- 
-      
-      google.load('visualization', '1.1', {'packages':['corechart']});
- 
-    
-      google.setOnLoadCallback(drawChart);
- 
-    
-      function drawChart() {
- 
-        
-          var data = new google.visualization.DataTable();
-          data.addColumn('string', 'Usuario');
-		  data.addColumn('number', 'ID');
-         data.addRows([
-            ['Favocon_Execute', 10],
-            ['Static_File_Execute', 2],
-            ['Info_Execute', 20],
-            ['Auth_User_Autentica', 80],
-            ['Catalogo_Lista_Catalogo', 50]
-          ]);
- 
-          
-          var options = {
-            'legend':'left',
-            'title':' TOP 5 Servicos mais Acessados',
-            'is3D':false,
-            'width':400,
-            'height':200
-          }
- 
-          
-          var chart = new google.visualization.PieChart(document.getElementById('chart_div'));
-          chart.draw(data, options);
- 
-      }
-    </script>
     
     
      <script type="text/javascript">
@@ -77,7 +39,7 @@
 
       function drawStuff() {
         var data = new google.visualization.arrayToDataTable([
-          ['TOP 5 Servicos mais Acessados', 'Acessos'],
+          ['Servicos mais Acessados', 'Acessos'],
           ["Favocon_Execute", 10],
           ["Static_File_Execute", 2],
           ["Info_Execute", 20],
@@ -87,9 +49,11 @@
 
         var options = {
           title: 'TOP 5 Servicos mais Acessados',
-          width: 400,
+		  
+          width: 650,
+		  height: 270,
           legend: { position: 'none' },
-          chart: { title: 'TOP 5 Servicos mais Acessados',
+          chart: { title: 'Top 5 Servicos mais Acessados',
                    subtitle: 'Quantidade de Acessos' },
           bars: 'horizontal', // Required for Material Bar Charts.
           axes: {
@@ -99,9 +63,28 @@
           },
           bar: { groupWidth: "90%" }
         };
-
+        
+		
+		var options2 = {
+          title: 'TOP 5 Servicos mais Acessados',
+		  
+          width: 770,
+          legend: { position: 'none' },
+          chart: { title: 'Top 5 Servicos mais Acessados',
+                   subtitle: 'Quantidade de Acessos' },
+          bars: 'horizontal', // Required for Material Bar Charts.
+          axes: {
+            x: {
+              0: { side: 'top', label: 'Acessos'} // Top x-axis.
+            }
+          },
+          bar: { groupWidth: "90%" }
+        };
+		
         var chart = new google.charts.Bar(document.getElementById('top_x_div'));
+		var chart2 = new google.charts.Bar(document.getElementById('top_x_div2'));
         chart.draw(data, options);
+		chart2.draw(data, options2);
       };
     </script>
 
@@ -150,9 +133,30 @@
          title: 'Total de requisicoes no portal no ultimo mes',
          subtitle: 'em milhares'
        },
-       width: 400,
-       height: 400
-     };      var chart = new google.charts.Line(document.getElementById('linechart_material'));      chart.draw(data, options);
+	   
+	   	   
+       width: 600,
+       height: 200
+     }; 
+	 
+	 var options2 = {
+       chart: {
+         title: 'Total de requisicoes no portal no ultimo mes',
+         subtitle: 'em milhares'
+       },
+	   
+	   	   
+       width: 800,
+       height: 450
+     }; 
+	 
+	 
+	      var chart = new google.charts.Line(document.getElementById('linechart_material'));      chart.draw(data, options);
+	 
+	  var chart2 = new google.charts.Line(document.getElementById('linechart_material2'));      chart.draw(data, options);
+	  
+	  chart.draw(data, options);
+		chart2.draw(data, options2);
    }
  </script>
 
@@ -236,17 +240,12 @@ aplicações?</a></td>
 </table>
 <br>
 </td>
-<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Serviços Mais Utilizados&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-<br>
-<div id="chart_div" style="width:300; height:200"></div>
-<div id="top_x_div" style="width: 300px; height: 300px;"></div>
-<br>
-</span></td>
-<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Requisições no Portal no Último Mês</span><br>
-<br>
+<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">
+<div id="top_x_div" style="width: 650px; height: 280px;"></div> <hr>
 <div id="linechart_material"></div>
 <br>
-</td>
+</span></td>
+
 </tr>
 </tbody>
 </table>
@@ -300,38 +299,24 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
           <hr>      
                 
                 
-               <h4><a name="requisicao_pizza"></a></h4>
-                <div class="row item ">
-                 
-                    <div class="content col-md-4 col-sm-12 col-xs-12">
-                        <h3 class="title">Serviços mais utilizados - Visão Percentual</h3>
-                        <div class="desc">
-                            <p>Por meio do gráfico de pizza a seguir você pode visualizar nossos serviços mais acessados (os 5 melhores Rankeados quanto ao número de acessos).</p>
-                        </div>
-                                   
-                    </div>
-                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
-                        <img src="static/img/analise1.jpg">
-                        
-
-                    </figure>
-                </div>
+               
                 
                 
-                <h4><a name="requisicao_barra"></a></h4><br>
+                
+                
                 <div class="row item last-item">
                     <div class="content col-md-4 col-sm-12 col-xs-12 col-md-push-8 col-sm-push-0 col-xs-push-0">
-                        <h3 class="title">Serviços mais utilizados - Número de acessos</h3>
+                        <h3 class="title">Serviços mais utilizados</h3>
                         <div class="desc">
                             <p>
-                                Por meio do gráfico de barras a seguir você pode visualizar a quantidade de acessos para cada um de nossos serviços.</p>
+                                Por meio do gráfico de barras a seguir você pode visualizar a quantidade de acessos em nossos 5 serviços mais frequentados.</p>
                             
                         </div>
                         
                         
                     </div>
                     <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-pull-4 col-sm-pull-0 col-xs-pull-0">
-                        <img src="static/img/analise2.jpg">
+                     <div id="top_x_div2" style="width: 750px; height: 350px;"></div>   
                         
                     </figure>
                 </div>
@@ -350,7 +335,7 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
                                              
                     </div>
                     <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
-                        <img src="static/img/analise3.jpg">
+                        <div id="linechart_material2"></div>
                         
 
                     </figure>
