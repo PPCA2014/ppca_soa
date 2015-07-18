@@ -1827,4 +1827,5 @@ body {
 }
 
 
-
+#toTop { background: none repeat scroll 0 0 #f7f7f7; border: 1px solid #ccc; bottom: 10px; color: #333; cursor: pointer; display: none; font-family: verdana; font-size: 11px; padding: 5px; position: fixed; right: 10px; text-align: center; width: 100px;
+}
