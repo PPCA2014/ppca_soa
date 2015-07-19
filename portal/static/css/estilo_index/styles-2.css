@@ -387,7 +387,7 @@ select {
   top: 0;
   left: 0;
   height: 780px;
-  background-color:#FDF9F9;
+  
 }
 .bg-slider-wrapper .flexslider {
   margin: 0;
@@ -525,10 +525,10 @@ select {
   font-size: 18px;
 }
 .section-on-bg .title {
-  color: #fff;
+  color: #8CB4C7;
 }
 .section-on-bg .intro {
-  color: #fff;
+  color: black;
   -webkit-opacity: 0.8;
   -moz-opacity: 0.8;
   opacity: 0.8;
@@ -3433,7 +3433,7 @@ select {
     padding-top: 125px;
   }
   .bg-slider-wrapper {
-    position: fixed;
+    position: absolute;
   }
 }
 /* Large devices (large desktops, 1200px and up) */

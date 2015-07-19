@@ -8,7 +8,7 @@
 <meta name="description" content="Acesso">
 <meta name="author" content="Everton de Vargas Agilar">
 <link rel="stylesheet" href="static/css/fpc_concat.css">
-<link rel="shortcut icon" href="static/img/favicon.ico" />
+<link rel="shortcut icon" href="static/img/favicon.ico">
 
     
     <script async="" src="static/css/estilo_index/analytics.js"></script><script async="" src="static/css/estilo_index/cloudflare.min.js"></script>
@@ -50,7 +50,7 @@
         var options = {
           title: 'TOP 5 Servicos mais Acessados',
 		  
-          width: 650,
+          width: 680,
 		  height: 270,
           legend: { position: 'none' },
           chart: { title: 'Top 5 Servicos mais Acessados',
@@ -135,7 +135,7 @@
        },
 	   
 	   	   
-       width: 600,
+       width: 750,
        height: 200
      }; 
 	 
@@ -159,13 +159,19 @@
 		chart2.draw(data, options2);
    }
  </script>
-
+<script type="text/javascript">
+   function rolar_para(elemento) {
+  $('html, body').animate({
+    scrollTop: $(elemento).offset().top
+  }, 2000);
+}
+</script>
 </head>
 <body class="home-page"> 
 
 	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
 		<div class="container">
-			<div class="navbar-header">
+		  <div class="navbar-header">
 				<button type="button" class="navbar-toggle" data-toggle="collapse"
 					data-target=".navbar-collapse">
 					<span class="sr-only">Toggle navigation</span> <span
@@ -201,58 +207,53 @@
     
    
    
+   <div class="bg-slider-wrapper" style="text-align:center;">
+   <br><br><br>
+    	<video autoplay loop>
+			<source src="static/img/engrena.mp4" type="video/mp4">
+			
+		</video>   
+    </div>
+    
+     <section class="promo section section-on-bg" style="height:auto; margin-bottom:auto">
+        <div class="container text-center">                
+          <h2 class="title">PPCA Api Management Plataform<br>
+          Integração. Facilidade. Desempenho.</h2>
+            <p class="intro">Você é novo por aqui e quer conhecer mais sobre o barramento de serviços e como ele pode contribuir para o desenvolvimento das suas aplicações?</p>
+            <p><a class="btn-cta btn-cta-secondary" href="#intro" onclick="rolar_para('#sobre')">Saiba Mais</a></p>
+            
+        </div>
+        </section>
    
             
     
    
     
     <div class="sections-wrapper">
-     
-        
+    
+    
         <section id="why" class="section why">
             <div class="container">
-               <p style="text-align:center"><img src="static/img/barramento_de_servicos.gif" alt="Barramento de Serviços"></p>
                
                
-               <table style="width: 800px; height: 400px; text-align: left; margin-left: auto; margin-right: auto;" border="2" cellpadding="2" cellspacing="2">
-<tbody>
+               
+               <table style="width: 800px; height: 400px; text-align: left; margin-left: auto; margin-right: auto; border-color:#8CB4C7; box-shadow: -5px -5px 5px #8CB4C7;  border-radius:10px" border="2" cellpadding="2" cellspacing="2";>
 <tr>
-<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">Versão
-1.0 lançada!</span><br>
-<br>
-Atualmente
-possuímos <a href="catalogo.html">xxx serviços
-disponíveis</a>
-para você e mais xxxxx usuários!<br>
-<br>
-<table border="0">
-<tbody>
-<tr>
-<td><img alt="Requisições aos serviços do barramento" src="static/img/panda.gif">
-</td>
-<td><a href="#intro">Hmmm...
-Você é novo por aqui e quer conhecer mais sobre o
-barramento de serviços e como ele pode contribuir para o
-desenvolvimento das suas
-aplicações?</a></td>
-</tr>
-</tbody>
-</table>
-<br>
-</td>
 <td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">
-<div id="top_x_div" style="width: 650px; height: 280px;"></div> <hr>
-<div id="linechart_material"></div>
+<div id="top_x_div" style="width: 650px; height: 280px; text-align:center"></div> <hr>
+<div id="linechart_material" ></div>
 <br>
 </span></td>
 
 </tr>
 </tbody>
+
 </table>
-       <h4><a name="intro"></a><br>
-</h4>        
-               
+       
+        <br><br>
+                <a name="intro" id="sobre">  </a>
                 <h2 class="title text-center">O que é nosso Barramento de Serviços?</h2>
+               
                 <p style="text-align:justify; color: #999999; margin: 0 auto;">Este projeto é a implementação do conceito de "barramento de serviços" (ou <span style="font-style: italic;">Enterprise Service Bus</span>
 - ESB), uma camada intermediadora entre componentes de software
 (denominandos "serviços") e aplicações que consomem estes serviços. O
