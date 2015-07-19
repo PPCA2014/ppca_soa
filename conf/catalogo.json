@@ -54,7 +54,7 @@
 		"comment": "Responde /catalogo e retorna a lista do catálogo atual.",
 		"owner": "ppca_soa",
 		"version": "1",
-		"service" : "ppca_catalogo_service:lista_catalogo",
+		"service" : "ppca_catalogo:lista_catalogo",
 		"url": "/catalogo",
 		"async": "false",
 		"type": "GET"
