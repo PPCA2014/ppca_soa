@@ -142,8 +142,16 @@
 	
 	{	"service" : "msbus_user_service:all",	
 		"url": "/user" 
-	}
+	},
 	
+	{
+		"comment": "Lista os top serviços",
+		"owner": "msbus",
+		"version": "1",
+		"service" : "msbus_health_service:top_services",
+		"url": "/top_services/(?<top>[0-9]{1,20})$",
+		"use_re" : "true",
+		"type": "GET"
+	},
 	
-
 ]
