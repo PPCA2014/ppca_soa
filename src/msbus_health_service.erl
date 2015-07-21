@@ -85,8 +85,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 get_top_services(Request, _State) ->
-	%%Top = msbus_request:get_param_url(<<"top">>, Request),
-	msbus_health:get_top_services(10).
+	Top = list_to_integer(msbus_request:get_param_url(<<"top">>, "10", Request)),
+	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
+	msbus_health:get_top_services(Top, Periodo).
 	
 
 

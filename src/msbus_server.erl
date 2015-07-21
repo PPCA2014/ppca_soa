@@ -207,7 +207,7 @@ get_http_header(Header) ->
 	[Url2|QueryString] = string:tokens(Url, "?"),
 	Url3 = remove_ult_backslash_url(Url2),
 	Outros2 = get_http_header_adicionais(Outros),
-	QueryString2 = parse_query_string(QueryString),
+	QueryString2 = parse_querystring(QueryString),
 	RID = {now(), node()},
 	dict:from_list([{"Metodo", Metodo}, 
 					{"Url", Url3}, 
@@ -347,14 +347,12 @@ is_fim_header([], _)              -> more.
 is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
 
-parse_query_string([]) ->
-	[];
-	
-parse_query_string([Querystring]) ->
+parse_querystring([]) -> #{};
+parse_querystring([Querystring]) ->
 	Q1 = string:tokens(Querystring, "&"),
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
-	Q3 = lists:map(fun([P|V]) -> {P, msbus_util:hd_or_empty(V)} end, Q2),
-	Q3.
+	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), msbus_util:hd_or_empty(V)} end, Q2),
+	maps:from_list(Q3).
 
 %% @doc Remove o último backslash da Url
 remove_ult_backslash_url("/") -> "/";

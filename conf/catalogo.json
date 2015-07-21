@@ -153,5 +153,15 @@
 		"use_re" : "true",
 		"type": "GET"
 	},
+
+	{
+		"comment": "Lista os serviços mais solicitados",
+		"owner": "health",
+		"version": "1",
+		"service" : "msbus_health_service:top_services",
+		"url": "/health/top_services/(?<top>[0-9]{1,20})$",
+		"use_re" : "true",
+		"type": "GET"
+	},
 	
 ]

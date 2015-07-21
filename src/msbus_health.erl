@@ -14,7 +14,7 @@
 -export([start/0, stop/0]).
 
 %% Client API
--export([collect/3, list_metrics/0, get_top_services/1, get_top_services/2, groupBy/2]).
+-export([collect/3, list_metrics/0, get_top_services/2, get_top_services/3, groupBy/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -44,11 +44,11 @@ collect(RID, Metric, Data) ->
 	gen_server:cast(?SERVER, {RID, Metric, Data}).
 
 %% @doc Obtém os serviços mais usados
-get_top_services(Top, From) -> 
-	gen_server:cast(?SERVER, {top_services, Top, From}).
+get_top_services(Top, Periodo, From) -> 
+	gen_server:cast(?SERVER, {top_services, Top, Periodo, From}).
 
-get_top_services(Top) -> 
-	gen_server:call(?SERVER, {top_services, Top}).
+get_top_services(Top, Periodo) -> 
+	gen_server:call(?SERVER, {top_services, Top, Periodo}).
 
 %% @doc Lista todas as métricas coletadas
 list_metrics() ->	
@@ -64,8 +64,8 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({top_services, Top, From}, State) ->
-	Result = do_get_top_services(Top, State),
+handle_cast({top_services, Top, Periodo, From}, State) ->
+	Result = do_get_top_services(Top, Periodo, State),
 	From ! Result,
 	{noreply, State};
 
@@ -73,8 +73,8 @@ handle_cast({RID, Metric, Data}, State) ->
 	NewState = do_collect(RID, Metric, Data, State),
 	{noreply, NewState}.
 
-handle_call({top_services, Top}, _From, State) ->
-	Result = do_get_top_services(Top, State),
+handle_call({top_services, Top, Periodo}, _From, State) ->
+	Result = do_get_top_services(Top, Periodo, State),
 	{reply, Result, State};
     
 handle_call(list_metrics, _From, State) ->
@@ -100,11 +100,23 @@ code_change(_OldVsn, State, _Extra) ->
 do_collect(RID, Metric, Data, State) ->
 	MetricData = {RID, Metric, calendar:local_time(), Data},
 	#state{list = [MetricData | State#state.list]}.
+
+%% @doc Retorna os requets_submit pelo período. Default é "year".
+get_requests_submit(Periodo, State) ->
+	case Periodo of
+		"hour"  -> Requests = [X || {_, request_submit, DT, _} = X <- State#state.list, msbus_util:in_last_hour(DT)]; 
+		"day"   -> Requests = [X || {_, request_submit, DT, _} = X <- State#state.list, msbus_util:in_last_day(DT)];
+		"week"  -> Requests = [X || {_, request_submit, DT, _} = X <- State#state.list, msbus_util:in_last_week(DT)];
+		"month" -> Requests = [X || {_, request_submit, DT, _} = X <- State#state.list, msbus_util:in_last_month(DT)];
+		_       -> Requests = [X || {_, request_submit, DT, _} = X <- State#state.list, msbus_util:in_last_year(DT)]
+	end,
+	Requests.
 	
-do_get_top_services(Top, State) ->
-	Requisicoes = [X || {_, request_submit, _, _} = X <- State#state.list], 
-	ListaUrls = [element(1, element(4, X)) || X <- Requisicoes],
-	Urls = dict:fetch_keys( msbus_health:groupBy( fun(X) -> X end, ListaUrls  ) ),
+%% @doc Retorna os tops services por período
+do_get_top_services(Top, Periodo, State) ->
+	Requests = get_requests_submit(Periodo, State), 
+	ListaUrls = [element(1, element(4, X)) || X <- Requests],
+	Urls = maps:keys( msbus_health:groupBy( fun(X) -> X end, ListaUrls  ) ),
 	CountFunc = fun(Url) -> length([X || X <- ListaUrls, X == Url]) end,
 	Url_QtdReq = [ [X, CountFunc(X)] || X <- Urls],
 	Url_QtdReq_Sorted = lists:sort(fun(X, Y) -> lists:last(X) >= lists:last(Y) end, Url_QtdReq),
@@ -113,7 +125,7 @@ do_get_top_services(Top, State) ->
 	
 
 	
-groupBy(F, L) -> lists:foldr(fun({K,V}, D) -> dict:append(K, V, D) end , dict:new(), [ {F(X), X} || X <- L ]).
+groupBy(F, L) -> lists:foldr(fun({K,V}, D) -> maps:put(K, V, D) end , maps:new(), [ {F(X), X} || X <- L ]).
 	
 	
 	
