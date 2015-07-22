@@ -50,8 +50,8 @@ a.btn-cta,
 }
 a.btn-cta-primary,
 .btn-cta-primary {
-  background: #28a5a8;
-  border: 2px solid #28a5a8;
+  background: #8CB4C7;
+  border: 2px solid #8CB4C7;
   color: #fff;
 }
 a.btn-cta-primary:hover,
@@ -215,7 +215,7 @@ select {
   text-align: center;
   line-height: 1.4;
   max-width: 155px;
-  background: #28a5a8;
+  background: #8CB4C7;
   -webkit-border-top-right-radius: 0;
   -webkit-border-bottom-right-radius: 4px;
   -webkit-border-bottom-left-radius: 4px;
@@ -2326,7 +2326,7 @@ select {
   position: relative;
 }
 .access-section .form-group.email:before {
-  content: "\f007";
+  content: url(../../img/form_email.png);
   font-family: FontAwesome;
   font-style: normal;
   font-weight: normal;
@@ -2338,8 +2338,23 @@ select {
   top: 12px;
   color: #999999;
 }
+
+.access-section .form-group.nome:before {
+  content: url(../../img/form_login.png);
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: absolute;
+  left: 10px;
+  top: 12px;
+  color: #999999;
+}
+
 .access-section .form-group.password:before {
-  content: "\f023";
+  content: url(../../img/form_senha.png);
   font-family: FontAwesome;
   font-style: normal;
   font-weight: normal;
@@ -2352,26 +2367,29 @@ select {
   color: #999999;
 }
 .access-section .form-control {
+	
   font-size: 16px;
   padding-left: 30px;
   font-size: 14px;
 }
 .access-section .form-control::-webkit-input-placeholder {
-  /* WebKit browsers */
+  
   color: #999999;
-}
+} 
+
+
 .access-section .form-control:-moz-placeholder {
-  /* Mozilla Firefox 4 to 18 */
+  
   color: #999999;
-}
+} 
 .access-section .form-control::-moz-placeholder {
-  /* Mozilla Firefox 19+ */
+  
   color: #999999;
 }
 .access-section .form-control:-ms-input-placeholder {
-  /* Internet Explorer 10+ */
+ 
   color: #999999;
-}
+} 
 .access-section .social-btns {
   padding-left: 60px;
   min-height: 250px;
@@ -3436,4 +3454,7 @@ select {
     position: absolute;
   }
 }
+
+
+
 /* Large devices (large desktops, 1200px and up) */
