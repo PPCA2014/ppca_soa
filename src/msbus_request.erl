@@ -34,12 +34,8 @@ get_param_url(NomeParam, Default, Request) ->
 get_querystring(QueryName, Default, Request) ->
 	HttpHeaders = Request#request.http_headers,
 	case dict:find("Query", HttpHeaders) of
-		{ok, Query} ->
-			io:format("aqui 1  ~p\n", [Query]),
-		 maps:get(QueryName, Query, Default);
-		error -> 
-		io:format("aqui 2\n"),
-		Default
+		{ok, Query} -> maps:get(QueryName, Query, Default);
+		error -> Default
 	end.
 
 %% @doc Gera um objeto request com os dados da requisição

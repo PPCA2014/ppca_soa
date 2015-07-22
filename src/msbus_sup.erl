@@ -24,18 +24,15 @@ init([]) ->
 	msbus_database:start(),
 
 	{ok, {{one_for_one, 3, 10},
-			[{msbus_logger,
+			[
+			
+			%% Principais módulos de erlangMS
+			{msbus_logger,
 			  {msbus_logger, start, []},
 			  permanent,
 			  10000,
 			  worker,
 			  [msbus_logger]},
-			 {msbus_server,
-			  {msbus_server, start, []},
-			  permanent,
-			  10000,
-			  worker,
-			  [msbus_server]},
 			 {msbus_catalogo,
 			  {msbus_catalogo, start, []},
 			  permanent,
@@ -78,8 +75,12 @@ init([]) ->
 			   10000,
 			   worker,  
 			   [msbus_health]},
-			   
-			   
+			 {msbus_server,
+			  {msbus_server, start, []},
+			  permanent,
+			  10000,
+			  worker,
+			  [msbus_server]},
 
 
 			 %% Serviços REST
@@ -88,7 +89,17 @@ init([]) ->
 			   permanent,
 			   10000,
 			   worker,  
-			   [msbus_user_service]}			  
+			   [msbus_user_service]},
+			 {msbus_health_service,
+			  {msbus_health_service, start, []},
+			   permanent,
+			   10000,
+			   worker,  
+			   [msbus_health_service]},
+			   			  
+			   
+			   
+			   
 			   			  
  		    ]  
  		}

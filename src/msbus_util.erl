@@ -331,19 +331,19 @@ in_last_day(DateTime) ->
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
 	(S2 - S1) =< 86400.
 	
-%% @doc Boolean indicando se DateTime ocorreu no último dia	  
+%% @doc Boolean indicando se DateTime ocorreu no última semana	  
 in_last_week(DateTime) ->
 	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
 	(S2 - S1) =< 604800.
 
-%% @doc Boolean indicando se DateTime ocorreu no último dia	  
+%% @doc Boolean indicando se DateTime ocorreu no último mês	  
 in_last_month(DateTime) ->
 	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
 	(S2 - S1) =< 2629800.
 	
-%% @doc Boolean indicando se DateTime ocorreu no último dia	  
+%% @doc Boolean indicando se DateTime ocorreu no último ano	  
 in_last_year(DateTime) ->
 	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),

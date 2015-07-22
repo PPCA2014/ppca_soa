@@ -120,7 +120,7 @@ do_all(_Request, _State) ->
 	msbus_user:call(all).
 	
 do_get(Request, _State) ->
-	Id = msbus_request:get_param_url(<<"id">>, Request),
+	Id = msbus_request:get_param_url(<<"id">>, -1, Request),
 	Result = msbus_user:call({get, Id}),
 	Result.
 
@@ -131,7 +131,7 @@ do_insert(Request, _State) ->
 	msbus_user:call({insert, User}).
 
 do_update(Request, _State) ->
-	Id = msbus_request:get_param_url(<<"id">>, Request),
+	Id = msbus_request:get_param_url(<<"id">>, -1, Request),
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),
 	
 	Fields = record_info(fields, user),
@@ -146,7 +146,7 @@ do_update(Request, _State) ->
 	end.
 
 do_delete(Request, _State) ->
-	Id = msbus_request:get_param_url(<<"id">>, Request),
+	Id = msbus_request:get_param_url(<<"id">>, -1, Request),
 	msbus_user:call({delete, Id}).
 	
 
