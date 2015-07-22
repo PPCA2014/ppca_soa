@@ -34,58 +34,56 @@
     
     
      <script type="text/javascript">
+     function getData(data) {
+      	rawData = data;
+      	console.log(rawData);
+      }
       google.load("visualization", "1.1", {packages:["bar"]});
       google.setOnLoadCallback(drawStuff);
 
-      function drawStuff() {
-        var data = new google.visualization.arrayToDataTable([
-          ['Servicos mais Acessados', 'Acessos'],
-          ["Favocon_Execute", 10],
-          ["Static_File_Execute", 2],
-          ["Info_Execute", 20],
-          ["Auth_User_Autentica", 80],
-          ['Catalogo_Lista_Catalogo', 50]
-        ]);
-
-        var options = {
-          title: 'TOP 5 Servicos mais Acessados',
-		  
-          width: 680,
-		  height: 270,
-          legend: { position: 'none' },
-          chart: { title: 'Top 5 Servicos mais Acessados',
-                   subtitle: 'Quantidade de Acessos' },
-          bars: 'horizontal', // Required for Material Bar Charts.
-          axes: {
-            x: {
-              0: { side: 'top', label: 'Acessos'} // Top x-axis.
-            }
-          },
-          bar: { groupWidth: "90%" }
-        };
-        
-		
-		var options2 = {
-          title: 'TOP 5 Servicos mais Acessados',
-		  
-          width: 770,
-          legend: { position: 'none' },
-          chart: { title: 'Top 5 Servicos mais Acessados',
-                   subtitle: 'Quantidade de Acessos' },
-          bars: 'horizontal', // Required for Material Bar Charts.
-          axes: {
-            x: {
-              0: { side: 'top', label: 'Acessos'} // Top x-axis.
-            }
-          },
-          bar: { groupWidth: "90%" }
-        };
-		
-        var chart = new google.charts.Bar(document.getElementById('top_x_div'));
-		var chart2 = new google.charts.Bar(document.getElementById('top_x_div2'));
-        chart.draw(data, options);
-		chart2.draw(data, options2);
-      };
+     
+      function drawStuff(rawData) {
+		$.get('http://ec2-54-94-128-45.sa-east-1.compute.amazonaws.com:2301/health/top_services/10', function(rawData){
+		  	rawData.unshift(['TOP 10 Servicos mais Acessados', 'Acessos']);
+		  	
+		    var data = new google.visualization.arrayToDataTable(rawData);		
+		     var options = {
+		      title: 'TOP 10 Servicos mais Acessados',
+		      width: 750,
+		  height: 340,
+		      legend: { position: 'none' },
+		      chart: { title: 'TOP 10 Servicos mais Acessados',
+		               subtitle: 'Quantidade de Acessos' },
+		      bars: 'horizontal', // Required for Material Bar Charts.
+		      axes: {
+		        x: {
+		          0: { side: 'top', label: 'Acessos'} // Top x-axis.
+		        }
+		      },
+		      bar: { groupWidth: "90%" }
+		    };
+			
+			 var options2 = {
+		      title: 'TOP 10 Servicos mais Acessados',
+		      width: 760,
+			  height: 480,
+		      legend: { position: 'none' },
+		      chart: { title: 'TOP 10 Servicos mais Acessados',
+		               subtitle: 'Quantidade de Acessos' },
+		      bars: 'horizontal', // Required for Material Bar Charts.
+		      axes: {
+		        x: {
+		          0: { side: 'top', label: 'Acessos'} // Top x-axis.
+		        }
+		      },
+		      bar: { groupWidth: "90%" }
+		    };
+		    var chart = new google.charts.Bar(document.getElementById('top_x_div'));
+        	chart.draw(data, options); 
+			 var chart = new google.charts.Bar(document.getElementById('top_x_div2'));
+        	chart.draw(data, options2); 
+		});
+      }
     </script>
 
 
@@ -237,10 +235,10 @@
                
                
                
-               <table style="width: 800px; height: 400px; text-align: left; margin-left: auto; margin-right: auto; border-color:#8CB4C7; box-shadow: -5px -5px 5px #8CB4C7;  border-radius:10px" border="2" cellpadding="2" cellspacing="2";>
+               <table style="width: 850px; height: 500px; text-align: left; margin-left: auto; margin-right: auto; border-color:#8CB4C7; box-shadow: -5px -5px 5px #8CB4C7;  border-radius:10px" border="2" cellpadding="2" cellspacing="2";>
 <tr>
 <td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">
-<div id="top_x_div" style="width: 650px; height: 280px; text-align:center"></div> <hr>
+<div id="top_x_div" style="width: 700px; height: 350px; text-align:center"></div> <hr>
 <div id="linechart_material" ></div>
 <br>
 </span></td>
@@ -310,14 +308,14 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
                         <h3 class="title">Serviços mais utilizados</h3>
                         <div class="desc">
                             <p>
-                                Por meio do gráfico de barras a seguir você pode visualizar a quantidade de acessos em nossos 5 serviços mais frequentados.</p>
+                                Por meio do gráfico de barras a seguir você pode visualizar a quantidade de acessos em nossos 10 serviços mais frequentados.</p>
                             
                         </div>
                         
                         
                     </div>
                     <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-pull-4 col-sm-pull-0 col-xs-pull-0">
-                     <div id="top_x_div2" style="width: 750px; height: 350px;"></div>   
+                     <div id="top_x_div2" style="width: 760px; height: 480px;"></div>   
                         
                     </figure>
                 </div>
