@@ -7,7 +7,7 @@
 <body>
 	<h3>Testador de requisição PPCA->SOA</h3>
 	<form>
-		<input id="url" style="width:700px" value="http://www.ec2-54-94-128-45.sa-east-1.compute.amazonaws.com:2301/health/top_services/5">
+		<input id="url" style="width:700px" value="http://ec2-54-94-128-45.sa-east-1.compute.amazonaws.com:2301/health/top_services/5">
 		<button type="button" onclick="getJSON(url.value, [])">Envia!</button>
 		<div id="dados" style="padding:15px;border:1px;"/>
 	</form>
@@ -24,7 +24,8 @@
 				alert(error);
 		    });			
    	}
-	
+
 </script>
+
 
 </html>
