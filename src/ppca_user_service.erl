@@ -120,7 +120,7 @@ do_all(_Request, _State) ->
 	ppca_user:call(all).
 	
 do_get(Request, _State) ->
-	Id = ppca_request:get_param_url(<<"id">>, Request),
+	Id = ppca_request:get_param_url(<<"id">>, -1, Request),
 	Result = ppca_user:call({get, Id}),
 	Result.
 
@@ -131,7 +131,7 @@ do_insert(Request, _State) ->
 	ppca_user:call({insert, User}).
 
 do_update(Request, _State) ->
-	Id = ppca_request:get_param_url(<<"id">>, Request),
+	Id = ppca_request:get_param_url(<<"id">>, -1, Request),
 	UserJson = ppca_request:get_property_request(<<"payload">>, Request),
 	case ppca_user:call({get, Id}) of
 		{ok, User} -> 
@@ -142,7 +142,7 @@ do_update(Request, _State) ->
 	end.
 
 do_delete(Request, _State) ->
-	Id = ppca_request:get_param_url(<<"id">>, Request),
+	Id = ppca_request:get_param_url(<<"id">>, -1, Request),
 	ppca_user:call({delete, Id}).
 	
 
