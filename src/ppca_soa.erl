@@ -15,20 +15,23 @@
 
 
 -spec start(pos_integer()) -> void.
-start(Port) -> 
+start(_Port) -> 
 	ppca_database:start(),
 	ppca_logger:start(),
 	ppca_logger:info_msg(?SERVER_NAME),
-	ppca_server:start(),
+	ppca_logger:info_msg("ppca_server iniciado."),
 	ppca_catalogo:start(),
-	ppca_dispatcher:start(),
+	ppca_logger:info_msg("ppca_catalogo iniciado."),
 	ppca_info_service:start(),
 	ppca_favicon_service:start(),
 	static_file_service:start(),
 	ppca_auth_user:start(),
 	ppca_user:start(),
 	ppca_user_service:start(),
-	start_listen(Port),
+	ppca_dispatcher:start(),
+	ppca_health:start(),
+	ppca_health_service:start(),
+	ppca_server:start(),
 	ppca_logger:info_msg("Aguardando requisições...").
 
 -spec start() -> void.

@@ -16,7 +16,7 @@
 -export([init/0,lookup_route/2]).
 -import(string, [sub_string/3]).
 
--include("../include/http_messages.hrl").
+-include("../include/ppca_http_messages.hrl").
 
 
 %% ====================================================================

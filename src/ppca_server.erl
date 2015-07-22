@@ -1,17 +1,17 @@
-%% ---
-%%  PPCA_SERVER
-%%  Servidor HTTP para atender solicitações REST.
-%%  Mestrado em Computação Aplicada - Universidade de Brasília
-%%  Turma de Construção de Software / PPCA 2014
-%%  Professor: Rodrigo Bonifacio de Almeida
-%%  Aluno: Everton de Vargas Agilar (evertonagilar@gmail.com)
-%%---
+%%********************************************************************
+%% @title Servidor HTTP
+%% @version 1.0.0
+%% @doc Módulo responsável pelo processamento das requisições HTTP.
+%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
+%% @copyright erlangMS Team
+%%********************************************************************
+
 -module(ppca_server).
 
 -behavior(gen_server). 
 
 -include("../include/ppca_config.hrl").
--include("../include/http_messages.hrl").
+-include("../include/ppca_http_messages.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -35,9 +35,7 @@
 %%====================================================================
 
 start() -> 
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    ppca_logger:info_msg("ppca_server iniciado."),
-    Result.
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -48,10 +46,10 @@ stop() ->
 %%====================================================================
  
 start_listen(Port, From) ->
-	gen_server:cast(?SERVER, {start_listen, Port, From}).
+	gen_server:call(?SERVER, {start_listen, Port, From}).
 
 stop_listen(Port, From) ->
-	gen_server:cast(?SERVER, {stop_listen, Port, From}).
+	gen_server:call(?SERVER, {stop_listen, Port, From}).
 	
  
 %%====================================================================
@@ -59,7 +57,10 @@ stop_listen(Port, From) ->
 %%====================================================================
  
 init([]) ->
-    {ok, #state{}}. 
+	case do_start_listen(?CONF_PORT, #state{}) of
+		{ok, NewState} -> {ok, NewState};
+		{{error, _Reason}, NewState} -> {error, NewState}
+	end.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -85,7 +86,6 @@ handle_info(_Msg, State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
-    ppca_logger:info_msg("ppca_server finalizado."),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -100,6 +100,7 @@ do_start_listen(Port, State) ->
 	case start_server(Port) of
 		{ok, Listen} ->
 			NewState = State#state{listener=[{Listen, Port}|State#state.listener]},
+			ppca_logger:info("Escutando na porta ~p.", [Port]),
 			Reply = {ok, NewState};
 		{error, Reason} ->
 			Reply = {{error, Reason}, State}
@@ -111,6 +112,7 @@ do_stop_listen(Port, State) ->
 		[Listen|_] ->
 			stop_server(Listen),
 			NewState = State#state{listener=lists:delete({Listen, Port}, State#state.listener)},
+			ppca_logger:info("Parou de escutar na porta ~p.", [Port]),
 			Reply = {ok, NewState};
 		_ -> 
 			Reply = {{error, enolisten}, State}
@@ -135,20 +137,20 @@ stop_server(Listen) ->
 	gen_tcp:close(Listen).
 
 aceita_conexoes(Listen) ->
-	case gen_tcp:accept(Listen) of
-		{ok, Socket} -> 
-			spawn(fun() -> aceita_conexoes(Listen) end),
-			inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
-			case get_request(Socket, []) of
-				{ok, HeaderDict, Payload} ->
-					Response = trata_request(HeaderDict, Payload),
-					gen_tcp:send(Socket, [Response]);
-				tcp_closed ->
-					ok
-			end;
-		{error, closed} -> 
-			ok
+ 	case gen_tcp:accept(Listen) of
+		{ok, Socket} -> processa_conexao(Listen, Socket);
+		{error, closed} -> ok
 	end.
+
+processa_conexao(Listen, Socket) -> 
+  spawn(fun() -> aceita_conexoes(Listen) end),
+  inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
+  case get_request(Socket, []) of
+     {ok, HeaderDict, Payload} ->
+		Response = trata_request(HeaderDict, Payload),
+		gen_tcp:send(Socket, [Response]);
+     tcp_closed -> ok
+  end.	
 	
 get_request(Socket, L) ->
     receive
@@ -205,11 +207,13 @@ get_http_header(Header) ->
 	[Url2|QueryString] = string:tokens(Url, "?"),
 	Url3 = remove_ult_backslash_url(Url2),
 	Outros2 = get_http_header_adicionais(Outros),
-	QueryString2 = parse_query_string(QueryString),
+	QueryString2 = parse_querystring(QueryString),
+	RID = {now(), node()},
 	dict:from_list([{"Metodo", Metodo}, 
 					{"Url", Url3}, 
 					{"HTTP-Version", Versao_HTTP},
-					{"Query", QueryString2}]
+					{"Query", QueryString2},
+					{<<"RID">>, RID}]
 					++ Outros2).
 
 get_http_header_adicionais(Header) ->
@@ -230,24 +234,35 @@ format_header_value(_, Value) ->
 
 %% @doc Trata o request e retorna o response do resultado
 trata_request_map(HeaderDict, PayloadMap) ->
-	ppca_dispatcher:dispatch_request(self(), HeaderDict, PayloadMap),
+	RID = dict:fetch(<<"RID">>, HeaderDict),	
+	Url = dict:fetch("Url", HeaderDict),
+	Metodo = dict:fetch("Metodo", HeaderDict),
+	User_Agent = dict:fetch("User-Agent", HeaderDict),
+	ppca_dispatcher:dispatch_request(RID, Url, Metodo, self(), HeaderDict, PayloadMap),
+	ppca_health:collect(RID, request_submit, {Url, Metodo, User_Agent}),
 	receive
 		{ok, Result} ->
+			ppca_health:collect(RID, request_success, {}),
 			Response = encode_response(<<"200">>, Result),
 			{ok, Response};
 		{ok, Result, MimeType} ->
+			ppca_health:collect(RID, request_success, MimeType),
 			Response = encode_response(<<"200">>, Result, MimeType),
 			{ok, Response};
 		{error, servico_nao_encontrado, ErroInterno} ->
+			ppca_health:collect(RID, request_error, {<<"404">>, servico_nao_encontrado}),
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404),
 			{error, Response, ErroInterno};
 		{error, servico_falhou, ErroInterno} ->
+			ppca_health:collect(RID, request_error, {<<"502">>, servico_falhou, ErroInterno}),
 			Response = encode_response(<<"502">>, ?HTTP_ERROR_502(ErroInterno)),
 			{error, Response, ErroInterno};
 		{error, servico_nao_disponivel, ErroInterno} ->
+			ppca_health:collect(RID, request_error, {<<"503">>, servico_nao_disponivel}),
 			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
 			{error, Response, ErroInterno};
 		{error, file_not_found, ErroInterno} ->
+			ppca_health:collect(RID, request_error, {<<"404">>, file_not_found}),
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 			{error, Response, ErroInterno}
 	end.
@@ -259,10 +274,10 @@ trata_request(HeaderDict, PayloadJSON) ->
 		{ok, PayloadMap} ->
 			case trata_request_map(HeaderDict, PayloadMap) of
 				{ok, Response} ->
-					ppca_logger:info_msg("Serviço atendido."),
+					ppca_logger:info("Serviço atendido."),
 					Response;
 				{error, Response, ErroInterno} ->
-					ppca_logger:error_msg(ErroInterno),
+					ppca_logger:error(ErroInterno),
 					Response
 			end;
 		invalid_payload ->
@@ -318,7 +333,7 @@ encode_response(Codigo, PayloadTuple) when is_tuple(PayloadTuple) ->
 encode_response(Codigo, Payload) ->
     Payload2 = ppca_util:json_encode(Payload),
     encode_response(Codigo, Payload2).
-    
+
 header_cache_control(<<"image/x-icon">>) ->
 	<<"Cache-Control: max-age=290304000, public">>;
 
@@ -332,14 +347,12 @@ is_fim_header([], _)              -> more.
 is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
 
-parse_query_string([]) ->
-	[];
-	
-parse_query_string([Querystring]) ->
+parse_querystring([]) -> #{};
+parse_querystring([Querystring]) ->
 	Q1 = string:tokens(Querystring, "&"),
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
-	Q3 = lists:map(fun([P|V]) -> {P, ppca_util:hd_or_empty(V)} end, Q2),
-	Q3.
+	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), ppca_util:hd_or_empty(V)} end, Q2),
+	maps:from_list(Q3).
 
 %% @doc Remove o último backslash da Url
 remove_ult_backslash_url("/") -> "/";
@@ -350,16 +363,16 @@ remove_ult_backslash_url(Url) ->
 	end.
 
 print_requisicao_debug(HeaderDict, Payload) ->
-	ppca_logger:info_msg("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
-	ppca_logger:info_msg("Header:", []),
-	[ ppca_logger:info_msg("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
+	ppca_logger:info("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
+	ppca_logger:info("Header:", []),
+	[ ppca_logger:info("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
 	print_requisicao_payload_debug(Payload).
 
 print_requisicao_payload_debug([]) ->
 	ok;
 
 print_requisicao_payload_debug(Payload) ->
-	ppca_logger:info_msg("Payload: ~s", [Payload]).
+	ppca_logger:info("Payload: ~s", [Payload]).
 	
 	
 	
