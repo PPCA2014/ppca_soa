@@ -12,19 +12,8 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#000000', end
     background: #fff;
 }
 
-video#bgvid {
-	/* position: fixed; right: 0; bottom: 0; */
-	min-width: 100%; min-height: 100%;
-	width: auto; height: auto; 
-	
-	background: url(/assets/images/background/bg-screen-1.jpg) no-repeat; 
-	background-size: cover;
-	
-}
 
-.bg-vid-wrapper {
-	background-color: red;
-}
+
 
 .content-page {
     margin-top: 90px;
@@ -253,16 +242,7 @@ table-hover > tbody > tr.danger:hover > th {
     height: 40px;
 }
 
-.navbar-brand {
-    margin-top: 0px!important;
-    margin-left: 0px!important;
-    margin-right: 50px!important;
-    margin-bottom: 0px!important;
-    padding-top: 0px!important;
-    padding-left: 0px!important;
-    padding-right: 0px!important;
-    paddings-bottom: 0px!important;
-}
+
 
 .accordion i {
      margin-right: 10px;
