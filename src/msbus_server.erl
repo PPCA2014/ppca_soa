@@ -120,12 +120,9 @@ do_stop_listen(Port, State) ->
 	Reply.
 
 start_server(Port) ->
-	% Usando a operação gen_tcp:listen do OTP, informando a porta 
-	% e mais alguns dados de configuração. Depois vamos otimizar as 
-	% opções de configuração. 
 	case gen_tcp:listen(Port, [binary, {packet, 0}, 
-								{reuseaddr, true},
-								{active, true}]) of
+									   {reuseaddr, true},
+									   {active, true}]) of
 		{ok, Listen} ->
 		    spawn(fun() -> aceita_conexoes(Listen) end),
 			{ok, Listen};
@@ -146,12 +143,18 @@ processa_conexao(Listen, Socket) ->
   spawn(fun() -> aceita_conexoes(Listen) end),
   inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
   case get_request(Socket, []) of
-     {ok, HeaderDict, Payload} ->
-		Response = trata_request(HeaderDict, Payload),
-		gen_tcp:send(Socket, [Response]);
-     tcp_closed -> ok
+     {ok, Request} ->
+		case trata_request(Request) of
+			{ok, Response} ->
+				gen_tcp:send(Socket, [Response]),
+				log_status_requisicao(Request, "OK");
+			{error, Response, ErroInterno} ->
+				gen_tcp:send(Socket, [Response]),
+				log_status_requisicao(Request, ErroInterno)
+		end;
+     {error, invalid_request} -> ok % requisição ingnorada
   end.	
-	
+
 get_request(Socket, L) ->
     receive
 		{tcp, Socket, Bin} -> 
@@ -163,24 +166,27 @@ get_request(Socket, L) ->
 					get_request(Socket, L1);
 				{Header, Payload} ->
 					%% cabeçalho completo
-					HeaderDict = get_http_header(Header),
-					case dict:find("Content-Length", HeaderDict) of
+					RID = {now(), node()},
+					{Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap} = get_http_header(Header),
+					Request = msbus_request:encode_request(RID, Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap, null, null, <<>>),
+					case maps:find("Content-Length", HeaderMap) of
 						{ok, 0} ->
-							{ok, HeaderDict, ""};
+							{ok, Request};
 						{ok, Content_Length} ->
 							case get_request_payload(Socket, Content_Length, Payload) of
 								{ok , Payload1} ->
-									{ok, HeaderDict, Payload1};
-								{error, Reason} ->
-									{error, Reason}
+									Request1 = Request#request{payload = Payload1},
+									{ok, Request1};
+								{error, _Reason} ->
+									{error, invalid_request}
 							end;
 						error -> 
 							% Tudo ok, somente POST e PUT possuem payload
-							{ok, HeaderDict, ""}
+							{ok, Request}
 					end
 			end;
 		{tcp_closed, Socket} ->
-		    tcp_closed;
+		    {error, invalid_request};
 		_Any  ->
 		    get_request(Socket, L)
     end.
@@ -191,35 +197,29 @@ get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length 
 			L1 = L ++ binary_to_list(Bin),
 			get_request_payload(Socket, Content_Length, L1);
 		{tcp_closed, Socket} ->
-		    [];
+		    {error, tcp_closed};
 		_Any  ->
 		    get_request_payload(Socket, Content_Length, L)
     end;
     
 get_request_payload(_Socket, _Content_Length, L) ->    
 	Payload = list_to_binary(L),
-	{ok, Payload}.
+	decode_payload(Payload).
 
--spec get_http_header(Header::list()) -> dict:dict().
+-spec get_http_header(Header::list()) -> maps:map().
 get_http_header(Header) ->
 	[Principal|Outros] = string:tokens(Header, "\r\n"),
 	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(Principal, " "),
 	[Url2|QueryString] = string:tokens(Url, "?"),
-	Url3 = remove_ult_backslash_url(Url2),
+	Url3 = msbus_util:remove_ult_backslash_url(Url2),
 	Outros2 = get_http_header_adicionais(Outros),
-	QueryString2 = parse_querystring(QueryString),
-	RID = {now(), node()},
-	dict:from_list([{"Metodo", Metodo}, 
-					{"Url", Url3}, 
-					{"HTTP-Version", Versao_HTTP},
-					{"Query", QueryString2},
-					{<<"RID">>, RID}]
-					++ Outros2).
+	QueryStringMap = parse_querystring(QueryString),
+    {Metodo, Url3, Versao_HTTP, QueryString, QueryStringMap, Outros2}.
 
 get_http_header_adicionais(Header) ->
 	Header2 = map(fun(P) -> string:tokens(P, ":") end, Header),
 	Header3 = [{P, format_header_value(P, V)} || [P|[V]] <- Header2],
-	Header3.
+	maps:from_list(Header3).
 
 format_header_value("Content-Length", Value) ->
 	Value1 = string:strip(Value),
@@ -233,13 +233,12 @@ format_header_value(_, Value) ->
 	string:strip(Value).
 
 %% @doc Trata o request e retorna o response do resultado
-trata_request_map(HeaderDict, PayloadMap) ->
-	RID = dict:fetch(<<"RID">>, HeaderDict),	
-	Url = dict:fetch("Url", HeaderDict),
-	Metodo = dict:fetch("Metodo", HeaderDict),
-	User_Agent = dict:fetch("User-Agent", HeaderDict),
-	msbus_dispatcher:dispatch_request(RID, Url, Metodo, self(), HeaderDict, PayloadMap),
-	msbus_health:collect(RID, request_submit, {Url, Metodo, User_Agent}),
+trata_request(Request) ->
+	RID = Request#request.rid,	
+	Url = Request#request.url,
+	Metodo = Request#request.metodo,
+	msbus_dispatcher:dispatch_request(Request, self()),
+	msbus_health:collect(RID, request_submit, {Url, Metodo}),
 	receive
 		{ok, Result} ->
 			msbus_health:collect(RID, request_success, {}),
@@ -261,27 +260,10 @@ trata_request_map(HeaderDict, PayloadMap) ->
 			msbus_health:collect(RID, request_error, {<<"503">>, servico_nao_disponivel}),
 			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
 			{error, Response, ErroInterno};
-		{error, file_not_found, ErroInterno} ->
+		{error, file_not_found} ->
 			msbus_health:collect(RID, request_error, {<<"404">>, file_not_found}),
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-			{error, Response, ErroInterno}
-	end.
-
-%% @doc Trata o request e retorna o response do resultado
-trata_request(HeaderDict, PayloadJSON) ->
-	print_requisicao_debug(HeaderDict, PayloadJSON),
-	case decode_payload(PayloadJSON) of
-		{ok, PayloadMap} ->
-			case trata_request_map(HeaderDict, PayloadMap) of
-				{ok, Response} ->
-					msbus_logger:info("Serviço atendido."),
-					Response;
-				{error, Response, ErroInterno} ->
-					msbus_logger:error(ErroInterno),
-					Response
-			end;
-		invalid_payload ->
-			encode_response(<<"415">>, ?HTTP_ERROR_415)
+			{error, Response, file_not_found}
 	end.
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
@@ -292,7 +274,7 @@ decode_payload([]) ->
 decode_payload(Payload) ->
 	case msbus_util:json_decode_as_map(Payload) of
 		{ok, PayloadJSON} -> {ok, PayloadJSON};
-		{error, _Reason} -> invalid_payload
+		{error, _Reason} -> {error, invalid_payload}
 	end.
 
 %% @doc Gera o response para enviar para o cliente
@@ -302,6 +284,9 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 				<<"Server: ">>, ?SERVER_NAME, <<"\n">>,
 				<<"Content-Type: ">>, MimeType, <<"\n">>,
 				<<"Content-Length: ">>, PayloadLength, <<"\n">>,
+				<<"Access-Control-Allow-Origin: *\n">>,
+				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE\n">>,
+				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description\n">>,
 				header_cache_control(MimeType),
 				<<"\n\n">>, 
 	            Payload],
@@ -354,25 +339,16 @@ parse_querystring([Querystring]) ->
 	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), msbus_util:hd_or_empty(V)} end, Q2),
 	maps:from_list(Q3).
 
-%% @doc Remove o último backslash da Url
-remove_ult_backslash_url("/") -> "/";
-remove_ult_backslash_url(Url) -> 
-	case lists:suffix("/", Url) of
-		true -> lists:droplast(Url);
-		false -> Url
-	end.
-
-print_requisicao_debug(HeaderDict, Payload) ->
-	msbus_logger:info("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
-	msbus_logger:info("Header:", []),
-	[ msbus_logger:info("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
-	print_requisicao_payload_debug(Payload).
-
-print_requisicao_payload_debug([]) ->
-	ok;
-
-print_requisicao_payload_debug(Payload) ->
-	msbus_logger:info("Payload: ~s", [Payload]).
+log_status_requisicao(Request, Status) ->
+	HeaderMap = Request#request.http_headers,
+	Payload = Request#request.payload,
+	Metodo = Request#request.metodo,
+	Url = Request#request.url,
+	HTTPVersion = Request#request.versao_http,
+	Texto = [[io_lib:format("\t~s:  ~p\n", [P, maps:get(P, HeaderMap)]) || P <- maps:keys(HeaderMap)] | 
+				[io_lib:format("\tPayload: ~s\n\tStatus: ~s\n}", [Payload, Status])]],
+	Texto1 = [io_lib:format("~s ~s ~s {\n", [Metodo, Url, HTTPVersion]) | Texto],
+	msbus_logger:info(Texto1). 
 	
 	
 	

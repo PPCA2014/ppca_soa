@@ -91,7 +91,7 @@ do_get_file(Request) ->
 			ContentType = msbus_util:mime_type(filename:extension(FilePath)),
 			{ok, Arquivo, ContentType};
 		{error, enoent} -> 
-			{error, file_not_found, FilePath};
+			{error, file_not_found};
 		{error, Reason} -> 
 			{error, servico_falhou, Reason}
 	end.

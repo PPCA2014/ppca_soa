@@ -37,16 +37,27 @@
 				 rotacao_timeout = 1000 * 60 * 60 * 24   %% 24h
 				}).
 
--record(request, {%% cabeçalho da requisição HTTP
-				  http_headers = [],
-				  %% The raw HTTP request body
-				  payload = [],
-				  %% querystring
-				  querystring = [],
-				  %% parâmetros na url
-				  params_url = [],
-				  %% serviço que representa esta requisição
-				  servico = null
+-record(request, {
+					  %% Request ID
+					  rid,
+					  %% Método da requisição
+					  metodo,
+					  %% Url requisitada
+					  url,
+					  %% Versão HTTP
+					  versao_http,
+					  %% cabeçalho da requisição HTTP
+					  http_headers,
+					  %% The raw HTTP request body
+					  payload,
+					  %% querystring da requisição
+					  querystring,
+					  %% map da querystring
+					  query_map,
+					  %% parâmetros na Url
+					  params_url,
+					  %% serviço que representa esta requisição
+					  servico
 				  }).
 				  	
 

@@ -11,16 +11,28 @@
 -export([get_property_request/2, 
 		 get_param_url/3,
 		 get_querystring/3,
-		 encode_request/4]).
+		 encode_request/10]).
 
 -include("../include/msbus_config.hrl").
 
 %% @doc Retorna a URL do request
 get_property_request(<<"url">>, Request) ->
-	dict:fetch("Url", Request#request.http_headers);
+	Request#request.url;
 
-%% @doc Retorna o payload do request
+%% @doc Retorna a URL do request
+get_property_request(<<"metodo">>, Request) ->
+	Request#request.metodo;
+
+%% @doc Retorna a URL do request
+get_property_request(<<"http_version">>, Request) ->
+	Request#request.versao_http;
+
+%% @doc Retorna o payload/body do request
 get_property_request(<<"payload">>, Request) ->
+	Request#request.payload;
+
+%% @doc Retorna o payload/body do request
+get_property_request(<<"body">>, Request) ->
 	Request#request.payload.
 
 %% @doc Retorna um parâmetro do request
@@ -32,18 +44,20 @@ get_param_url(NomeParam, Default, Request) ->
 
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, Request) ->
-	HttpHeaders = Request#request.http_headers,
-	case dict:find("Query", HttpHeaders) of
-		{ok, Query} -> maps:get(QueryName, Query, Default);
-		error -> Default
-	end.
+	maps:get(QueryName, Request#request.query_map, Default).
 
 %% @doc Gera um objeto request com os dados da requisição
-encode_request(HeaderDict, Payload, Servico, ParamsUrl) ->
-	Request = #request{http_headers = HeaderDict,
-					   payload = Payload,
-					   servico = Servico,
-					   params_url = ParamsUrl},
-	Request.
+encode_request(RID, Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap, Servico, ParamsUrl, Payload) ->
+   #request{rid = RID,
+			metodo = Metodo,
+			url = Url,
+			versao_http = Versao_HTTP,
+			querystring = Querystring,
+			query_map = QuerystringMap,
+			http_headers = HeaderMap,
+			servico = Servico,
+			params_url = ParamsUrl,
+			payload = Payload
+	}.
 
 
