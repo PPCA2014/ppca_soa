@@ -120,12 +120,9 @@ do_stop_listen(Port, State) ->
 	Reply.
 
 start_server(Port) ->
-	% Usando a operação gen_tcp:listen do OTP, informando a porta 
-	% e mais alguns dados de configuração. Depois vamos otimizar as 
-	% opções de configuração. 
 	case gen_tcp:listen(Port, [binary, {packet, 0}, 
-								{reuseaddr, true},
-								{active, true}]) of
+									   {reuseaddr, true},
+									   {active, true}]) of
 		{ok, Listen} ->
 		    spawn(fun() -> aceita_conexoes(Listen) end),
 			{ok, Listen};
@@ -146,12 +143,24 @@ processa_conexao(Listen, Socket) ->
   spawn(fun() -> aceita_conexoes(Listen) end),
   inet:setopts(Socket, [{packet,0},binary, {nodelay,true},{active, true}]),
   case get_request(Socket, []) of
-     {ok, HeaderDict, Payload} ->
-		Response = trata_request(HeaderDict, Payload),
-		gen_tcp:send(Socket, [Response]);
-     tcp_closed -> ok
+     {ok, Request} ->
+		case trata_request(Request) of
+			{ok, Response} ->
+				gen_tcp:send(Socket, [Response]),
+				log_status_requisicao(Request, "OK");
+			{error, Response, ErroInterno} ->
+				gen_tcp:send(Socket, [Response]),
+				log_status_requisicao(Request, ErroInterno)
+		end;
+     {error, Request, Reason} -> 
+		%% um erro onde foi possível ler o cabecalho mas o payload não é JSON
+		log_status_requisicao(Request, Reason);
+     {error, Reason} -> 
+		%% requisição inválida. Ignora completamente a requisição, 
+		%% sem traumas para o servidor
+		logger:error("Ocorreu um erro que foi ingnorado sem traumas: ~s.", [Reason])
   end.	
-	
+
 get_request(Socket, L) ->
     receive
 		{tcp, Socket, Bin} -> 
@@ -163,83 +172,76 @@ get_request(Socket, L) ->
 					get_request(Socket, L1);
 				{Header, Payload} ->
 					%% cabeçalho completo
-					HeaderDict = get_http_header(Header),
-					case dict:find("Content-Length", HeaderDict) of
-						{ok, 0} ->
-							{ok, HeaderDict, ""};
-						{ok, Content_Length} ->
-							case get_request_payload(Socket, Content_Length, Payload) of
-								{ok , Payload1} ->
-									{ok, HeaderDict, Payload1};
-								{error, Reason} ->
-									{error, Reason}
-							end;
-						error -> 
-							% Tudo ok, somente POST e PUT possuem payload
-							{ok, HeaderDict, ""}
+					RID = {now(), node()},
+					{Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap} = get_http_header(Header),
+					Request = ppca_request:encode_request(RID, Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap),
+					case possui_payload(Request) of
+						false ->
+							% Requisições GET e DELETE ou POST e PUT sem payload (algum sentido nisso?!)
+							{ok, Request};
+						true ->
+							% Requisições POST e PUT
+							case get_request_payload(Socket, Request#request.content_length, Payload) of
+								{ok , PayloadText, PayloadMap} ->
+									Request1 = Request#request{payload = PayloadText, payload_map = PayloadMap},
+									{ok, Request1};
+								{error, Reason} -> {error, Request, Reason}
+							end
 					end
 			end;
 		{tcp_closed, Socket} ->
-		    tcp_closed;
+		    {error, invalid_request};
 		_Any  ->
 		    get_request(Socket, L)
     end.
 
+%% @doc Retorna boolean indicando se possui conforme as regras RESTfull
+possui_payload(Request) when Request#request.metodo =:= "GET"; 
+							 Request#request.metodo =:= "DELETE" -> false;
+possui_payload(Request) when Request#request.metodo =:= "POST"; 
+							 Request#request.metodo =:= "PUT" -> 
+	Request#request.content_length > 0.
+							 
 get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length ->
     receive
 		{tcp, Socket, Bin} -> 
 			L1 = L ++ binary_to_list(Bin),
 			get_request_payload(Socket, Content_Length, L1);
 		{tcp_closed, Socket} ->
-		    [];
+		    {error, tcp_closed};
 		_Any  ->
 		    get_request_payload(Socket, Content_Length, L)
     end;
     
 get_request_payload(_Socket, _Content_Length, L) ->    
 	Payload = list_to_binary(L),
-	{ok, Payload}.
+	case decode_payload(Payload) of
+		{ok, PayloadMap} -> {ok, L, PayloadMap};
+		Error -> Error
+	end. 
 
--spec get_http_header(Header::list()) -> dict:dict().
+-spec get_http_header(Header::list()) -> maps:map().
 get_http_header(Header) ->
 	[Principal|Outros] = string:tokens(Header, "\r\n"),
 	[Metodo|[Url|[Versao_HTTP|_]]] = string:tokens(Principal, " "),
 	[Url2|QueryString] = string:tokens(Url, "?"),
-	Url3 = remove_ult_backslash_url(Url2),
+	Url3 = ppca_util:remove_ult_backslash_url(Url2),
 	Outros2 = get_http_header_adicionais(Outros),
-	QueryString2 = parse_querystring(QueryString),
-	RID = {now(), node()},
-	dict:from_list([{"Metodo", Metodo}, 
-					{"Url", Url3}, 
-					{"HTTP-Version", Versao_HTTP},
-					{"Query", QueryString2},
-					{<<"RID">>, RID}]
-					++ Outros2).
+	QueryStringMap = parse_querystring(QueryString),
+    {Metodo, Url3, Versao_HTTP, QueryString, QueryStringMap, Outros2}.
 
 get_http_header_adicionais(Header) ->
 	Header2 = map(fun(P) -> string:tokens(P, ":") end, Header),
-	Header3 = [{P, format_header_value(P, V)} || [P|[V]] <- Header2],
-	Header3.
-
-format_header_value("Content-Length", Value) ->
-	Value1 = string:strip(Value),
-	Value2 = list_to_integer(Value1),
-	case is_content_length_valido(Value2) of
-		true -> Value2;
-		false -> 0
-	end;
-
-format_header_value(_, Value) -> 
-	string:strip(Value).
+	Header3 = [{format_header_name(P), format_header_value(P, V)} || [P|[V]] <- Header2, is_valid_header(P)],
+	maps:from_list(Header3).
 
 %% @doc Trata o request e retorna o response do resultado
-trata_request_map(HeaderDict, PayloadMap) ->
-	RID = dict:fetch(<<"RID">>, HeaderDict),	
-	Url = dict:fetch("Url", HeaderDict),
-	Metodo = dict:fetch("Metodo", HeaderDict),
-	User_Agent = dict:fetch("User-Agent", HeaderDict),
-	ppca_dispatcher:dispatch_request(RID, Url, Metodo, self(), HeaderDict, PayloadMap),
-	ppca_health:collect(RID, request_submit, {Url, Metodo, User_Agent}),
+trata_request(Request) ->
+	RID = Request#request.rid,	
+	Url = Request#request.url,
+	Metodo = Request#request.metodo,
+	ppca_dispatcher:dispatch_request(Request, self()),
+	ppca_health:collect(RID, request_submit, {Url, Metodo}),
 	receive
 		{ok, Result} ->
 			ppca_health:collect(RID, request_success, {}),
@@ -261,27 +263,10 @@ trata_request_map(HeaderDict, PayloadMap) ->
 			ppca_health:collect(RID, request_error, {<<"503">>, servico_nao_disponivel}),
 			Response = encode_response(<<"503">>, ?HTTP_ERROR_503),
 			{error, Response, ErroInterno};
-		{error, file_not_found, ErroInterno} ->
+		{error, file_not_found} ->
 			ppca_health:collect(RID, request_error, {<<"404">>, file_not_found}),
 			Response = encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-			{error, Response, ErroInterno}
-	end.
-
-%% @doc Trata o request e retorna o response do resultado
-trata_request(HeaderDict, PayloadJSON) ->
-	print_requisicao_debug(HeaderDict, PayloadJSON),
-	case decode_payload(PayloadJSON) of
-		{ok, PayloadMap} ->
-			case trata_request_map(HeaderDict, PayloadMap) of
-				{ok, Response} ->
-					ppca_logger:info("Serviço atendido."),
-					Response;
-				{error, Response, ErroInterno} ->
-					ppca_logger:error(ErroInterno),
-					Response
-			end;
-		invalid_payload ->
-			encode_response(<<"415">>, ?HTTP_ERROR_415)
+			{error, Response, file_not_found}
 	end.
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
@@ -291,8 +276,8 @@ decode_payload([]) ->
 %% @doc Decodifica o payload e transforma em um tipo Erlang
 decode_payload(Payload) ->
 	case ppca_util:json_decode_as_map(Payload) of
-		{ok, PayloadJSON} -> {ok, PayloadJSON};
-		{error, _Reason} -> invalid_payload
+		{ok, PayloadMap} -> {ok, PayloadMap};
+		{error, _Reason} -> {error, invalid_payload}
 	end.
 
 %% @doc Gera o response para enviar para o cliente
@@ -303,7 +288,7 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 				<<"Content-Type: ">>, MimeType, <<"\n">>,
 				<<"Content-Length: ">>, PayloadLength, <<"\n">>,
 				<<"Access-Control-Allow-Origin: *\n">>,
-				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS\n">>,
+				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE\n">>,
 				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description\n">>,
 				header_cache_control(MimeType),
 				<<"\n\n">>, 
@@ -350,6 +335,32 @@ is_fim_header([], _)              -> more.
 is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
 
+%% @doc Verifica se o header é útil para erlangMS
+is_valid_header("Content-Length") -> true;
+is_valid_header("content-length") -> true;
+is_valid_header("Content-Type") -> true;
+is_valid_header("Accept") -> true;
+is_valid_header("Accept-Encoding") -> true;
+%%is_valid_header("Accept-Language") -> true;
+is_valid_header("User-Agent") -> true;
+%is_valid_header("Cache-Control") -> true;
+is_valid_header(_) -> false.
+
+%% @doc formata o nome do parâmetro do header
+format_header_name(Nome) -> string:to_lower(Nome).
+
+%% @doc formata o valor do header (String, Integer)
+format_header_value("Content-Length", Value) ->
+	Value1 = string:strip(Value),
+	Value2 = list_to_integer(Value1),
+	case is_content_length_valido(Value2) of
+		true -> Value2;
+		false -> 0
+	end;
+
+format_header_value(_, Value) -> 
+	string:strip(Value).
+
 parse_querystring([]) -> #{};
 parse_querystring([Querystring]) ->
 	Q1 = string:tokens(Querystring, "&"),
@@ -357,25 +368,22 @@ parse_querystring([Querystring]) ->
 	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), ppca_util:hd_or_empty(V)} end, Q2),
 	maps:from_list(Q3).
 
-%% @doc Remove o último backslash da Url
-remove_ult_backslash_url("/") -> "/";
-remove_ult_backslash_url(Url) -> 
-	case lists:suffix("/", Url) of
-		true -> lists:droplast(Url);
-		false -> Url
-	end.
-
-print_requisicao_debug(HeaderDict, Payload) ->
-	ppca_logger:info("~s ~s", [dict:fetch("Metodo", HeaderDict), dict:fetch("Url", HeaderDict)]),    
-	ppca_logger:info("Header:", []),
-	[ ppca_logger:info("\t~s:  ~p", [P, dict:fetch(P, HeaderDict)]) || P <- dict:fetch_keys(HeaderDict)],
-	print_requisicao_payload_debug(Payload).
-
-print_requisicao_payload_debug([]) ->
-	ok;
-
-print_requisicao_payload_debug(Payload) ->
-	ppca_logger:info("Payload: ~s", [Payload]).
+log_status_requisicao(Request, Status) ->
+	HeaderMap = Request#request.http_headers,
+	Metodo = Request#request.metodo,
+	Url = Request#request.url,
+	HTTPVersion = Request#request.versao_http,
+	Payload = Request#request.payload,
+	case Payload of
+		undefined ->
+			Texto = [[io_lib:format("\t~s:  ~p\n", [P, maps:get(P, HeaderMap)]) || P <- maps:keys(HeaderMap)] | 
+				[io_lib:format("\tStatus: ~s\n}", [Status])]];
+		_ ->
+			Texto = [[io_lib:format("\t~s:  ~p\n", [P, maps:get(P, HeaderMap)]) || P <- maps:keys(HeaderMap)] | 
+				[io_lib:format("\tPayload: ~s\n\tStatus: ~s\n}", [Payload, Status])]]
+	end,
+	Texto1 = [io_lib:format("~s ~s ~s {\n", [Metodo, Url, HTTPVersion]) | Texto],
+	ppca_logger:info(Texto1). 
 	
-	
+
 	

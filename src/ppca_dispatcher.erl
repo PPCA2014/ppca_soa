@@ -17,7 +17,7 @@
 -export([start/0, stop/0]).
 
 %% Client API
--export([dispatch_request/6]).
+-export([dispatch_request/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -42,8 +42,8 @@ stop() ->
 %% Client API
 %%====================================================================
 
-dispatch_request(RID, Url, Metodo, From, HeaderDict, Payload) -> 
-	gen_server:cast(?SERVER, {dispatch_request, RID, Url, Metodo, HeaderDict, Payload, From}).
+dispatch_request(Request, From) -> 
+	gen_server:cast(?SERVER, {dispatch_request, Request, From}).
 
 	
  
@@ -57,12 +57,12 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({dispatch_request, RID, Url, Metodo, HeaderDict, Payload, From}, State) ->
-	do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From),
+handle_cast({dispatch_request, Request, From}, State) ->
+	do_dispatch_request(Request, From),
 	{noreply, State}.
     
-handle_call({dispatch_request, RID, Url, Metodo, HeaderDict, Payload}, From, State) ->
-	do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From),
+handle_call({dispatch_request, Request}, From, State) ->
+	do_dispatch_request(Request, From),
 	{reply, ok, State}.
 
 handle_info(State) ->
@@ -83,12 +83,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 %% @doc Despacha a requisição para o serviço correspondente
-do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From) ->
+do_dispatch_request(Request, From) ->
+	RID = Request#request.rid,	
+	Url = Request#request.url,
+	Metodo = Request#request.metodo,
 	case ppca_catalogo:lookup(Url, Metodo) of
 		{ok, Servico, ParamsUrl} -> 
 			Id = ppca_catalogo:get_property_servico(<<"id">>, Servico),
-			ppca_health:collect(RID, request_dispatch, {Id, Url, ParamsUrl, Payload}),
-			executa_servico(RID, From, HeaderDict, Payload, Servico, ParamsUrl);
+			ppca_health:collect(RID, request_dispatch, {Id, Url, ParamsUrl, Request#request.payload_map}),
+			Request1 = Request#request{params_url = ParamsUrl, servico = Servico},
+			executa_servico(Request1, From);
 		notfound -> 
 			ppca_health:collect(RID, notfound, {Url, Metodo}),
 			ErroInterno = io_lib:format(?MSG_SERVICO_NAO_ENCONTRADO, [Url]),
@@ -96,22 +100,22 @@ do_dispatch_request(RID, Url, Metodo, HeaderDict, Payload, From) ->
 	end.
 
 %% @doc Executa o serviço correspondente
-executa_servico(RID, From, HeaderDict, Payload, Servico, ParamsUrl) ->
+executa_servico(Request, From) ->
+	Servico = Request#request.servico,
 	NomeModule = ppca_catalogo:get_property_servico(<<"nome_module">>, Servico),
 	Module = ppca_catalogo:get_property_servico(<<"module">>, Servico),
 	Function = ppca_catalogo:get_property_servico(<<"function">>, Servico),
-	Request = ppca_request:encode_request(HeaderDict, Payload, Servico, ParamsUrl),
-	case executa_processo_erlang(RID, NomeModule, Module, Function, Request, From) of
+	case executa_processo_erlang(Request, NomeModule, Module, Function, From) of
 		em_andamento -> ok;	%% o serviço se encarrega de enviar mensagem quando estiver pronto
 		Error -> From ! Error
 	end.
 
 %% @doc Executa o processo erlang de um serviço
-executa_processo_erlang(RID, NomeModule, Module, Function, Request, From) ->
+executa_processo_erlang(Request, NomeModule, Module, Function, From) ->
 	try
 		case whereis(Module) of
 			undefined -> 
-				ppca_health:collect(RID, module_not_loaded, NomeModule),
+				ppca_health:collect(Request#request.rid, module_not_loaded, NomeModule),
 				Module:start(),
 				apply(Module, Function, [Request, From]);
 			Pid -> 

@@ -348,3 +348,12 @@ in_last_year(DateTime) ->
 	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
 	(S2 - S1) =< 31557600.
+
+
+%% @doc Remove o último backslash da Url
+remove_ult_backslash_url("/") -> "/";
+remove_ult_backslash_url(Url) -> 
+	case lists:suffix("/", Url) of
+		true -> lists:droplast(Url);
+		false -> Url
+	end.
