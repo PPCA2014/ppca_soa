@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Módulo msbus_request
 %% @version 1.0.0
-%% @doc Contém funções para obter os dados de uma requisição HTTP
+%% @doc Módulo para manipular o objeto Request de uma requisição HTTP
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -11,7 +11,7 @@
 -export([get_property_request/2, 
 		 get_param_url/3,
 		 get_querystring/3,
-		 encode_request/10]).
+		 encode_request/7]).
 
 -include("../include/msbus_config.hrl").
 
@@ -29,11 +29,11 @@ get_property_request(<<"http_version">>, Request) ->
 
 %% @doc Retorna o payload/body do request
 get_property_request(<<"payload">>, Request) ->
-	Request#request.payload;
+	Request#request.payload_map;
 
 %% @doc Retorna o payload/body do request
 get_property_request(<<"body">>, Request) ->
-	Request#request.payload.
+	Request#request.payload_map.
 
 %% @doc Retorna um parâmetro do request
 get_param_url(NomeParam, Default, Request) ->
@@ -44,20 +44,17 @@ get_param_url(NomeParam, Default, Request) ->
 
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, Request) ->
-	maps:get(QueryName, Request#request.query_map, Default).
+	maps:get(QueryName, Request#request.querystring_map, Default).
 
 %% @doc Gera um objeto request com os dados da requisição
-encode_request(RID, Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap, Servico, ParamsUrl, Payload) ->
+encode_request(RID, Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap) ->
    #request{rid = RID,
 			metodo = Metodo,
 			url = Url,
 			versao_http = Versao_HTTP,
 			querystring = Querystring,
-			query_map = QuerystringMap,
+			querystring_map = QuerystringMap,
 			http_headers = HeaderMap,
-			servico = Servico,
-			params_url = ParamsUrl,
-			payload = Payload
+			content_length = maps:get("content-length", HeaderMap, 0)
 	}.
-
 

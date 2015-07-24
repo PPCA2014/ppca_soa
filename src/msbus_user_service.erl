@@ -133,10 +133,6 @@ do_insert(Request, _State) ->
 do_update(Request, _State) ->
 	Id = msbus_request:get_param_url(<<"id">>, -1, Request),
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),
-	
-	Fields = record_info(fields, user),
-	io:format("Estes sao os fields: ~p\n\n", [Fields]),
-	
 	case msbus_user:call({get, Id}) of
 		{ok, User} -> 
 			User2 = User#user{nome  = maps:get(<<"nome">>, UserJson, User#user.nome),

@@ -25,8 +25,7 @@
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, "./").
 
-
-% Configurações para o logger do PPCA_SOA
+% Configurações para o log de operações
 -record(logger, {%% nome do arquivo do logger
 				 filename="logs/server.log",   
 				 
@@ -37,10 +36,11 @@
 				 rotacao_timeout = 1000 * 60 * 60 * 24   %% 24h
 				}).
 
+% Define um objeto Request
 -record(request, {
-					  %% Request ID
+					  %% Request ID (Identificador da requisição)
 					  rid,
-					  %% Método da requisição
+					  %% Método da requisição (GET, POST, PUT ou DELETE)
 					  metodo,
 					  %% Url requisitada
 					  url,
@@ -50,16 +50,19 @@
 					  http_headers,
 					  %% The raw HTTP request body
 					  payload,
+					  %% Payload convertido para map
+					  payload_map,
 					  %% querystring da requisição
 					  querystring,
-					  %% map da querystring
-					  query_map,
+					  %% querystring convertido para map
+					  querystring_map,
 					  %% parâmetros na Url
 					  params_url,
 					  %% serviço que representa esta requisição
-					  servico
+					  servico,
+					  %% Tamanho da requisição
+					  content_length = 0
 				  }).
-				  	
 
 
 

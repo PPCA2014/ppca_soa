@@ -90,7 +90,7 @@ do_dispatch_request(Request, From) ->
 	case msbus_catalogo:lookup(Url, Metodo) of
 		{ok, Servico, ParamsUrl} -> 
 			Id = msbus_catalogo:get_property_servico(<<"id">>, Servico),
-			msbus_health:collect(RID, request_dispatch, {Id, Url, ParamsUrl, Request#request.payload}),
+			msbus_health:collect(RID, request_dispatch, {Id, Url, ParamsUrl, Request#request.payload_map}),
 			Request1 = Request#request{params_url = ParamsUrl, servico = Servico},
 			executa_servico(Request1, From);
 		notfound -> 
