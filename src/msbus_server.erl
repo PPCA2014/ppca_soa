@@ -153,11 +153,14 @@ processa_conexao(Listen, Socket) ->
 				log_status_requisicao(Request, ErroInterno)
 		end;
      {error, Request, Reason} -> 
-		%% um erro onde foi possível ler o cabecalho mas o payload não é JSON
+		%% Foi possível ler o cabecalho mas o payload não é JSON
+		Response = encode_response(<<"415">>, ?HTTP_ERROR_415),
+		gen_tcp:send(Socket, [Response]),
 		log_status_requisicao(Request, Reason);
      {error, Reason} -> 
-		%% requisição inválida. Ignora completamente a requisição, 
-		%% sem traumas para o servidor
+		%% Requisição inválida.
+		Response = encode_response(<<"400">>, ?HTTP_ERROR_400),
+		gen_tcp:send(Socket, [Response]),
 		logger:error("Ocorreu um erro que foi ingnorado sem traumas: ~s.", [Reason])
   end.	
 
@@ -201,7 +204,7 @@ possui_payload(Request) when Request#request.metodo =:= "GET";
 possui_payload(Request) when Request#request.metodo =:= "POST"; 
 							 Request#request.metodo =:= "PUT" -> 
 	Request#request.content_length > 0.
-							 
+
 get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length ->
     receive
 		{tcp, Socket, Bin} -> 
@@ -231,8 +234,9 @@ get_http_header(Header) ->
     {Metodo, Url3, Versao_HTTP, QueryString, QueryStringMap, Outros2}.
 
 get_http_header_adicionais(Header) ->
-	Header2 = map(fun(P) -> string:tokens(P, ":") end, Header),
-	Header3 = [{format_header_name(P), format_header_value(P, V)} || [P|[V]] <- Header2, is_valid_header(P)],
+	Header1 = string:to_lower(Header),
+	Header2 = map(fun(P) -> string:tokens(P, ":") end, Header1),
+	Header3 = [{P, format_header_value(P, V)} || [P|[V]] <- Header2, is_valid_header(P)],
 	maps:from_list(Header3).
 
 %% @doc Trata o request e retorna o response do resultado
@@ -336,21 +340,17 @@ is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
 
 %% @doc Verifica se o header é útil para erlangMS
-is_valid_header("Content-Length") -> true;
 is_valid_header("content-length") -> true;
-is_valid_header("Content-Type") -> true;
-is_valid_header("Accept") -> true;
-is_valid_header("Accept-Encoding") -> true;
-%%is_valid_header("Accept-Language") -> true;
-is_valid_header("User-Agent") -> true;
-%is_valid_header("Cache-Control") -> true;
+is_valid_header("content-type") -> true;
+is_valid_header("accept") -> true;
+is_valid_header("accept-encoding") -> true;
+%%is_valid_header("accept-language") -> true;
+is_valid_header("user-agent") -> true;
+%is_valid_header("cache-control") -> true;
 is_valid_header(_) -> false.
 
-%% @doc formata o nome do parâmetro do header
-format_header_name(Nome) -> string:to_lower(Nome).
-
 %% @doc formata o valor do header (String, Integer)
-format_header_value("Content-Length", Value) ->
+format_header_value("content-length", Value) ->
 	Value1 = string:strip(Value),
 	Value2 = list_to_integer(Value1),
 	case is_content_length_valido(Value2) of
@@ -377,10 +377,10 @@ log_status_requisicao(Request, Status) ->
 	case Payload of
 		undefined ->
 			Texto = [[io_lib:format("\t~s:  ~p\n", [P, maps:get(P, HeaderMap)]) || P <- maps:keys(HeaderMap)] | 
-				[io_lib:format("\tStatus: ~s\n}", [Status])]];
+				[io_lib:format("\tstatus: ~s\n}", [Status])]];
 		_ ->
 			Texto = [[io_lib:format("\t~s:  ~p\n", [P, maps:get(P, HeaderMap)]) || P <- maps:keys(HeaderMap)] | 
-				[io_lib:format("\tPayload: ~s\n\tStatus: ~s\n}", [Payload, Status])]]
+				[io_lib:format("\tpayload: ~s\n\tstatus: ~s\n}", [Payload, Status])]]
 	end,
 	Texto1 = [io_lib:format("~s ~s ~s {\n", [Metodo, Url, HTTPVersion]) | Texto],
 	msbus_logger:info(Texto1). 

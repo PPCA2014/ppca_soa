@@ -18,8 +18,8 @@ lista_todos_os_users_cast_test() ->
 	msbus_user:cast({all, self()}).
 	
 inserir_user_test() ->
-	Id = integer_to_list(msbus_sequence:sequence(user_test)),
-	User1 = #user{nome="Usuario " ++ Id, email="usuario " ++ Id ++ "@gmail.com"},
+	Seq = integer_to_list(msbus_sequence:sequence(user_test)),
+	User1 = #user{nome="Usuario " ++ Seq, email="usuario " ++ Seq ++ "@gmail.com"},
 	{ok, _User2} = msbus_user:call({insert, User1}).
 
 atualizar_user_test() ->

@@ -41,12 +41,6 @@ get_health_top_services_query_string_invalida_test() ->
 get_portal_index_test() ->
 	{ok, {{_Version, 200, _ReasonPhrase}, _Headers, _Body}} = httpc:request(get, {dominio() ++ "/portal/index.html", []}, [], []).
 
-get_stress_hello_world_test() ->
-	Request = fun(_) -> 
-					{ok, {{_Version, 200, _ReasonPhrase}, _Headers, _Body}} = 
-							httpc:request(get, {dominio() ++ "/hello_world", []}, [], [])
-			   end,
-	lists:foreach(Request, lists:seq(1, 1000)).
 
 %% Erros 404
 
@@ -78,12 +72,6 @@ get_arquivo_estatico_nao_existe_test() ->
 get_arquivo_estatico_mime_type_nao_existe_test() ->
 	{ok, {{_Version, 404, _ReasonPhrase}, _Headers, _Body}} = httpc:request(get, {dominio() ++ "/portal/index.html5", []}, [], []).
 
-get_stress_test() ->
-	Request = fun(T) -> 
-					{ok, {{_Version, 404, _ReasonPhrase}, _Headers, _Body}} = 
-							httpc:request(get, {dominio() ++ "/recurso_" ++ integer_to_list(T), []}, [], [])
-			   end,
-	lists:foreach(Request, lists:seq(1, 1000)).
 	
 
 stop_server_test() ->
