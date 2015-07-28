@@ -10,8 +10,7 @@
 
 -export([get_property_request/2, 
 		 get_param_url/3,
-		 get_querystring/3,
-		 encode_request/7]).
+		 get_querystring/3]).
 
 -include("../include/msbus_config.hrl").
 
@@ -45,16 +44,4 @@ get_param_url(NomeParam, Default, Request) ->
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, Request) ->
 	maps:get(QueryName, Request#request.querystring_map, Default).
-
-%% @doc Gera um objeto request com os dados da requisição
-encode_request(RID, Metodo, Url, Versao_HTTP, Querystring, QuerystringMap, HeaderMap) ->
-   #request{rid = RID,
-			metodo = Metodo,
-			url = Url,
-			versao_http = Versao_HTTP,
-			querystring = Querystring,
-			querystring_map = QuerystringMap,
-			http_headers = HeaderMap,
-			content_length = maps:get("content-length", HeaderMap, 0)
-	}.
 

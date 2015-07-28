@@ -10,6 +10,7 @@ start_server_test() ->
 	ok.
 
 sequencer_test() ->
+	msbus_logger:info("\n\nTEST: Criar algumas sequences. Todas devem ser criadas sem erro."),
 	msbus_sequence:sequence(foo),
 	msbus_sequence:sequence(foo),
 	msbus_sequence:sequence(foo),
@@ -18,6 +19,7 @@ sequencer_test() ->
 	ok.
 
 init_sequence_test() ->
+	msbus_logger:info("\n\nTEST: Criar duas sequences foo que devem ser 1 e 2."),
 	msbus_sequence:init_sequence(foo, 0),
 	?assert(msbus_sequence:sequence(foo) =:= 1),
 	?assert(msbus_sequence:sequence(foo) =:= 2),

@@ -38,30 +38,26 @@
 
 % Define um objeto Request
 -record(request, {
-					  %% Request ID (Identificador da requisição)
-					  rid,
-					  %% Método da requisição (GET, POST, PUT ou DELETE)
+					  rid,       %% Request ID (Identificador da requisição)
+					  servico,   %% serviço que vai atender a requisição
+					  timestamp, %% Timestamp da requisição
+					  latencia,
+					  status,    %% Código de retorno HTTP
+					  %% Próximos campos são cabecalhos do HTTP	
 					  metodo,
-					  %% Url requisitada
 					  url,
-					  %% Versão HTTP
 					  versao_http,
-					  %% cabeçalho da requisição HTTP
-					  http_headers,
-					  %% The raw HTTP request body
 					  payload,
-					  %% Payload convertido para map
 					  payload_map,
-					  %% querystring da requisição
 					  querystring,
-					  %% querystring convertido para map
 					  querystring_map,
-					  %% parâmetros na Url
 					  params_url,
-					  %% serviço que representa esta requisição
-					  servico,
-					  %% Tamanho da requisição
-					  content_length = 0
+					  content_length, 
+					  content_type,
+					  accept,
+					  user_agent,
+					  accept_encoding,
+					  cache_control
 				  }).
 
 

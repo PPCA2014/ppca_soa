@@ -18,24 +18,29 @@ type() -> "application/json".
 header() -> [{"User-Agent", "Eunit Test"}].
 
 nome_em_branco_test() ->
+	msbus_logger:info("\n\nTEST: Envia um user sem nome que sera validado e retornar OK."),
 	Payload = <<"{\"nome\" : \"\", \"email\":\"usuariodoteste\"}">>,
 	Request = {url(), header(), type(), Payload},
 	{ok, {{"HTTP/1.1", 200, _ReasonPhrase}, _Headers, _Body}} = httpc:request(post, Request, [], []).
 
 email_em_branco_test() ->
+	msbus_logger:info("\n\nTEST: Envia um user sem email que sera validado e retornar OK."),
 	Payload = <<"{\"nome\" : \"Usuário do teste\", \"email\":\"\"}">>,
 	Request = {url(), header(), type(), Payload},
 	{ok, {{"HTTP/1.1", 200, _ReasonPhrase}, _Headers, _Body}} = httpc:request(post, Request, [], []).
 
+
 email_invalido_test() ->
-	Payload = <<"{\"nome\" : \"Usuário do teste\", \"email\":\"usuariodoteste\"}">>,
+	msbus_logger:info("\n\nTEST: Envia um user com email invalido que sera validado e retornar OK."),
+	Payload = <<"{\"nome\" : \"Usuário do teste\", \"email\":\"naoehemail\"}">>,
 	Request = {url(), header(), type(), Payload},
 	{ok, {{"HTTP/1.1", 200, _ReasonPhrase}, _Headers, _Body}} = httpc:request(post, Request, [], []).
 
 create_user_test() ->
+	msbus_logger:info("\n\nTEST: Deve criar um user valido e retornar OK."),
 	Payload = <<"{\"nome\" : \"Usuário do teste\", \"email\":\"usuariodoteste@gmail.com\"}">>,
 	Request = {url(), header(), type(), Payload},
-	{ok, {{"HTTP/1.1", 200, _ReasonPhrase}, _Headers, Body}} = httpc:request(post, Request, [], []).
+	{ok, {{"HTTP/1.1", 200, _ReasonPhrase}, _Headers, _Body}} = httpc:request(post, Request, [], []).
 
 
 

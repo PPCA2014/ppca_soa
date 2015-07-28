@@ -88,7 +88,7 @@ do_get_file(Request) ->
 	FilePath = ?STATIC_FILE_PATH ++ msbus_request:get_property_request(<<"url">>, Request),
 	case file:read_file(FilePath) of
 		{ok, Arquivo} -> 
-			ContentType = msbus_util:mime_type(filename:extension(FilePath)),
+			ContentType = msbus_http_util:mime_type(filename:extension(FilePath)),
 			{ok, Arquivo, ContentType};
 		{error, enoent} -> 
 			{error, file_not_found};

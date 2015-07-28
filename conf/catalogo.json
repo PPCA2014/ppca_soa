@@ -1,27 +1,36 @@
 [
 	{
-		"comment": "Responde / e retorna Its Works!!!",
-		"owner": "msbus",
+		
+		"id":"1",
+		"name": "/",
+		"comment": "Retorna Its Works!!!",
+		"owner": "msbus_soa",
 		"version": "1",
 		"service" : "msbus_info:execute",
 		"url": "/",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey": "true"
 	},
 
 	{
-		"comment": "Responde /info e retorna informações sobre o barramento. Não está implementado.",
-		"owner": "msbus",
+		"id":"2",
+        "name": "/info",
+		"comment": "Informações sobre o barramento.",
+		"owner": "msbus_soa",
 		"version": "1",
 		"service" : "msbus_info:execute",
 		"url": "/info",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey":"true"
 	},
 
 	{
+		"id":"3",
+        "name": "/favicon",
 		"comment": "Serviço favicon.",
-		"owner": "msbus",
+		"owner": "msbus_soa",
 		"version": "1",
 		"service" : "msbus_favicon:execute",
 		"url": "/favicon",
@@ -30,41 +39,52 @@
 	},
 
 	{
+		"id":"4",
+        "name": "/autentica",
 		"comment": "Serviço de autenticação de usuário para o barramento.",
-		"owner": "msbus",
+		"owner": "msbus_soa",
 		"version": "1",
 		"service" : "msbus_auth_user:autentica",
 		"url": "/autentica",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey": "false"
 	},
 
 	{
+		"id":"5",
+        "name": "/catalogo",
 		"comment": "Responde /catalogo e retorna a lista do catálogo atual.",
-		"owner": "ppca_soa",
+		"owner": "msbus_soa",
 		"version": "1",
 		"service" : "msbus_catalogo:lista_catalogo",
 		"url": "/catalogo",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey": "false"
 	},
 
 	{
+		"id":"6",
+        "name": "/portal",
 		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
-		"owner": "msbus",
+		"owner": "portal",
 		"version": "1",
 		"service" : "msbus_static_file:execute",
-		"url": "/portal/",
+		"url": "^/portal/",
 		"use_re" : "true",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey":"true"
 	},
 
 	{
+		"id":"7",
+        "name": "/aluno/lista_formandos/:tipo",
 		"comment": "Um serviço de exemplo: Listagem dos formandos por ano/semestre.",
 		"owner": "Everton Agilar",
 		"version": "1",
-		"service" : "listagem_formandos_service:execute",
+		"service" : "hello_world_service:execute",
 		"url": "/aluno/lista_formandos/(?<tipo>(sintetico|analitico))",
 		"use_re" : "true",
 		"async": "true",
@@ -81,87 +101,121 @@
 				"type": "int",
 				"comment": "Semestre de pesquisa"
 			}
-		]
+		],
+        "APIkey":"true"
 	},
 
 	{
+		"id":"8",
+        "name": "/hello_world",
 		"comment": "Um serviço de exemplo: Retorna Ola Mundo!",
 		"owner": "Everton Agilar",
 		"version": "1",
 		"service" : "helloworld_service:execute",
 		"url": "/hello_world",
 		"async": "false",
-		"type": "GET"
+		"type": "GET",
+		"APIkey":"true"
+	},
+	
+	{
+		"id":"9",
+        "name": "index.html",
+		"comment": "Redireciona para o portal",
+		"owner": "portal",
+		"service" : "msbus_redirect:execute",
+		"url": "/index.html",
+		"redirect" : "/portal/index.html",
+		"type": "GET",
+		"APIkey":"false"
 	},
 
 	{
+		"id": "10",
+        "name": "/user/:id",
 		"comment": "Retorna um usuário através de seu Id",
 		"owner": "msbus",
 		"version": "1",
 		"service" : "msbus_user_service:get",
 		"url": "/user/(?<id>[0-9]{1,20})$",
 		"use_re" : "true",
-		"type": "GET"
+		"type": "GET",
+		"APIkey":"true"
 	},
 
 	{
+		"id": "11",
+        "name": "/user/:id",
 		"comment": "Excluir um usuário pelo seu Id",
-		"owner": "msbus",
+		"owner": "user",
 		"version": "1",
 		"service" : "msbus_user_service:delete",
 		"url": "/user/(?<id>[0-9]{1,20})$",
 		"use_re" : "true",
-		"type": "DELETE"
+		"type": "DELETE",
+		"APIkey":"true"
 	},
 
 	{
+		"id": "12",
+		"name": "/user",
 		"comment": "Inserir um novo usuário",
-		"owner": "msbus",
+		"owner": "user",
 		"version": "1",
 		"service" : "msbus_user_service:insert",
 		"url": "/user",
-		"type": "POST"
+		"type": "POST",
+		"APIkey":"true"
 	},
 	
 	{
+		"id": "13",
+		"name": "/user/:id",
 		"comment": "Atualizar um usuário existente",
+		"owner": "user",
 		"service" : "msbus_user_service:update",
 		"url": "/user/(?<id>[0-9]{1,20})$",
 		"use_re" : "true",
-		"type": "PUT"
+		"type": "PUT",
+		"APIkey":"true"
 	},
 
 	{
+		"id": "14",
+		"name": "/user/all",
 		"comment": "Lista todos os usuários cadastrados",
-		"owner": "msbus",
+		"owner": "user",
 		"version": "1",
 		"service" : "msbus_user_service:all",
 		"url": "/user/all",
-		"type": "GET"
+		"type": "GET",
+		"APIkey":"true"
 	},
 	
-	{	"service" : "msbus_user_service:all",	
-		"url": "/user" 
-	},
-	
-	{
-		"comment": "Lista os top serviços",
-		"owner": "msbus",
-		"version": "1",
-		"service" : "msbus_health_service:top_services",
-		"url": "/top_services/(?<top>[0-9]{1,20})$",
-		"use_re" : "true",
-		"type": "GET"
+	{	
+		"id": "15",
+		"name": "/user",
+		"comment": "Lista todos os usuários cadastrados",
+		"owner": "user",
+		"service" : "msbus_user_service:all",	
+		"url": "/user",
+		"APIkey":"true"
 	},
 
 	{
+		"id" : "16",
+		"name" : "/health/top_services/:top",
 		"comment": "Lista os serviços mais solicitados",
 		"owner": "health",
 		"version": "1",
 		"service" : "msbus_health_service:top_services",
-		"url": "/health/top_services/(?<top>[0-9]{1,20})$",
+		"url": "/health/top_services/(?<top>[0-9]{1,9})$",
 		"use_re" : "true",
-		"type": "GET"
-	},
+		"type": "GET",
+		"APIkey":"true"
+	}
+
 	
 ]
+
+

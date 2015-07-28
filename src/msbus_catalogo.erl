@@ -133,10 +133,15 @@ parse_catalogo([], Cat2, Cat3) ->
 	{maps:from_list(Cat2), Cat3};
 
 parse_catalogo([H|T], Cat2, Cat3) ->
+	Name = get_property_servico(<<"name">>, H),
 	Url = get_property_servico(<<"url">>, H),
 	{NomeModule, NomeFunction, Module, Function} = get_property_servico(<<"service">>, H),
 	Use_re = get_property_servico(<<"use_re">>, H, false),
 	Type = get_property_servico(<<"type">>, H, <<"GET">>),
+	Apikey = get_property_servico(<<"APIkey">>, H, <<"false">>),
+	Comment = get_property_servico(<<"comment">>, H, <<>>),
+	Version = get_property_servico(<<"comment">>, H, <<>>),
+	Owner = get_property_servico(<<"owner">>, H, <<>>),
 	Id = new_id_servico(Url, Type),
 	case Use_re of
 		true -> 
