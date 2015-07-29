@@ -16,14 +16,13 @@
 -export([start/0, stop/0]).
 
 %% Client
--export([lista_catalogo/2, 
+-export([lista_catalogo/0, 
 		 update_catalogo/0,
 		 lookup/2, 
 		 get_querystring/2, 
 		 get_property_servico/2, 
 		 get_property_servico/3, 
-		 test/0, 
-		 list_cat2/0, list_cat3/0, new_id_servico/2]).
+		 list_cat2/0, list_cat3/0]).
 
 
 %% gen_server callbacks
@@ -51,8 +50,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-lista_catalogo(Request, From) ->
-	gen_server:cast(?SERVER, {lista_catalogo, Request, From}).
+lista_catalogo() ->
+	gen_server:call(?SERVER, lista_catalogo).
 
 update_catalogo() ->
 	gen_server:cast(?SERVER, update_catalogo).
@@ -78,14 +77,13 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({lista_catalogo, _Request, From}, State) ->
-	Cat = do_lista_catalogo(State),
-	From ! {ok, Cat}, 
-	{noreply, State};
-
 handle_cast(update_catalogo, _State) ->
 	NewState = get_catalogo(),
 	{noreply, NewState}.
+
+handle_call(lista_catalogo, _From, State) ->
+	Reply = do_lista_catalogo(State),
+	{reply, Reply, State};
     
 handle_call({lookup, Url, Type}, _From, State) ->
 	Reply = lookup(Url, Type, State),
@@ -120,8 +118,8 @@ do_lista_catalogo(State) -> State#state.cat1.
 %% @doc Obtém o catálogo
 get_catalogo() -> 
 	Cat1 = get_catalogo_from_disk(),
-	{Cat2, Cat3} = parse_catalogo(Cat1, [], []),
-	#state{cat1=Cat1, cat2=Cat2, cat3=Cat3}.
+	{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1),
+	#state{cat1=Cat4, cat2=Cat2, cat3=Cat3}.
 
 %% @doc Lê o catálogo do disco
 get_catalogo_from_disk() ->
@@ -129,60 +127,53 @@ get_catalogo_from_disk() ->
 	{ok, Cat2} = msbus_util:json_decode_as_map(Cat),
 	Cat2.
 
-parse_catalogo([], Cat2, Cat3) ->
-	{maps:from_list(Cat2), Cat3};
+parse_catalogo([], Cat2, Cat3, Cat4, _Id) ->
+	{maps:from_list(Cat2), Cat3, Cat4};
 
-parse_catalogo([H|T], Cat2, Cat3) ->
+parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Name = get_property_servico(<<"name">>, H),
 	Url = get_property_servico(<<"url">>, H),
-	{NomeModule, NomeFunction, Module, Function} = get_property_servico(<<"service">>, H),
-	Use_re = get_property_servico(<<"use_re">>, H, false),
+	{Module, Function} = get_property_servico(<<"service">>, H),
+	Use_re = get_property_servico(<<"use_re">>, H, <<"false">>),
 	Type = get_property_servico(<<"type">>, H, <<"GET">>),
 	Apikey = get_property_servico(<<"APIkey">>, H, <<"false">>),
 	Comment = get_property_servico(<<"comment">>, H, <<>>),
 	Version = get_property_servico(<<"comment">>, H, <<>>),
 	Owner = get_property_servico(<<"owner">>, H, <<>>),
-	Id = new_id_servico(Url, Type),
+	Async = get_property_servico(<<"async">>, H, <<"false">>),
+	Rowid = new_rowid_servico(Url, Type),
+	IdBin = list_to_binary(integer_to_list(Id)),
+	ServicoView = new_servico_view(Rowid, IdBin, Name, Url, Module,
+								   Function, Type, Apikey, Comment, Version, Owner, Async),
 	case Use_re of
-		true -> 
-			Servico = new_servico_re(Id, Url, NomeModule, NomeFunction, Module, Function, Type),
-			parse_catalogo(T, Cat2, [Servico|Cat3]);
-		false -> 
-			Servico = new_servico(Id, Url, NomeModule, NomeFunction, Module, Function, Type),
-			parse_catalogo(T, [{Id, Servico}|Cat2], Cat3)
+		<<"true">> -> 
+			Servico = new_servico_re(Rowid, IdBin, Name, Url, Module, 
+									 Function, Type, Apikey, Comment, Version, Owner, Async),
+			parse_catalogo(T, Cat2, [Servico|Cat3], [ServicoView|Cat4], Id+1);
+		<<"false">> -> 
+			Servico = new_servico(Rowid, IdBin, Name, Url, Module,
+								  Function, Type, Apikey, Comment, Version, Owner, Async),
+			parse_catalogo(T, [{Rowid, Servico}|Cat2], Cat3, [ServicoView|Cat4], Id+1)
 	end.	
 
 get_property_servico(<<"service">>, Servico) ->
-	Service = binary_to_list(maps:get(<<"service">>, Servico)),
-	[NomeModule, NomeFunction] = string:tokens(Service, ":"),
-	Module = list_to_atom(NomeModule),
-	Function = list_to_atom(NomeFunction),
-	{NomeModule, NomeFunction, Module, Function};
+	Service = maps:get(<<"service">>, Servico),
+	[Module, Function] = binary:split(Service, <<":">>),
+	{Module, Function};
 
 get_property_servico(Key, Servico) ->
-	Result = get_property_servico(Key, Servico, null),
-	Result.
+	maps:get(Key, Servico, <<>>).
 	
 get_property_servico(Key, Servico, Default) ->
-	V1 = maps:get(Key, Servico, Default),
-	case is_binary(V1) of
-		true ->	V2 = binary_to_list(V1);
-		false -> V2 = V1
-	end,
-	case V2 of
-		"true" -> V3 = true;
-		"false" -> V3 = false;
-		_ -> V3 = V2
-	end,
-	V3.
+	maps:get(Key, Servico, Default).
 
 get_querystring(Cat, <<QueryName/binary>>) ->	
 	[Query] = [Q || Q <- get_property_servico(<<"querystring">>, Cat), get_property_servico(<<"comment">>, Q) == QueryName],
 	Query.
 	
 lookup(Url, Type, State) ->
-	Id = new_id_servico(Url, Type),
-	case maps:find(Id, State#state.cat2) of
+	Rowid = new_rowid_servico(Url, Type),
+	case maps:find(Rowid, State#state.cat2) of
 		{ok, Servico} -> {ok, Servico, []};
 		error -> lookup_re(Url, Type, State#state.cat3)
 	end.
@@ -192,8 +183,8 @@ lookup_re(_Url, _Type, []) ->
 
 lookup_re(Url, Type, [H|T]) ->
 	RE = maps:get(<<"id_re_compiled">>, H),
-	Id = new_id_servico(Url, Type),
-	case re:run(Id, RE, [{capture,all_names,binary}]) of
+	Rowid = new_rowid_servico(Url, Type),
+	case re:run(Rowid, RE, [{capture,all_names,binary}]) of
 		match -> {ok, H, []};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),
@@ -203,62 +194,67 @@ lookup_re(Url, Type, [H|T]) ->
 		{error, _ErrType} -> nofound 
 	end.
 
-new_id_servico(Url, Type) ->	
+new_rowid_servico(<<Url/binary>>, <<Type/binary>>) ->	
+	[PrefixUrl|Url2] = binary_to_list(Url),
+	case PrefixUrl of
+		$^ -> iolist_to_binary([Type, <<"#">>, list_to_binary(Url2)]);
+		_  -> iolist_to_binary([Type, <<"#">>, Url])
+	end;
+
+new_rowid_servico(Url, Type) ->	
 	[PrefixUrl|Url2] = Url,
 	case PrefixUrl of
 		$^ -> iolist_to_binary([Type, <<"#">>, Url2]);
 		_  -> iolist_to_binary([Type, <<"#">>, Url])
 	end.
-
-new_servico_re(Id, Url, NomeModule, NomeFunction, Module, Function, Type) ->
-	{ok, Id_re_compiled} = re:compile(Id),
-	Servico = #{<<"id">> => Id,
+	
+new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey, Comment, Version, Owner, Async) ->
+	{ok, Id_re_compiled} = re:compile(Rowid),
+	Servico = #{<<"rowid">> => Rowid,
+				<<"id">> => Id,
+				<<"name">> => Name,
 				<<"url">> => Url,
 				<<"type">> => Type,
-			    <<"nome_module">> => NomeModule,
-			    <<"nome_function">> => NomeFunction,
 			    <<"module">> => Module,
 			    <<"function">> => Function,
-			    <<"use_re">> => true,
-			    <<"id_re_compiled">> => Id_re_compiled},
+			    <<"use_re">> => <<"true">>,
+			    <<"id_re_compiled">> => Id_re_compiled,
+			    <<"apikey">> => Apikey,
+			    <<"comment">> => Comment,
+			    <<"version">> => Version,
+			    <<"owner">> => Owner,
+			    <<"async">> => Async},
 	Servico.
 
-new_servico(Id, Url, NomeModule, NomeFunction, Module, Function, Type) ->
-	Servico = #{<<"id">> => Id,
+new_servico(Rowid, Id, Name, Url, Module, Function, Type, Apikey, Comment, Version, Owner, Async) ->
+	Servico = #{<<"rowid">> => Rowid,
+				<<"id">> => Id,
+				<<"name">> => Name,
 				<<"url">> => Url,
 				<<"type">> => Type,
-			    <<"nome_module">> => NomeModule,
-			    <<"nome_function">> => NomeFunction,
 			    <<"module">> => Module,
 			    <<"function">> => Function,
-			    <<"use_re">> => false},
+			    <<"use_re">> => <<"false">>,
+			    <<"apikey">> => Apikey,
+			    <<"comment">> => Comment,
+			    <<"version">> => Version,
+			    <<"owner">> => Owner,
+			    <<"async">> => Async},
 	Servico.
 
-test() ->
-	%%  {T1, T2, R1, R2, R3} = rota_table:test().
-
-	Id1 = new_id_servico("^/aluno/lista_formandos/(?P<tipo>(sintetico|analitico))$", <<"GET">>),
-	Id2 = new_id_servico("^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", <<"GET">>),
-	Id4 = new_id_servico("^/portal/", <<"GET">>),
-	
-	R1 = new_servico_re(Id1, "^/aluno/lista_formandos/(?P<tipo>(sintetico|analitico))$", aluno_service_report, function, aluno_service_report, function, <<"GET">>),
-	R2 = new_servico_re(Id2, "^/portal/[a-zA-Z0-9-_\.]+\.(html|js|css)$", msbus_static_file, function, msbus_static_file, function, <<"GET">>),
-	R4 = new_servico_re(Id4, "^/portal/", aluno_service_report, function, aluno_service_report, function, <<"GET">>),
-
-	Id3 = new_id_servico("/log/server.log", <<"GET">>),
-	R3 = new_servico(Id3, "/log/server.log", msbus_static_file, function, msbus_static_file, function, <<"GET">>),
-	
-	
-	T1 = [R1, R2, R4],
-	T2 = maps:from_list([{"/log/server.log", R3}]),
-	
-	io:format("\n\n"),
-	
-	lookup_re("/aluno/lista_formandos/tipo", <<"GET">>, T1),
-	lookup_re("/portal/index.html", <<"GET">>, T1),
-	lookup(<<"GET#logs/server.log">>, T2),
-
-	{T1, T2, R1, R2, R3}.
-
+new_servico_view(Rowid, Id, Name, Url, Module, Function, Type, Apikey, Comment, Version, Owner, Async) ->
+	Servico = #{<<"rowid">> => Rowid,
+				<<"id">> => Id,
+				<<"name">> => Name,
+				<<"url">> => Url,
+				<<"type">> => Type,
+			    <<"module">> => Module,
+			    <<"function">> => Function,
+			    <<"apikey">> => Apikey,
+			    <<"comment">> => Comment,
+			    <<"version">> => Version,
+			    <<"owner">> => Owner,
+			    <<"async">> => Async},
+	Servico.
 
 

@@ -18,7 +18,7 @@
 -export([start/0, stop/0]).
 
 %% Cliente interno API
--export([top_services/2]).
+-export([top_services/2, top_services_by_type/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -47,6 +47,8 @@ stop() ->
 top_services(Request, From)	->
 	gen_server:cast(?SERVER, {top_services, Request, From}).
 	
+top_services_by_type(Request, From)	->
+	gen_server:cast(?SERVER, {top_services_by_type, Request, From}).
 
 
 %%====================================================================
@@ -61,6 +63,11 @@ handle_cast(shutdown, State) ->
 
 handle_cast({top_services, Request, From}, State) ->
 	Reply = get_top_services(Request, State),
+	From ! {ok, Reply}, 
+	{noreply, State};
+
+handle_cast({top_services_by_type, Request, From}, State) ->
+	Reply = get_top_services_by_type(Request, State),
 	From ! {ok, Reply}, 
 	{noreply, State}.
 
@@ -89,5 +96,9 @@ get_top_services(Request, _State) ->
 	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
 	msbus_health:get_top_services(Top, Periodo).
 	
+get_top_services_by_type(Request, _State) ->
+	Top = list_to_integer(msbus_request:get_param_url(<<"top">>, "10", Request)),
+	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
+	msbus_health:get_top_services_by_type(Top, Periodo).
 
 

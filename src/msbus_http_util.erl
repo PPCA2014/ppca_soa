@@ -34,7 +34,7 @@ encode_response(Codigo, []) ->
 	
 %% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
-	encode_response(Codigo, Payload, <<"application/json">>);
+	encode_response(Codigo, Payload, <<"application/json; charset=utf-8">>);
 
 %% @doc Gera o response para dados Map (representação JSON em Erlang)
 encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->

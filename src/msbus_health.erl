@@ -16,7 +16,7 @@
 -export([start/0, stop/0]).
 
 %% Client API
--export([collect/2, list_metrics/0, get_top_services/2, get_top_services/3, groupBy/2, get_requests_submit/1, count/3]).
+-export([collect/2, list_metrics/0, get_top_services/2, get_top_services/3, get_top_services_by_type/2, groupBy/2, get_requests_submit/1, count/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -54,6 +54,9 @@ get_top_services(Top, Periodo, From) ->
 get_top_services(Top, Periodo) -> 
 	gen_server:call(?SERVER, {top_services, Top, Periodo}).
 
+get_top_services_by_type(Top, Periodo) -> 
+	gen_server:call(?SERVER, {top_services_by_type, Top, Periodo}).
+
 %% @doc Lista todas as métricas coletadas
 list_metrics() ->	
 	gen_server:call(?SERVER, list_metrics).
@@ -83,6 +86,10 @@ handle_cast({Metric, Request}, State) ->
 
 handle_call({top_services, Top, Periodo}, _From, State) ->
 	Reply = do_get_top_services(Top, Periodo, State),
+	{reply, Reply, State};
+
+handle_call({top_services_by_type, Top, Periodo}, _From, State) ->
+	Reply = do_get_top_services_by_type(Top, Periodo, State),
 	{reply, Reply, State};
 
 handle_call({requests_submit, Periodo}, _From, State) ->
@@ -124,13 +131,20 @@ get_requests_submit(Periodo, State) ->
 
 %% @doc Retorna os tops services por período
 do_get_top_services(Top, Periodo, State) ->
-    Fields = fun({_, X}) -> {maps:get(<<"type">>, X#request.servico), 
-			  			     maps:get(<<"url">>, X#request.servico)} end,
+    Fields = fun({_, X}) -> {maps:get(<<"name">>, X#request.servico)} end,
 	Requests = get_requests_submit(Periodo, State), 
 	Urls = maps:keys(groupBy(Fields, Requests)),
 	Urls2 = count(Fields, Urls, Requests),
 	top(Urls2, Top).
 	
+%% @doc Retorna os tops services por período
+do_get_top_services_by_type(Top, Periodo, State) ->
+    Fields = fun({_, X}) -> {maps:get(<<"type">>, X#request.servico), 
+			  			     maps:get(<<"name">>, X#request.servico)} end,
+	Requests = get_requests_submit(Periodo, State), 
+	Urls = maps:keys(groupBy(Fields, Requests)),
+	Urls2 = count(Fields, Urls, Requests),
+	top(Urls2, Top).
 
 	
 groupBy(F, L) -> lists:foldr(fun({K,V}, D) -> maps:put(K, V, D) end , maps:new(), [ {F(X), X} || X <- L ]).

@@ -126,16 +126,18 @@ aguarda_conclusao_servico(Request, Pid) ->
 %% @doc Executa o serviço correspondente
 executa_servico(Request) ->
 	Servico = Request#request.servico,
-	Module = msbus_catalogo:get_property_servico(<<"module">>, Servico),
-	Function = msbus_catalogo:get_property_servico(<<"function">>, Servico),
+	Module = binary_to_list(msbus_catalogo:get_property_servico(<<"module">>, Servico)),
+	Function = binary_to_list(msbus_catalogo:get_property_servico(<<"function">>, Servico)),
+	Module2 = list_to_atom(Module),
+	Function2 = list_to_atom(Function),
 	try
-		case whereis(Module) of
+		case whereis(Module2) of
 			undefined -> 
-				Pid = Module:start(),
-				apply(Module, Function, [Request, self()]),
+				Pid = Module2:start(),
+				apply(Module2, Function2, [Request, self()]),
 				Pid;
 			Pid -> 
-				apply(Module, Function, [Request, self()]),
+				apply(Module2, Function2, [Request, self()]),
 				Pid
 		end
 	catch

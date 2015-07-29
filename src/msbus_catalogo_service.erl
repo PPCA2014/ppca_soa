@@ -1,22 +1,20 @@
 %%********************************************************************
-%% @title Módulo favicon
+%% @title Módulo msbus_catalogo_service
 %% @version 1.0.0
-%% @doc Módulo responsável pelo favicon do erlangMS.
+%% @doc Módulo de serviço msbus_catalogo_service
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_favicon).
+-module(msbus_catalogo_service).
 
 -behavior(gen_server). 
 
--include("../include/msbus_config.hrl").
-
-%% Server API
+%% Server API  
 -export([start/0, stop/0]).
 
 %% Cliente interno API
--export([execute/2]).
+-export([lista_catalogo/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -24,7 +22,7 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do servico. 
--record(state, {arquivo}). 
+-record(state, {}). 
 
 
 %%====================================================================
@@ -42,33 +40,26 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(Request, From)	->
-	gen_server:cast(?SERVER, {favicon, Request, From}).
+lista_catalogo(Request, From)	->
+	gen_server:cast(?SERVER, {lista_catalogo, Request, From}).
 	
-
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
 init([]) ->
-	case get_favicon_from_disk() of
-		{ok, Arquivo} ->  State = #state{arquivo=Arquivo};
-		{error, _Reason} -> State = #state{arquivo=null}
-    end,
-    {ok, State}. 
+    {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({favicon, _Request, From}, State) ->
-	Reply = do_get_favicon(State),
-	From ! Reply, 
+handle_cast({lista_catalogo, Request, From}, State) ->
+	lista_catalogo(Request, From, State),
 	{noreply, State}.
-    
-handle_call({favicon, _Request}, _From, State) ->
-	Reply = do_get_favicon(State),
-	{reply, Reply, State}.
+
+handle_call(_Param, _From, State) ->
+	{reply, ok, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -87,12 +78,8 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-get_favicon_from_disk()->
-	case file:read_file(?FAVICON_PATH) of
-		{ok, Arquivo} -> {ok, Arquivo};
-		{error, Reason} -> {error, Reason}
-	end.
-    
-do_get_favicon(State) ->
-	{ok, State#state.arquivo, <<"image/x-icon">>}.
+lista_catalogo(_Request, From, _State) -> 
+	Result = msbus_catalogo:lista_catalogo(),
+	From ! {ok, Result}.
+	
 

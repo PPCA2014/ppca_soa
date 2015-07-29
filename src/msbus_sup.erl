@@ -95,10 +95,13 @@ init([]) ->
 			   permanent,
 			   10000,
 			   worker,  
-			   [msbus_health_service]}
-			   			  
-			   
-			   
+			   [msbus_health_service]},
+			 {msbus_catalogo_service,
+			  {msbus_catalogo_service, start, []},
+			   permanent,
+			   10000,
+			   worker,  
+			   [msbus_catalogo_service]}
 			   
 			   			  
  		    ]  
