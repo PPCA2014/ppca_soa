@@ -144,7 +144,7 @@ processa_conexao(Listen, Socket) ->
   case get_request(Socket, []) of
      {ok, Request} ->
 		case msbus_dispatcher:dispatch_request(Request) of
-			{ok, Request1, Response} ->
+			{ok, Code, Request1, Response} ->
 				gen_tcp:send(Socket, [Response]),
 				T2 = msbus_util:get_milliseconds(),
 				Latencia = T2 - T1,
@@ -152,20 +152,27 @@ processa_conexao(Listen, Socket) ->
 									 	    latencia = Latencia,
 										    status = 200},
 				msbus_health:collect(request_submit, Request2),
-				log_status_requisicao(Request2, "OK", Latencia);
-			{error, Request1, Response, ErroInterno} ->
+				log_status_requisicao(Code, Request2, "OK", Latencia);
+			{error, Code, Request1, Response, ErroInterno} ->
 				gen_tcp:send(Socket, [Response]),
 				T2 = msbus_util:get_milliseconds(),
 				Latencia = T2 - T1,
-				log_status_requisicao(Request1, ErroInterno, Latencia)
+				log_status_requisicao(Code, Request1, atom_to_list(ErroInterno), Latencia)
 		end;
+     {error, tcp_closed} -> ok;
+     {error, Request, invalid_payload} -> 
+		Response = msbus_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
+		gen_tcp:send(Socket, [Response]),
+		T2 = msbus_util:get_milliseconds(),
+		Latencia = T2 - T1,
+		log_status_requisicao(<<"415">>, Request, invalid_payload, Latencia);
      {error, Request, Reason} -> 
-		%% Foi possível ler o cabecalho (ou parte dele) ou payload não é JSON
+		%% Foi possível ler o cabecalho (ou parte dele)
 		Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
 		gen_tcp:send(Socket, [Response]),
 		T2 = msbus_util:get_milliseconds(),
 		Latencia = T2 - T1,
-		log_status_requisicao(Request, Reason, Latencia);
+		log_status_requisicao(<<"400">>, Request, Reason, Latencia);
      {error, Reason} -> 
 		%% Requisição inválida.
 		Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
@@ -213,7 +220,7 @@ get_request_socket(Socket, L) ->
 					end
 			end;
 		{tcp_closed, Socket} ->
-		    {error, invalid_request};
+		    {error, tcp_closed};
 		_Any  ->
 		    get_request(Socket, L)
     end.
@@ -259,7 +266,7 @@ is_fim_header([H|T], L)           -> is_fim_header(T, [H|L]);
 is_fim_header([], _)              -> more.
 
 %% @doc Imprime o status da requisição no log
-log_status_requisicao(Request, Status, Latencia) when erlang:is_record(Request, request) ->
+log_status_requisicao(Code, Request, Status, Latencia) when erlang:is_record(Request, request) ->
 	Metodo = Request#request.metodo,
 	Url = Request#request.url,
 	HTTP_Version = Request#request.versao_http,
@@ -268,17 +275,17 @@ log_status_requisicao(Request, Status, Latencia) when erlang:is_record(Request, 
 	Payload = Request#request.payload,
 	case Payload of
 		undefined ->
-			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tStatus: ~s (~pms)\n}",
-			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Status, Latencia]);
+			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tStatus: ~s <<~s>> (~pms)\n}",
+			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Code, Status, Latencia]);
 		_ ->
 			Content_Type = Request#request.content_type,
-			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tStatus: ~s (~pms)\n}",
-			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Content_Type, Payload, Status, Latencia])
+			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tStatus: ~s <<~s>> (~pms)\n}",
+			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Content_Type, Payload, Code, Status, Latencia])
 	end;
 	
-log_status_requisicao(Request, Status, Latencia) ->	
-	Texto =  "~s {\n\tStatus: ~s (~sms)\n}", 
-	msbus_logger:info(Texto, [Request, Status, Latencia]),
+log_status_requisicao(Code, Request, Status, Latencia) ->	
+	Texto =  "~s {\n\tStatus: ~p ~s (~sms)\n}", 
+	msbus_logger:info(Texto, [Code, Request, Status, Latencia]),
 	msbus_logger:info(Request). 
 	
 

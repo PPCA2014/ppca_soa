@@ -89,13 +89,13 @@ do_dispatch_request(Request) ->
 			case executa_servico(Request1) of
 				{error, servico_falhou, ErroInterno} -> 
 					Response = msbus_http_util:encode_response(<<"502">>, ?HTTP_ERROR_502(ErroInterno)),
-					{error, Request1, Response, servico_falhou};
+					{error, <<"502">>, Request1, Response, servico_falhou};
 				Pid -> 
 					aguarda_conclusao_servico(Request1, Pid)
 			end;
 		notfound -> 
 			Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
-			{error, Request, Response, servico_nao_encontrado}
+			{error, <<"404">>, Request, Response, servico_nao_encontrado}
 	end.
 
 %% @doc Aguarda a conclusão do resultado do serviço
@@ -103,22 +103,22 @@ aguarda_conclusao_servico(Request, Pid) ->
 	receive
 		{ok, Result} ->
 			Response = msbus_http_util:encode_response(<<"200">>, Result),
-			{ok, Request, Response};
+			{ok, <<"200">>, Request, Response};
 		{ok, Result, MimeType} ->
 			Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
-			{ok, Request, Response};
+			{ok, <<"200">>, Request, Response};
 		{error, servico_nao_disponivel, _ErroInterno} ->
 			Response = msbus_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
-			{error, Request, Response, servico_nao_disponivel};
+			{error, <<"503">>, Request, Response, servico_nao_disponivel};
 		{error, file_not_found} ->
 			Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-			{error, Request, Response, file_not_found}
+			{error, <<"404">>, Request, Response, file_not_found}
 		after 3000 ->
 			case is_process_alive(Pid) of
 				true -> ok;
 				false -> 
 					Response = msbus_http_util:encode_response(<<"502">>, ?HTTP_ERROR_502),
-					{error, Request, Response, servico_falhou}
+					{error, <<"502">>, Request, Response, servico_falhou}
 			end
 	end.
 

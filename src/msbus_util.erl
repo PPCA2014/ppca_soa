@@ -175,3 +175,16 @@ remove_ult_backslash_url(Url) ->
 		true -> lists:droplast(Url);
 		false -> Url
 	end.
+
+%% @doc Função name case
+name_case([H|T]) when H >= $a, H =< $z -> 
+	[H + ($A - $a) | T];
+name_case(outros) -> outros.
+
+
+%% @doc Primeiro caracter de cada palabra em caixa alta
+modernize([H|T]) -> 
+	Tokens = string:tokens([H|T], " "),
+	Lista = [name_case(S) || S <- Tokens],
+	string:join(Lista, " ").
+

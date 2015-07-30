@@ -84,6 +84,7 @@ get_http_header(Header) ->
 				User_Agent = maps:get("user-agent", Outros2, ""),
 				Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
 				Cache_Control = maps:get("cache_control", Outros2, "false"),
+				Host = maps:get("host", Outros2, ""),
 				QuerystringMap = get_querystring(Querystring),
 				Request = #request{
 						    rid = {now(), node()},
@@ -97,21 +98,33 @@ get_http_header(Header) ->
 							accept = Accept,
 							user_agent = User_Agent,
 							accept_encoding = Accept_Encoding,
-							cache_control = Cache_Control
+							cache_control = Cache_Control,
+							host = Host
 					},
 				{ok, Request};
 			false ->
 				{error, Principal, invalid_http_method}
 		end
 	catch
-		_Exception:_Reason ->  {error, invalid_request} 
+		_Exception:_Reason ->  {error, invalid_http_header} 
 	end.
 	
 get_http_header_adicionais(Header) ->
-	Header1 = lists:map(fun(P) -> string:tokens(P, ":") end, Header),
-	Header2 = [{string:to_lower(P), V} || [P|[V]] <- Header1],
-	Header3 = [{P, format_header_value(P, V)} || {P,V} <- Header2, msbus_http_util:is_valid_header(P)],
-	maps:from_list(Header3).
+	Header1 = lists:map(fun(H) -> get_param_header(H, []) end, Header),
+	maps:from_list(Header1).
+
+%% @doc Retorna uma tupla com o nome do cabecalho e o seu valor
+%% Ex.: get_param_header("Host: localhost:2301", [])  =>  {"host","localhost:2301"}
+get_param_header([], Key) -> {string:to_lower(lists:reverse(Key)), []};
+get_param_header([H|T], Key) ->
+	case H of
+		$: -> 
+			P = string:to_lower(lists:reverse(Key)),
+			V = format_header_value(P, T),
+			{P, V};
+		_ -> get_param_header(T, [H|Key])
+	end.
+
 
 %% @doc formata o valor do header (String, Integer)
 format_header_value("content-length", Value) ->
@@ -127,16 +140,6 @@ format_header_value(_, Value) ->
 
 is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
-
-%% @doc Verifica se o header é útil para erlangMS
-is_valid_header("content-length") -> true;
-is_valid_header("content-type") -> true;
-is_valid_header("accept") -> true;
-is_valid_header("accept-encoding") -> true;
-%%is_valid_header("accept-language") -> true;
-is_valid_header("user-agent") -> true;
-%is_valid_header("cache-control ") -> true;
-is_valid_header(_) -> false.
 
 %% @doc Retorna booleano se o método é suportado pelo servidor
 is_metodo_suportado("GET") -> true;

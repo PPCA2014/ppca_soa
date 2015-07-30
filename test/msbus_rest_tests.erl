@@ -55,7 +55,10 @@ get_url_grande_test() ->
 	{ok, {{_Version, 404, _ReasonPhrase}, _Headers, _Body}} = httpc:request(get, {dominio() ++ "/" ++ Url, []}, [], []).
 
 get_url_com_espacos_test() ->
-	{ok, {{_Version, 404, _ReasonPhrase}, _Headers, _Body}} = httpc:request(get, {dominio() ++ "/um serviço que não existe/", []}, [], []).
+	msbus_logger:info("\n\nTEST: Esperado um erro 400 <<invaliad_request>> pois os espaços vão dar problema no cabeçalho."),
+	msbus_logger:info("OBS.: Em browsers é realizado o encode da URL então dificilmente este erro vai ocorrer."),
+	{ok, {{_Version, 400, _ReasonPhrase}, _Headers, _Body}} = httpc:request(get, {dominio() ++ "/um serviço que não existe/", []}, [], []).
+
 	
 get_user_id_invalido_test() ->
 	{ok, {{_Version, 404, _ReasonPhrase}, _Headers, _Body}} = httpc:request(get, {dominio() ++ "/user/9*&&&¨%#%$@$#", []}, [], []).

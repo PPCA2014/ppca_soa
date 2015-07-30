@@ -57,7 +57,8 @@
 					  accept,
 					  user_agent,
 					  accept_encoding,
-					  cache_control
+					  cache_control,
+					  host
 				  }).
 
 
