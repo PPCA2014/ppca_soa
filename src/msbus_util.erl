@@ -35,6 +35,8 @@ timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	lists:flatten(io_lib:format("~p/~p/~p ~p:~p:~p", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+date_to_string({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
+    lists:flatten(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
 
 tuple_to_binlist(T) ->
 	L = tuple_to_list(T),
@@ -132,35 +134,20 @@ msg_email_invalido(NomeCampo, Value) ->
 %% @doc Retorna somente mensagens não vazias
 mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
 
-%% @doc Boolean indicando se DateTime ocorreu na última hora
-in_last_hour(DateTime) ->
+%% @doc Boolean indicando se DateTime ocorreu no período (min, hour, day, week, year)
+no_periodo(DateTime, Periodo) ->
 	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
-	(S2 - S1) =< 3600.
+	case Periodo of
+		"min" ->  (S2 - S1) =< 60;
+		"hour" ->  (S2 - S1) =< 3600;
+		"day"  ->  (S2 - S1) =< 86400;
+		"week" ->  (S2 - S1) =< 604800;
+		"month" -> (S2 - S1) =< 2629800;
+		"year" ->  (S2 - S1) =< 31557600;
+		_ -> erlang:error(badarg)
+	end.
 
-%% @doc Boolean indicando se DateTime ocorreu no último dia	  
-in_last_day(DateTime) ->
-	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
-	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
-	(S2 - S1) =< 86400.
-	
-%% @doc Boolean indicando se DateTime ocorreu no última semana	  
-in_last_week(DateTime) ->
-	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
-	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
-	(S2 - S1) =< 604800.
-
-%% @doc Boolean indicando se DateTime ocorreu no último mês	  
-in_last_month(DateTime) ->
-	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
-	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
-	(S2 - S1) =< 2629800.
-	
-%% @doc Boolean indicando se DateTime ocorreu no último ano	  
-in_last_year(DateTime) ->
-	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
-	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
-	(S2 - S1) =< 31557600.
 
 %% @doc Obtém a hora atual em milisegundos
 -spec get_milliseconds() -> integer().

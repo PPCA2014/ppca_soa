@@ -11,6 +11,7 @@
 -compile(export_all).
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 -include("../include/msbus_http_messages.hrl").
 
 %% @doc Gera o response para enviar para o cliente
@@ -130,7 +131,7 @@ get_param_header([H|T], Key) ->
 format_header_value("content-length", Value) ->
 	Value1 = string:strip(Value),
 	Value2 = list_to_integer(Value1),
-	case msbus_http_util:is_content_length_valido(Value2) of
+	case is_content_length_valido(Value2) of
 		true -> Value2;
 		false -> 0
 	end;

@@ -13,6 +13,7 @@
 		 get_querystring/3]).
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 
 %% @doc Retorna a URL do request
 get_property_request(<<"url">>, Request) ->

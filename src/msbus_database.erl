@@ -27,6 +27,10 @@ create_database(Nodes) ->
 									{disc_copies, Nodes},
 									{attributes, record_info(fields, sequence)}]),
 
+    mnesia:create_table(request, [{type, set},
+									 {disc_copies, Nodes},
+									 {attributes, record_info(fields, request)}]),
+
 	ok.
 
 

@@ -11,6 +11,7 @@
 -behavior(gen_server). 
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 -include("../include/msbus_http_messages.hrl").
 
 %% Server API
@@ -151,7 +152,7 @@ processa_conexao(Listen, Socket) ->
 				Request2 = Request1#request{timestamp = Timestamp,
 									 	    latencia = Latencia,
 										    status = 200},
-				msbus_health:collect(request_submit, Request2),
+				msbus_health:registra_request(Request2),
 				log_status_requisicao(Code, Request2, "OK", Latencia);
 			{error, Code, Request1, Response, ErroInterno} ->
 				gen_tcp:send(Socket, [Response]),

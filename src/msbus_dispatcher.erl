@@ -11,6 +11,7 @@
 -behavior(gen_server). 
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 -include("../include/msbus_http_messages.hrl").
 
 %% Server API
