@@ -208,6 +208,18 @@
 		"use_re" : "true",
 		"type": "GET",
 		"APIkey":"true"
+	},
+	
+	{
+		"name" : "/health/qtd_requests_by_date/:top",
+		"comment": "Lista a quantidade de requisições por data",
+		"owner": "health",
+		"version": "1",
+		"service" : "msbus_health_service:qtd_requests_by_date",
+		"url": "/health/qtd_requests_by_date/(?<top>[0-9]{1,9})$",
+		"use_re" : "true",
+		"type": "GET",
+		"APIkey":"true"
 	}
 	
 	

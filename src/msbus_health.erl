@@ -22,8 +22,8 @@
 %% Client API
 -export([registra_request/1, 
 		 list_metrics/0, 
-		 get_top_services/2, 
 		 get_top_services/3, 
+		 get_top_services/4, 
 		 get_top_services_by_type/3, 
 		 get_qtd_requests_by_date/3,
 		 groupBy/2, 
@@ -59,11 +59,11 @@ registra_request(Request) ->
 	gen_server:cast(?SERVER, {registra_request, Request}).
 
 %% @doc Obtém os serviços mais usados
-get_top_services(Top, Periodo, From) -> 
-	gen_server:cast(?SERVER, {top_services, Top, Periodo, From}).
+get_top_services(Top, Periodo, Sort, From) -> 
+	gen_server:cast(?SERVER, {top_services, Top, Periodo, Sort, From}).
 
-get_top_services(Top, Periodo) -> 
-	gen_server:call(?SERVER, {top_services, Top, Periodo}).
+get_top_services(Top, Periodo, Sort) -> 
+	gen_server:call(?SERVER, {top_services, Top, Periodo, Sort}).
 
 get_top_services_by_type(Top, Periodo, Sort) -> 
 	gen_server:call(?SERVER, {top_services_by_type, Top, Periodo, Sort}).
@@ -91,8 +91,8 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({top_services, Top, Periodo, From}, State) ->
-	Result = do_get_top_services(Top, Periodo, State),
+handle_cast({top_services, Top, Periodo, Sort, From}, State) ->
+	Result = do_get_top_services(Top, Periodo, Sort, State),
 	From ! Result,
 	{noreply, State};
 
@@ -100,8 +100,8 @@ handle_cast({registra_request, Request}, State) ->
 	NewState = do_registra_request(Request, State),
 	{noreply, NewState}.
 
-handle_call({top_services, Top, Periodo}, _From, State) ->
-	Reply = do_get_top_services(Top, Periodo, State),
+handle_call({top_services, Top, Periodo, Sort}, _From, State) ->
+	Reply = do_get_top_services(Top, Periodo, Sort, State),
 	{reply, Reply, State};
 
 handle_call({top_services_by_type, Top, Periodo, Sort}, _From, State) ->
@@ -149,8 +149,11 @@ do_registra_request(Request, State) ->
 get_requests_submit(Periodo, _State) ->
 	Query = fun() ->
 		  qlc:e(
-			 qlc:q([R || R <- mnesia:table(request), 
-						 msbus_util:no_periodo(R#request.timestamp, Periodo)])
+			 qlc:sort(
+				 qlc:q([R || R <- mnesia:table(request), 
+							 msbus_util:no_periodo(R#request.timestamp, Periodo)]), [{order, descending}]
+							 
+				)
 		  )
 	   end,
 	{atomic, Requests} = mnesia:transaction(Query),
@@ -162,12 +165,16 @@ get_requests_submit_by_group(Periodo, FieldsGroup, State) ->
 	maps:keys(groupBy(FieldsGroup, Requests)).
 
 %% @doc Retorna os serviços mais acessados de um período
-do_get_top_services(Top, Periodo, State) ->
+do_get_top_services(Top, Periodo, Sort, State) ->
     Fields = fun(X) -> {maps:get(<<"name">>, X#request.servico)} end,
 	Requests = get_requests_submit(Periodo, State), 
 	Urls = maps:keys(groupBy(Fields, Requests)),
 	Urls2 = count(Fields, Urls, Requests),
-	top(Urls2, Top).
+	case Sort of
+		"url" -> Urls3 = sort_first(Urls2);
+		"qtd" -> Urls3 = sort_last(Urls2)
+	end,
+	top(Urls3, Top).
 	
 %% @doc Retorna os serviços mais acessados por tipo de verbo de um período
 do_get_top_services_by_type(Top, Periodo, Sort, State) ->

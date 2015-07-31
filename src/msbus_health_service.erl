@@ -18,7 +18,7 @@
 -export([start/0, stop/0]).
 
 %% Cliente interno API
--export([top_services/2, top_services_by_type/2]).
+-export([top_services/2, top_services_by_type/2, qtd_requests_by_date/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -50,6 +50,9 @@ top_services(Request, From)	->
 top_services_by_type(Request, From)	->
 	gen_server:cast(?SERVER, {top_services_by_type, Request, From}).
 
+qtd_requests_by_date(Request, From)	->
+	gen_server:cast(?SERVER, {qtd_requests_by_date, Request, From}).
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -68,6 +71,11 @@ handle_cast({top_services, Request, From}, State) ->
 
 handle_cast({top_services_by_type, Request, From}, State) ->
 	Reply = get_top_services_by_type(Request, State),
+	From ! {ok, Reply}, 
+	{noreply, State};
+
+handle_cast({qtd_requests_by_date, Request, From}, State) ->
+	Reply = get_qtd_requests_by_date(Request, State),
 	From ! {ok, Reply}, 
 	{noreply, State}.
 
@@ -94,11 +102,19 @@ code_change(_OldVsn, State, _Extra) ->
 get_top_services(Request, _State) ->
 	Top = list_to_integer(msbus_request:get_param_url(<<"top">>, "10", Request)),
 	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
-	msbus_health:get_top_services(Top, Periodo).
+	Sort = msbus_request:get_querystring(<<"sort">>, "qtd", Request),
+	io:format("eh ~p\n\n", [Sort]),
+	msbus_health:get_top_services(Top, Periodo, Sort).
 	
 get_top_services_by_type(Request, _State) ->
 	Top = list_to_integer(msbus_request:get_param_url(<<"top">>, "10", Request)),
 	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
-	msbus_health:get_top_services_by_type(Top, Periodo).
+	Sort = msbus_request:get_querystring(<<"sort">>, "qtd", Request),
+	msbus_health:get_top_services_by_type(Top, Periodo, Sort).
 
+get_qtd_requests_by_date(Request, _State) ->
+	Top = list_to_integer(msbus_request:get_param_url(<<"top">>, "10", Request)),
+	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
+	Sort = msbus_request:get_querystring(<<"sort">>, "qtd", Request),
+	msbus_health:get_qtd_requests_by_date(Top, Periodo, Sort).
 
