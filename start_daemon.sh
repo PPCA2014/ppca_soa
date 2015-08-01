@@ -7,5 +7,5 @@
 #********************************************************************
 
 #erl  -pa ./ebin -eval "application:start(msbus)" -boot start_sasl -config elog
-erl -pa ebin deps/jsx/ebin -eval "application:start(msbus)"
+erl -detached -pa ebin deps/jsx/ebin -eval "application:start(msbus)"
 	
