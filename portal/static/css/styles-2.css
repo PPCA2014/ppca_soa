@@ -5,6 +5,7 @@
  * Website: http://themes.3rdwavemedia.com/
  * Twitter: @3rdwave_themes
 */
+/* Pequenas modificações implementadas por Raphael Hoed */
 /* ======= Base ======= */
 body {
   font-family: 'Roboto', arial, sans-serif;
@@ -387,6 +388,7 @@ select {
   top: 0;
   left: 0;
   height: 780px;
+  text-align:center;
   
 }
 .bg-slider-wrapper .flexslider {
@@ -533,6 +535,8 @@ select {
   -moz-opacity: 0.8;
   opacity: 0.8;
 }
+
+
 /* ======= Why ======= */
 .why {
   padding-top: 80px;
@@ -2326,7 +2330,7 @@ select {
   position: relative;
 }
 .access-section .form-group.email:before {
-  content: url(../../img/form_email.png);
+  content: url(../img/form_email.png);
   font-family: FontAwesome;
   font-style: normal;
   font-weight: normal;
@@ -2340,7 +2344,7 @@ select {
 }
 
 .access-section .form-group.nome:before {
-  content: url(../../img/form_login.png);
+  content: url(../img/form_login.png);
   font-family: FontAwesome;
   font-style: normal;
   font-weight: normal;
@@ -2354,7 +2358,7 @@ select {
 }
 
 .access-section .form-group.password:before {
-  content: url(../../img/form_senha.png);
+  content: url(../img/form_senha.png);
   font-family: FontAwesome;
   font-style: normal;
   font-weight: normal;
@@ -3193,6 +3197,7 @@ select {
   .header h1.logo {
     float: none;
     text-align: center;
+	
   }
   .header h1.logo a {
     margin: 0 auto;
