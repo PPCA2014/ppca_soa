@@ -64,7 +64,7 @@
 		"owner": "portal",
 		"version": "1",
 		"service" : "msbus_static_file:execute",
-		"url": "^/portal/",
+		"url": "/portal/",
 		"use_re" : "true",
 		"async": "false",
 		"type": "GET",
@@ -219,8 +219,31 @@
 		"url": "/health/qtd_requests_by_date/(?<top>[0-9]{1,9})$",
 		"use_re" : "true",
 		"type": "GET",
-		"APIkey":"true"
+		"APIkey":"true",
+		"querystring": [
+			{
+				"name": "periodo",
+				"type": ["min", "day", "week", "month", "year"],
+				"default" : "week",
+				"comment": "Periodo da pesquisa",
+				"required" : "true"
+			},
+			{
+				"name": "sort",
+				"type": ["date", "qtd"],
+				"default" : "date",
+				"comment": "Campo que sera ordenado"
+			},
+			{
+				"name": "top",
+				"type": "int",
+				"default" : "10",
+				"comment": "Quantos registros devem ser retornados"
+			}
+		]
 	}
+	
+
 	
 	
 ]

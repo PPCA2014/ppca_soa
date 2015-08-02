@@ -36,7 +36,6 @@ payload_em_branco_test() ->
 	
 stop_server_test() ->
 	msbus_logger:info("Finalizando os testes..."),
-	msbus_util:sleep(1000),
 	application:stop(inets),
 	application:stop(msbus),
 	ok.

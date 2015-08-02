@@ -46,7 +46,6 @@ create_user_test() ->
 
 stop_server_test() ->
 	msbus_logger:info("Finalizando os testes de msbus_user_service..."),
-	msbus_util:sleep(1000),
 	application:stop(inets),
 	application:stop(msbus),
 	ok.
