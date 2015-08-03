@@ -133,21 +133,28 @@ get_catalogo_from_disk() ->
 	{ok, Cat2} = msbus_util:json_decode_as_map(Cat),
 	Cat2.
 
-%% @doc Retorna se o nome da querystring é valido
+%% @doc Indica se o nome da querystring é valido
 is_name_querystring_valido(Name) ->
 	case re:run(Name, "^[_a-zA-Z][_a-zA-Z0-9]{0,29}$") of
 		nomatch -> false;
 		_ -> true
 	end.
 
-%% @doc Retorna se o nome da querystring é valido
-is_name_servico_valido(Name) ->
-	case re:run(Name, "^[/_a-zA-Z][.:/_a-zA-Z0-9]{0,1000}$") of
+%% @doc Indica se o nome do pseudo param é valido
+is_pseudo_name_param_valido(Name) ->
+	case re:run(Name, "^[a-z0-9]{0,29}$") of
 		nomatch -> false;
 		_ -> true
 	end.
 
-%% @doc Retorna se o tipo é valido
+%% @doc Indica se o nome da querystring é valido
+is_name_servico_valido(Name) ->
+	case re:run(Name, "^[/_a-zA-Z][.:/_a-zA-Z0-9]{0,300}$") of
+		nomatch -> false;
+		_ -> true
+	end.
+
+%% @doc Indica se o tipo é valido
 is_type_valido(<<"int">>) 	 -> true;
 is_type_valido(<<"string">>) -> true;
 is_type_valido(<<"year">>) 	 -> true;
@@ -156,39 +163,70 @@ is_type_valido(<<"bool">>)   -> true;
 is_type_valido(Enum) when length(Enum) > 0 -> true;
 is_type_valido(_) 	 		 -> false.
 
- 
+%% @doc Indica se o tamanho é válido
+is_valid_length(Value, MaxLength) -> length(binary_to_list(Value)) =< MaxLength.
+
+%% @doc Indica se a URL contém expressão regular
+is_url_com_re([]) -> false;
+is_url_com_re([H|T]) -> 
+	case lists:member(H, [$?, $<, $>, $$, ${, $}, $-, $,]) of
+		true -> true;
+		false -> is_url_com_re(T)
+	end.
+
+%% @doc Valida o nome do serviço
 valida_name_servico(Name) ->
 	case is_name_servico_valido(Name) of
 		true -> ok;
 		false -> erlang:error(invalid_name_servico)
 	end.
 
+%% @doc Valida o nome da querystring
 valida_name_querystring(Name) ->
 	case is_name_querystring_valido(Name) of
 		true -> ok;
 		false -> erlang:error(invalid_name_querystring)
 	end.
 
+%% @doc Valida o nome do pseudo param
+valida_pseudo_name_param(Name) ->
+	case is_pseudo_name_param_valido(Name) of
+		true -> ok;
+		false -> erlang:error(invalid_pseudo_name_param)
+	end.
+
+%% @doc Valida o tipo de dado da querystring
 valida_type_querystring(Type) ->
 	case is_type_valido(Type) of
 		true -> ok;
 		false -> erlang:error(invalid_type_querystring)
 	end.
 
+%% @doc Valida o método do serviço 
 valida_type_servico(Type) ->
 	case msbus_http_util:is_metodo_suportado(Type) of
 		true -> ok;
 		false -> erlang:error(invalid_type_servico)
 	end.
 
-valida_url_servico(<<"/">>) -> true;
+valida_url_servico(<<"/">>) -> ok;
 valida_url_servico(Url) ->
-	case msbus_http_util:is_url_valido(Url) of
+	case msbus_http_util:is_url_valido(Url) andalso is_valid_length(Url, 300) of
 		true -> ok;
 		false -> erlang:error(invalid_url_servico)
 	end.
+	
+valida_bool(<<"true">>) -> ok;
+valida_bool(<<"false">>) -> ok;
+valida_bool(_) -> erlang:error(invalid_bool).
 
-%% @doc Faz o parser da querystring e valida
+valida_length(Value, MaxLength) ->
+	case is_valid_length(Value, MaxLength) of
+		true -> ok;
+		false -> erlang:error(invalid_length)
+	end.
+	
+%% @doc Faz o parser da querystring
 parse_querystring([], Querystring, QtdRequired) -> 	
 	{Querystring, QtdRequired};
 parse_querystring([H|T], Querystring, QtdRequired) -> 
@@ -199,6 +237,9 @@ parse_querystring([H|T], Querystring, QtdRequired) ->
 	Required = maps:get(<<"required">>, H, <<"false">>),
 	valida_name_querystring(Name),
 	valida_type_querystring(Type),
+	valida_length(Default, 150),
+	valida_length(Comment, 1000),
+	valida_bool(Required),
 	case Required of
 		<<"true">>  -> QtdRequired2 = QtdRequired + 1;
 		<<"false">> -> QtdRequired2 = QtdRequired;
@@ -213,24 +254,64 @@ parse_querystring([H|T], Querystring, QtdRequired) ->
 	parse_querystring(T, [Q | Querystring], QtdRequired2).
 
 
+%% @doc Converte um pseudo param para sua expressão regular
+pseudoparam_to_re(":id")   -> "(?<id>[0-9]{1,9})";
+pseudoparam_to_re(":top")  -> "(?<top>[0-9]{1,4})";
+pseudoparam_to_re(":type") -> "(?<type>(get|post|put|delete))".
+pseudoparam_to_re(":id", Nome)  -> io_lib:format("(?<id_~s>[0-9]{1,9})", [Nome]);
+pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]).
+
+%% @doc Faz o parser da URL convertendo os pseudo parâmetros em expressão regular
+parse_url_servico(<<Url/binary>>) ->
+	%/health/top_services_by_type/:num/:date/:texto/:id/:top/:bool/:id
+	%/health/top_services_by_type/(?<top>[0-9]{1,9})$
+	%/user/:id_user/endereco/:id_endereco
+	Url1 = string:tokens(binary_to_list(Url), "/"),
+	parse_url_servico(Url1, []).
+
+parse_url_servico([], []) -> <<"/">>;
+parse_url_servico([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
+parse_url_servico([H|T], Url) when hd(H) /= $: -> parse_url_servico(T, [H | Url]);
+parse_url_servico([H|T], Url) ->
+	%% O nome do pseudo param pode ser informado ou gerado automaticamente
+	case string:chr(H, $_) > 0 of
+		true ->
+			io:format("H ~p\n", [H]),
+			[Pseudo, Nome] = string:tokens(H, "_"),
+			valida_pseudo_name_param(Nome),
+			P = pseudoparam_to_re(Pseudo, Nome),
+			parse_url_servico(T, [P | Url]);
+		false ->
+			Pseudo = H,
+			P = pseudoparam_to_re(Pseudo),
+			parse_url_servico(T, [P | Url])
+	end.
+
+%% @doc Faz o parser dos serviços do catálogo
 parse_catalogo([], Cat2, Cat3, Cat4, _Id) ->
 	{maps:from_list(Cat2), Cat3, Cat4};
-
 parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Name = get_property_servico(<<"name">>, H),
 	Url = get_property_servico(<<"url">>, H),
+	io:format("URL1 -> ~p\n", [Url]),
+	Url2 = parse_url_servico(Url),
+	io:format("URL2 -> ~p\n\n", [Url2]),
 	{Module, Function} = get_property_servico(<<"service">>, H),
-	Use_re = get_property_servico(<<"use_re">>, H, <<"false">>),
 	Type = get_property_servico(<<"type">>, H, <<"GET">>),
 	Apikey = get_property_servico(<<"APIkey">>, H, <<"false">>),
 	Comment = get_property_servico(<<"comment">>, H, <<>>),
-	Version = get_property_servico(<<"comment">>, H, <<>>),
+	Version = get_property_servico(<<"version">>, H, <<>>),
 	Owner = get_property_servico(<<"owner">>, H, <<>>),
 	Async = get_property_servico(<<"async">>, H, <<"false">>),
-	Rowid = new_rowid_servico(Url, Type),
+	Rowid = new_rowid_servico(Url2, Type),
 	valida_name_servico(Name),
-	valida_url_servico(Url),
+	valida_url_servico(Url2),
 	valida_type_servico(Type),
+	valida_bool(Apikey),
+	valida_bool(Async),
+	valida_length(Comment, 1000),
+	valida_length(Version, 10),
+	valida_length(Owner, 30),
 	case get_property_servico(<<"querystring">>, H, <<>>) of
 		<<>> -> 
 			Querystring2 = <<>>,
@@ -241,15 +322,15 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	IdBin = list_to_binary(integer_to_list(Id)),
 	ServicoView = new_servico_view(IdBin, Name, Url, Module, Function, 
 								   Type, Apikey, Comment, Version, Owner, Async),
-	case Use_re of
-		<<"true">> -> 
-			Servico = new_servico_re(Rowid, IdBin, Name, Url, Module, 
+	case is_url_com_re(binary_to_list(Url2)) orelse Module =:= <<"msbus_static_file">> of
+		true -> 
+			Servico = new_servico_re(Rowid, IdBin, Name, Url2, Module, 
 									 Function, Type, Apikey, Comment, 
 									 Version, Owner, Async, 
 									 Querystring2, QtdQuerystringRequired),
 			parse_catalogo(T, Cat2, [Servico|Cat3], [ServicoView|Cat4], Id+1);
-		<<"false">> -> 
-			Servico = new_servico(Rowid, IdBin, Name, Url, Module,
+		false -> 
+			Servico = new_servico(Rowid, IdBin, Name, Url2, Module,
 								  Function, Type, Apikey, Comment,
 								  Version, Owner, Async, 
 								  Querystring2, QtdQuerystringRequired),
@@ -257,9 +338,13 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	end.	
 
 get_property_servico(<<"service">>, Servico) ->
-	Service = maps:get(<<"service">>, Servico),
-	[Module, Function] = binary:split(Service, <<":">>),
-	{Module, Function};
+	try
+		Service = maps:get(<<"service">>, Servico),
+		[Module, Function] = binary:split(Service, <<":">>),
+		{Module, Function}
+	catch
+		_Exception:_Reason ->  erlang:error(invalid_service_servico)
+	end;
 
 get_property_servico(Key, Servico) ->
 	maps:get(Key, Servico, <<>>).

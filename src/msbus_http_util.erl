@@ -153,13 +153,13 @@ is_metodo_suportado(<<"PUT">>) -> true;
 is_metodo_suportado(<<"DELETE">>) -> true;
 is_metodo_suportado(_) -> false.
 
-%% @doc Retorna se a URL é valida
+%% @doc Indica se a URL é valida
 is_url_valido(Url) ->
 	case re:run(Url, "^((http:\/\/)|(\/))?([a-z0-9\-]+\.)?[a-z0-9\-]+\.[a-z0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
 		nomatch -> false;
 		_ -> true
 	end.
-
+	
 %% @doc Retorna o mime-type do arquivo
 mime_type(".htm") -> <<"text/html">>;
 mime_type(".html") -> <<"text/html">>;

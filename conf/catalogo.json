@@ -65,7 +65,6 @@
 		"version": "1",
 		"service" : "msbus_static_file:execute",
 		"url": "/portal/",
-		"use_re" : "true",
 		"async": "false",
 		"type": "GET",
 		"APIkey":"true"
@@ -78,7 +77,6 @@
 		"version": "1",
 		"service" : "hello_world_service:execute",
 		"url": "/aluno/lista_formandos/(?<tipo>(sintetico|analitico))",
-		"use_re" : "true",
 		"async": "true",
 		"url_callback": "/imprime_retorno_tela",
 		"type": "GET",
@@ -126,8 +124,7 @@
 		"owner": "msbus",
 		"version": "1",
 		"service" : "msbus_user_service:get",
-		"url": "/user/(?<id>[0-9]{1,20})$",
-		"use_re" : "true",
+		"url": "/user/:id",
 		"type": "GET",
 		"APIkey":"true"
 	},
@@ -138,8 +135,7 @@
 		"owner": "user",
 		"version": "1",
 		"service" : "msbus_user_service:delete",
-		"url": "/user/(?<id>[0-9]{1,20})$",
-		"use_re" : "true",
+		"url": "/user/:id",
 		"type": "DELETE",
 		"APIkey":"true"
 	},
@@ -160,23 +156,11 @@
 		"comment": "Atualizar um usuário existente",
 		"owner": "user",
 		"service" : "msbus_user_service:update",
-		"url": "/user/(?<id>[0-9]{1,20})$",
-		"use_re" : "true",
+		"url": "/user/:id",
 		"type": "PUT",
 		"APIkey":"true"
 	},
 
-	{
-		"name": "/user/all",
-		"comment": "Lista todos os usuários cadastrados",
-		"owner": "user",
-		"version": "1",
-		"service" : "msbus_user_service:all",
-		"url": "/user/all",
-		"type": "GET",
-		"APIkey":"true"
-	},
-	
 	{	
 		"name": "/user",
 		"comment": "Lista todos os usuários cadastrados",
@@ -192,8 +176,7 @@
 		"owner": "health",
 		"version": "1",
 		"service" : "msbus_health_service:top_services",
-		"url": "/health/top_services/(?<top>[0-9]{1,9})$",
-		"use_re" : "true",
+		"url": "/health/top_services/:top",
 		"type": "GET",
 		"APIkey":"true"
 	},
@@ -204,20 +187,29 @@
 		"owner": "health",
 		"version": "1",
 		"service" : "msbus_health_service:top_services_by_type",
-		"url": "/health/top_services_by_type/(?<top>[0-9]{1,9})$",
-		"use_re" : "true",
+		"url": "/health/top_services_by_type/:top",
 		"type": "GET",
 		"APIkey":"true"
 	},
 	
+	{
+		"name" : "/health/top_services/:type/:top/",
+		"comment": "Lista os serviços mais solicitados por tipo de verbo HTTP",
+		"owner": "health",
+		"version": "1",
+		"service" : "msbus_health_service:top_services_by_type",
+		"url": "/health/top_services/:type/:top/:top_2/:top_metodos",
+		"type": "GET",
+		"APIkey":"true"
+	},
+
 	{
 		"name" : "/health/qtd_requests_by_date/:top",
 		"comment": "Lista a quantidade de requisições por data",
 		"owner": "health",
 		"version": "1",
 		"service" : "msbus_health_service:qtd_requests_by_date",
-		"url": "/health/qtd_requests_by_date/(?<top>[0-9]{1,9})$",
-		"use_re" : "true",
+		"url": "/health/qtd_requests_by_date/:top",
 		"type": "GET",
 		"APIkey":"true",
 		"querystring": [
