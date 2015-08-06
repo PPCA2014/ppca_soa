@@ -15,7 +15,7 @@
 					  latencia,
 					  status,    %% Código de retorno HTTP
 					  %% Próximos campos são cabecalhos do HTTP	
-					  metodo,
+					  type,
 					  url,
 					  versao_http,
 					  payload,

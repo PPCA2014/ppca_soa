@@ -13,6 +13,7 @@
 -behavior(gen_server). 
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -20,10 +21,11 @@
 %% Client
 -export([lista_catalogo/0, 
 		 update_catalogo/0,
-		 lookup/1, lookup/2, 
+		 lookup/1,
 		 get_querystring/2, 
 		 get_property_servico/2, 
 		 get_property_servico/3, 
+		 get_ult_lookup/0,
 		 list_cat2/0, list_cat3/0]).
 
 
@@ -33,8 +35,11 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do servico. 
-%% Cat1 = JSON catalog, Cat2 = parsed catalog, Cat3 = regular expression parsed catalog
--record(state, {cat1, cat2, cat3}). 
+-record(state, {cat1, 		%% Catalogo JSON
+				cat2, 		%% Parsed catalog 
+				cat3, 		%% Regular expression parsed catalog
+				ult_lookup 	%% último lookup realizado
+		}). 
 
 
 %%====================================================================
@@ -58,18 +63,17 @@ lista_catalogo() ->
 update_catalogo() ->
 	gen_server:cast(?SERVER, update_catalogo).
 	
-lookup(Url, Type) ->	
-	gen_server:call(?SERVER, {lookup, Url, Type}).
-
-lookup(Url) ->	
-	gen_server:call(?SERVER, {lookup, Url, "GET"}).
-
+lookup(Request) ->	
+	gen_server:call(?SERVER, {lookup, Request}).
 
 list_cat2() ->
 	gen_server:call(?SERVER, list_cat2).
 
 list_cat3() ->
 	gen_server:call(?SERVER, list_cat3).
+
+get_ult_lookup() ->
+	gen_server:call(?SERVER, get_ult_lookup).
 	
 %%====================================================================
 %% gen_server callbacks
@@ -91,15 +95,18 @@ handle_call(lista_catalogo, _From, State) ->
 	Reply = do_lista_catalogo(State),
 	{reply, Reply, State};
     
-handle_call({lookup, Url, Type}, _From, State) ->
-	Reply = lookup(Url, Type, State),
-	{reply, Reply, State};
+handle_call({lookup, Request}, _From, State) ->
+	{Reply, NewState} = lookup(Request, State),
+	{reply, Reply, NewState};
 
 handle_call(list_cat2, _From, State) ->
 	{reply, State#state.cat2, State};
 
 handle_call(list_cat3, _From, State) ->
-	{reply, State#state.cat3, State}.
+	{reply, State#state.cat3, State};
+
+handle_call(get_ult_lookup, _From, State) ->
+	{reply, State#state.ult_lookup, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -154,7 +161,7 @@ is_name_servico_valido(Name) ->
 		_ -> true
 	end.
 
-%% @doc Indica se o tipo é valido
+%% @doc Indica se o tipo dos dados são é valido
 is_type_valido(<<"int">>) 	 -> true;
 is_type_valido(<<"string">>) -> true;
 is_type_valido(<<"year">>) 	 -> true;
@@ -254,18 +261,16 @@ parse_querystring([H|T], Querystring, QtdRequired) ->
 	parse_querystring(T, [Q | Querystring], QtdRequired2).
 
 
-%% @doc Converte um pseudo param para sua expressão regular
+%% @doc Converte um pseudo parâmetro para sua expressão regular
 pseudoparam_to_re(":id")   -> "(?<id>[0-9]{1,9})";
 pseudoparam_to_re(":top")  -> "(?<top>[0-9]{1,4})";
-pseudoparam_to_re(":type") -> "(?<type>(get|post|put|delete))".
+pseudoparam_to_re(_)  -> erlang:error(invalid_pseudo_param).
 pseudoparam_to_re(":id", Nome)  -> io_lib:format("(?<id_~s>[0-9]{1,9})", [Nome]);
-pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]).
+pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]);
+pseudoparam_to_re(_, _)  -> erlang:error(invalid_pseudo_param).
 
 %% @doc Faz o parser da URL convertendo os pseudo parâmetros em expressão regular
 parse_url_servico(<<Url/binary>>) ->
-	%/health/top_services_by_type/:num/:date/:texto/:id/:top/:bool/:id
-	%/health/top_services_by_type/(?<top>[0-9]{1,9})$
-	%/user/:id_user/endereco/:id_endereco
 	Url1 = string:tokens(binary_to_list(Url), "/"),
 	parse_url_servico(Url1, []).
 
@@ -273,10 +278,8 @@ parse_url_servico([], []) -> <<"/">>;
 parse_url_servico([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
 parse_url_servico([H|T], Url) when hd(H) /= $: -> parse_url_servico(T, [H | Url]);
 parse_url_servico([H|T], Url) ->
-	%% O nome do pseudo param pode ser informado ou gerado automaticamente
 	case string:chr(H, $_) > 0 of
 		true ->
-			io:format("H ~p\n", [H]),
 			[Pseudo, Nome] = string:tokens(H, "_"),
 			valida_pseudo_name_param(Nome),
 			P = pseudoparam_to_re(Pseudo, Nome),
@@ -293,9 +296,7 @@ parse_catalogo([], Cat2, Cat3, Cat4, _Id) ->
 parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Name = get_property_servico(<<"name">>, H),
 	Url = get_property_servico(<<"url">>, H),
-	io:format("URL1 -> ~p\n", [Url]),
 	Url2 = parse_url_servico(Url),
-	io:format("URL2 -> ~p\n\n", [Url2]),
 	{Module, Function} = get_property_servico(<<"service">>, H),
 	Type = get_property_servico(<<"type">>, H, <<"GET">>),
 	Apikey = get_property_servico(<<"APIkey">>, H, <<"false">>),
@@ -355,28 +356,72 @@ get_property_servico(Key, Servico, Default) ->
 get_querystring(<<QueryName/binary>>, Servico) ->	
 	[Query] = [Q || Q <- get_property_servico(<<"querystring">>, Servico), get_property_servico(<<"comment">>, Q) == QueryName],
 	Query.
+
+lookup_querystring(notfound) -> notfound;
 	
-lookup(Url, Type, State) ->
-	Rowid = new_rowid_servico(Url, Type),
-	case maps:find(Rowid, State#state.cat2) of
-		{ok, Servico} -> {ok, Servico, []};
-		error -> lookup_re(Url, Type, State#state.cat3)
+lookup_querystring({ok, Request}) ->
+	QuerystringServico = maps:get(<<"querystring">>, Request#request.servico),
+	QuerystringUser = Request#request.querystring_map,
+	case Request#request.querystring =:= "" of
+		true -> 
+			case QuerystringServico =:= <<>> of
+				true -> {ok, Request};
+				false -> lookup_valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
+			end;
+		false -> lookup_valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
 	end.
 
-lookup_re(_Url, _Type, []) ->
+lookup_valida_querystring({ok, Request}, QuerystringServico, QuerystringUser) ->
+	case valida_querystring(QuerystringServico, QuerystringUser, []) of
+		{ok, Querystring} -> 
+			Request2 = Request#request{querystring_map = Querystring},
+			{ok, Request2};
+		notfound -> notfound
+	end.
+
+valida_querystring([], _QuerystringUser, QuerystringList) ->
+	{ok, maps:from_list(QuerystringList)};
+
+valida_querystring([H|T], QuerystringUser, QuerystringList) ->
+	%% Verifica se encontra a query na querystring do usuário
+	NomeQuery = maps:get(<<"name">>, H),
+	case maps:find(NomeQuery, QuerystringUser) of
+		{ok, Value} -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
+		error ->
+			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
+			case maps:get(<<"default">>, H) of
+				<<>> -> notfound;
+				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
+			end
+	end.
+	
+lookup(Request, State) ->
+	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
+	case maps:find(Rowid, State#state.cat2) of
+		{ok, Servico} -> 
+			Request2 = Request#request{servico = Servico},
+			Result = {ok, Request2};
+		error -> 
+			Result = lookup_re(Request, State#state.cat3)
+	end,
+	Result2 = lookup_querystring(Result),
+	{Result2, State#state{ult_lookup = Result2}}.
+
+lookup_re(_Request, []) ->
 	notfound;
 
-lookup_re(Url, Type, [H|T]) ->
+lookup_re(Request, [H|T]) ->
 	RE = maps:get(<<"id_re_compiled">>, H),
-	Rowid = new_rowid_servico(Url, Type),
+	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
 	case re:run(Rowid, RE, [{capture,all_names,binary}]) of
 		match -> {ok, H, []};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
-			{ok, H, ParamsMap};
-		nomatch -> lookup_re(Url, Type, T);
-		{error, _ErrType} -> nofound 
+			Request2 = Request#request{servico = H, params_url = ParamsMap},
+			{ok, Request2};
+		nomatch -> lookup_re(Request, T);
+		{error, _ErrType} -> notfound 
 	end.
 
 new_rowid_servico(<<Url/binary>>, <<Type/binary>>) ->	

@@ -86,10 +86,12 @@ get_http_header(Header) ->
 				Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
 				Cache_Control = maps:get("cache_control", Outros2, "false"),
 				Host = maps:get("host", Outros2, ""),
+				io:format("a querystring -> ~p\n\n", [Querystring]),
+				
 				QuerystringMap = get_querystring(Querystring),
 				Request = #request{
 						    rid = {now(), node()},
-							metodo = Metodo,
+							type = Metodo,
 							url = Url3,
 							versao_http = Versao_HTTP,
 							querystring = Querystring,

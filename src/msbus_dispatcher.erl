@@ -84,15 +84,14 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Trata o request e retorna o response do resultado
 do_dispatch_request(Request) ->
-	case msbus_catalogo:lookup(Request#request.url, Request#request.metodo) of
-		{ok, Servico, ParamsUrl} -> 
-			Request1 = Request#request{params_url = ParamsUrl, servico = Servico},
-			case executa_servico(Request1) of
+	case msbus_catalogo:lookup(Request) of
+		{ok, Request2} -> 
+			case executa_servico(Request2) of
 				{error, servico_falhou, ErroInterno} -> 
 					Response = msbus_http_util:encode_response(<<"502">>, ?HTTP_ERROR_502(ErroInterno)),
-					{error, <<"502">>, Request1, Response, servico_falhou};
+					{error, <<"502">>, Request2, Response, servico_falhou};
 				Pid -> 
-					aguarda_conclusao_servico(Request1, Pid)
+					aguarda_conclusao_servico(Request2, Pid)
 			end;
 		notfound -> 
 			Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),

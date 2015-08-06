@@ -198,7 +198,7 @@
 		"owner": "health",
 		"version": "1",
 		"service" : "msbus_health_service:top_services_by_type",
-		"url": "/health/top_services/:type/:top/:top_2/:top_metodos",
+		"url": "/health/top_services/:top/:top_2/:top_metodos",
 		"type": "GET",
 		"APIkey":"true"
 	},
@@ -216,7 +216,7 @@
 			{
 				"name": "periodo",
 				"type": ["min", "day", "week", "month", "year"],
-				"default" : "week",
+				"default" : "month",
 				"comment": "Periodo da pesquisa",
 				"required" : "true"
 			},
@@ -225,17 +225,9 @@
 				"type": ["date", "qtd"],
 				"default" : "date",
 				"comment": "Campo que sera ordenado"
-			},
-			{
-				"name": "top",
-				"type": "int",
-				"default" : "10",
-				"comment": "Quantos registros devem ser retornados"
 			}
 		]
 	}
-	
-
 	
 	
 ]

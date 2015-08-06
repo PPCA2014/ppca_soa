@@ -226,11 +226,11 @@ get_request_socket(Socket, L) ->
 		    get_request(Socket, L)
     end.
 
-%% @doc Retorna boolean indicando se possui conforme as regras RESTfull
-possui_payload(Request) when Request#request.metodo =:= "GET"; 
-							 Request#request.metodo =:= "DELETE" -> false;
-possui_payload(Request) when Request#request.metodo =:= "POST"; 
-							 Request#request.metodo =:= "PUT" -> 
+%% @doc Retorna boolean indicando se possui payload
+possui_payload(Request) when Request#request.type =:= "GET"; 
+							 Request#request.type =:= "DELETE" -> false;
+possui_payload(Request) when Request#request.type =:= "POST"; 
+							 Request#request.type =:= "PUT" -> 
 	Request#request.content_length > 0.
 
 get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length ->
@@ -268,7 +268,7 @@ is_fim_header([], _)              -> more.
 
 %% @doc Imprime o status da requisição no log
 log_status_requisicao(Code, Request, Status, Latencia) when erlang:is_record(Request, request) ->
-	Metodo = Request#request.metodo,
+	Metodo = Request#request.type,
 	Url = Request#request.url,
 	HTTP_Version = Request#request.versao_http,
 	Accept = Request#request.accept,

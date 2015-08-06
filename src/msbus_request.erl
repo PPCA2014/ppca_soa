@@ -19,9 +19,12 @@
 get_property_request(<<"url">>, Request) ->
 	Request#request.url;
 
-%% @doc Retorna a URL do request
+%% @doc Retorna o tipo do request
 get_property_request(<<"metodo">>, Request) ->
-	Request#request.metodo;
+	Request#request.type;
+
+get_property_request(<<"type">>, Request) ->
+	Request#request.type;
 
 %% @doc Retorna a URL do request
 get_property_request(<<"http_version">>, Request) ->
@@ -44,5 +47,9 @@ get_param_url(NomeParam, Default, Request) ->
 
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, Request) ->
-	maps:get(QueryName, Request#request.querystring_map, Default).
+	Value = maps:get(QueryName, Request#request.querystring_map, Default),
+	case erlang:is_binary(Value) of
+		true -> binary_to_list(Value);
+		false -> Value
+	end.
 
