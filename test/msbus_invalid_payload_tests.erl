@@ -25,12 +25,12 @@ invalid_payload_test() ->
 
 
 payload_em_branco_test() ->
-	msbus_logger:info("\n\nTEST: Envia um payload em branco para falhar o servico e retornar servico_falhou."),
+	msbus_logger:info("\n\nTEST: Envia um payload em branco. O servidor valida e devolve erro 400 <<invalid_request>>."),
 	Payload = "",
 	HTTPHeader = [],
 	Url = dominio() ++ "/user",
 	Request = {Url, HTTPHeader, "application/json", Payload},
-	{ok, {{_Version, 502, _ReasonPhrase}, _Headers, _Body}} = httpc:request(post, Request, [], []).
+	{ok, {{_Version, 400, _ReasonPhrase}, _Headers, _Body}} = httpc:request(post, Request, [], []).
 
 
 	

@@ -60,7 +60,7 @@
 
 	{
         "name": "/portal",
-		"comment": "Serviço para servir arquivos estáticos para o portal de serviço.",
+		"comment": "Portal do ErlangMS",
 		"owner": "portal",
 		"version": "1",
 		"service" : "msbus_static_file:execute",

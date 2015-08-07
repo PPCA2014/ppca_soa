@@ -13,10 +13,10 @@
 
 
 %% Mensagens de erro HTTP no formato JSON
--define(HTTP_ERROR_400, <<"{\"error\":\"HTTP 400\",\"message\":\"Requisição inválida.\"}">>).
--define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"Serviço não encontrado.\"}">>).
--define(HTTP_ERROR_404_FILE_NOT_FOUND, <<"{\"error\":\"HTTP 404\",\"message\":\"Arquivo não encontrado.\"}">>).
--define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"O servidor aceita somente JSON.\"}">>).
--define(HTTP_ERROR_502(Motivo), io_lib:format(<<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação. Motivo: ~p.\"}">>, [Motivo])).
--define(HTTP_ERROR_502, <<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação.\"}">>).
--define(HTTP_ERROR_503, <<"{\"error\":\"HTTP 503\",\"message\":\"Serviço listado no catálogo de serviço mas não disponível.\"}">>).
+-define(HTTP_ERROR_400, <<"{\"error\":\"HTTP 400\",\"message\":\"Requisição inválida.\"}"/utf8>>).
+-define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"Serviço não encontrado.\"}"/utf8>>).
+-define(HTTP_ERROR_404_FILE_NOT_FOUND, <<"{\"error\":\"HTTP 404\",\"message\":\"Arquivo não encontrado.\"}"/utf8>>).
+-define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"O servidor aceita somente JSON.\"}"/utf8>>).
+-define(HTTP_ERROR_502(Motivo), io_lib:format(<<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação. Motivo: ~p.\"}"/utf8>>, [Motivo])).
+-define(HTTP_ERROR_502, <<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação.\"}"/utf8>>).
+-define(HTTP_ERROR_503, <<"{\"error\":\"HTTP 503\",\"message\":\"Serviço listado no catálogo de serviço mas não disponível.\"}"/utf8>>).

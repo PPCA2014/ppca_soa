@@ -200,7 +200,7 @@ get_request_socket(Socket, L) ->
 				{Header, Payload} ->
 					%% cabeçalho completo, podemos fazer o parser do header e do payload
 					
-					%% Faz o parser do cabeçalho e obtém o request
+					% Faz o parser do cabeçalho e obtém o request
 					case msbus_http_util:get_http_header(Header) of
 						{ok, Request} ->
 							case possui_payload(Request) of
@@ -214,7 +214,8 @@ get_request_socket(Socket, L) ->
 											Request1 = Request#request{payload = PayloadText, payload_map = PayloadMap},
 											{ok, Request1};
 										{error, Reason} -> {error, Request, Reason}
-									end
+									end;
+								error -> {error, Request, invalid_request}
 							end;
 						{error, Request, Reason} -> {error, Request, Reason};
 						{error, Reason} -> {error, Reason}
@@ -227,11 +228,17 @@ get_request_socket(Socket, L) ->
     end.
 
 %% @doc Retorna boolean indicando se possui payload
-possui_payload(Request) when Request#request.type =:= "GET"; 
-							 Request#request.type =:= "DELETE" -> false;
-possui_payload(Request) when Request#request.type =:= "POST"; 
-							 Request#request.type =:= "PUT" -> 
-	Request#request.content_length > 0.
+possui_payload(Request) ->
+	case {Request#request.type, Request#request.content_length} of
+		{"GET", 0} -> false;
+		{"GET", _} -> error;
+		{"DELETE", 0} -> false;
+		{"DELETE", _} -> error;
+		{"POST", 0} -> error;
+		{"POST", _} -> true;
+		{"PUT", 0} -> error;
+		{"PUT", _} -> true
+	end.
 
 get_request_payload(Socket, Content_Length, L) when length(L) /= Content_Length ->
     receive

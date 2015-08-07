@@ -357,27 +357,37 @@ get_querystring(<<QueryName/binary>>, Servico) ->
 	[Query] = [Q || Q <- get_property_servico(<<"querystring">>, Servico), get_property_servico(<<"comment">>, Q) == QueryName],
 	Query.
 
-lookup_querystring(notfound) -> notfound;
+processa_querystring(notfound) -> notfound;
 	
-lookup_querystring({ok, Request}) ->
-	QuerystringServico = maps:get(<<"querystring">>, Request#request.servico),
-	QuerystringUser = Request#request.querystring_map,
-	case Request#request.querystring =:= "" of
-		true -> 
-			case QuerystringServico =:= <<>> of
-				true -> {ok, Request};
-				false -> lookup_valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
-			end;
-		false -> lookup_valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
+processa_querystring({ok, Request}) ->
+	%% Querystrings do módulo msbus_static_file não são processados.
+	case maps:get(<<"module">>, Request#request.servico) of
+		<<"msbus_static_file">> ->
+			{ok, Request};
+		_ ->
+			QuerystringServico = maps:get(<<"querystring">>, Request#request.servico),
+			QuerystringUser = Request#request.querystring_map,
+			case Request#request.querystring =:= "" of
+				true -> 
+					case QuerystringServico =:= <<>> of
+						true -> {ok, Request};
+						false -> valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
+					end;
+				false -> 
+					case QuerystringServico =:= <<>> of
+						true -> notfound;
+						false -> valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
+					end
+			end
 	end.
 
-lookup_valida_querystring({ok, Request}, QuerystringServico, QuerystringUser) ->
+valida_querystring({ok, Request}, QuerystringServico, QuerystringUser) ->
 	case valida_querystring(QuerystringServico, QuerystringUser, []) of
 		{ok, Querystring} -> 
 			Request2 = Request#request{querystring_map = Querystring},
 			{ok, Request2};
 		notfound -> notfound
-	end.
+	end;
 
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};
@@ -404,7 +414,7 @@ lookup(Request, State) ->
 		error -> 
 			Result = lookup_re(Request, State#state.cat3)
 	end,
-	Result2 = lookup_querystring(Result),
+	Result2 = processa_querystring(Result),
 	{Result2, State#state{ult_lookup = Result2}}.
 
 lookup_re(_Request, []) ->
@@ -414,7 +424,9 @@ lookup_re(Request, [H|T]) ->
 	RE = maps:get(<<"id_re_compiled">>, H),
 	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
 	case re:run(Rowid, RE, [{capture,all_names,binary}]) of
-		match -> {ok, H, []};
+		match -> 
+			Request2 = Request#request{servico = H},
+			{ok, Request2};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),

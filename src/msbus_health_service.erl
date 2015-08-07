@@ -103,7 +103,6 @@ get_top_services(Request, _State) ->
 	Top = list_to_integer(msbus_request:get_param_url(<<"top">>, "10", Request)),
 	Periodo = msbus_request:get_querystring(<<"periodo">>, "year", Request),
 	Sort = msbus_request:get_querystring(<<"sort">>, "qtd", Request),
-	io:format("eh ~p\n\n", [Sort]),
 	msbus_health:get_top_services(Top, Periodo, Sort).
 	
 get_top_services_by_type(Request, _State) ->
