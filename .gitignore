@@ -9,4 +9,6 @@ ebin/**
 Mnesia.nonode@nohost
 *.log
 *.dump
+*.erl
+/logs
 
