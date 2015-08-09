@@ -6,6 +6,6 @@
 # @copyright erlangMS Team
 #********************************************************************
 
-#erl  -pa ./ebin -eval "application:start(msbus)" -boot start_sasl -config elog
-erl -pa ebin deps/jsx/ebin -eval "application:start(msbus)"
+#erl ../msbus/ebin deps/jsx/ebin -eval "application:start(msbus)" -boot start_sasl -config elog
+erl -pa ../msbus/ebin deps/jsx/ebin  -eval "application:start(msbus)"
 	

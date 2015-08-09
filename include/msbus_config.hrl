@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Arquivo de configuração
+%% @title Arquivo de configuração ErlangMS
 %% @version 1.0.0
-%% @doc Arquivo com configurações gerais de funcionamento.
+%% @doc Arquivo com configurações gerais de funcionamento de ErlangMS.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -14,16 +14,19 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, <<"erlang Microservices (erlangMS 1.0)">>).
+-define(SERVER_NAME, io_lib:format(<<"Erlang Microservices (ErlangMS ~s)">>, [case application:get_key(msbus, vsn) of 
+																					{ok, Version} -> Version;
+																					undefined -> "1"
+																			  end])).
 
 % Caminho do favicon
--define(FAVICON_PATH, "./img/favicon.ico").
+-define(FAVICON_PATH, code:priv_dir(msbus) ++ "/favicon.ico").
 
 % Caminho do catálogo de serviços
--define(CATALOGO_PATH, "./conf/catalogo.json").
+-define(CATALOGO_PATH, code:priv_dir(msbus) ++ "/conf/catalogo.conf").
 
 % Caminho inicial para os arquivos estáticos
--define(STATIC_FILE_PATH, "./").
+-define(STATIC_FILE_PATH, code:priv_dir(msbus) ++ "/www/").
 
 % De quanto em quanto tempo vai descarregar o buffer do módulo msbus_health
 -define(HEALTH_CHECKPOINT, 6000). %% 6 segundos

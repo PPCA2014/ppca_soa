@@ -1,7 +1,7 @@
 {application, msbus,
  [
   {description, "erlangMS Microservices"},
-  {vsn, "1"},
+  {vsn, "1.0"},
   {registered, []},
   {applications, [
                   kernel,
@@ -10,3 +10,5 @@
   {mod, { msbus_app, []}},
   {env, []}
  ]}.
+
+
