@@ -128,18 +128,28 @@ executa_servico(Request) ->
 	Servico = Request#request.servico,
 	Module = binary_to_list(msbus_catalogo:get_property_servico(<<"module">>, Servico)),
 	Function = binary_to_list(msbus_catalogo:get_property_servico(<<"function">>, Servico)),
+	Host = binary_to_list(msbus_catalogo:get_property_servico(<<"host">>, Servico)),
 	Module2 = list_to_atom(Module),
 	Function2 = list_to_atom(Function),
-	try
-		case whereis(Module2) of
-			undefined -> 
-				Pid = Module2:start(),
-				apply(Module2, Function2, [Request, self()]),
-				Pid;
-			Pid -> 
-				apply(Module2, Function2, [Request, self()]),
-				Pid
-		end
-	catch
-		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
+	case Host of
+		<<>> ->
+			try
+				case whereis(Module2) of
+					undefined -> 
+						Pid = Module2:start(),
+						apply(Module2, Function2, [Request, self()]),
+						Pid;
+					Pid -> 
+						apply(Module2, Function2, [Request, self()]),
+						Pid
+				end
+			catch
+				_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
+			end;
+		_ ->
+			Host2 = list_to_atom(Host),
+			{Module2, Host2} ! {self(), "count"},
+			0
 	end.
+	
+	
