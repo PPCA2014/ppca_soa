@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo para gerenciamento de arquivos estáticos
+%% @title Módulo msbus_static_file
 %% @version 1.0.0
-%% @doc Lê os arquivos do SO e envia para o servidor
+%% @doc Módulo para gerenciamento de arquivos estáticos.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -11,6 +11,7 @@
 -behavior(gen_server). 
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -24,7 +25,7 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do servico. 
--record(state, {}). 
+-record(state, {cache}). 
 
 
 %%====================================================================
@@ -52,19 +53,19 @@ execute(Request, From)	->
 %%====================================================================
  
 init([]) ->
-	NewState = #state{},
+	NewState = #state{cache = msbus_cache:new(static_file_cache)},
     {ok, NewState}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({get_file, Request, From}, State) ->
-	Result = do_get_file(Request),
+	Result = do_get_file(Request, State),
 	From ! Result, 
 	{noreply, State}.
     
 handle_call({get_file, Request}, _From, State) ->
-	Result = do_get_file(Request),
+	Result = do_get_file(Request, State),
 	{reply, Result, State}.
 
 handle_info(State) ->
@@ -84,15 +85,18 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-do_get_file(Request) ->
-	FilePath = ?STATIC_FILE_PATH ++ msbus_request:get_property_request(<<"url">>, Request),
-	case file:read_file(FilePath) of
-		{ok, Arquivo} -> 
-			ContentType = msbus_http_util:mime_type(filename:extension(FilePath)),
-			{ok, Arquivo, ContentType};
-		{error, enoent} -> 
-			{error, file_not_found};
-		{error, Reason} -> 
-			{error, servico_falhou, Reason}
-	end.
-
+do_get_file(Request, _State) ->
+	FilePath = ?STATIC_FILE_PATH ++ Request#request.url,
+	Result_Cache = msbus_catalogo:get_property_servico(<<"result_cache">>, Request#request.servico),
+	msbus_cache:get(static_file_cache, Result_Cache, FilePath, 
+		fun() -> 
+			case file:read_file(FilePath) of
+				{ok, Arquivo} -> 
+					ContentType = msbus_http_util:mime_type(filename:extension(FilePath)),
+					{ok, Arquivo, ContentType};
+				{error, enoent} -> 
+					{error, file_not_found};
+				{error, Reason} -> 
+					{error, servico_falhou, Reason}
+			end
+		end).

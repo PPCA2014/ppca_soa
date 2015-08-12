@@ -306,6 +306,7 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Async = get_property_servico(<<"async">>, H, <<"false">>),
 	Rowid = new_rowid_servico(Url2, Type),
 	Host = get_property_servico(<<"host">>, H, <<>>),
+	Result_Cache = get_property_servico(<<"result_cache">>, H, 0),
 	valida_name_servico(Name),
 	valida_url_servico(Url2),
 	valida_type_servico(Type),
@@ -324,21 +325,21 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	IdBin = list_to_binary(integer_to_list(Id)),
 	ServicoView = new_servico_view(IdBin, Name, Url, Module, Function, 
 								   Type, Apikey, Comment, Version, Owner, 
-								   Async, Host),
+								   Async, Host, Result_Cache),
 	case is_url_com_re(binary_to_list(Url2)) orelse Module =:= <<"msbus_static_file">> of
 		true -> 
 			Servico = new_servico_re(Rowid, IdBin, Name, Url2, Module, 
 									 Function, Type, Apikey, Comment, 
 									 Version, Owner, Async, 
 									 Querystring2, QtdQuerystringRequired,
-									 Host),
+									 Host, Result_Cache),
 			parse_catalogo(T, Cat2, [Servico|Cat3], [ServicoView|Cat4], Id+1);
 		false -> 
 			Servico = new_servico(Rowid, IdBin, Name, Url2, Module,
 								  Function, Type, Apikey, Comment,
 								  Version, Owner, Async, 
 								  Querystring2, QtdQuerystringRequired,
-								  Host),
+								  Host, Result_Cache),
 			parse_catalogo(T, [{Rowid, Servico}|Cat2], Cat3, [ServicoView|Cat4], Id+1)
 	end.	
 
@@ -455,8 +456,8 @@ new_rowid_servico(Url, Type) ->
 	end.
 	
 new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey, 
-			   Comment, Version, Owner, Async, 
-			   Querystring, QtdQuerystringRequired, Host) ->
+			   Comment, Version, Owner, Async, Querystring, 
+			   QtdQuerystringRequired, Host, Result_Cache) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	Servico = #{<<"rowid">> => Rowid,
 				<<"id">> => Id,
@@ -474,12 +475,13 @@ new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey,
 			    <<"async">> => Async,
 			    <<"querystring">> => Querystring,
 			    <<"qtd_querystring_req">> => QtdQuerystringRequired,
-			    <<"host">> => Host},
+			    <<"host">> => Host,
+			    <<"result_cache">> => Result_Cache},
 	Servico.
 
 new_servico(Rowid, Id, Name, Url, Module, Function, Type, Apikey, 
-			Comment, Version, Owner, Async, 
-			Querystring, QtdQuerystringRequired, Host) ->
+			Comment, Version, Owner, Async, Querystring, 
+			QtdQuerystringRequired, Host, Result_Cache) ->
 	Servico = #{<<"rowid">> => Rowid,
 				<<"id">> => Id,
 				<<"name">> => Name,
@@ -495,11 +497,12 @@ new_servico(Rowid, Id, Name, Url, Module, Function, Type, Apikey,
 			    <<"async">> => Async,
 			    <<"querystring">> => Querystring,
 			    <<"qtd_querystring_req">> => QtdQuerystringRequired,
-			    <<"host">> => Host},
+			    <<"host">> => Host,
+			    <<"result_cache">> => Result_Cache},
 	Servico.
 
 new_servico_view(Id, Name, Url, Module, Function, Type, Apikey, Comment,
-				 Version, Owner, Async, Host) ->
+				 Version, Owner, Async, Host, Result_Cache) ->
 	Servico = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -511,7 +514,8 @@ new_servico_view(Id, Name, Url, Module, Function, Type, Apikey, Comment,
 			    <<"version">> => Version,
 			    <<"owner">> => Owner,
 			    <<"async">> => Async,
-			    <<"host">> => Host},
+			    <<"host">> => Host,
+			    <<"result_cache">> => Result_Cache},
 	Servico.
 
 

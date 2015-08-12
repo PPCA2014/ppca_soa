@@ -128,7 +128,7 @@ executa_servico(Request) ->
 	Servico = Request#request.servico,
 	Module = binary_to_list(msbus_catalogo:get_property_servico(<<"module">>, Servico)),
 	Function = binary_to_list(msbus_catalogo:get_property_servico(<<"function">>, Servico)),
-	Host = binary_to_list(msbus_catalogo:get_property_servico(<<"host">>, Servico)),
+	Host = msbus_catalogo:get_property_servico(<<"host">>, Servico),
 	Module2 = list_to_atom(Module),
 	Function2 = list_to_atom(Function),
 	case Host of
