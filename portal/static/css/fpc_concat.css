@@ -1689,6 +1689,7 @@ html>body #panel-south-south_c {
 body {
   min-height: 2000px;
   padding-top: 70px;
+  font-size: 16px;
 }
 
 
@@ -1828,4 +1829,70 @@ body {
 
 
 #toTop { background: none repeat scroll 0 0 #f7f7f7; border: 1px solid #ccc; bottom: 10px; color: #333; cursor: pointer; display: none; font-family: verdana; font-size: 11px; padding: 5px; position: fixed; right: 10px; text-align: center; width: 100px;
+}
+
+
+
+@media (min-width: 992px)
+.promo {
+    padding-top: 200px;
+}
+
+.promo .title {
+    font-size: 46px;
+    margin-bottom: 20px;
+    margin-top: 0;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.section-on-bg .title {
+    color: #8CB4C7;
+}
+
+.promo.section .intro {
+    max-width: 600px;
+    margin: 0 auto;
+    margin-bottom: 30px;
+}
+
+.section-on-bg .intro {
+    color: black;
+    -webkit-opacity: 0.8;
+    -moz-opacity: 0.8;
+    opacity: 0.8;
+}
+
+
+a.btn-cta-secondary, .btn-cta-secondary {
+    border: 2px solid #28a5a8;
+    color: #28a5a8;
+}
+
+a.btn-cta, .btn-cta {
+    padding: 8px 30px;
+}
+
+p {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+
+.why .feature-lead .title {
+    font-weight: 300;
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+input[type="text"], input[type="email"], input[type="password"], input[type="submit"], input[type="button"], textarea, select {
+    appearance: none;
+    -webkit-appearance: none;
+}
+.form-control {
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+    height: 40px;
+    border-color: #efefef;
 }

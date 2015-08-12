@@ -9,17 +9,17 @@
       google.setOnLoadCallback(plota_grafico_qtd_requisicoes_by_date);
      
       function plota_grafico_top_services(rawData) {
-		$.get('http://ec2-54-94-128-45.sa-east-1.compute.amazonaws.com:2301/health/top_services/10', function(rawData){
-		  	rawData.unshift(['TOP 10 Servicos mais Acessados', 'Acessos']);
+		$.get('http://54.94.128.45:2301/health/top_services/10', function(rawData){
+		  	rawData.unshift(['Os 10 serviços mais acessados', 'Acessos']);
 		  	
 		    var data = new google.visualization.arrayToDataTable(rawData);		
 		     var options = {
-				  title: 'TOP 10 Servicos mais Acessados',
+				  title: 'Os 10 serviços mais acessados',
 				  width: 750,
 				  height: 340,
 				  legend: { position: 'none' },
-				  chart: { title: 'TOP 10 Servicos mais Acessados',
-						   subtitle: 'Quantidade de Acessos' },
+				  chart: { title: 'Os 10 serviços mais acessados',
+						   subtitle: 'Quantidade de acessos por mês' },
 				  bars: 'horizontal', // Required for Material Bar Charts.
 				  axes: {
 					x: {
@@ -38,15 +38,15 @@
    
 
       function plota_grafico_qtd_requisicoes_by_date(rawData) {
-	      $.get('http://ec2-54-94-128-45.sa-east-1.compute.amazonaws.com:2301/health/qtd_requests_by_date/10?sort=date', function(rawData){
+	      $.get('http://54.94.128.45:2301/health/qtd_requests_by_date/10?sort=date', function(rawData){
 
-				rawData.unshift(['Total de Requisicões no Último Mês', 'Acessos']);
+				rawData.unshift(['Quantidade de requisições diárias no último mês', 'Acessos']);
 				var data = new google.visualization.arrayToDataTable(rawData);		
 			
 				var options = {
 					chart: {
-						title: 'Total de Requisicões no Último Mês',
-						subtitle: 'Quantidade de Acessos'
+						title: 'Quantidade de requisições diárias no último mês',
+						subtitle: 'Quantidade de acessos'
 					},
 			   
 					width: 750,

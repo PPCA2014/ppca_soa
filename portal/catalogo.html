@@ -3,62 +3,14 @@
 <html lang="pt-Br">
 <head>
 <meta charset="UTF-8">
-<title>Catálogo de serviços</title>
+<title>PPCA API Management Plataform :: Catálogo de serviços</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Acesso">
-<meta name="author" content="Drausio Santos">
+<meta name="description" content="ErlangMS Api Management">
+<meta name="author" content="ErlangMS Team">
 <link rel="stylesheet" href="static/css/fpc_concat.css">
+<link rel="stylesheet" href="static/css/bootstrap-table.min.css">
 <link rel="shortcut icon" href="static/img/favicon.ico">
-<script type='text/javascript'
-	src='http://code.jquery.com/jquery-1.11.0.js'></script>
-<link rel="stylesheet" type="text/css"
-	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-<link rel="stylesheet" type="text/css"
-	href="https://rawgit.com/wenzhixin/bootstrap-table/master/dist/bootstrap-table.min.css">
-<script type='text/javascript'
-	src="https://rawgit.com/wenzhixin/bootstrap-table/master/dist/bootstrap-table.min.js"></script>
-<script type="text/javascript" src="static/js/scroll.js"></script>
-<script type='text/javascript'>
-	//<![CDATA[ 
-	$('#table').hide();
-	$(window)
-			.load(
-					function() {
 
-						$
-								.getJSON(
-										"/catalogo",
-										function(data) {
-											$
-													.each(
-															data,
-															function(i, val) {
-																var txt = "<span class='glyphicon glyphicon-folder-open' style='color:green'></span> Acesso livre";
-																var txt1 = "<a href='livreacesso.html?id="  ;
-																if(val.APIkey=='true'){
-																	txt="<span class='glyphicon glyphicon-book'></span> Registre-se";
-																	txt1 = "<a href='registro.html?id="  ;
-																};
-																if(val.id=='7'){
-                                                                    txt="<span class='glyphicon glyphicon-ok' style='color:green'></span> Já registrado";
-                                                                    txt1 = "<a href='jaregistrado.html?id="  ;
-                                                                };
-																url = txt1
-																		+ val.id
-																		+ "' class='btn'>" + txt
-																		+ "</a>";
-																val.publisher = url;
-
-															});
-											$('#table').bootstrapTable({
-												data : data
-											});
-
-										});
-						$('#table').show();
-						$('#painel_table').show();
-					});//]]>
-</script>
 </head>
 <body>
 
@@ -122,18 +74,61 @@
 		</div>
 	</div>
 
-<div id="footer">
+	<div id="footer">
       <div class="container">
-        <p class="pull-right"><div id="toTop" style="display: none;"><a href="#">Voltar ao Topo</a></div></p>
-       
+        <div class="col-lg-12" style="text-align:center;">
+			<p class="pull-right"><a href="#">Voltar ao Topo</a></p>
+			<p>Copyright 2015 PPCA Team - Todos os Direitos Reservados.<br>
+				Powered by <a href="https://github.com/erlangMS">ErlangMS</a>
+			</p>
+		</div>
       </div>
-    </div>   
+    </div> 
 	
+	<script src="static/js/fpc_concat.js"></script>
+	<script src="static/js/bootstrap-table.min.js"></script>
 
+<script>
+	//<![CDATA[ 
+	$('#table').hide();
+	$(window)
+			.load(
+					function() {
 
+						$.getJSON(
+										"/catalogo",
+										function(data) {
+											$
+													.each(
+															data,
+															function(i, val) {
+																var txt = "<span class='glyphicon glyphicon-folder-open' style='color:green'></span> Acesso livre";
+																var txt1 = "<a style='height:32px' href='livreacesso.html?id="  ;
+																if(val.APIkey=='true'){
+																	txt="<span class='glyphicon glyphicon-book'></span> Registre-se";
+																	txt1 = "<a style='height:32px' href='registro.html?id="  ;
+																};
+																if(val.id=='7'){
+                                                                    txt="<span class='glyphicon glyphicon-ok' style='color:green'></span> Já registrado";
+                                                                    txt1 = "<a style='height:32px' href='jaregistrado.html?id="  ;
+                                                                };
+																url = txt1
+																		+ val.id
+																		+ "' class='btn'>" + txt
+																		+ "</a>";
+																val.publisher = url;
 
+															});
+											$('#table').bootstrapTable({
+												data : data
+											});
 
+										});
+						$('#table').show();
+						$('#painel_table').show();
+					});//]]>
+</script>
 
-
+	
 </body>
 </html>

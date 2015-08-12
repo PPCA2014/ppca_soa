@@ -2,24 +2,15 @@
 <html lang="pt-Br">
 <head>
 <meta charset="UTF-8">
-<title>BARRAMENTO PPCA</title>
+<title>PPCA API Management Plataform :: Analytics</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Acesso">
-<meta name="author" content="Raphael Hoed">
+<meta name="description" content="ErlangMS Api Management">
+<meta name="author" content="ErlangMS Team">
 <link rel="stylesheet" href="static/css/fpc_concat.css">
 <link rel="shortcut icon" href="static/img/favicon.ico">
-<link href="static/css/css.css" rel="stylesheet" type="text/css">
-<link rel="stylesheet" href="static/css/bootstrap.min.css">
-<link rel="stylesheet" href="static/css/font-awesome.css">
-<link id="theme-style" rel="stylesheet" href="static/css/styles-2.css">
-<link id="theme-style" rel="stylesheet" href="static/css/custom.css">
+
     
     
-<script type="text/javascript" src="static/js/jquery/jquery-2.1.3.min.js"></script>
-<script type="text/javascript" src="static/js/scroll.js"></script>
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-<script type="text/javascript" src="static/js/analytics.js"></script>    
-<script type="application/javascript" async src="static/js/fpc_concat.js"></script>
 </head>
 <body class="home-page"> 
 
@@ -35,16 +26,9 @@
 				<a id="nome_sistema"
                     class="navbar-brand" href="#">
 				<span class="glyphicon glyphicon-home"> 
-				</span><strong> Barramento de
-                            serviços </strong></a>
-
+				</span><strong> Barramento de serviços </strong></a>
 			</div>
 			<div id="fpc_menu" class="navbar-collapse collapse">
-
-
-				
-
-
 				<ul class="nav navbar-nav navbar-right">
 					<li><a href="catalogo.html"><span
 							class="glyphicon glyphicon-list"></span> Catalogo de serviços</a></li>
@@ -58,32 +42,28 @@
 		</div>
 	</div>
     
-    
    
-   
-   <div class="bg-slider-wrapper" style="text-align:center;">
-   <br><br><br>
+   <div class="bg-slider-wrapper" style="text-align:center;padding-top:0;">
     	<video autoplay loop>
 			<source src="static/img/engrena.mp4" type="video/mp4">
-			
 		</video>   
     </div>
     
      <section class="promo section section-on-bg" style="height:auto; margin-bottom:auto">
         <div class="container text-center">                
-          <h2 class="title">PPCA Api Management Plataform<br>
+          <h2 class="title">PPCA API Management Plataform<br>
           Integração. Facilidade. Desempenho.</h2>
             <p class="intro">Você é novo por aqui e quer conhecer mais sobre o barramento de serviços e como ele pode contribuir para o desenvolvimento das suas aplicações?</p>
             <p><a class="btn-cta btn-cta-secondary" href="#intro" onclick="rolar_para('#sobre')">Saiba Mais</a></p>
             
         </div>
-        </section>
+      </section>
    
             
     
    
     
-    <div class="sections-wrapper">
+    <div class="sections-wrapper" style="padding-top:130px;>
     
     
         <section id="why" class="section why">
@@ -110,7 +90,7 @@
                
                 <p style="text-align:justify; color: #999999; margin: 0 auto;">Este projeto é a implementação do conceito de "barramento de serviços" (ou <span style="font-style: italic;">Enterprise Service Bus</span>
 - ESB), uma camada intermediadora entre componentes de software
-(denominandos "serviços") e aplicações que consomem estes serviços. O
+(denominado "serviços") e aplicações que consomem estes serviços. O
 barramento de serviços provê uma interface unificada para o acesso a
 esses serviços.<br><br>A utilização do barramento de serviços de forma apropriada poderá possibilitar, entre outras vantagens:<br><br>1)
 Promover a reusabilidade de componentes de software - implementando os
@@ -159,81 +139,73 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
                 
                 
                 
-                <div class="row item last-item">
-                    <div class="content col-md-4 col-sm-12 col-xs-12 col-md-push-8 col-sm-push-0 col-xs-push-0">
-                        <h3 class="title">Serviços mais utilizados</h3>
-                        <div class="desc">
-                            <p>
-                                Por meio do gráfico de barras a seguir você pode visualizar a quantidade de acessos em nossos 10 serviços mais frequentados.</p>
-                            
-                        </div>
-                        
+                <div class="row item">
+                    <div class="content col-md-4 col-sm-12 col-xs-12">
+
+                        <dl>
+						  <dt>Os 10 serviços mais acessados</dt>
+						  <dd>Por meio do gráfico a seguir você pode visualizar os serviços mais acessados no mês.</dd>
+						</dl>
                         
                     </div>
-                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-pull-4 col-sm-pull-0 col-xs-pull-0">
-                     <div id="top_x_div2" style="width: 760px; height: 480px;"></div>   
-                        
+                    <figure class="figure col-md-7 col-sm-12">
+						<div id="top_x_div2"></div>   
                     </figure>
                 </div>
 
-            <hr>
-                <div class="row item ">
-                 <h4><a name="requisicao_tempo"></a></h4><br>
+				<hr>
+				
+                <div class="row item">
                     <div class="content col-md-4 col-sm-12 col-xs-12">
-                        <h3 class="title">Requisições no Portal no Último Mês</h3>
-                        <div class="desc">
-                            <p>
-                                Por meio do gráfico a seguir você pode visualizar a quantidade total de acessos no portal no último mês</p>
-                            </p>
-                            
-                        </div>
+                        
+                        <dl>
+						  <dt>Requisições diárias no último mês</dt>
+						  <dd>Por meio do gráfico a seguir você pode visualizar a quantidade de requisições diárias do último mês.</dd>
+						</dl>
                                              
                     </div>
-                    <figure class="figure col-md-7 col-sm-12 col-xs-12 col-md-offset-1 col-sm-offset-0 col-xs-offset-0">
+                    <figure class="figure col-md-7 col-sm-12">
                         <div id="linechart_material2"></div>
-                        
-
                     </figure>
+
                 </div>
+
+				<hr>
+
+                <div class="row item">
+                    <div class="content">
+
+						<div class="feature-lead text-center">
+							<h4 style="font-weight:bold; font-size:14px;">Consulte os serviços disponíveis no catálogo</h4>
+							<a class="btn-cta btn-cta-secondary" href="catalogo.html">Catálogo de Serviços</a>
+							<br><br><br><br>
+						</div>
+
+					</div>
+				</div>
                 
-                
-                
-                
-                <div class="feature-lead text-center">
-                    <h4 class="title">Quer conhecer em detalhes todos os nossos serviços?</h4>
-                    <p><a class="btn-cta btn-cta-secondary" href="catalogo.html">Catálogo de Serviços</a><br></p>
-                </div>
             </div>
         </section>  
-        
-        
-               
-        
-        
-        
-        
-        
-        
+
     </div>
    
-   
-   
-   
-   
-   
-   
 </div>
+
+
 	<div id="footer">
-		<div class="container">
-			<p class="pull-right">
-				<div id="toTop" style="display: none;"><a href="#">Voltar ao Topo</a></div>
+      <div class="container">
+        <div class="col-lg-12" style="text-align:center;">
+			<p class="pull-right"><a href="#">Voltar ao Topo</a></p>
+			<p style="font-weight:bold">Copyright 2015 PPCA Team - Todos os Direitos Reservados.<br>
+				<small>Powered by <a href="https://github.com/erlangMS">ErlangMS</a></small>
 			</p>
-			
 		</div>
-	</div>
-	<a id="btn_abrir_dialog" href="#openModal" style="display: none"></a>
-	<div id="f_dialog"></div>
+      </div>
+    </div> 
 	
+	<script async src="static/js/fpc_concat.js"></script>
+	<script src="static/js/jsapi.js"></script>
+	<script src="static/js/analytics.js"></script>    
 	
 </body>
 </html>
