@@ -29,7 +29,8 @@ create_database(Nodes) ->
 
     mnesia:create_table(request, [{type, set},
 									 {disc_copies, Nodes},
-									 {attributes, record_info(fields, request)}]),
+									 {attributes, record_info(fields, request)},
+									 {index, [#request.timestamp]}]),
 
 	ok.
 

@@ -60,7 +60,9 @@ stop() ->
 
 %% @doc Coleta uma métrica importante
 registra_request(Request) -> 
-	gen_server:cast(?SERVER, {registra_request, Request}).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:cast(Worker, {registra_request, Request})
+    end).
 
 %% @doc Obtém os serviços mais usados
 get_top_services(Top, Periodo, Sort, From) -> 
@@ -70,28 +72,33 @@ get_top_services(Top, Periodo, Sort, From) ->
 
 get_top_services(Top, Periodo, Sort) -> 
 	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {top_services, Top, Periodo, Sort}, infinity)
+		gen_server:call(Worker, {top_services, Top, Periodo, Sort})
     end).
 
 get_top_services_by_type(Top, Periodo, Sort) -> 
 	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {top_services_by_type, Top, Periodo, Sort}, infinity)
+		gen_server:call(Worker, {top_services_by_type, Top, Periodo, Sort})
     end).
 
 
 get_qtd_requests_by_date(Top, Periodo, Sort) -> 
 	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {qtd_requets_by_date, Top, Periodo, Sort}, infinity)
+		gen_server:call(Worker, {qtd_requets_by_date, Top, Periodo, Sort})
     end).
 	
 
 %% @doc Lista todas as métricas coletadas
 list_metrics() ->	
-	gen_server:call(?SERVER, list_metrics, infinity).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:call(Worker, list_metrics)
+    end).
 
-%% @doc Lista todas as métricas coletadas
+
+%% @doc Lista os requests por período
 get_requests_submit(Periodo) ->	
-	gen_server:call(?SERVER, {requests_submit, Periodo}, infinity).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:call(Worker, {requests_submit, Periodo})
+    end).
 
  
 %%====================================================================
@@ -100,6 +107,7 @@ get_requests_submit(Periodo) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
+    create_cache_req_sub(),
     erlang:start_timer(?HEALTH_CHECKPOINT, self(), flush_requests),
     {ok, #state{}}.
     
@@ -169,17 +177,21 @@ do_registra_request(Request, State) ->
 
 %% @doc Retorna a lista de requisições de um período
 get_requests_submit(Periodo, _State) ->
-	Query = fun() ->
-		  qlc:e(
-			 qlc:sort(
-				 qlc:q([R || R <- mnesia:table(request), 
-							 msbus_util:no_periodo(R#request.timestamp, Periodo)]), [{order, descending}]
-							 
-				)
-		  )
-	   end,
-	{atomic, Requests} = mnesia:transaction(Query),
-	Requests.
+	Result = msbus_cache:get(health_req_sub, 6000, Periodo, 
+					fun() -> 
+						Query = fun() ->
+							  qlc:e(
+								 qlc:sort(
+									 qlc:q([R || R <- mnesia:table(request), 
+												 msbus_util:no_periodo(R#request.timestamp, Periodo)]), [{order, descending}]
+												 
+									)
+							  )
+						   end,
+						{atomic, Requests} = mnesia:transaction(Query),
+						Requests
+					end),
+	Result.
 
 %% @doc Retorna a lista de requisições de um período agrupado por FieldsGroup
 get_requests_submit_by_group(Periodo, FieldsGroup, State) ->
@@ -254,4 +266,10 @@ select() ->
 	{atomic, Requests} = mnesia:transaction(Query),
 	{ok, Requests}.
 
+create_cache_req_sub() ->
+	try
+		msbus_cache:new(health_req_sub)
+	catch
+		_Exception:_Reason ->  ok
+	end.
 

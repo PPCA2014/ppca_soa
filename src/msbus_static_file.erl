@@ -60,11 +60,7 @@ execute(Request, From) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
-	try
-		msbus_cache:new(static_file_cache)
-	catch
-		_Exception:_Reason ->  ok
-	end,
+    create_shared_cache(),
     {ok, #state{}}.
 
     
@@ -112,3 +108,10 @@ do_get_file(Request, _State) ->
 					{error, servico_falhou, Reason}
 			end
 		end).
+
+create_shared_cache() ->
+	try
+		msbus_cache:new(static_file_cache)
+	catch
+		_Exception:_Reason ->  ok
+	end.

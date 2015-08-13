@@ -139,12 +139,12 @@ no_periodo(DateTime, Periodo) ->
 	S1 = calendar:datetime_to_gregorian_seconds(DateTime),
 	S2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
 	case Periodo of
-		"min" ->  (S2 - S1) =< 60;
-		"hour" ->  (S2 - S1) =< 3600;
-		"day"  ->  (S2 - S1) =< 86400;
-		"week" ->  (S2 - S1) =< 604800;
-		"month" -> (S2 - S1) =< 2629800;
-		"year" ->  (S2 - S1) =< 31557600;
+		"min"   ->  (S2 - S1) =< 60;
+		"hour"  ->  (S2 - S1) =< 3600;
+		"day"   ->  (S2 - S1) =< 86400;
+		"week"  ->  (S2 - S1) =< 604800;
+		"month" ->  (S2 - S1) =< 2629800;
+		"year"  ->  (S2 - S1) =< 31557600;
 		_ -> erlang:error(badarg)
 	end.
 
