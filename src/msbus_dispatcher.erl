@@ -9,13 +9,14 @@
 -module(msbus_dispatcher).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
 
 -include("../include/msbus_config.hrl").
 -include("../include/msbus_schema.hrl").
 -include("../include/msbus_http_messages.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Client API
 -export([dispatch_request/1]).
@@ -35,6 +36,9 @@
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -44,15 +48,17 @@ stop() ->
 %%====================================================================
 
 dispatch_request(Request) -> 
-	gen_server:call(?SERVER, {dispatch_request, Request}).
+	poolboy:transaction(msbus_dispatcher_pool, fun(Worker) ->
+		gen_server:call(Worker, {dispatch_request, Request})
+    end).
 
-	
  
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
@@ -99,7 +105,7 @@ do_dispatch_request(Request) ->
 	end.
 
 %% @doc Aguarda a conclusão do resultado do serviço
-aguarda_conclusao_servico(Request, Pid) ->
+aguarda_conclusao_servico(Request, _Pid) ->
 	receive
 		{ok, Result} ->
 			Response = msbus_http_util:encode_response(<<"200">>, Result),
@@ -113,13 +119,13 @@ aguarda_conclusao_servico(Request, Pid) ->
 		{error, file_not_found} ->
 			Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 			{error, <<"404">>, Request, Response, file_not_found}
-		after 3000 ->
-			case is_process_alive(Pid) of
-				true -> ok;
-				false -> 
-					Response = msbus_http_util:encode_response(<<"502">>, ?HTTP_ERROR_502),
-					{error, <<"502">>, Request, Response, servico_falhou}
-			end
+		%after 8000 ->
+		%	case is_process_alive(Pid) of
+		%		true -> aguarda_conclusao_servico(Request, Pid);
+		%		false -> 
+		%			Response = msbus_http_util:encode_response(<<"502">>, ?HTTP_ERROR_502),
+		%			{error, <<"502">>, Request, Response, servico_falhou}
+		%	end
 	end.
 
 

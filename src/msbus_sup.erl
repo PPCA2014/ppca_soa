@@ -23,96 +23,29 @@ start_link(Args) ->
 init([]) ->
 	msbus_database:start(),
 
-	{ok, {{one_for_one, 3, 10},
-			[
-			
-			%% Principais módulos de erlangMS
-			{msbus_logger,
-			  {msbus_logger, start, []},
-			  permanent,
-			  10000,
-			  worker,
-			  [msbus_logger]},
-			 {msbus_catalogo,
-			  {msbus_catalogo, start, []},
-			  permanent,
-			  10000,
-			  worker,  
-			  [msbus_catalogo]},
-			 {msbus_info,
-   			  {msbus_info, start, []},
-			  permanent,
-			  10000,
-			  worker,
-			  [msbus_info]},
-			 {msbus_favicon,
-			  {msbus_favicon, start, []},
-			  permanent,
-			  10000,
-			  worker,
-			  [msbus_favicon]},
-			 {msbus_static_file,
-   			  {msbus_static_file, start, []},
-			   permanent,
-			   10000,
-			   worker,
-			   [msbus_static_file]},
-			 {msbus_user,
-			  {msbus_user, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_user]},
-			 {msbus_health,
-			  {msbus_health, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_health]},
-			 {msbus_dispatcher,
-			  {msbus_dispatcher, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_dispatcher]},
-			 {msbus_cache,
-			  {msbus_cache, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_cache]},
-			 {msbus_server,
-			  {msbus_server, start, []},
-			  permanent,
-			  10000,
-			  worker,
-			  [msbus_server]},
-
-
-			 %% Serviços REST
-			 {msbus_user_service,
-			  {msbus_user_service, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_user_service]},
-			 {msbus_health_service,
-			  {msbus_health_service, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_health_service]},
-			 {msbus_catalogo_service,
-			  {msbus_catalogo_service, start, []},
-			   permanent,
-			   10000,
-			   worker,  
-			   [msbus_catalogo_service]}
-			   
-			   			  
- 		    ]  
- 		}
- 	}.
+	{ok, Pools} = application:get_env(msbus, pools),
+    PoolSpecs = lists:map(
+		fun
+			({Name, [{size, SizePool}, _] = SizeArgs, WorkerArgs}) ->
+				PoolName = atom_to_list(Name),
+				WorkerName = string:substr(PoolName, 1, length(PoolName)-5),
+				Worker = list_to_atom(WorkerName),
+				case SizePool of
+					1 -> 
+						io:format("~s iniciado com 1 worker.\n", [WorkerName]),
+						{Worker,
+							{Worker, start, WorkerArgs},
+							permanent, 10000, worker,  [Worker]
+						};
+					_ ->
+						io:format("~s iniciado com ~p workers.\n", [WorkerName, SizePool]),
+						PoolArgs = [{name, {local, Name}},
+									{worker_module, Worker}] ++ SizeArgs,
+						poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+				end
+		end, Pools),
+	
+	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 
 
 

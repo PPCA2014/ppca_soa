@@ -292,9 +292,8 @@ log_status_requisicao(Code, Request, Status, Latencia) when erlang:is_record(Req
 	end;
 	
 log_status_requisicao(Code, Request, Status, Latencia) ->	
-	Texto =  "~s {\n\tStatus: ~p ~s (~sms)\n}", 
-	msbus_logger:info(Texto, [Code, Request, Status, Latencia]),
-	msbus_logger:info(Request). 
+	Texto =  "~s {\n\tStatus: ~s ~s (~pms)\n}", 
+	msbus_logger:info(Texto, [Request, Code, Status, Latencia]).
 	
 
 	

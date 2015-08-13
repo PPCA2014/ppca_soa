@@ -9,13 +9,15 @@
 -module(msbus_user_service).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
+
 
 -include("../include/msbus_config.hrl").
 -include("../include/msbus_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 %% Server API  
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([get/2, insert/2, update/2, delete/2, all/2]).
@@ -36,6 +38,9 @@
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -45,26 +50,37 @@ stop() ->
 %%====================================================================
  
 get(Request, From)	->
-	gen_server:cast(?SERVER, {get, Request, From}).
+	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
+		gen_server:cast(Worker, {get, Request, From})
+    end).
 	
 insert(Request, From)	->
-	gen_server:cast(?SERVER, {insert, Request, From}).
+	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
+		gen_server:cast(Worker, {insert, Request, From})
+    end).
 
 update(Request, From)	->
-	gen_server:cast(?SERVER, {update, Request, From}).
+	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
+		gen_server:cast(Worker, {update, Request, From})
+    end).
 
 delete(Request, From)	->
-	gen_server:cast(?SERVER, {delete, Request, From}).
+	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
+		gen_server:cast(Worker, {delete, Request, From})
+    end).
 
 all(Request, From)	->
-	gen_server:cast(?SERVER, {all, Request, From}).
+	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
+		gen_server:cast(Worker, {all, Request, From})
+    end).
 
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->

@@ -9,11 +9,13 @@
 -module(msbus_info).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
+
 
 -include("../include/msbus_config.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([execute/2]).
@@ -34,6 +36,9 @@
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -43,15 +48,17 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
-	gen_server:cast(?SERVER, {info, Request, From}).
-	
+	poolboy:transaction(msbus_info_pool, fun(Worker) ->
+		gen_server:cast(Worker, {info, Request, From})
+    end).
 
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->

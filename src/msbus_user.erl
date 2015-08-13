@@ -9,13 +9,15 @@
 -module(msbus_user).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
+
 
 -include("../include/msbus_config.hrl").
 -include("../include/msbus_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 %% Server API  
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([call/1	, cast/1]).
@@ -37,6 +39,9 @@
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -46,17 +51,22 @@ stop() ->
 %%====================================================================
  
 call(Msg) -> 
-	gen_server:call(?SERVER, Msg).
+	poolboy:transaction(msbus_user_pool, fun(Worker) ->
+		gen_server:call(Worker, Msg)
+    end).
 
 cast(Msg) -> 
-	gen_server:cast(?SERVER, Msg).
+	poolboy:transaction(msbus_user_pool, fun(Worker) ->
+		gen_server:cast(Worker, Msg)
+    end).
 
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->

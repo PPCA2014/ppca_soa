@@ -9,6 +9,7 @@
 -module(msbus_health).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
 
 -compile(export_all).
 
@@ -17,7 +18,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Client API
 -export([registra_request/1, 
@@ -46,6 +47,9 @@
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+ 
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -60,33 +64,45 @@ registra_request(Request) ->
 
 %% @doc Obtém os serviços mais usados
 get_top_services(Top, Periodo, Sort, From) -> 
-	gen_server:cast(?SERVER, {top_services, Top, Periodo, Sort, From}).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:cast(Worker, {top_services, Top, Periodo, Sort, From})
+    end).
 
 get_top_services(Top, Periodo, Sort) -> 
-	gen_server:call(?SERVER, {top_services, Top, Periodo, Sort}).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:call(Worker, {top_services, Top, Periodo, Sort}, infinity)
+    end).
 
 get_top_services_by_type(Top, Periodo, Sort) -> 
-	gen_server:call(?SERVER, {top_services_by_type, Top, Periodo, Sort}).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:call(Worker, {top_services_by_type, Top, Periodo, Sort}, infinity)
+    end).
+
 
 get_qtd_requests_by_date(Top, Periodo, Sort) -> 
-	gen_server:call(?SERVER, {qtd_requets_by_date, Top, Periodo, Sort}).
+	poolboy:transaction(msbus_health_pool, fun(Worker) ->
+		gen_server:call(Worker, {qtd_requets_by_date, Top, Periodo, Sort}, infinity)
+    end).
+	
 
 %% @doc Lista todas as métricas coletadas
 list_metrics() ->	
-	gen_server:call(?SERVER, list_metrics).
+	gen_server:call(?SERVER, list_metrics, infinity).
 
 %% @doc Lista todas as métricas coletadas
 get_requests_submit(Periodo) ->	
-	gen_server:call(?SERVER, {requests_submit, Periodo}).
+	gen_server:call(?SERVER, {requests_submit, Periodo}, infinity).
 
  
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     erlang:start_timer(?HEALTH_CHECKPOINT, self(), flush_requests),
-    {ok, #state{}}. 
+    {ok, #state{}}.
+    
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -128,7 +144,13 @@ handle_info({timeout, Ref, flush_requests}, State) ->
     erlang:start_timer(?HEALTH_CHECKPOINT, self(), flush_requests),
 	{noreply, NewState};
 
+handle_info({'EXIT', _SomePid,_}, State)->
+   io:format("Long runnnig task1\n"),
+   {noreply, State};
+
 handle_info(_Msg, State) ->
+   io:format("timeout1\n"),
+
    {noreply, State}.
 
 terminate(_Reason, _State) ->

@@ -11,12 +11,13 @@
 -compile(export_all).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
 
 -include("../include/msbus_config.hrl").
 -include("../include/msbus_schema.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Client
 -export([lista_catalogo/0, 
@@ -48,6 +49,9 @@
 
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -58,28 +62,42 @@ stop() ->
 %%====================================================================
  
 lista_catalogo() ->
-	gen_server:call(?SERVER, lista_catalogo).
+	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
+		gen_server:call(Worker, lista_catalogo)
+    end).
 
 update_catalogo() ->
-	gen_server:cast(?SERVER, update_catalogo).
-	
+	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
+		gen_server:cast(Worker, update_catalogo)
+    end).
+
 lookup(Request) ->	
-	gen_server:call(?SERVER, {lookup, Request}).
+	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
+		gen_server:call(Worker, {lookup, Request})
+    end).
 
 list_cat2() ->
-	gen_server:call(?SERVER, list_cat2).
+	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
+		gen_server:call(Worker, list_cat2)
+    end).
 
 list_cat3() ->
-	gen_server:call(?SERVER, list_cat3).
+	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
+		gen_server:call(Worker, list_cat3)
+    end).
 
 get_ult_lookup() ->
-	gen_server:call(?SERVER, get_ult_lookup).
+	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
+		gen_server:call(Worker, get_ult_lookup)
+    end).
+
 	
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
 	%% Cat1 = JSON catalog, Cat2 = parsed catalog, Cat3 = regular expression parsed catalog
 	NewState = get_catalogo(),
     {ok, NewState}. 

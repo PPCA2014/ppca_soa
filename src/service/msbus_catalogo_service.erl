@@ -9,9 +9,10 @@
 -module(msbus_catalogo_service).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
 
 %% Server API  
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([lista_catalogo/2]).
@@ -32,6 +33,9 @@
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -41,14 +45,18 @@ stop() ->
 %%====================================================================
  
 lista_catalogo(Request, From)	->
-	gen_server:cast(?SERVER, {lista_catalogo, Request, From}).
+	poolboy:transaction(msbus_catalogo_service_pool, fun(Worker) ->
+		gen_server:cast(Worker, {lista_catalogo, Request, From})
+    end).
+
 	
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->

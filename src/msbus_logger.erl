@@ -13,7 +13,7 @@
 -include("../include/msbus_config.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Client API
 -export([error/1, error/2, info/1, info/2, warn/1, warn/2, sync/0]).
@@ -38,6 +38,9 @@
 start() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -73,7 +76,8 @@ sync() ->
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
+init(_Args) ->
+    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->

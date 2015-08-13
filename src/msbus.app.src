@@ -8,7 +8,62 @@
                   stdlib
                  ]},
   {mod, { msbus_app, []}},
-  {env, []}
+  {env, [
+        {pools, [
+            {msbus_logger_pool, [
+                {size, 1},
+                {max_overflow, 0}
+            ], []},
+            {msbus_catalogo_pool, [
+                {size, 20},
+                {max_overflow, 30}
+            ], []},
+            {msbus_info_pool, [
+                {size, 2},
+                {max_overflow, 2}
+            ], []},
+            {msbus_favicon_pool, [
+                {size, 10},
+                {max_overflow, 20}
+            ], []},
+            {msbus_static_file_pool, [
+                {size, 50},
+                {max_overflow, 50}
+            ], []},
+            {msbus_user_pool, [
+                {size, 10},
+                {max_overflow, 10}
+            ], []},
+            {msbus_dispatcher_pool, [
+                {size, 20},
+                {max_overflow, 30}
+            ], []},
+            {msbus_cache_pool, [
+                {size, 1},
+                {max_overflow, 0}
+            ], []},
+            {msbus_server_pool, [
+                {size, 1},
+                {max_overflow, 0}
+            ], []},
+            {msbus_health_pool, [
+                {size, 25},
+                {max_overflow, 20}
+            ], []},
+            {msbus_user_service_pool, [
+                {size, 10},
+                {max_overflow, 10}
+            ], []},
+            {msbus_catalogo_service_pool, [
+                {size, 10},
+                {max_overflow, 10}
+            ], []},
+            {msbus_health_service_pool, [
+                {size, 25},
+                {max_overflow, 20}
+            ], []}
+        ]}
+    ]}
  ]}.
 
 

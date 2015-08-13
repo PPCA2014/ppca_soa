@@ -9,12 +9,14 @@
 -module(msbus_static_file).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
+
 
 -include("../include/msbus_config.hrl").
 -include("../include/msbus_schema.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([execute/2]).
@@ -34,7 +36,10 @@
 
 start() -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
- 
+
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -43,18 +48,25 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-execute(Request, From)	->
-	gen_server:cast(?SERVER, {get_file, Request, From}).
-	
+execute(Request, From) ->
+	poolboy:transaction(msbus_static_file_pool, fun(Worker) ->
+		gen_server:cast(Worker, {get_file, Request, From})
+    end).
 
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
-	NewState = #state{cache = msbus_cache:new(static_file_cache)},
-    {ok, NewState}. 
+init(_Args) ->
+    process_flag(trap_exit, true),
+	try
+		msbus_cache:new(static_file_cache)
+	catch
+		_Exception:_Reason ->  ok
+	end,
+    {ok, #state{}}.
+
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
