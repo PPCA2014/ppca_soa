@@ -91,44 +91,22 @@ encode_request(Socket, RequestBin) ->
 		Header = string:sub_string(RequestText, 1, PosFimHeader-1),
 		[Principal|Outros] = string:tokens(Header, "\r\n"),
 		[Metodo, Url, Versao_HTTP] = string:tokens(Principal, " "),
-		[Url2|Querystring] = string:tokens(Url, "?"),
-		Url3 = msbus_util:remove_ult_backslash_url(Url2),
-		Outros2 = get_http_header_adicionais(Outros),
-		Content_Length = maps:get("content-length", Outros2, 0),
-		Content_Type = maps:get("content-type", Outros2, "application/json"),
-		Accept = maps:get("accept", Outros2, "*/*"),
-		User_Agent = maps:get("user-agent", Outros2, ""),
-		Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
-		Cache_Control = maps:get("cache_control", Outros2, "false"),
-		Host = maps:get("host", Outros2, ""),
-		QuerystringMap = get_querystring(Querystring),
-		case is_payload_permitido(Metodo, Content_Length) of
-			false ->
-				% Requisições GET e DELETE
-				Request = #request{
-							rid = RID,
-							type = Metodo,
-							url = Url3,
-							versao_http = Versao_HTTP,
-							querystring = Querystring,
-							querystring_map = QuerystringMap,
-							content_length = Content_Length,
-							content_type = Content_Type,
-							accept = Accept,
-							user_agent = User_Agent,
-							accept_encoding = Accept_Encoding,
-							cache_control = Cache_Control,
-							host = Host,
-							socket = Socket, 
-							t1 = T1, 
-							timestamp = Timestamp
-					},
-				{ok, Request};
+		case is_metodo_suportado(Metodo) of
 			true ->
-				% Requisições POST e PUT
-				Payload = string:sub_string(RequestText, PosFimHeader+4),
-				case decode_payload(Payload) of
-					{ok , PayloadMap} ->
+				[Url2|Querystring] = string:tokens(Url, "?"),
+				Url3 = msbus_util:remove_ult_backslash_url(Url2),
+				Outros2 = get_http_header_adicionais(Outros),
+				Content_Length = maps:get("content-length", Outros2, 0),
+				Content_Type = maps:get("content-type", Outros2, "application/json"),
+				Accept = maps:get("accept", Outros2, "*/*"),
+				User_Agent = maps:get("user-agent", Outros2, ""),
+				Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
+				Cache_Control = maps:get("cache_control", Outros2, "false"),
+				Host = maps:get("host", Outros2, ""),
+				QuerystringMap = get_querystring(Querystring),
+				case is_payload_permitido(Metodo, Content_Length) of
+					false ->
+						% Requisições GET e DELETE
 						Request = #request{
 									rid = RID,
 									type = Metodo,
@@ -145,12 +123,57 @@ encode_request(Socket, RequestBin) ->
 									host = Host,
 									socket = Socket, 
 									t1 = T1, 
-									timestamp = Timestamp,
-									payload = Payload, 
-									payload_map = PayloadMap
+									timestamp = Timestamp
 							},
 						{ok, Request};
-					{error, Reason} -> 
+					true ->
+						% Requisições POST e PUT
+						Payload = string:sub_string(RequestText, PosFimHeader+4),
+						case decode_payload(Payload) of
+							{ok , PayloadMap} ->
+								Request = #request{
+											rid = RID,
+											type = Metodo,
+											url = Url3,
+											versao_http = Versao_HTTP,
+											querystring = Querystring,
+											querystring_map = QuerystringMap,
+											content_length = Content_Length,
+											content_type = Content_Type,
+											accept = Accept,
+											user_agent = User_Agent,
+											accept_encoding = Accept_Encoding,
+											cache_control = Cache_Control,
+											host = Host,
+											socket = Socket, 
+											t1 = T1, 
+											timestamp = Timestamp,
+											payload = Payload, 
+											payload_map = PayloadMap
+									},
+								{ok, Request};
+							{error, Reason} -> 
+								Request = #request{
+										rid = RID,
+										type = Metodo,
+										url = Url3,
+										versao_http = Versao_HTTP,
+										querystring = Querystring,
+										querystring_map = QuerystringMap,
+										content_length = Content_Length,
+										content_type = Content_Type,
+										accept = Accept,
+										user_agent = User_Agent,
+										accept_encoding = Accept_Encoding,
+										cache_control = Cache_Control,
+										host = Host,
+										socket = Socket, 
+										t1 = T1, 
+										timestamp = Timestamp
+								},
+								{error, Request, Reason}
+						end;
+					error ->
 						Request = #request{
 								rid = RID,
 								type = Metodo,
@@ -169,29 +192,11 @@ encode_request(Socket, RequestBin) ->
 								t1 = T1, 
 								timestamp = Timestamp
 						},
-						{error, Request, Reason}
+						{error, Request, payload_nao_permitido}
 				end;
-			error ->
-				Request = #request{
-						rid = RID,
-						type = Metodo,
-						url = Url3,
-						versao_http = Versao_HTTP,
-						querystring = Querystring,
-						querystring_map = QuerystringMap,
-						content_length = Content_Length,
-						content_type = Content_Type,
-						accept = Accept,
-						user_agent = User_Agent,
-						accept_encoding = Accept_Encoding,
-						cache_control = Cache_Control,
-						host = Host,
-						socket = Socket, 
-						t1 = T1, 
-						timestamp = Timestamp
-				},
-				{error, Request, payload_nao_permitido}
+			false -> {error, RequestBin, metodo_nao_suportado}
 		end
+		
 	catch
 		_Exception:_Reason ->  {error, invalid_http_header} 
 	end.
