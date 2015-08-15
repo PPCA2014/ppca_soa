@@ -139,7 +139,9 @@ do_get(Id) -> msbus_dao:get(user, Id).
 do_insert(User) -> 
 	case valida(User, insert) of
 		ok -> msbus_dao:insert(User);
-		Error -> Error
+		Error -> 
+			io:format("~p\n", [Error]),
+			Error
 	end.
 
 do_update(User) -> 
@@ -158,20 +160,28 @@ do_delete(Id) ->
 	end.
 
 valida(User, insert) ->
-	Msgs = msbus_util:mensagens(
-				[msbus_util:msg_campo_obrigatorio("nome", User#user.nome),
-				 msbus_util:msg_campo_obrigatorio("email", User#user.email),
-				 msbus_util:msg_email_invalido("email", User#user.email)]),
-	case Msgs of
-		[] -> ok;
-		_ -> {error, Msgs}
+	case msbus_dao:mensagens([msbus_dao:msg_campo_obrigatorio("nome", User#user.nome),
+							  msbus_dao:msg_campo_obrigatorio("email", User#user.email),
+							  msbus_dao:msg_campo_obrigatorio("senha", User#user.senha)]) of
+		[] -> 
+			case msbus_dao:msg_email_invalido("email", User#user.email) of
+				[] ->
+					case msbus_dao:msg_registro_ja_existe({user, '_', User#user.nome, '_', '_'}, 
+														  <<"O nome do usuário já está cadastrado."/utf8>>) of
+						[] -> 
+							case msbus_dao:msg_registro_ja_existe({user, '_', '_', User#user.email, '_'}, 
+								  								  <<"O email do usuário já está cadastrado."/utf8>>) of
+								[] -> ok; 
+								Msg -> {error, Msg}
+							end;
+						Msg -> {error, Msg}
+					end;
+				Msg -> {error, Msg}
+			end;
+		Msgs -> {error, Msgs}
 	end;
 
 valida(User, update) ->	valida(User, insert);
 
 valida(_User, delete) -> ok.	
 	
-
-
-
-

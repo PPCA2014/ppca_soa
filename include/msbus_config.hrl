@@ -41,7 +41,7 @@
 -define(TCP_SEND_TIMEOUT, 8000).
 
 % Ativa fluxo keepalive do TCP
--define(TCP_KEEPALIVE, true).
+-define(TCP_KEEPALIVE, false).
 
 % Ativa a propriedade no_delay do TCP
 -define(TCP_NODELAY, true).

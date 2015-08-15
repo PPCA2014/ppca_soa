@@ -169,6 +169,7 @@ encode_request(Socket, RequestBin) ->
 										host = Host,
 										socket = Socket, 
 										t1 = T1, 
+										payload = Payload, 
 										timestamp = Timestamp
 								},
 								{error, Request, Reason}

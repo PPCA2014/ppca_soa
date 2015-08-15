@@ -7,7 +7,7 @@
 %%********************************************************************
 
 -record(sequence, {key, index}).
--record(user, {id, nome, email}).
+-record(user, {id, nome, email, senha}).
 -record(request, {
 					  rid,       %% Request ID (Identificador da requisição)
 					  servico,   %% serviço que vai atender a requisição
@@ -31,7 +31,7 @@
 					  cache_control,
 					  host,
 					  socket,
-					  t1
+					  t1		
 				  }).
 
 

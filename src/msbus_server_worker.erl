@@ -179,7 +179,7 @@ do_processa_response(Code, Status, Request, Response) ->
 	Request2 = Request#request{latencia = Latencia, status = Code},
 	msbus_health:registra_request(Request2),
 	case StatusSend of
-		ok -> ok;
+		ok -> log_status_requisicao(Code, Request2, Status, Latencia, StatusSend);
 		_Error -> log_status_requisicao(Code, Request2, Status, Latencia, StatusSend)
 	end,
 	ok.
@@ -208,7 +208,7 @@ log_status_requisicao(Code, Request, Status, Latencia, StatusSend) ->
 	Texto =  "~s {\n\tStatus: ~s ~s (~pms)\n\t~s\n}", 
 	msbus_logger:info(Texto, [Request, Code, Status, Latencia, StatusSend2]).
 	
-format_send_error(StatusSend) ->
+	format_send_error(StatusSend) ->
 	case StatusSend of
 		ok -> "";
 		_Error -> io_lib:format("Erro tcp_send: ~p", [StatusSend]) 

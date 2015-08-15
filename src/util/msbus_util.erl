@@ -17,10 +17,7 @@
 		 hd_or_empty/1,
 		 json_decode_as_map/1,
 		 tuple_to_binlist/1, 
-		 list_to_binlist/1, 
-		 msg_campo_obrigatorio/2,
-		 msg_email_invalido/2,
-		 mensagens/1]).
+		 list_to_binlist/1]).
 
 -include("../include/msbus_config.hrl").
 
@@ -116,23 +113,6 @@ hd_or_empty(_) -> [].
 %% @doc Retorna a string com aspas
 % quote(Str) -> [$", Str, $"].
 
-%% @doc Mensagem de campo obrigatório
-msg_campo_obrigatorio(NomeCampo, []) -> 
-	list_to_binary(io_lib:format("Campo obrigatorio: ~s.", [NomeCampo]));
-msg_campo_obrigatorio(NomeCampo, <<>>) -> 
-	list_to_binary(io_lib:format("Campo obrigatorio: ~s.", [NomeCampo]));
-msg_campo_obrigatorio(_NomeCampo, _Value) -> [].
-
-%% @doc Mensagem de e-mail inválido
-msg_email_invalido(_NomeCampo, []) -> [];
-msg_email_invalido(NomeCampo, Value) -> 
-	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
-		nomatch -> list_to_binary(io_lib:format("E-mail invalido: ~s.", [NomeCampo]));
-		_ -> []
-	end.
-
-%% @doc Retorna somente mensagens não vazias
-mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
 
 %% @doc Boolean indicando se DateTime ocorreu no período (min, hour, day, week, year)
 no_periodo(DateTime, Periodo) ->
