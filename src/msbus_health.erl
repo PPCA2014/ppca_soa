@@ -177,7 +177,7 @@ do_registra_request(Request, State) ->
 
 %% @doc Retorna a lista de requisições de um período
 get_requests_submit(Periodo, _State) ->
-	Result = msbus_cache:get(health_req_sub, 6000, Periodo, 
+	Result = msbus_cache:get(health_req_sub, 60000, Periodo, 
 					fun() -> 
 						Query = fun() ->
 							  qlc:e(

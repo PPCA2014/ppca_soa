@@ -39,7 +39,8 @@ init([]) ->
 						};
 					_ ->
 						io:format("~s iniciado com ~p workers.\n", [WorkerName, SizePool]),
-						PoolArgs = [{name, {local, Name}},
+						PoolArgs = [{strategy, fifo},
+									{name, {local, Name}},
 									{worker_module, Worker}] ++ SizeArgs,
 						poolboy:child_spec(Name, PoolArgs, WorkerArgs)
 				end

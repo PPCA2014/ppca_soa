@@ -60,13 +60,13 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({autentica, Request, From}, State) ->
-	{Response, NewState} = do_autentica(Request, State),
-	From ! {ok, Response}, 
+	{Reply, NewState} = do_autentica(Request, State),
+	gen_server:cast(From, {servico, Request, Reply}), 
 	{noreply, NewState}.
     
 handle_call({autentica, Request}, _From, State) ->
-	{Response, NewState} = do_autentica(Request, State),
-	{reply, Response, NewState}.
+	{Reply, NewState} = do_autentica(Request, State),
+	{reply, Reply, NewState}.
 
 handle_info(State) ->
    {noreply, State}.

@@ -66,7 +66,7 @@ handle_cast(shutdown, State) ->
 
 handle_cast({info, Request, From}, State) ->
 	{Result, NewState} = do_info(Request, State),
-	From ! {ok, Result}, 
+	gen_server:cast(From, {servico, Request, Result}), 
 	{noreply, NewState}.
     
 handle_call({info, Request}, _From, State) ->

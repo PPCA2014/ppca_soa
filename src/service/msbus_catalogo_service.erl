@@ -63,7 +63,8 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({lista_catalogo, Request, From}, State) ->
-	lista_catalogo(Request, From, State),
+	Result = do_lista_catalogo(Request, State),
+	gen_server:cast(From, {servico, Request, Result}),
 	{noreply, State}.
 
 handle_call(_Param, _From, State) ->
@@ -86,8 +87,8 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-lista_catalogo(_Request, From, _State) -> 
-	Result = msbus_catalogo:lista_catalogo(),
-	From ! {ok, Result}.
+do_lista_catalogo(_Request, _State) -> 
+	msbus_catalogo:lista_catalogo().
+	
 	
 

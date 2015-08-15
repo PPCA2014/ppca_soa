@@ -29,7 +29,9 @@
 					  user_agent,
 					  accept_encoding,
 					  cache_control,
-					  host
+					  host,
+					  socket,
+					  t1
 				  }).
 
 

@@ -67,9 +67,9 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({favicon, _Request, From}, State) ->
+handle_cast({favicon, Request, From}, State) ->
 	Reply = do_get_favicon(State),
-	From ! Reply, 
+	gen_server:cast(From, {servico, Request, Reply}), 
 	{noreply, State}.
     
 handle_call({favicon, _Request}, _From, State) ->

@@ -76,17 +76,17 @@ handle_cast(shutdown, State) ->
 
 handle_cast({top_services, Request, From}, State) ->
 	Reply = get_top_services(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({top_services_by_type, Request, From}, State) ->
 	Reply = get_top_services_by_type(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({qtd_requests_by_date, Request, From}, State) ->
 	Reply = get_qtd_requests_by_date(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State}.
 
 handle_call(_Params, _From, State) ->

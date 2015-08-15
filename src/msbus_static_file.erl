@@ -69,7 +69,7 @@ handle_cast(shutdown, State) ->
 
 handle_cast({get_file, Request, From}, State) ->
 	Result = do_get_file(Request, State),
-	From ! Result, 
+	gen_server:cast(From, {static_file, Request, Result}),
 	{noreply, State}.
     
 handle_call({get_file, Request}, _From, State) ->

@@ -68,28 +68,45 @@ get_querystring([Querystring]) ->
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
 	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), msbus_util:hd_or_empty(V)} end, Q2),
 	maps:from_list(Q3).
-	
+
+create_rid() -> {erlang:timestamp(), node()}.
+
+rid_to_string(RID) ->
+	{{X,Y,Z}, N}= RID,
+	RID2 = io_lib:format(<<"~s:~s:~s:~s">>, [integer_to_list(X), 
+											 integer_to_list(Y), 
+											 integer_to_list(Z), 
+											 N]),
+    lists:flatten(RID2).													
+
+
 %%-spec get_http_header(Header::list()) -> tuple.
-get_http_header(Header) ->
+encode_request(Socket, RequestBin) ->
 	try
+		Timestamp = calendar:local_time(),
+		T1 = msbus_util:get_milliseconds(),
+		RID = create_rid(),
+		RequestText = binary_to_list(RequestBin), 
+		PosFimHeader = string:str(RequestText, "\r\n\r\n"),
+		Header = string:sub_string(RequestText, 1, PosFimHeader-1),
 		[Principal|Outros] = string:tokens(Header, "\r\n"),
 		[Metodo, Url, Versao_HTTP] = string:tokens(Principal, " "),
-		case is_metodo_suportado(Metodo) of
-			true ->
-				[Url2|Querystring] = string:tokens(Url, "?"),
-				Url3 = msbus_util:remove_ult_backslash_url(Url2),
-				Outros2 = get_http_header_adicionais(Outros),
-				Content_Length = maps:get("content-length", Outros2, 0),
-				Content_Type = maps:get("content-type", Outros2, "application/json"),
-				Accept = maps:get("accept", Outros2, "*/*"),
-				User_Agent = maps:get("user-agent", Outros2, ""),
-				Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
-				Cache_Control = maps:get("cache_control", Outros2, "false"),
-				Host = maps:get("host", Outros2, ""),
-				
-				QuerystringMap = get_querystring(Querystring),
+		[Url2|Querystring] = string:tokens(Url, "?"),
+		Url3 = msbus_util:remove_ult_backslash_url(Url2),
+		Outros2 = get_http_header_adicionais(Outros),
+		Content_Length = maps:get("content-length", Outros2, 0),
+		Content_Type = maps:get("content-type", Outros2, "application/json"),
+		Accept = maps:get("accept", Outros2, "*/*"),
+		User_Agent = maps:get("user-agent", Outros2, ""),
+		Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
+		Cache_Control = maps:get("cache_control", Outros2, "false"),
+		Host = maps:get("host", Outros2, ""),
+		QuerystringMap = get_querystring(Querystring),
+		case is_payload_permitido(Metodo, Content_Length) of
+			false ->
+				% Requisições GET e DELETE
 				Request = #request{
-						    rid = {erlang:timestamp(), node()},
+							rid = RID,
 							type = Metodo,
 							url = Url3,
 							versao_http = Versao_HTTP,
@@ -101,14 +118,107 @@ get_http_header(Header) ->
 							user_agent = User_Agent,
 							accept_encoding = Accept_Encoding,
 							cache_control = Cache_Control,
-							host = Host
+							host = Host,
+							socket = Socket, 
+							t1 = T1, 
+							timestamp = Timestamp
 					},
 				{ok, Request};
-			false ->
-				{error, Principal, invalid_http_method}
+			true ->
+				% Requisições POST e PUT
+				Payload = string:sub_string(RequestText, PosFimHeader+4),
+				case decode_payload(Payload) of
+					{ok , PayloadMap} ->
+						Request = #request{
+									rid = RID,
+									type = Metodo,
+									url = Url3,
+									versao_http = Versao_HTTP,
+									querystring = Querystring,
+									querystring_map = QuerystringMap,
+									content_length = Content_Length,
+									content_type = Content_Type,
+									accept = Accept,
+									user_agent = User_Agent,
+									accept_encoding = Accept_Encoding,
+									cache_control = Cache_Control,
+									host = Host,
+									socket = Socket, 
+									t1 = T1, 
+									timestamp = Timestamp,
+									payload = Payload, 
+									payload_map = PayloadMap
+							},
+						{ok, Request};
+					{error, Reason} -> 
+						Request = #request{
+								rid = RID,
+								type = Metodo,
+								url = Url3,
+								versao_http = Versao_HTTP,
+								querystring = Querystring,
+								querystring_map = QuerystringMap,
+								content_length = Content_Length,
+								content_type = Content_Type,
+								accept = Accept,
+								user_agent = User_Agent,
+								accept_encoding = Accept_Encoding,
+								cache_control = Cache_Control,
+								host = Host,
+								socket = Socket, 
+								t1 = T1, 
+								timestamp = Timestamp
+						},
+						{error, Request, Reason}
+				end;
+			error ->
+				Request = #request{
+						rid = RID,
+						type = Metodo,
+						url = Url3,
+						versao_http = Versao_HTTP,
+						querystring = Querystring,
+						querystring_map = QuerystringMap,
+						content_length = Content_Length,
+						content_type = Content_Type,
+						accept = Accept,
+						user_agent = User_Agent,
+						accept_encoding = Accept_Encoding,
+						cache_control = Cache_Control,
+						host = Host,
+						socket = Socket, 
+						t1 = T1, 
+						timestamp = Timestamp
+				},
+				{error, Request, payload_nao_permitido}
 		end
 	catch
 		_Exception:_Reason ->  {error, invalid_http_header} 
+	end.
+	
+%% @doc Retorna boolean indicando se possui payload
+is_payload_permitido(Metodo, Content_Length) ->
+	case {Metodo, Content_Length} of
+		{"GET", 0} -> false;
+		{"GET", _} -> error;
+		{"DELETE", 0} -> false;
+		{"DELETE", _} -> error;
+		{"POST", 0} -> error;
+		{"POST", _} -> true;
+		{"PUT", 0} -> error;
+		{"PUT", _} -> true
+	end.
+
+%% @doc Decodifica o payload e transforma em um tipo Erlang
+decode_payload([]) ->
+	{ok, #{}};
+
+%% @doc Decodifica o payload e transforma em um tipo Erlang
+decode_payload(Payload) ->
+	PayloadBin = list_to_binary(Payload),
+	case msbus_util:json_decode_as_map(PayloadBin) of
+		{ok, PayloadMap} -> {ok, PayloadMap};
+		{error, _Reason} -> {error, invalid_payload}
 	end.
 	
 get_http_header_adicionais(Header) ->
@@ -160,6 +270,31 @@ is_url_valido(Url) ->
 		nomatch -> false;
 		_ -> true
 	end.
+
+%% @doc Envia os dados para o cliente. Método com tratamento de timeout
+send_request(Socket, Response) -> 
+	send_request(Socket, Response, 3).
+
+send_request(_Socket, _Response, 0) -> falhou;
+
+send_request(Socket, Response, Tentativa) ->
+	case gen_tcp:send(Socket, [Response]) of
+		{error, timeout} ->
+			msbus_logger:error("Timeout ao enviar o response ao cliente. Tentativa ~p.", [3-Tentativa+1]),
+			case send_request(Socket, Response, Tentativa-1) of
+				falhou -> 
+					gen_tcp:close(Socket),
+					timeout;
+				ok -> ok
+			end;
+        {error, OtherSendError} ->
+			gen_tcp:close(Socket),
+			OtherSendError;
+		ok -> 
+			gen_tcp:close(Socket),
+			ok
+	end.
+	
 	
 %% @doc Retorna o mime-type do arquivo
 mime_type(".htm") -> <<"text/html">>;

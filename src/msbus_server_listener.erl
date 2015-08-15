@@ -1,73 +1,72 @@
 %%********************************************************************
-%% @title Módulo helloworld_service
+%% @title Módulo msbus_server_listener
 %% @version 1.0.0
-%% @doc Módulo de serviço para o famoso hello world!!!
+%% @doc Módulo principal do servidor HTTP
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
--module(helloworld_service).
+
+-module(msbus_server_listener).
 
 -behavior(gen_server). 
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
+-include("../include/msbus_http_messages.hrl").
 
 %% Server API
--export([start/0, stop/0]).
-
-%% Cliente interno API
--export([execute/2]).
+-export([start/1, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
+% estado do servidor
+-record(state, {lsocket, socket}).
+
 -define(SERVER, ?MODULE).
-
-%  Armazena o estado do servico. 
--record(state, {}). 
-
 
 %%====================================================================
 %% Server API
 %%====================================================================
 
-start() -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Port) -> 
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Port], []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
- 
-%%====================================================================
-%% Cliente API
-%%====================================================================
- 
-execute(Request, From)	->
-	gen_server:cast(?SERVER, {hello_world, Request, From}).
-	
 
+ 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init([]) ->
-    {ok, #state{}}. 
+init([Port]) ->
+	Opts = [binary, 
+			{packet, 0}, 
+			{active, true},
+			{send_timeout, ?TCP_SEND_TIMEOUT}, 
+			{keepalive, ?TCP_KEEPALIVE}, 
+			{nodelay, ?TCP_NODELAY}],
+	case gen_tcp:listen(Port, Opts) of
+      {ok, LSocket} ->
+            start_servers(?TCP_MAX_HTTP_WORKER, LSocket),
+            {ok, Port} = inet:port(LSocket),
+            {ok, #state{lsocket = LSocket}, 0};
+      {error, Reason} ->
+           {error, Reason}
+     end.	
     
 handle_cast(shutdown, State) ->
-    {stop, normal, State};
+    {stop, normal, State}.
 
-handle_cast({hello_world, Request, From}, State) ->
-	Reply = do_hello_world(Request, State),
-	gen_server:cast(From, {servico, Request, Reply}), 
-	{noreply, State}.
+handle_call(_Request, _From, State) ->
+    {reply, ok, State}.
     
-handle_call({hello_world, Request}, _From, State) ->
-	Reply = do_hello_world(Request, State),
-	{reply, Reply, State}.
-
-handle_info(State) ->
+handle_info(_Msg, State) ->
    {noreply, State}.
 
-handle_info(_Msg, State) ->
+handle_info(State) ->
    {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -75,12 +74,15 @@ terminate(_Reason, _State) ->
  
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-    
-    
-%%====================================================================
-%% Funções internas
-%%====================================================================
-    
-do_hello_world(_Request, _State) ->
-	<<"{\"message\": \"Hello World!!!\"}">>.
 
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+start_servers(0,_) ->
+    ok;
+
+start_servers(Num, LSocket) ->
+    msbus_server_worker:start(LSocket),
+    start_servers(Num-1, LSocket).

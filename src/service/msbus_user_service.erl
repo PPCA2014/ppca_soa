@@ -88,27 +88,27 @@ handle_cast(shutdown, State) ->
 
 handle_cast({get, Request, From}, State) ->
 	Reply = do_get(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({insert, Request, From}, State) ->
 	Reply = do_insert(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({update, Request, From}, State) ->
 	Reply = do_update(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({delete, Request, From}, State) ->
 	Reply = do_delete(Request, State),
-	From ! {ok, Reply}, 
+	gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({all, Request, From}, State) ->
 	Reply = do_all(Request, State),
-	From ! Reply, 
+	gen_server:cast(From, {servico, Request, Reply}),
 	{noreply, State}.
     
 handle_call({get, Request}, _From, State) ->
