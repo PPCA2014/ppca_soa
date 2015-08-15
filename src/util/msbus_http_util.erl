@@ -194,7 +194,7 @@ encode_request(Socket, RequestBin) ->
 						},
 						{error, Request, payload_nao_permitido}
 				end;
-			false -> {error, RequestBin, metodo_nao_suportado}
+			false -> {error, metodo_nao_suportado}
 		end
 		
 	catch

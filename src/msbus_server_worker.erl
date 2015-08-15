@@ -98,7 +98,9 @@ do_processa_request(Socket, RequestBin, State) ->
 	case msbus_http_util:encode_request(Socket, RequestBin) of
 		 {ok, Request} -> msbus_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> do_processa_response(Request, {error, Reason}, State);
-		 {error, Reason} -> do_processa_response(RequestBin, {error, Reason}, State)
+		 {error, Reason} -> 
+			gen_tcp:close(Socket),
+			msbus_logger:error("Erro ~p.", [Reason])
 	end.	
 
 do_processa_response(_Request, {async, <<"false">>}, _State) -> em_andamento;
@@ -121,12 +123,12 @@ do_processa_response(Request, {ok, Result}, _State) ->
 	end,
 	ok;
 
-do_processa_response(Request, {ok, Result, MimeType}, _State) ->
+do_processa_response(Request, {ok, Result, MimeType}, _State) when erlang:is_record(Request, request) ->
 	Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
 	do_processa_response("OK", <<"200">>, Request, Response),
 	ok;
 
-do_processa_response(Request, {error, notfound}, _State) ->
+do_processa_response(Request, {error, notfound}, _State) when erlang:is_record(Request, request) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	T2 = msbus_util:get_milliseconds(),
@@ -134,7 +136,7 @@ do_processa_response(Request, {error, notfound}, _State) ->
 	log_status_requisicao(<<"404">>, Request, notfound, Latencia, StatusSend),
 	ok;
 
-do_processa_response(Request, {error, invalid_payload}, _State) ->
+do_processa_response(Request, {error, invalid_payload}, _State) when erlang:is_record(Request, request) ->
 	Response = msbus_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	T2 = msbus_util:get_milliseconds(),
@@ -142,7 +144,7 @@ do_processa_response(Request, {error, invalid_payload}, _State) ->
 	log_status_requisicao(<<"503">>, Request, invalid_payload, Latencia, StatusSend),
 	ok;
 
-do_processa_response(Request, {error, file_not_found}, _State) ->
+do_processa_response(Request, {error, file_not_found}, _State) when erlang:is_record(Request, request) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	T2 = msbus_util:get_milliseconds(),
@@ -158,7 +160,7 @@ do_processa_response(Request, {error, Reason}, _State) when erlang:is_record(Req
 	log_status_requisicao(<<"400">>, Request, Reason, Latencia, StatusSend),
 	ok;
 
-do_processa_response(Request, {error, Reason, _ErroInterno}, _State) ->
+do_processa_response(Request, {error, Reason, _ErroInterno}, _State) when erlang:is_record(Request, request) ->
 	Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	T2 = msbus_util:get_milliseconds(),
@@ -166,7 +168,7 @@ do_processa_response(Request, {error, Reason, _ErroInterno}, _State) ->
 	log_status_requisicao(<<"400">>, Request, Reason, Latencia, StatusSend),
 	ok;
 
-do_processa_response(Request, Result, State) ->
+do_processa_response(Request, Result, State) when erlang:is_record(Request, request) ->
 	do_processa_response(Request, {ok, Result}, State),
 	ok.
 
