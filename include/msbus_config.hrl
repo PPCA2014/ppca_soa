@@ -35,7 +35,7 @@
 -define(HEALTH_CHECKPOINT, 6000). %% 6 segundos
 
 % Tamanho do pool de workers para a função gen_tcp:accept do módulo HTTP
--define(TCP_MAX_HTTP_WORKER, 1000).
+-define(TCP_MAX_HTTP_WORKER, 50).
 
 % TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 8000).
