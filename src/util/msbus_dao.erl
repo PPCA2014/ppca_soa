@@ -17,7 +17,10 @@
 -export([is_email_valido/1]).
 -export([msg_campo_obrigatorio/2, msg_email_invalido/2, mensagens/1]).
 -export([msg_registro_ja_existe/1, msg_registro_ja_existe/2]).
+-export([sequence/1, init_sequence/2]).
 
+
+%% *********** Funções para CRUD ************
 
 get(RecordType, Id) when is_list(Id) ->
 	Id2 = list_to_integer(Id),
@@ -47,7 +50,7 @@ all(RecordType) ->
 
 insert(Record) ->
 	RecordType = element(1, Record),
-	Id = msbus_sequence:sequence(RecordType),
+	Id = sequence(RecordType),
 	Record1 = setelement(2, Record, Id),
 	Write = fun() -> mnesia:write(Record1) end,
 	mnesia:transaction(Write),
@@ -83,7 +86,7 @@ existe(Pattern) ->
 	end.
 
 
-%% Funções para validação de dados
+%% *********** Funções para validação de dados ************
 
 is_email_valido(Value) -> 
 	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
@@ -124,4 +127,22 @@ msg_email_invalido(_NomeCampo, Value) ->
 mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
 
 
+%% ************* Funções para gerar sequences *************
+
+%% Inicializa ou reseta uma sequence
+init_sequence(Name, Value) ->
+     {atomic, ok} =	mnesia:transaction(fun() ->
+						mnesia:write(#sequence{key=Name, index=Value})
+					end),
+     ok.
+
+%% Retorna o valor corrente para uma sequence. A sequence é criada se não existir.
+sequence(Name) ->
+     sequence(Name, 1).
+
+%% Incrementa a sequence com Inc
+sequence(Name, Inc) ->
+     mnesia:dirty_update_counter(sequence, Name, Inc).
+     
+     
 
