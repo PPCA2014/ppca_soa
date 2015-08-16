@@ -143,7 +143,8 @@ do_get(Request, _State) ->
 do_insert(Request, _State) ->
 	UserJson = msbus_request:get_property_request(<<"payload">>, Request),
 	User = #user{nome  = maps:get(<<"nome">>, UserJson, ""),
-				 email = maps:get(<<"email">>, UserJson, "")},
+				 email = maps:get(<<"email">>, UserJson, ""),
+				 senha = maps:get(<<"senha">>, UserJson, "")},
 	msbus_user:call({insert, User}).
 
 do_update(Request, _State) ->
@@ -152,7 +153,8 @@ do_update(Request, _State) ->
 	case msbus_user:call({get, Id}) of
 		{ok, User} -> 
 			User2 = User#user{nome  = maps:get(<<"nome">>, UserJson, User#user.nome),
-							  email = maps:get(<<"email">>, UserJson, User#user.email)},
+							  email = maps:get(<<"email">>, UserJson, User#user.email),
+							  senha = maps:get(<<"senha">>, UserJson, User#user.senha)},
 			msbus_user:call({update, User2});
 		Error -> Error
 	end.
