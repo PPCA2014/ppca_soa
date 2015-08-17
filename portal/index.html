@@ -55,7 +55,7 @@
           <h2 class="title">PPCA API Management Plataform<br>
           Integração. Facilidade. Desempenho.</h2>
             <p class="intro">Você é novo por aqui e quer conhecer mais sobre o barramento de serviços e como ele pode contribuir para o desenvolvimento das suas aplicações?</p>
-            <p><a class="btn-cta btn-cta-secondary" href="#intro" onclick="rolar_para('#sobre')">Saiba Mais</a></p>
+            <p><a class="btn-cta btn-cta-secondary" href="#intro" id="saibaMais">Saiba Mais</a></p>
             
         </div>
       </section>
@@ -64,21 +64,21 @@
     
    
     
-    <div class="sections-wrapper" style="padding-top:130px;>
+    <div class="sections-wrapper" style="padding-top:130px;">
     
     
-        <section id="why" class="section why">
+        
             <div class="container">
                
                
                
-               <table style="width: 850px; height: 500px; text-align: left; margin-left: auto; margin-right: auto; border-color:#8CB4C7; box-shadow: -5px -5px 5px #8CB4C7;  border-radius:10px" border="2" cellpadding="2" cellspacing="2";>
+               <table style="width: 850px; height: 500px; text-align: left; margin-left: auto; margin-right: auto; border-color:#8CB4C7; box-shadow: -5px -5px 5px #8CB4C7;  border-radius:10px;  border-collapse: separate; border: 1px solid #8CB4C7;">
 <tr>
-<td style="text-align: center; vertical-align: top;"><span style="font-weight: bold;">
+<td style="text-align: center; vertical-align: top;">
 <div id="top_x_div" style="width: 700px; height: 350px; text-align:center"></div> <hr>
 <div id="linechart_material" ></div>
 <br>
-</span></td>
+</td>
 
 </tr>
 </tbody>
@@ -86,7 +86,7 @@
 </table>
        
         <br><br>
-                <a name="intro" id="sobre">  </a>
+                <span id="intro">  </span>
                 <h2 class="title text-center">O que é nosso Barramento de Serviços?</h2>
                
                 <p style="text-align:justify; color: #999999; margin: 0 auto;">Este projeto é a implementação do conceito de "barramento de serviços" (ou <span style="font-style: italic;">Enterprise Service Bus</span>
@@ -186,11 +186,11 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
 				</div>
                 
             </div>
-        </section>  
+         
 
     </div>
    
-</div>
+
 
 
 	<div id="footer">
@@ -206,7 +206,18 @@ uso, além de diversos controles visuais para acompanhar a utilização dos serv
 	
 	<script async src="static/js/fpc_concat.js"></script>
 	<script src="static/js/jsapi.js"></script>
-	<script src="static/js/analytics.js"></script>    
+	<script src="static/js/analytics.js"></script>
+    <script src="static/js/jquery/jquery-2.1.3.min.js"></script>
+    <script type="text/javascript"> 
+	      $(function(){
+               $("#saibaMais").click(function (event) {
+               event.preventDefault();
+               var idElemento = $(this).attr("href");
+               var deslocamento = $(idElemento).offset().top;
+               $('html, body').animate({ scrollTop: deslocamento }, 'slow');
+  });
+});
+    </script>  
 	
 </body>
 </html>
