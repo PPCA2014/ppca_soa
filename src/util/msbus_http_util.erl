@@ -10,22 +10,22 @@
 
 -compile(export_all).
 
--include("../include/msbus_config.hrl").
--include("../include/msbus_schema.hrl").
--include("../include/msbus_http_messages.hrl").
+-include("../../include/msbus_config.hrl").
+-include("../../include/msbus_schema.hrl").
+-include("../../include/msbus_http_messages.hrl").
 
 %% @doc Gera o response para enviar para o cliente
 encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 	PayloadLength = list_to_binary(integer_to_list(size(Payload))),
-	Response = [<<"HTTP/1.1 ">>, Codigo, <<" OK">>, <<"\n">>,
-				<<"Server: ">>, ?SERVER_NAME, <<"\n">>,
-				<<"Content-Type: ">>, MimeType, <<"\n">>,
-				<<"Content-Length: ">>, PayloadLength, <<"\n">>,
-				<<"Access-Control-Allow-Origin: *\n">>,
-				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE\n">>,
-				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description\n">>,
+	Response = [<<"HTTP/1.1 "/utf8>>, Codigo, <<" OK\n"/utf8>>,
+				<<"Server: ErlangMS\n"/utf8>>,
+				<<"Content-Type: "/utf8>>, MimeType, <<"\n"/utf8>>,
+				<<"Content-Length: "/utf8>>, PayloadLength, <<"\n"/utf8>>,
+				<<"Access-Control-Allow-Origin: *\n"/utf8>>,
+				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE\n"/utf8>>,
+				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description\n"/utf8>>,
 				header_cache_control(MimeType),
-				<<"\n\n">>, 
+				<<"\n\n"/utf8>>, 
 	            Payload],
 	Response2 = iolist_to_binary(Response),
 	Response2.
@@ -35,7 +35,7 @@ encode_response(Codigo, []) ->
 	
 %% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
-	encode_response(Codigo, Payload, <<"application/json; charset=utf-8">>);
+	encode_response(Codigo, Payload, <<"application/json; charset=utf-8"/utf8>>);
 
 %% @doc Gera o response para dados Map (representação JSON em Erlang)
 encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
@@ -57,10 +57,10 @@ encode_response(Codigo, Payload) ->
     encode_response(Codigo, Payload2).
 
 header_cache_control(<<"image/x-icon">>) ->
-	<<"Cache-Control: max-age=290304000, public">>;
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
 
 header_cache_control(<<_MimeType/binary>>) ->
-	<<"Cache-Control: no-cache">>.
+	<<"Cache-Control: no-cache"/utf8>>.
 
 get_querystring([]) -> #{};
 get_querystring([Querystring]) ->
@@ -91,19 +91,19 @@ encode_request(Socket, RequestBin) ->
 		Header = string:sub_string(RequestText, 1, PosFimHeader-1),
 		[Principal|Outros] = string:tokens(Header, "\r\n"),
 		[Metodo, Url, Versao_HTTP] = string:tokens(Principal, " "),
+		[Url2|Querystring] = string:tokens(Url, "?"),
+		Url3 = msbus_util:remove_ult_backslash_url(Url2),
+		Outros2 = get_http_header_adicionais(Outros),
+		Content_Length = maps:get("content-length", Outros2, 0),
+		Content_Type = maps:get("content-type", Outros2, "application/json"),
+		Accept = maps:get("accept", Outros2, "*/*"),
+		User_Agent = maps:get("user-agent", Outros2, ""),
+		Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
+		Cache_Control = maps:get("cache_control", Outros2, "false"),
+		Host = maps:get("host", Outros2, ""),
+		QuerystringMap = get_querystring(Querystring),
 		case is_metodo_suportado(Metodo) of
 			true ->
-				[Url2|Querystring] = string:tokens(Url, "?"),
-				Url3 = msbus_util:remove_ult_backslash_url(Url2),
-				Outros2 = get_http_header_adicionais(Outros),
-				Content_Length = maps:get("content-length", Outros2, 0),
-				Content_Type = maps:get("content-type", Outros2, "application/json"),
-				Accept = maps:get("accept", Outros2, "*/*"),
-				User_Agent = maps:get("user-agent", Outros2, ""),
-				Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
-				Cache_Control = maps:get("cache_control", Outros2, "false"),
-				Host = maps:get("host", Outros2, ""),
-				QuerystringMap = get_querystring(Querystring),
 				case is_payload_permitido(Metodo, Content_Length) of
 					false ->
 						% Requisições GET e DELETE
@@ -195,11 +195,31 @@ encode_request(Socket, RequestBin) ->
 						},
 						{error, Request, payload_nao_permitido}
 				end;
-			false -> {error, metodo_nao_suportado}
+			false -> 
+				Request = #request{
+							rid = RID,
+							type = Metodo,
+							url = Url3,
+							versao_http = Versao_HTTP,
+							querystring = Querystring,
+							querystring_map = QuerystringMap,
+							content_length = Content_Length,
+							content_type = Content_Type,
+							accept = Accept,
+							user_agent = User_Agent,
+							accept_encoding = Accept_Encoding,
+							cache_control = Cache_Control,
+							host = Host,
+							socket = Socket, 
+							t1 = T1, 
+							timestamp = Timestamp
+					},
+				{error, Request, metodo_nao_suportado}
 		end
 		
 	catch
-		_Exception:_Reason ->  {error, invalid_http_header} 
+		_Exception:_Reason ->  
+			{error, iolist_to_binary(io_lib:format(<<"invalid_http_header <<~p>>"/utf8>>, [RequestBin]))} 
 	end.
 	
 %% @doc Retorna boolean indicando se possui payload
@@ -212,7 +232,10 @@ is_payload_permitido(Metodo, Content_Length) ->
 		{"POST", 0} -> error;
 		{"POST", _} -> true;
 		{"PUT", 0} -> error;
-		{"PUT", _} -> true
+		{"PUT", _} -> true;
+		{"OPTION", 0} -> false;
+		{"OPTION", _} -> error;
+		_ -> error
 	end.
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
@@ -260,14 +283,16 @@ is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
 is_content_length_valido(_) -> true.
 
 %% @doc Retorna booleano se o método é suportado pelo servidor
-is_metodo_suportado("GET") -> true;
-is_metodo_suportado("POST") -> true;
-is_metodo_suportado("PUT") -> true;
-is_metodo_suportado("DELETE") -> true;
 is_metodo_suportado(<<"GET">>) -> true;
 is_metodo_suportado(<<"POST">>) -> true;
 is_metodo_suportado(<<"PUT">>) -> true;
 is_metodo_suportado(<<"DELETE">>) -> true;
+is_metodo_suportado(<<"OPTION">>) -> true;
+is_metodo_suportado("GET") -> true;
+is_metodo_suportado("POST") -> true;
+is_metodo_suportado("PUT") -> true;
+is_metodo_suportado("DELETE") -> true;
+is_metodo_suportado("OPTION") -> true;
 is_metodo_suportado(_) -> false.
 
 %% @doc Indica se a URL é valida

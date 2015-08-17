@@ -134,11 +134,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-do_get(Id) -> msbus_dao:get(user, Id).
+do_get(Id) -> msbus_db:get(user, Id).
 
 do_insert(User) -> 
 	case valida(User, insert) of
-		ok -> msbus_dao:insert(User);
+		ok -> msbus_db:insert(User);
 		Error -> 
 			io:format("~p\n", [Error]),
 			Error
@@ -146,31 +146,31 @@ do_insert(User) ->
 
 do_update(User) -> 
 	case valida(User, update) of
-		ok -> msbus_dao:update(User);
+		ok -> msbus_db:update(User);
 		Error -> Error
 	end.
 
-do_all() -> msbus_dao:all(user).
+do_all() -> msbus_db:all(user).
 
 do_delete(Id) -> 
 	case valida(null, delete) of
 		ok -> 
-			msbus_dao:delete(user, Id);
+			msbus_db:delete(user, Id);
 		Error -> Error
 	end.
 
 valida(User, insert) ->
-	case msbus_dao:mensagens([msbus_dao:msg_campo_obrigatorio("nome", User#user.nome),
-							  msbus_dao:msg_campo_obrigatorio("email", User#user.email),
-							  msbus_dao:msg_campo_obrigatorio("senha", User#user.senha)]) of
+	case msbus_consiste:mensagens([msbus_consiste:msg_campo_obrigatorio("nome", User#user.nome),
+								   msbus_consiste:msg_campo_obrigatorio("email", User#user.email),
+								   msbus_consiste:msg_campo_obrigatorio("senha", User#user.senha)]) of
 		[] -> 
-			case msbus_dao:msg_email_invalido("email", User#user.email) of
+			case msbus_consiste:msg_email_invalido("email", User#user.email) of
 				[] ->
-					case msbus_dao:msg_registro_ja_existe({user, '_', User#user.nome, '_', '_'}, 
-														  <<"O nome do usuário já está cadastrado."/utf8>>) of
+					case msbus_consiste:msg_registro_ja_existe({user, '_', User#user.nome, '_', '_'}, 
+																<<"O nome do usuário já está cadastrado."/utf8>>) of
 						[] -> 
-							case msbus_dao:msg_registro_ja_existe({user, '_', '_', User#user.email, '_'}, 
-								  								  <<"O email do usuário já está cadastrado."/utf8>>) of
+							case msbus_consiste:msg_registro_ja_existe({user, '_', '_', User#user.email, '_'}, 
+																	    <<"O email do usuário já está cadastrado."/utf8>>) of
 								[] -> ok; 
 								Msg -> {error, Msg}
 							end;

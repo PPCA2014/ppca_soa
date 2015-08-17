@@ -19,8 +19,6 @@
 		 tuple_to_binlist/1, 
 		 list_to_binlist/1]).
 
--include("../include/msbus_config.hrl").
-
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
     receive

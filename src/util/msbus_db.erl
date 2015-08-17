@@ -1,23 +1,46 @@
 %%********************************************************************
-%% @title Módulo msbus_dao
+%% @title Módulo msbus_db
 %% @version 1.0.0
-%% @doc Módulo utilitário para rotinas de persistência e validação.
+%% @doc Módulo que provê interface com o banco de dados.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_dao).
+-module(msbus_db).
 
--include("../include/msbus_config.hrl").
--include("../include/msbus_schema.hrl").
+-export([start/0]).
+-export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
+-export([sequence/1, init_sequence/2]).
+
+-include("../../include/msbus_config.hrl").
+-include("../../include/msbus_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 
--export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
--export([is_email_valido/1]).
--export([msg_campo_obrigatorio/2, msg_email_invalido/2, mensagens/1]).
--export([msg_registro_ja_existe/1, msg_registro_ja_existe/2]).
--export([sequence/1, init_sequence/2]).
+%% *********** Criação do schema do banco ************
+
+start() ->
+	create_database([node()]).
+	
+create_database(Nodes) ->
+	mnesia:create_schema(Nodes),
+	mnesia:start(),
+
+    mnesia:create_table(user, [{type, set},
+							   {disc_copies, Nodes},
+							   {attributes, record_info(fields, user)}]),
+
+    mnesia:create_table(sequence, [{type, set},
+									{disc_copies, Nodes},
+									{attributes, record_info(fields, sequence)}]),
+
+    mnesia:create_table(request, [{type, set},
+									 {disc_copies, Nodes},
+									 {attributes, record_info(fields, request)},
+									 {index, [#request.timestamp]}]),
+
+	ok.
+
 
 
 %% *********** Funções para CRUD ************
@@ -85,47 +108,7 @@ existe(Pattern) ->
 		_ -> true
 	end.
 
-
-%% *********** Funções para validação de dados ************
-
-is_email_valido(Value) -> 
-	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
-		nomatch -> false;
-		_ -> true
-	end.
-
-%% @doc Retorna mensagem registro já existente
-msg_registro_ja_existe(Pattern) ->
-	case existe(Pattern) of
-		false -> [];
-		_ -> <<"Registro já está cadastrado."/utf8>>
-	end.
-
-%% @doc Retorna mensagem registro já existente
-msg_registro_ja_existe(Pattern, Message) ->
-	case existe(Pattern) of
-		false -> [];
-		_ -> Message
-	end.
-		
-%% @doc Mensagens de campo obrigatório
-msg_campo_obrigatorio(NomeCampo, []) -> 
-	iolist_to_binary(io_lib:format(<<"Campo não preenchido: '~s'."/utf8>>, [NomeCampo]));
-msg_campo_obrigatorio(NomeCampo, <<>>) -> 
-	iolist_to_binary(io_lib:format(<<"Campo não preenchido: '~s'."/utf8>>, [NomeCampo]));
-msg_campo_obrigatorio(_NomeCampo, _Value) -> [].
-
-%% @doc Mensagem de e-mail inválido
-msg_email_invalido(_NomeCampo, []) -> [];
-msg_email_invalido(_NomeCampo, Value) -> 
-	case is_email_valido(Value) of
-		false -> iolist_to_binary(io_lib:format(<<"Email informado é inválido: '~s'."/utf8>>, [Value]));
-		_ -> []
-	end.
-
-%% @doc Retorna somente mensagens não vazias
-mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
-
+	
 
 %% ************* Funções para gerar sequences *************
 
@@ -143,6 +126,3 @@ sequence(Name) ->
 %% Incrementa a sequence com Inc
 sequence(Name, Inc) ->
      mnesia:dirty_update_counter(sequence, Name, Inc).
-     
-     
-

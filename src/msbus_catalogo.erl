@@ -344,7 +344,7 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	ServicoView = new_servico_view(IdBin, Name, Url, Module, Function, 
 								   Type, Apikey, Comment, Version, Owner, 
 								   Async, Host, Result_Cache),
-	case is_url_com_re(binary_to_list(Url2)) orelse Module =:= <<"msbus_static_file">> of
+	case is_url_com_re(binary_to_list(Url2)) orelse Module =:= <<"msbus_static_file_service">> of
 		true -> 
 			Servico = new_servico_re(Rowid, IdBin, Name, Url2, Module, 
 									 Function, Type, Apikey, Comment, 
@@ -385,7 +385,7 @@ processa_querystring(notfound) -> notfound;
 processa_querystring({ok, Request}) ->
 	%% Querystrings do módulo msbus_static_file não são processados.
 	case maps:get(<<"module">>, Request#request.servico) of
-		<<"msbus_static_file">> ->
+		<<"msbus_static_file_service">> ->
 			{ok, Request};
 		_ ->
 			QuerystringServico = maps:get(<<"querystring">>, Request#request.servico),

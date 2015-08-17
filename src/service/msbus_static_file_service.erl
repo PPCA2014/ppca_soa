@@ -1,19 +1,19 @@
 %%********************************************************************
-%% @title Módulo msbus_static_file
+%% @title Módulo msbus_static_file_service
 %% @version 1.0.0
 %% @doc Módulo para gerenciamento de arquivos estáticos.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_static_file).
+-module(msbus_static_file_service).
 
 -behavior(gen_server). 
 -behaviour(poolboy_worker).
 
 
--include("../include/msbus_config.hrl").
--include("../include/msbus_schema.hrl").
+-include("../../include/msbus_config.hrl").
+-include("../../include/msbus_schema.hrl").
 
 %% Server API
 -export([start/0, start_link/1, stop/0]).
@@ -49,7 +49,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From) ->
-	poolboy:transaction(msbus_static_file_pool, fun(Worker) ->
+	poolboy:transaction(msbus_static_file_service_pool, fun(Worker) ->
 		gen_server:cast(Worker, {get_file, Request, From})
     end).
 

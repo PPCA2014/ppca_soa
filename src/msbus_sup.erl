@@ -21,8 +21,9 @@ start_link(Args) ->
 %% ===================================================================
 
 init([]) ->
-	msbus_database:start(),
+	msbus_db:start(),
 
+	%% Instância os processos ou o pool de processos
 	{ok, Pools} = application:get_env(msbus, pools),
     PoolSpecs = lists:map(
 		fun
@@ -47,6 +48,7 @@ init([]) ->
 		end, Pools),
 	
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
+
 
 
 

@@ -12,8 +12,8 @@
 -behaviour(poolboy_worker).
 
 
--include("../include/msbus_config.hrl").
--include("../include/msbus_schema.hrl").
+-include("../../include/msbus_config.hrl").
+-include("../../include/msbus_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 %% Server API  

@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title db_schema
+%% @title msbus_schema
 %% @version 1.0.0
-%% @doc Contém definições das tabelas para persistência.
+%% @doc Contém definições das estruturas de dados utilizadas.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
