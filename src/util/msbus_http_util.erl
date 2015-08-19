@@ -69,16 +69,9 @@ get_querystring([Querystring]) ->
 	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), msbus_util:hd_or_empty(V)} end, Q2),
 	maps:from_list(Q3).
 
-create_rid() -> {erlang:timestamp(), node()}.
+create_rid() -> calendar:datetime_to_gregorian_seconds(calendar:local_time()).
 
-rid_to_string(RID) ->
-	{{X,Y,Z}, N}= RID,
-	RID2 = io_lib:format(<<"~s:~s:~s:~s">>, [integer_to_list(X), 
-											 integer_to_list(Y), 
-											 integer_to_list(Z), 
-											 N]),
-    lists:flatten(RID2).													
-
+rid_to_string(RID) -> integer_to_list(RID).
 
 %%-spec get_http_header(Header::list()) -> tuple.
 encode_request(Socket, RequestBin) ->

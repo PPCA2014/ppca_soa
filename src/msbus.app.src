@@ -30,9 +30,13 @@
                 {size, 1},
                 {max_overflow, 0}
             ], []},
+            {msbus_request_pool, [
+                {size, 2},
+                {max_overflow, 0}
+            ], []},
             {msbus_health_pool, [
-                {size, 3},
-                {max_overflow, 2}
+                {size, 2},
+                {max_overflow, 0}
             ], []},
             {msbus_static_file_service_pool, [
                 {size, 10},

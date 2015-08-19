@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Módulo responsável pelo processamento das requisições HTTP.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(msbus_server_worker).
@@ -103,9 +103,9 @@ do_processa_request(Socket, RequestBin, State) ->
 			msbus_logger:error("Erro ~p.", [Reason])
 	end.	
 
-do_processa_response(_Request, {async, <<"false">>}, _State) -> em_andamento;
+do_processa_response(_Request, {async, false}, _State) -> em_andamento;
 
-do_processa_response(Request, {async, <<"true">>}, _State) ->
+do_processa_response(Request, {async, true}, _State) ->
 	RID = msbus_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = msbus_http_util:encode_response(<<"200">>, Ticket),
@@ -113,10 +113,8 @@ do_processa_response(Request, {async, <<"true">>}, _State) ->
 	ok;
 
 do_processa_response(Request, {ok, Result}, _State) -> 
-
-	Async = maps:get(<<"async">>, Request#request.servico),
-	case Async of
-		<<"true">> -> io:format("Ticket já foi entregue\n");
+	case Request#request.servico#servico.async of
+		true -> io:format("Ticket já foi entregue\n");
 		_ -> 
 			Response = msbus_http_util:encode_response(<<"200">>, Result),
 			do_processa_response("OK", <<"200">>, Request, Response)
@@ -173,7 +171,7 @@ do_processa_response(Code, Status, Request, Response) ->
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
 	Request2 = Request#request{latencia = Latencia, status = Code},
-	msbus_health:registra_request(Request2),
+	msbus_request:registra_request(Request2),
 	case StatusSend of
 		ok -> log_status_requisicao(Code, Request2, Status, Latencia, StatusSend);
 		_Error -> log_status_requisicao(Code, Request2, Status, Latencia, StatusSend)

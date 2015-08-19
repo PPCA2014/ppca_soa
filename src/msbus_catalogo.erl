@@ -24,8 +24,6 @@
 		 update_catalogo/0,
 		 lookup/1,
 		 get_querystring/2, 
-		 get_property_servico/2, 
-		 get_property_servico/3, 
 		 get_ult_lookup/0,
 		 list_cat2/0, list_cat3/0]).
 
@@ -252,9 +250,9 @@ valida_length(Value, MaxLength) ->
 	end.
 	
 %% @doc Faz o parser da querystring
-parse_querystring([], Querystring, QtdRequired) -> 	
+parse_querystring_def([], Querystring, QtdRequired) -> 	
 	{Querystring, QtdRequired};
-parse_querystring([H|T], Querystring, QtdRequired) -> 
+parse_querystring_def([H|T], Querystring, QtdRequired) -> 
 	Name = maps:get(<<"name">>, H),
 	Type = maps:get(<<"type">>, H, <<"string">>),
 	Default = maps:get(<<"default">>, H, <<>>),
@@ -276,7 +274,7 @@ parse_querystring([H|T], Querystring, QtdRequired) ->
 		  <<"default">>  => Default,
 		  <<"comment">>  => Comment,
 		  <<"required">> => Required},
-	parse_querystring(T, [Q | Querystring], QtdRequired2).
+	parse_querystring_def(T, [Q | Querystring], QtdRequired2).
 
 
 %% @doc Converte um pseudo parâmetro para sua expressão regular
@@ -312,19 +310,19 @@ parse_url_servico([H|T], Url) ->
 parse_catalogo([], Cat2, Cat3, Cat4, _Id) ->
 	{maps:from_list(Cat2), Cat3, Cat4};
 parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
-	Name = get_property_servico(<<"name">>, H),
-	Url = get_property_servico(<<"url">>, H),
+	Name = maps:get(<<"name">>, H),
+	Url = maps:get(<<"url">>, H),
 	Url2 = parse_url_servico(Url),
-	{Module, Function} = get_property_servico(<<"service">>, H),
-	Type = get_property_servico(<<"type">>, H, <<"GET">>),
-	Apikey = get_property_servico(<<"APIkey">>, H, <<"false">>),
-	Comment = get_property_servico(<<"comment">>, H, <<>>),
-	Version = get_property_servico(<<"version">>, H, <<>>),
-	Owner = get_property_servico(<<"owner">>, H, <<>>),
-	Async = get_property_servico(<<"async">>, H, <<"false">>),
+	{Module, Function} = parse_service_func(H),
+	Type = maps:get(<<"type">>, H, <<"GET">>),
+	Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
+	Comment = maps:get(<<"comment">>, H, <<>>),
+	Version = maps:get(<<"version">>, H, <<>>),
+	Owner = maps:get(<<"owner">>, H, <<>>),
+	Async = maps:get(<<"async">>, H, <<"false">>),
 	Rowid = new_rowid_servico(Url2, Type),
-	Host = get_property_servico(<<"host">>, H, <<>>),
-	Result_Cache = get_property_servico(<<"result_cache">>, H, 0),
+	Host = maps:get(<<"host">>, H, <<>>),
+	Result_Cache = maps:get(<<"result_cache">>, H, 0),
 	valida_name_servico(Name),
 	valida_url_servico(Url2),
 	valida_type_servico(Type),
@@ -333,12 +331,12 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	valida_length(Comment, 1000),
 	valida_length(Version, 10),
 	valida_length(Owner, 30),
-	case get_property_servico(<<"querystring">>, H, <<>>) of
+	case maps:get(<<"querystring">>, H, <<>>) of
 		<<>> -> 
 			Querystring2 = <<>>,
 			QtdQuerystringRequired = 0;
 		Querystring -> 
-			{Querystring2, QtdQuerystringRequired} = parse_querystring(Querystring, [], 0)
+			{Querystring2, QtdQuerystringRequired} = parse_querystring_def(Querystring, [], 0)
 	end,
 	IdBin = list_to_binary(integer_to_list(Id)),
 	ServicoView = new_servico_view(IdBin, Name, Url, Module, Function, 
@@ -361,34 +359,28 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 			parse_catalogo(T, [{Rowid, Servico}|Cat2], Cat3, [ServicoView|Cat4], Id+1)
 	end.	
 
-get_property_servico(<<"service">>, Servico) ->
+parse_service_func(Servico) ->
 	try
 		Service = maps:get(<<"service">>, Servico),
 		[Module, Function] = binary:split(Service, <<":">>),
 		{Module, Function}
 	catch
 		_Exception:_Reason ->  erlang:error(invalid_service_servico)
-	end;
-
-get_property_servico(Key, Servico) ->
-	maps:get(Key, Servico, <<>>).
-	
-get_property_servico(Key, Servico, Default) ->
-	maps:get(Key, Servico, Default).
+	end.
 
 get_querystring(<<QueryName/binary>>, Servico) ->	
-	[Query] = [Q || Q <- get_property_servico(<<"querystring">>, Servico), get_property_servico(<<"comment">>, Q) == QueryName],
+	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#servico.comment == QueryName],
 	Query.
 
 processa_querystring(notfound) -> notfound;
 	
 processa_querystring({ok, Request}) ->
 	%% Querystrings do módulo msbus_static_file não são processados.
-	case maps:get(<<"module">>, Request#request.servico) of
-		<<"msbus_static_file_service">> ->
+	case Request#request.servico#servico.module of
+		msbus_static_file_service ->
 			{ok, Request};
 		_ ->
-			QuerystringServico = maps:get(<<"querystring">>, Request#request.servico),
+			QuerystringServico = Request#request.servico#servico.querystring,
 			QuerystringUser = Request#request.querystring_map,
 			case Request#request.querystring =:= "" of
 				true -> 
@@ -444,7 +436,7 @@ lookup_re(_Request, []) ->
 	notfound;
 
 lookup_re(Request, [H|T]) ->
-	RE = maps:get(<<"id_re_compiled">>, H),
+	RE = H#servico.id_re_compiled,
 	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
 	case re:run(Rowid, RE, [{capture,all_names,binary}]) of
 		match -> 
@@ -477,47 +469,47 @@ new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey,
 			   Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, Result_Cache) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
-	Servico = #{<<"rowid">> => Rowid,
-				<<"id">> => Id,
-				<<"name">> => Name,
-				<<"url">> => Url,
-				<<"type">> => Type,
-			    <<"module">> => Module,
-			    <<"function">> => Function,
-			    <<"use_re">> => <<"true">>,
-			    <<"id_re_compiled">> => Id_re_compiled,
-			    <<"apikey">> => Apikey,
-			    <<"comment">> => Comment,
-			    <<"version">> => Version,
-			    <<"owner">> => Owner,
-			    <<"async">> => Async,
-			    <<"querystring">> => Querystring,
-			    <<"qtd_querystring_req">> => QtdQuerystringRequired,
-			    <<"host">> => Host,
-			    <<"result_cache">> => Result_Cache},
-	Servico.
+	#servico{
+				rowid = Rowid,
+				id = Id,
+				name = Name,
+				url = Url,
+				type = Type,
+			    module = list_to_atom(binary_to_list(Module)),
+			    function = list_to_atom(binary_to_list(Function)),
+			    id_re_compiled = Id_re_compiled,
+			    apikey = msbus_util:binary_to_bool(Apikey),
+			    comment = Comment,
+			    version = Version,
+			    owner = Owner,
+				async = msbus_util:binary_to_bool(Async),
+			    querystring = Querystring,
+			    qtd_querystring_req = QtdQuerystringRequired,
+			    host = list_to_atom(binary_to_list(Host)),
+			    result_cache = Result_Cache
+			}.
 
 new_servico(Rowid, Id, Name, Url, Module, Function, Type, Apikey, 
 			Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, Result_Cache) ->
-	Servico = #{<<"rowid">> => Rowid,
-				<<"id">> => Id,
-				<<"name">> => Name,
-				<<"url">> => Url,
-				<<"type">> => Type,
-			    <<"module">> => Module,
-			    <<"function">> => Function,
-			    <<"use_re">> => <<"false">>,
-			    <<"apikey">> => Apikey,
-			    <<"comment">> => Comment,
-			    <<"version">> => Version,
-			    <<"owner">> => Owner,
-			    <<"async">> => Async,
-			    <<"querystring">> => Querystring,
-			    <<"qtd_querystring_req">> => QtdQuerystringRequired,
-			    <<"host">> => Host,
-			    <<"result_cache">> => Result_Cache},
-	Servico.
+	#servico{
+				rowid = Rowid,
+				id = Id,
+				name = Name,
+				url = Url,
+				type = Type,
+			    module = list_to_atom(binary_to_list(Module)),
+			    function = list_to_atom(binary_to_list(Function)),
+			    apikey = msbus_util:binary_to_bool(Apikey),
+			    comment = Comment,
+			    version = Version,
+			    owner = Owner,
+			    async = msbus_util:binary_to_bool(Async),
+			    querystring = Querystring,
+			    qtd_querystring_req = QtdQuerystringRequired,
+			    host = list_to_atom(binary_to_list(Host)),
+			    result_cache = Result_Cache
+			}.
 
 new_servico_view(Id, Name, Url, Module, Function, Type, Apikey, Comment,
 				 Version, Owner, Async, Host, Result_Cache) ->

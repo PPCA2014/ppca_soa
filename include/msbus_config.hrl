@@ -31,6 +31,9 @@
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_RESULT_CACHE, 2592000000). %% 30 dias
 
+% De quanto em quanto tempo vai descarregar o buffer das requisições
+-define(REQUEST_CHECKPOINT, 6000). %% 6 segundos
+
 % De quanto em quanto tempo vai descarregar o buffer do módulo msbus_health
 -define(HEALTH_CHECKPOINT, 6000). %% 6 segundos
 

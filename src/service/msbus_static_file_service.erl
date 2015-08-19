@@ -95,8 +95,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_get_file(Request, _State) ->
 	FilePath = ?STATIC_FILE_PATH ++ Request#request.url,
-	Result_Cache = msbus_catalogo:get_property_servico(<<"result_cache">>, Request#request.servico),
-	msbus_cache:get(static_file_cache, Result_Cache, FilePath, 
+	msbus_cache:get(static_file_cache, Request#request.servico#servico.result_cache, FilePath, 
 		fun() -> 
 			case file:read_file(FilePath) of
 				{ok, Arquivo} -> 

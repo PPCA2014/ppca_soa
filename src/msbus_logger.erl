@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Módulo responsável pelo componente de logger.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(msbus_logger).
