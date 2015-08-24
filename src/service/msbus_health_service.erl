@@ -49,19 +49,13 @@ stop() ->
 %%====================================================================
  
 top_services(Request, From)	->
-	poolboy:transaction(msbus_health_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {top_services, Request, From})
-    end).
+	msbus_pool:cast(msbus_health_service_pool, {top_services, Request, From}).
 
 top_services_by_type(Request, From)	->
-	poolboy:transaction(msbus_health_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {top_services_by_type, Request, From})
-    end).
+	msbus_pool:cast(msbus_health_service_pool, {top_services_by_type, Request, From}).
 
 qtd_requests_by_date(Request, From)	->
-	poolboy:transaction(msbus_health_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {qtd_requests_by_date, Request, From})
-    end).
+	msbus_pool:cast(msbus_health_service_pool, {qtd_requests_by_date, Request, From}).
 
 %%====================================================================
 %% gen_server callbacks
@@ -74,19 +68,22 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({top_services, Request, From}, State) ->
+handle_cast({top_services, Request, _From}, State) ->
 	Reply = get_top_services(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	%gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
-handle_cast({top_services_by_type, Request, From}, State) ->
+handle_cast({top_services_by_type, Request, _From}, State) ->
 	Reply = get_top_services_by_type(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	%gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
-handle_cast({qtd_requests_by_date, Request, From}, State) ->
+handle_cast({qtd_requests_by_date, Request, _From}, State) ->
 	Reply = get_qtd_requests_by_date(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	%gen_server:cast(From, {servico, Request, {ok, Reply}}),
 	{noreply, State}.
 
 handle_call(_Params, _From, State) ->

@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Módulo pub_subscribe
+%% @title Módulo msbus_eventmgr
 %% @version 1.0.0
 %% @doc Módulo publisher/subscribe do erlangMS.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_pub_subscribe).
+-module(msbus_eventmgr).
 
 -behavior(gen_server).
 
@@ -37,7 +37,6 @@
 
 start() ->
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    msbus_logger:info("msbus_pub_subscribe iniciado."),
     Result.
  
 stop() ->

@@ -60,34 +60,22 @@ stop() ->
 %%====================================================================
  
 lista_catalogo() ->
-	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
-		gen_server:call(Worker, lista_catalogo)
-    end).
+	msbus_pool:call(msbus_catalogo_pool, lista_catalogo).
 
 update_catalogo() ->
-	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
-		gen_server:cast(Worker, update_catalogo)
-    end).
+	msbus_pool:cast(msbus_catalogo_pool, update_catalogo).
 
 lookup(Request) ->	
-	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
-		gen_server:call(Worker, {lookup, Request})
-    end).
+	msbus_pool:call(msbus_catalogo_pool, {lookup, Request}).
 
 list_cat2() ->
-	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
-		gen_server:call(Worker, list_cat2)
-    end).
+	msbus_pool:call(msbus_catalogo_pool, list_cat2).
 
 list_cat3() ->
-	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
-		gen_server:call(Worker, list_cat3)
-    end).
+	msbus_pool:call(msbus_catalogo_pool, list_cat3).
 
 get_ult_lookup() ->
-	poolboy:transaction(msbus_catalogo_pool, fun(Worker) ->
-		gen_server:call(Worker, get_ult_lookup)
-    end).
+	msbus_pool:call(msbus_catalogo_pool, get_ult_lookup).
 
 	
 %%====================================================================

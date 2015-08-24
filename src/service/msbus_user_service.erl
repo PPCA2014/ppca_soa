@@ -50,29 +50,19 @@ stop() ->
 %%====================================================================
  
 get(Request, From)	->
-	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {get, Request, From})
-    end).
+	msbus_pool:cast(msbus_user_service_pool, {get, Request, From}).
 	
 insert(Request, From)	->
-	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {insert, Request, From})
-    end).
+	msbus_pool:cast(msbus_user_service_pool, {insert, Request, From}).
 
 update(Request, From)	->
-	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {update, Request, From})
-    end).
+	msbus_pool:cast(msbus_user_service_pool, {update, Request, From}).
 
 delete(Request, From)	->
-	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {delete, Request, From})
-    end).
+	msbus_pool:cast(msbus_user_service_pool, {delete, Request, From}).
 
 all(Request, From)	->
-	poolboy:transaction(msbus_user_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {all, Request, From})
-    end).
+	msbus_pool:cast(msbus_user_service_pool, {all, Request, From}).
 
 
 %%====================================================================
@@ -86,33 +76,33 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({get, Request, From}, State) ->
+handle_cast({get, Request, _From}, State) ->
 	Reply = do_get(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
-handle_cast({insert, Request, From}, State) ->
+handle_cast({insert, Request, _From}, State) ->
 	Reply = do_insert(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
-handle_cast({update, Request, From}, State) ->
+handle_cast({update, Request, _From}, State) ->
 	Reply = do_update(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
-handle_cast({delete, Request, From}, State) ->
+handle_cast({delete, Request, _From}, State) ->
 	Reply = do_delete(Request, State),
-	gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
 	{noreply, State};
 
-handle_cast({all, Request, From}, State) ->
+handle_cast({all, Request, _From}, State) ->
 	Reply = do_all(Request, State),
-	gen_server:cast(From, {servico, Request, Reply}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
 	{noreply, State}.
     
 handle_call({get, Request}, _From, State) ->
-	Reply= do_get(Request, State),
+	Reply = do_get(Request, State),
 	{reply, Reply, State}.
 
 handle_info(State) ->

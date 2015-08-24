@@ -10,17 +10,21 @@
   {mod, { msbus_app, []}},
   {env, [
         {pools, [
+            {msbus_eventmgr_pool, [
+                {size, 1},
+                {max_overflow, 0}
+            ], []},
             {msbus_logger_pool, [
                 {size, 1},
                 {max_overflow, 0}
             ], []},
             {msbus_catalogo_pool, [
-                {size, 2},
-                {max_overflow, 2}
+                {size, 12},
+                {max_overflow, 100}
             ], []},
             {msbus_user_pool, [
                 {size, 2},
-                {max_overflow, 2}
+                {max_overflow, 100}
             ], []},
             {msbus_cache_pool, [
                 {size, 1},
@@ -31,40 +35,48 @@
                 {max_overflow, 0}
             ], []},
             {msbus_request_pool, [
-                {size, 2},
-                {max_overflow, 0}
+                {size, 120},
+                {max_overflow, 100}
+            ], []},
+            {msbus_server_worker_pool, [
+                {size, 120},
+                {max_overflow, 200}
             ], []},
             {msbus_health_pool, [
                 {size, 2},
-                {max_overflow, 0}
+                {max_overflow, 100}
+            ], []},
+            {msbus_dispatcher_pool, [
+                {size, 120},
+                {max_overflow, 200}
             ], []},
             {msbus_static_file_service_pool, [
-                {size, 10},
-                {max_overflow, 0}
+                {size, 120},
+                {max_overflow, 200}
             ], []},
             {msbus_user_service_pool, [
                 {size, 2},
-                {max_overflow, 2}
+                {max_overflow, 100}
             ], []},
             {msbus_catalogo_service_pool, [
                 {size, 2},
-                {max_overflow, 2}
+                {max_overflow, 100}
             ], []},
             {msbus_info_service_pool, [
                 {size, 2},
-                {max_overflow, 0}
+                {max_overflow, 100}
             ], []},
             {msbus_favicon_service_pool, [
                 {size, 2},
-                {max_overflow, 0}
+                {max_overflow, 100}
             ], []},
             {msbus_option_service_pool, [
                 {size, 1},
-                {max_overflow, 0}
+                {max_overflow, 100}
             ], []},
             {msbus_health_service_pool, [
                 {size, 3},
-                {max_overflow, 2}
+                {max_overflow, 100}
             ], []}
         ]}
     ]}

@@ -22,7 +22,7 @@ start_link(Args) ->
 
 init([]) ->
 	msbus_db:start(),
-
+	
 	%% Instância os processos ou o pool de processos
 	{ok, Pools} = application:get_env(msbus, pools),
     PoolSpecs = lists:map(
@@ -43,7 +43,7 @@ init([]) ->
 						PoolArgs = [{strategy, fifo},
 									{name, {local, Name}},
 									{worker_module, Worker}] ++ SizeArgs,
-						poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+						msbus_pool:child_spec(Name, PoolArgs, WorkerArgs)
 				end
 		end, Pools),
 	

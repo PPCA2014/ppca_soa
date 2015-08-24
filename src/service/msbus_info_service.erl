@@ -48,9 +48,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
-	poolboy:transaction(msbus_info_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {info, Request, From})
-    end).
+	msbus_pool:cast(msbus_info_service_pool, {info, Request, From}).
 
 
 %%====================================================================
@@ -64,9 +62,10 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({info, Request, From}, State) ->
+handle_cast({info, Request, _From}, State) ->
 	{Result, NewState} = do_info(Request, State),
-	gen_server:cast(From, {servico, Request, Result}), 
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Result}),
+	%gen_server:cast(From, {servico, Request, Result}), 
 	{noreply, NewState}.
     
 handle_call({info, Request}, _From, State) ->

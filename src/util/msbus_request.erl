@@ -55,11 +55,13 @@ stop() ->
 %% Client API
 %%====================================================================
 
-%% @doc Coleta uma métrica importante
+%% @doc Registra um request
 registra_request(Request) -> 
-	poolboy:transaction(msbus_request_pool, fun(Worker) ->
-		gen_server:cast(Worker, {registra_request, Request})
-    end).
+	msbus_pool:call(msbus_request_pool, {registra_request, Request}).
+
+%% @doc Atualiza o request
+update_request(Request) -> 
+	msbus_pool:cast(msbus_request_pool, {update_request, Request}).
 
 
 %%====================================================================
@@ -68,27 +70,30 @@ registra_request(Request) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
-    erlang:start_timer(?REQUEST_CHECKPOINT, self(), flush_requests),
+   	msbus_eventmgr:adiciona_evento(new_request),
+	msbus_eventmgr:adiciona_evento(ok_request),
+	msbus_eventmgr:adiciona_evento(erro_request),
     {ok, #state{}}.
-    
-handle_call(_Msg, _From, State) ->
-	{reply, ok, State}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({registra_request, Request}, State) ->
-	NewState = do_registra_request(Request, State),
-	{noreply, NewState}.
+handle_cast(_Msg, State) ->
+	{noreply, State}.
+	
+handle_call({registra_request, Request}, _From, State) ->
+	Request2 = do_registra_request(Request, State),
+	{reply, Request2, State};
+
+handle_call({update_request, Request}, _From, State) ->
+	Request2 = do_update_request(Request, State),
+	{reply, Request2, State}.
+
+handle_info(_Msg, State) ->
+   {noreply, State}.
 
 handle_info(State) ->
    {noreply, State}.
-
-handle_info({timeout, Ref, flush_requests}, State) ->
-	timer:cancel(Ref),
-	NewState = do_flush_requests(State),
-    erlang:start_timer(?REQUEST_CHECKPOINT, self(), flush_requests),
-	{noreply, NewState}.
 
 terminate(_Reason, _State) ->
     ok.
@@ -101,8 +106,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-do_registra_request(Request, State) ->
-	#state{list = [Request | State#state.list]}.
+do_registra_request(Request, _State) ->
+	msbus_db:insert(Request).
+
+do_update_request(Request, _State) ->
+	msbus_db:update(Request).
 
 %% @doc Retorna a lista de requisições de um período
 get_requests_periodo(Periodo) ->
@@ -118,7 +126,7 @@ get_requests_periodo(Periodo) ->
 	{atomic, Requests} = mnesia:transaction(Query),
 	Requests.
 
-%% @doc Retorna a lista de requisições de um período
+%% @doc Retorna uma requisição pelo seu id
 get_request_rid(RID) -> msbus_db:get(request, RID).
 
 %% @doc Retorna a URL do request
@@ -159,10 +167,3 @@ get_querystring(QueryName, Default, Request) ->
 		false -> Value
 	end.
 
-do_flush_requests(State) ->
-	Requests = State#state.list,
-	Write = fun() -> 
-					lists:foreach(fun(R) -> mnesia:write(R) end, Requests) 
-			end,
-	mnesia:transaction(Write),
-	#state{}.

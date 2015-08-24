@@ -47,9 +47,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
-	poolboy:transaction(msbus_favicon_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {favicon, Request, From})
-    end).
+	msbus_pool:cast(msbus_favicon_service_pool, {favicon, Request, From}).
 
 
 %%====================================================================
@@ -67,9 +65,10 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({favicon, Request, From}, State) ->
+handle_cast({favicon, Request, _From}, State) ->
 	Reply = do_get_favicon(State),
-	gen_server:cast(From, {servico, Request, Reply}), 
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
+	%gen_server:cast(From, {servico, Request, Reply}), 
 	{noreply, State}.
     
 handle_call({favicon, _Request}, _From, State) ->

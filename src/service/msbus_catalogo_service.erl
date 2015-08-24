@@ -45,9 +45,7 @@ stop() ->
 %%====================================================================
  
 lista_catalogo(Request, From)	->
-	poolboy:transaction(msbus_catalogo_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {lista_catalogo, Request, From})
-    end).
+	msbus_pool:cast(msbus_catalogo_service_pool, {lista_catalogo, Request, From}).
 
 	
 
@@ -62,9 +60,10 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({lista_catalogo, Request, From}, State) ->
+handle_cast({lista_catalogo, Request, _From}, State) ->
 	Result = do_lista_catalogo(Request, State),
-	gen_server:cast(From, {servico, Request, Result}),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Result}),
+	%gen_server:cast(From, {servico, Request, Result}),
 	{noreply, State}.
 
 handle_call(_Param, _From, State) ->

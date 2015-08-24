@@ -78,7 +78,6 @@ encode_request(Socket, RequestBin) ->
 	try
 		Timestamp = calendar:local_time(),
 		T1 = msbus_util:get_milliseconds(),
-		RID = create_rid(),
 		RequestText = binary_to_list(RequestBin), 
 		PosFimHeader = string:str(RequestText, "\r\n\r\n"),
 		Header = string:sub_string(RequestText, 1, PosFimHeader-1),
@@ -101,7 +100,6 @@ encode_request(Socket, RequestBin) ->
 					false ->
 						% Requisições GET e DELETE
 						Request = #request{
-									rid = RID,
 									type = Metodo,
 									url = Url3,
 									versao_http = Versao_HTTP,
@@ -125,7 +123,6 @@ encode_request(Socket, RequestBin) ->
 						case decode_payload(Payload) of
 							{ok , PayloadMap} ->
 								Request = #request{
-											rid = RID,
 											type = Metodo,
 											url = Url3,
 											versao_http = Versao_HTTP,
@@ -147,7 +144,6 @@ encode_request(Socket, RequestBin) ->
 								{ok, Request};
 							{error, Reason} -> 
 								Request = #request{
-										rid = RID,
 										type = Metodo,
 										url = Url3,
 										versao_http = Versao_HTTP,
@@ -169,7 +165,6 @@ encode_request(Socket, RequestBin) ->
 						end;
 					error ->
 						Request = #request{
-								rid = RID,
 								type = Metodo,
 								url = Url3,
 								versao_http = Versao_HTTP,
@@ -190,7 +185,6 @@ encode_request(Socket, RequestBin) ->
 				end;
 			false -> 
 				Request = #request{
-							rid = RID,
 							type = Metodo,
 							url = Url3,
 							versao_http = Versao_HTTP,
@@ -312,6 +306,7 @@ send_request(Socket, Response, Tentativa) ->
 				ok -> ok
 			end;
         {error, OtherSendError} ->
+			msbus_logger:error("Erro send_request desconhecido ~p.", [OtherSendError]),
 			gen_tcp:close(Socket),
 			OtherSendError;
 		ok -> 

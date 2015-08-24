@@ -22,7 +22,6 @@
 
 %% Client API
 -export([get_top_services/3, 
-		 get_top_services/4, 
 		 get_top_services_by_type/3, 
 		 get_qtd_requests_by_date/3,
 		 groupBy/2, 
@@ -56,33 +55,18 @@ stop() ->
 %% Client API
 %%====================================================================
 
-%% @doc Obtém os serviços mais usados
-get_top_services(Top, Periodo, Sort, From) -> 
-	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:cast(Worker, {top_services, Top, Periodo, Sort, From})
-    end).
-
 get_top_services(Top, Periodo, Sort) -> 
-	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {top_services, Top, Periodo, Sort})
-    end).
+	msbus_pool:call(msbus_health_pool, {top_services, Top, Periodo, Sort}).
 
 get_top_services_by_type(Top, Periodo, Sort) -> 
-	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {top_services_by_type, Top, Periodo, Sort})
-    end).
+	msbus_pool:call(msbus_health_pool, {top_services_by_type, Top, Periodo, Sort}).
 
 get_qtd_requests_by_date(Top, Periodo, Sort) -> 
-	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {qtd_requets_by_date, Top, Periodo, Sort})
-    end).
+	msbus_pool:call(msbus_health_pool, {qtd_requets_by_date, Top, Periodo, Sort}).
 	
-
 %% @doc Lista os requests por período
 get_requests_submit(Periodo) ->	
-	poolboy:transaction(msbus_health_pool, fun(Worker) ->
-		gen_server:call(Worker, {requests_submit, Periodo})
-    end).
+	msbus_pool:call(msbus_health_pool, {requests_submit, Periodo}).
 
  
 %%====================================================================
@@ -98,9 +82,7 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({top_services, Top, Periodo, Sort, From}, State) ->
-	Result = do_get_top_services(Top, Periodo, Sort, State),
-	From ! Result,
+handle_cast(_Msg, State) ->
 	{noreply, State}.
 
 handle_call({top_services, Top, Periodo, Sort}, _From, State) ->

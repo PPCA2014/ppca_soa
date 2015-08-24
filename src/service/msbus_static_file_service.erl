@@ -49,9 +49,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From) ->
-	poolboy:transaction(msbus_static_file_service_pool, fun(Worker) ->
-		gen_server:cast(Worker, {get_file, Request, From})
-    end).
+	msbus_pool:cast(msbus_static_file_service_pool, {get_file, Request, From}).
 
 
 %%====================================================================
@@ -67,9 +65,10 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({get_file, Request, From}, State) ->
+handle_cast({get_file, Request, _From}, State) ->
 	Result = do_get_file(Request, State),
-	gen_server:cast(From, {static_file, Request, Result}),
+	msbus_eventmgr:notifica_evento(ok_request, {static_file, Request, Result}),
+	%gen_server:cast(From, {static_file, Request, Result}),
 	{noreply, State}.
     
 handle_call({get_file, Request}, _From, State) ->

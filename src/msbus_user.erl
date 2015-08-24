@@ -50,15 +50,9 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-call(Msg) -> 
-	poolboy:transaction(msbus_user_pool, fun(Worker) ->
-		gen_server:call(Worker, Msg)
-    end).
+call(Msg) -> msbus_pool:call(msbus_user_pool, Msg).
 
-cast(Msg) -> 
-	poolboy:transaction(msbus_user_pool, fun(Worker) ->
-		gen_server:cast(Worker, Msg)
-    end).
+cast(Msg) -> msbus_pool:cast(msbus_user_pool, Msg).
 
 
 %%====================================================================

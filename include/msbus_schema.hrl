@@ -36,8 +36,9 @@
 					  accept_encoding :: string(),
 					  cache_control :: string(),
 					  host :: string(),
-					  socket,
-					  t1
+					  t1,
+					  socket :: gen_tcp:socket(),
+					  worker :: pid()
 				  }).
 
 -record(servico, {
