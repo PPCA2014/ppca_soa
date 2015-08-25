@@ -1,4 +1,4 @@
-# erlangMS
+# ErlangMS
 
 ErlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura microservices composto por módulos que implementam serviços bem definidos e independentes.
 
