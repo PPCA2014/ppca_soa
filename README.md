@@ -8,7 +8,7 @@ Erlang/OTP é a linguagem/plataforma escolhida para o projeto. A linguagem possu
 O projeto foi desenvolvido para ser leve e simples, com uma interface de comunicação RESTful e JSON.
 
 
-Como iniciar erlangMS
+Como executar ErlangMS
 -----------------------
 
 Se estiver no Linux, digite:
