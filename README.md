@@ -7,7 +7,7 @@ Erlang/OTP é a linguagem/plataforma escolhida para o projeto. A linguagem possu
 
 O projeto está sendo desenvolvimento como projeto de mestrado e visa a integração de sistemas através de uma abordagem orientada a serviço.
 
-A interface de comunicação segue o estilo arquitetural REST e a representação de dados em JSON.
+A interface de comunicação segue o estilo arquitetural REST e a representação de dados é em JSON.
 
 Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
