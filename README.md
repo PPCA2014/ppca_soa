@@ -9,6 +9,8 @@ O projeto foi desenvolvido visando a integração de sistemas através de uma ab
 
 A interface de comunicação segue o estilo arquitetural REST. A representação de dados é em JSON.
 
+Consulta a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
+
 
 Como executar ErlangMS
 -----------------------
