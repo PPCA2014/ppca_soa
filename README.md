@@ -1,15 +1,18 @@
-# erlangMS
+ErlangMS
+=====
 
-ErlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura microservices composto por pequenos módulos que implementam serviços bem definidos e independentes, executando em seu próprio processo e comunicando-se através dos mecanismos de mensagens da plataforma Erlang/OTP.
+ErlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura microservices composto por módulos que implementam serviços bem definidos e independentes.
 
-O code base inicial foi herdado do projeto PPCA->SOA, desenvolvido no Mestrado em Computação Aplicada da Universidade de Brasília pela Turma de Construção de Software de 2014. 
+Erlang/OTP é a linguagem/plataforma escolhida para o projeto. A linguagem possui características funcionais e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
 
-A linguagem de programação e a plataforma escolhida para o projeto foi Erlang/OTP. Esta linguagem possui fortes características funcionais e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
+O projeto está sendo desenvolvido como projeto de mestrado e visa a integração de sistemas através de uma abordagem orientada a serviço.
 
-A principal interface de comunicação de ErlangMS é REST com JSON, embora possa se comportar também como um servidor Web convencional através dos seus módulos de serviços para gerenciamento de arquivos.
+A interface de comunicação segue o estilo arquitetural REST e a representação de dados é em JSON.
+
+Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
 
-Como iniciar erlangMS
+Como executar ErlangMS
 -----------------------
 
 Se estiver no Linux, digite:
