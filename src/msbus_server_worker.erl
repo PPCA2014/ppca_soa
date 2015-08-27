@@ -131,11 +131,11 @@ conexao_accept(State) ->
 %% @doc Processa o pedido do request
 do_processa_request(Socket, RequestBin, State) -> 
 	case msbus_http_util:encode_request(Socket, RequestBin) of
-		 {ok, Request} -> msbus_dispatcher:dispatch_request(Request, self());
+		 {ok, Request} -> msbus_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> do_processa_response(Request, {error, Reason}, State);
 		 {error, Reason} -> 
 			gen_tcp:close(Socket),
-			msbus_logger:error("Erro ~p.", [Reason])
+			msbus_logger:error("Erro processa request: ~p.", [Reason])
 	end.	
 
 do_processa_response(_Request, {async, false}, _State) -> 

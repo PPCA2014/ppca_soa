@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Módulo dispatcher
 %% @version 1.0.0
-%% @doc Responsável pelo encaminhamento das requisições ao serviço REST.
+%% @doc Responsável pelo encaminhamento das requisições de/para os serviços REST.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -19,7 +19,7 @@
 -export([start/0, start_link/1, stop/0]).
 
 %% Client API
--export([dispatch_request/2]).
+-export([dispatch_request/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -47,8 +47,8 @@ stop() ->
 %% Client API
 %%====================================================================
 
-dispatch_request(Request, From) -> 
-	msbus_pool:cast(msbus_dispatcher_pool, {dispatch_request, Request, From}).
+dispatch_request(Request) -> 
+	msbus_pool:cast(msbus_dispatcher_pool, {dispatch_request, Request}).
 
  
 %%====================================================================
@@ -62,17 +62,11 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({servico, RID, Msg}, State) ->
-	io:format("Mensagem ~p de Java ~p\n", [RID, Msg]),
+handle_cast({dispatch_request, Request}, State) ->
+	do_dispatch_request(Request),
 	{noreply, State};
 
-
-handle_cast({dispatch_request, Request, From}, State) ->
-	do_dispatch_request(Request, From),
-	{noreply, State};
-
-handle_cast(Msg, State) ->
-	io:format("Mensagem Java ~p\n", [Msg]),
+handle_cast(_Msg, State) ->
 	{noreply, State}.
     
 handle_call(Msg, _From, State) ->
@@ -80,6 +74,11 @@ handle_call(Msg, _From, State) ->
 
 handle_info(State) ->
    {noreply, State}.
+
+handle_info({servico, RID, Reply}, State) ->
+	{ok, Request} = msbus_request:get_request_rid(RID),
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
+	{noreply, State};
 
 handle_info(_Msg, State) ->
    {noreply, State}.
@@ -96,7 +95,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 %% @doc Despacha o request para o service registrado no catálogo
-do_dispatch_request(Request, From) ->
+do_dispatch_request(Request) ->
 	case msbus_catalogo:lookup(Request) of
 		{ok, Request1} -> 
 			case msbus_request:registra_request(Request1) of
@@ -132,8 +131,6 @@ executa_servico(Request=#request{servico=#servico{host='', module=Module, functi
 
 %% @doc Executa o serviço Java
 executa_servico(Request=#request{servico=#servico{host=Host, module=Module, function=Function}}) ->
-	io:format("eu sou ] ~p\n", [self()]),
-	io:format("Module ~p   Host ~p\n\n", [Module, Host]),
 	{Module, Host} ! {{Request#request.rid, 
 					   Request#request.url, 
 					   Request#request.type, 
@@ -141,18 +138,4 @@ executa_servico(Request=#request{servico=#servico{host=Host, module=Module, func
 					   Request#request.querystring_map,
 					   atom_to_list(Module),
 					   atom_to_list(Function)}, self()},
-	aguarda_msg_java(),
 	ok.
-
-
-aguarda_msg_java() ->
-	receive
-		{servico, RID, Reply} -> 
-			{ok, Request} = msbus_request:get_request_rid(RID),
-			msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply});
-		Msg -> 
-			io:format("outra msg: ~p\n", [Msg])
-	end.
-			
-	
-	
