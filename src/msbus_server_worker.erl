@@ -91,14 +91,11 @@ handle_info(timeout, State) ->
     conexao_accept(State);
 
 handle_info({tcp, Socket, RequestBin}, State) ->
-    io:format("new request ~p\n", [self()]),
 	msbus_pool:transaction(msbus_server_worker_pool, 
 		fun(Worker) ->
 			ok = gen_tcp:controlling_process(Socket, Worker),
 			gen_server:cast(Worker, {Socket, RequestBin})
 		end),
-    %do_processa_request(Socket, RequestBin, State),
-    io:format("fim request ~p\n", [self()]),
 	{noreply, State, 0};
 
 handle_info({tcp_closed, _Socket}, State) ->
@@ -123,7 +120,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 conexao_accept(State) ->
-    io:format("accept ~p\n", [self()]),
     case gen_tcp:accept(State#state.lsocket) of
 		{ok, Socket}   -> {noreply, State#state{socket=Socket}};
 		{error, Error} -> 
@@ -143,12 +139,9 @@ do_processa_request(Socket, RequestBin, State) ->
 	end.	
 
 do_processa_response(_Request, {async, false}, _State) -> 
-
-	io:format("em andamento\n\n\n"),
-em_andamento;
+	em_andamento;
 
 do_processa_response(Request, {async, true}, _State) ->
-	io:format("async async\n\n"),
 	RID = msbus_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = msbus_http_util:encode_response(<<"200">>, Ticket),

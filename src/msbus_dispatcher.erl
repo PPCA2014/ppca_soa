@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Responsável pelo encaminhamento das requisições ao serviço REST.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(msbus_dispatcher).
@@ -62,8 +62,17 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
+handle_cast({servico, RID, Msg}, State) ->
+	io:format("Mensagem ~p de Java ~p\n", [RID, Msg]),
+	{noreply, State};
+
+
 handle_cast({dispatch_request, Request, From}, State) ->
 	do_dispatch_request(Request, From),
+	{noreply, State};
+
+handle_cast(Msg, State) ->
+	io:format("Mensagem Java ~p\n", [Msg]),
 	{noreply, State}.
     
 handle_call(Msg, _From, State) ->
@@ -93,7 +102,7 @@ do_dispatch_request(Request, From) ->
 			case msbus_request:registra_request(Request1) of
 				{ok, Request2} ->
 					msbus_eventmgr:notifica_evento(new_request, Request2),
-					case executa_servico(Request2, From) of
+					case executa_servico(Request2) of
 						ok -> ok;
 						Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
 					end;
@@ -106,15 +115,15 @@ do_dispatch_request(Request, From) ->
 	ok.
 
 %% @doc Executa o serviço local
-executa_servico(Request=#request{servico=#servico{host='', module=Module, function=Function}}, From) ->
+executa_servico(Request=#request{servico=#servico{host='', module=Module, function=Function}}) ->
 	try
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
-				apply(Module, Function, [Request, From]),
+				apply(Module, Function, [Request, self()]),
 				ok;
 			_Pid -> 
-				apply(Module, Function, [Request, From]),
+				apply(Module, Function, [Request, self()]),
 				ok
 		end
 	catch
@@ -122,21 +131,28 @@ executa_servico(Request=#request{servico=#servico{host='', module=Module, functi
 	end;
 
 %% @doc Executa o serviço Java
-executa_servico(Request=#request{servico=#servico{host=Host, module=Module, function=_Function}}, From) ->
-	{Module, Host} ! {Request, From},
-	%aguarda_msg_java(Request),
+executa_servico(Request=#request{servico=#servico{host=Host, module=Module, function=Function}}) ->
+	io:format("eu sou ] ~p\n", [self()]),
+	io:format("Module ~p   Host ~p\n\n", [Module, Host]),
+	{Module, Host} ! {{Request#request.rid, 
+					   Request#request.url, 
+					   Request#request.type, 
+					   Request#request.params_url, 
+					   Request#request.querystring_map,
+					   atom_to_list(Module),
+					   atom_to_list(Function)}, self()},
+	aguarda_msg_java(),
 	ok.
 
 
-%aguarda_msg_java(Request) ->
-%			receive
-%				{ok, V} -> 
-%					io:format("recebido: ~p\n", [V]),
-%					gen_server:cast(self(), {servico, Request, V});
-%				Msg -> 
-%					io:format("outra msg: ~p\n", [Msg]),
-%					aguarda_msg_java(Request)
-%			end.
+aguarda_msg_java() ->
+	receive
+		{servico, RID, Reply} -> 
+			{ok, Request} = msbus_request:get_request_rid(RID),
+			msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply});
+		Msg -> 
+			io:format("outra msg: ~p\n", [Msg])
+	end.
 			
 	
 	

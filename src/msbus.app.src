@@ -19,7 +19,7 @@
                 {max_overflow, 0}
             ], []},
             {msbus_catalogo_pool, [
-                {size, 12},
+                {size, 2},
                 {max_overflow, 100}
             ], []},
             {msbus_user_pool, [
@@ -39,7 +39,7 @@
                 {max_overflow, 100}
             ], []},
             {msbus_server_worker_pool, [
-                {size, 120},
+                {size, 12},
                 {max_overflow, 200}
             ], []},
             {msbus_health_pool, [
@@ -47,11 +47,11 @@
                 {max_overflow, 100}
             ], []},
             {msbus_dispatcher_pool, [
-                {size, 120},
+                {size, 12},
                 {max_overflow, 200}
             ], []},
             {msbus_static_file_service_pool, [
-                {size, 120},
+                {size, 12},
                 {max_overflow, 200}
             ], []},
             {msbus_user_service_pool, [

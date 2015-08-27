@@ -66,7 +66,7 @@ handle_cast(shutdown, State) ->
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
     
-handle_info(Msg, State) ->
+handle_info(_Msg, State) ->
    {noreply, State}.
 
 handle_info(State) ->

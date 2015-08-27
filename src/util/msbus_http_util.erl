@@ -66,7 +66,7 @@ get_querystring([]) -> #{};
 get_querystring([Querystring]) ->
 	Q1 = string:tokens(Querystring, "&"),
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
-	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), msbus_util:hd_or_empty(V)} end, Q2),
+	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), iolist_to_binary(msbus_util:hd_or_empty(V))} end, Q2),
 	maps:from_list(Q3).
 
 create_rid() -> calendar:datetime_to_gregorian_seconds(calendar:local_time()).

@@ -56,7 +56,7 @@ registra_interesse(Evento, Fun) ->
 desregistra_interesse(Evento, Fun) -> 
 	gen_server:call(?SERVER, {desregistra_interesse, Evento, Fun}). 
 notifica_evento(QualEvento, Motivo) -> 
-	gen_server:call(?SERVER, {notifica_evento, QualEvento, Motivo}). 
+	gen_server:cast(?SERVER, {notifica_evento, QualEvento, Motivo}). 
 lista_evento() -> 
 	gen_server:call(?MODULE, msg_lista_evento). 
 lista_interesse() -> 
@@ -69,6 +69,10 @@ lista_interesse() ->
  
 init([]) ->
     {ok, #state{}}.
+    
+handle_cast({notifica_evento, QualEvento, Motivo}, State) ->
+	notifica_evento(QualEvento, Motivo, State),
+	{noreply, State};
     
 handle_cast(shutdown, State) ->
     {stop, normal, State}.
@@ -89,10 +93,6 @@ handle_call({desregistra_interesse, Evento, Fun}, _From, State) ->
 	{Reply, NewState} = remove_interesse(Evento, Fun, State),
 	{reply, Reply, NewState};
     
-handle_call({notifica_evento, QualEvento, Motivo}, _From, State) ->
-	Reply = notifica_evento(QualEvento, Motivo, State),
-	{reply, Reply, State};
-    
 handle_call(msg_lista_evento, _From, State) ->
 	Reply = lista_evento(State),
 	{reply, Reply, State};
@@ -100,7 +100,7 @@ handle_call(msg_lista_evento, _From, State) ->
 handle_call(lista_interesse, _From, State) ->
 	Reply = lista_interesse(State),
 	{reply, Reply, State}.
-    
+
 handle_info(_Info, State) ->
     {noreply, State}.
  
