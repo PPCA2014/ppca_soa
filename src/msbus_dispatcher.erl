@@ -131,6 +131,7 @@ executa_servico(Request=#request{servico=#servico{host='', module=Module, functi
 
 %% @doc Executa o serviço Java
 executa_servico(Request=#request{servico=#servico{host=Host, module=Module, function=Function}}) ->
+	io:format("module ~p  \n", [Module]),
 	{Module, Host} ! {{Request#request.rid, 
 					   Request#request.url, 
 					   Request#request.type, 
