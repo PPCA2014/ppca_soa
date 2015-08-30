@@ -68,7 +68,6 @@ handle_cast(shutdown, State) ->
 handle_cast({get_file, Request, _From}, State) ->
 	Result = do_get_file(Request, State),
 	msbus_eventmgr:notifica_evento(ok_request, {static_file, Request, Result}),
-	%gen_server:cast(From, {static_file, Request, Result}),
 	{noreply, State}.
     
 handle_call({get_file, Request}, _From, State) ->

@@ -57,7 +57,7 @@ stop() ->
 
 %% @doc Registra um request
 registra_request(Request) -> 
-	msbus_pool:call(msbus_request_pool, {registra_request, Request}).
+	msbus_pool:cast(msbus_request_pool, {registra_request, Request}).
 
 %% @doc Atualiza o request
 update_request(Request) -> 
@@ -78,16 +78,16 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(_Msg, State) ->
-	{noreply, State}.
-	
-handle_call({registra_request, Request}, _From, State) ->
-	Request2 = do_registra_request(Request, State),
-	{reply, Request2, State};
+handle_cast({registra_request, Request}, State) ->
+	do_registra_request(Request),
+	{noreply, State};
 
-handle_call({update_request, Request}, _From, State) ->
-	Request2 = do_update_request(Request, State),
-	{reply, Request2, State}.
+handle_cast({update_request, Request}, State) ->
+	do_update_request(Request),
+	{noreply, State}.
+
+handle_call(Msg, _From, State) ->
+   {reply, Msg, State}.
 
 handle_info(_Msg, State) ->
    {noreply, State}.
@@ -106,10 +106,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-do_registra_request(Request, _State) ->
+do_registra_request(Request) ->
 	msbus_db:insert(Request).
 
-do_update_request(Request, _State) ->
+do_update_request(Request) ->
 	msbus_db:update(Request).
 
 %% @doc Retorna a lista de requisições de um período

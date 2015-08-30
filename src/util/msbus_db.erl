@@ -73,8 +73,11 @@ all(RecordType) ->
 
 insert(Record) ->
 	RecordType = element(1, Record),
-	Id = sequence(RecordType),
-	Record1 = setelement(2, Record, Id),
+	case element(2, Record) of
+		undefined -> Id = sequence(RecordType),
+					 Record1 = setelement(2, Record, Id);
+		_ -> Record1 = Record
+	end,
 	Write = fun() -> mnesia:write(Record1) end,
 	mnesia:transaction(Write),
 	{ok, Record1}.

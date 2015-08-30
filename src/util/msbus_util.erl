@@ -18,7 +18,8 @@
 		 json_decode_as_map/1,
 		 tuple_to_binlist/1, 
 		 list_to_binlist/1,
-		 binary_to_bool/1]).
+		 binary_to_bool/1,
+		 binary_to_integer/1]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -158,3 +159,6 @@ modernize([H|T]) ->
 binary_to_bool(<<"true">>) -> true;
 binary_to_bool(<<"false">>) -> false;
 binary_to_bool(_) -> false.
+
+binary_to_integer(Bin) -> list_to_integer(binary_to_list(Bin)).
+

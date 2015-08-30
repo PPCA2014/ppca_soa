@@ -6,10 +6,6 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
-
-% Porta default do barramento SOA
--define(CONF_PORT, 2301).
-
 % Tamanho máximo do payload do POST. Por default é 1M
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
@@ -25,42 +21,24 @@
 % Caminho do catálogo de serviços
 -define(CATALOGO_PATH, code:priv_dir(msbus) ++ "/conf/catalogo.conf").
 
+% Caminho do arquivo de configuração
+-define(CONF_FILE_PATH, code:priv_dir(msbus) ++ "/conf/msbus.conf").
+
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, code:priv_dir(msbus) ++ "/www").
-
-% Caminho inicial para os arquivos estáticos
--define(STATIC_FILE_RESULT_CACHE, 2592000000). %% 30 dias
-
-% De quanto em quanto tempo vai descarregar o buffer das requisições
--define(REQUEST_CHECKPOINT, 6000). %% 6 segundos
-
-% De quanto em quanto tempo vai descarregar o buffer do módulo msbus_health
--define(HEALTH_CHECKPOINT, 6000). %% 6 segundos
-
-% Tamanho do pool de workers para a função gen_tcp:accept do módulo HTTP
--define(TCP_MAX_HTTP_WORKER, 12).
 
 % TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 3000).
 
-% Ativa fluxo keepalive do TCP
--define(TCP_KEEPALIVE, false).
-
-% Ativa a propriedade no_delay do TCP
--define(TCP_NODELAY, true).
-
-% Configurações para o log de operações
--record(logger, {%% nome do arquivo do logger
-				 filename="logs/server.log",   
-				 
-				 %% de quanto em quanto tempo vai descarregar o buffer do log em disco
-				 checkpoint_timeout = 6000,  %% 6 segundos
-				 
-				 %% de quanto em quanto tempo vai rotacionar o arquivo. 
-				 rotacao_timeout = 1000 * 60 * 60 * 24   %% 24h
-				}).
-     
-     	
+%  Armazena o estado do servico. 
+-record(config, {tcp_listen_address,
+				 tcp_port, 
+ 				 tcp_keepalive, 
+				 tcp_nodelay, 
+				 tcp_max_http_worker,			 
+				 log_file_dest,
+				 log_file_checkpoint,
+				 service_names}). 
 
 
 

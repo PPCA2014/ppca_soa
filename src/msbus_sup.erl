@@ -33,13 +33,13 @@ init([]) ->
 				Worker = list_to_atom(WorkerName),
 				case SizePool of
 					1 -> 
-						io:format("~s iniciado com 1 worker.\n", [WorkerName]),
+						io:format("Módulo ~s iniciado com 1 worker.\n", [WorkerName]),
 						{Worker,
 							{Worker, start, WorkerArgs},
 							permanent, 10000, worker,  [Worker]
 						};
 					_ ->
-						io:format("~s iniciado com ~p workers.\n", [WorkerName, SizePool]),
+						io:format("Módulo ~s iniciado com ~p workers.\n", [WorkerName, SizePool]),
 						PoolArgs = [{strategy, fifo},
 									{name, {local, Name}},
 									{worker_module, Worker}] ++ SizeArgs,

@@ -76,6 +76,7 @@ rid_to_string(RID) -> integer_to_list(RID).
 %%-spec get_http_header(Header::list()) -> tuple.
 encode_request(Socket, RequestBin) ->
 	try
+		RID = os:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = msbus_util:get_milliseconds(),
 		RequestText = binary_to_list(RequestBin), 
@@ -100,6 +101,7 @@ encode_request(Socket, RequestBin) ->
 					false ->
 						% Requisições GET e DELETE
 						Request = #request{
+									rid = RID,
 									type = Metodo,
 									url = Url3,
 									versao_http = Versao_HTTP,
@@ -123,6 +125,7 @@ encode_request(Socket, RequestBin) ->
 						case decode_payload(Payload) of
 							{ok , PayloadMap} ->
 								Request = #request{
+											rid = RID,
 											type = Metodo,
 											url = Url3,
 											versao_http = Versao_HTTP,
@@ -144,6 +147,7 @@ encode_request(Socket, RequestBin) ->
 								{ok, Request};
 							{error, Reason} -> 
 								Request = #request{
+										rid = RID,
 										type = Metodo,
 										url = Url3,
 										versao_http = Versao_HTTP,
@@ -165,6 +169,7 @@ encode_request(Socket, RequestBin) ->
 						end;
 					error ->
 						Request = #request{
+								rid = RID,
 								type = Metodo,
 								url = Url3,
 								versao_http = Versao_HTTP,
@@ -185,6 +190,7 @@ encode_request(Socket, RequestBin) ->
 				end;
 			false -> 
 				Request = #request{
+							rid = RID,
 							type = Metodo,
 							url = Url3,
 							versao_http = Versao_HTTP,

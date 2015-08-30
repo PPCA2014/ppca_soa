@@ -10,4 +10,7 @@ Mnesia.nonode@nohost
 *.log
 *.dump
 /logs
+qlc_*
+Mnesia.*/**
+priv/www
 

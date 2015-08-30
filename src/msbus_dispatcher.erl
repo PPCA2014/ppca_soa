@@ -94,19 +94,15 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-%% @doc Despacha o request para o service registrado no catálogo
+%% @doc Despacha o request para o serviço registrado no catálogo
 do_dispatch_request(Request) ->
 	case msbus_catalogo:lookup(Request) of
 		{ok, Request1} -> 
-			case msbus_request:registra_request(Request1) of
-				{ok, Request2} ->
-					msbus_eventmgr:notifica_evento(new_request, Request2),
-					case executa_servico(Request2) of
-						ok -> ok;
-						Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
-					end;
-				Error -> 
-					msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, Error})
+			msbus_request:registra_request(Request1),
+			msbus_eventmgr:notifica_evento(new_request, Request1),
+			case executa_servico(Request1) of
+				ok -> ok;
+				Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, Error})
 			end;
 		notfound -> 
 			msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, notfound}})

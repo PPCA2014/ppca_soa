@@ -1,5 +1,5 @@
 %%********************************************************************
-%% @title Módulo logger
+%% @title Módulo msbus_logger
 %% @version 1.0.0
 %% @doc Módulo responsável pelo componente de logger.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
@@ -24,9 +24,9 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do msbus_logger. 
--record(state, {% buffer para lista de mensagens. As mensagens vão primeiro para um buffer. 
+-record(state, {% As mensagens vão primeiro para um buffer, posteriormente para o arquivo de log
 				buffer = [],         
-			    % em intervalores configuravel ocorre um checkpoint para descarregar o buffer no arquivo de log
+			    % checkpoint para descarregar o buffer no arquivo de log
 			    checkpoint = false   
  			   }). 
 
@@ -77,7 +77,6 @@ sync() ->
 %%====================================================================
  
 init(_Args) ->
-    process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
@@ -109,12 +108,8 @@ handle_call(sync_buffer, _From, State) ->
 
 handle_info(checkpoint, State) ->
    NewState = sync_buffer(State),
-   {noreply, NewState};
-
-handle_info(rotacao, State) ->
-   NewState = rotacao(State),
    {noreply, NewState}.
- 
+
 terminate(_Reason, _State) ->
     ok.
  
@@ -126,24 +121,15 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-get_logger_conf() -> #logger{}.
-
 get_filename_logger() -> 
-	Conf = get_logger_conf(),
-	Conf#logger.filename.
+	Conf = msbus_config:getConfig(),
+	{{Ano,Mes,Dia},{_Hora,_Min,_Seg}} = calendar:local_time(),
+	lists:flatten(io_lib:format("~s/server_~p_~p_~p.log", [Conf#config.log_file_dest, Ano, Mes, Dia])).
 
 get_checkpoint_timeout_logger() ->
-	Conf = get_logger_conf(),
-	Conf#logger.checkpoint_timeout.
+	Conf = msbus_config:getConfig(),
+	Conf#config.log_file_checkpoint.
 
-get_rotacao_timeout_logger() ->
-	Conf = get_logger_conf(),
-	Conf#logger.rotacao_timeout.
-
-get_new_filename_logger() ->
-	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
-	lists:flatten(io_lib:format("server_~p~p~p_~p~p~p.log", [Ano, Mes, Dia, Hora, Min, Seg])).
-    
 set_checkpoint_timeout(#state{checkpoint = false}) ->    
     Checkpoint = get_checkpoint_timeout_logger(),
 	erlang:send_after(Checkpoint, self(), checkpoint);
@@ -151,17 +137,13 @@ set_checkpoint_timeout(#state{checkpoint = false}) ->
 set_checkpoint_timeout(_State) ->    
 	ok.
 
-set_rotacao_timeout() ->    
-    Rotacao = get_rotacao_timeout_logger(),
-	erlang:send_after(Rotacao, self(), rotacao).
-    
 write_msg(Tipo, <<Msg/binary>>, State) ->
 	Msg1 = binary_to_list(Msg),
     write_msg(Tipo, Msg1, State);
     
 write_msg(Tipo, Msg, State) ->
 	io:format("~s~n", [Msg]),
-	Msg1 = lists:concat([atom_to_list(Tipo), " ", msbus_util:timestamp_str(), "  ", Msg]),
+	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", msbus_util:timestamp_str(), "  ", Msg]),
 	set_checkpoint_timeout(State),
 	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true}.
 	
@@ -173,12 +155,4 @@ sync_buffer(State) ->
 	FileName = get_filename_logger(),
 	file:write_file(FileName, lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
 	#state{}.
-
-rotacao(State) ->
-	NewState = sync_buffer(State),	
-	FileName = get_filename_logger(),
-	NewFileName = get_new_filename_logger(),
-	file:rename(FileName, NewFileName),
-	set_rotacao_timeout(),
-	NewState.
-
+	

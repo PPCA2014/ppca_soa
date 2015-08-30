@@ -10,6 +10,10 @@
   {mod, { msbus_app, []}},
   {env, [
         {pools, [
+            {msbus_config_pool, [
+                {size, 1},
+                {max_overflow, 0}
+            ], []},
             {msbus_eventmgr_pool, [
                 {size, 1},
                 {max_overflow, 0}
@@ -35,8 +39,8 @@
                 {max_overflow, 0}
             ], []},
             {msbus_request_pool, [
-                {size, 120},
-                {max_overflow, 100}
+                {size, 2},
+                {max_overflow, 0}
             ], []},
             {msbus_server_worker_pool, [
                 {size, 12},

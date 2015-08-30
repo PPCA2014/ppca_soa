@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Módulo msbus_server_listener
 %% @version 1.0.0
-%% @doc Módulo principal do servidor HTTP
+%% @doc Módulo listener para o servidor HTTP
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -15,7 +15,7 @@
 -include("../include/msbus_http_messages.hrl").
 
 %% Server API
--export([start/1, stop/0]).
+-export([start/2, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -29,8 +29,8 @@
 %% Server API
 %%====================================================================
 
-start(Port) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Port], []).
+start(Port, IpAddress) -> 
+    gen_server:start_link(?MODULE, {Port, IpAddress}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -41,25 +41,25 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init([Port]) ->
+init({Port, IpAddress}) ->
 	process_flag(trap_exit, true),
+	Conf = msbus_config:getConfig(),
 	Opts = [binary, 
 			{packet, 0}, 
 			{active, true},
 			{send_timeout, ?TCP_SEND_TIMEOUT}, 
-			{keepalive, ?TCP_KEEPALIVE}, 
-			{nodelay, ?TCP_NODELAY}],
+			{keepalive, Conf#config.tcp_keepalive}, 
+			{nodelay, Conf#config.tcp_nodelay},
+			{ip, IpAddress}],
 	case gen_tcp:listen(Port, Opts) of
       {ok, LSocket} ->
-            start_servers(?TCP_MAX_HTTP_WORKER, LSocket),
-            {ok, Port} = inet:port(LSocket),
+            start_server_worker(Conf#config.tcp_max_http_worker, LSocket),
             {ok, #state{lsocket = LSocket}, 0};
       {error, Reason} ->
            {error, Reason}
      end.	
     
 handle_cast(shutdown, State) ->
-    io:format("finalizando...\n"),
     gen_tcp:close(State#state.lsocket),
     {stop, normal, State}.
 
@@ -83,9 +83,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_servers(0,_) ->
+start_server_worker(0,_) ->
     ok;
 
-start_servers(Num, LSocket) ->
+start_server_worker(Num, LSocket) ->
     msbus_server_worker:start({Num, LSocket}),
-    start_servers(Num-1, LSocket).
+    start_server_worker(Num-1, LSocket).

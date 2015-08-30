@@ -99,7 +99,6 @@ handle_info({tcp, Socket, RequestBin}, State) ->
 	{noreply, State, 0};
 
 handle_info({tcp_closed, _Socket}, State) ->
-	io:format("tcp_closed ~p\n", [self()]),
 	{noreply, State, 0};
 
 handle_info(_Msg, State) ->
