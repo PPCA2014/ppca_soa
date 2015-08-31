@@ -27,18 +27,19 @@
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, code:priv_dir(msbus) ++ "/www").
 
-% TCP Timeout para envio do response
+% Propriedade TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 3000).
 
-%  Armazena o estado do servico. 
--record(config, {tcp_listen_address,
-				 tcp_port, 
- 				 tcp_keepalive, 
-				 tcp_nodelay, 
-				 tcp_max_http_worker,			 
-				 log_file_dest,
-				 log_file_checkpoint,
-				 service_names}). 
+%  Definição para o arquivo de configuração
+-record(config, {tcp_listen_address,    		%% Quais interfaces de rede que o barramento vai ouvir (Permitido informar o IP ou DNS Name)
+				 tcp_port, 						%% Qual a porta que será utilizada para o barramento
+ 				 tcp_keepalive, 				%% Propriedade keepalive do TCP
+				 tcp_nodelay, 					%% Propriedade nodelay do TCP
+				 tcp_max_http_worker,			%% Quantos workers serão criados para cada listener
+				 log_file_dest,					%% Caminho para a pasta dos logs do barramento
+				 log_file_checkpoint,			%% De quanto em quanto tempo será descarregado os buffers do módulo msbus_logger (DEFAULT 6 segundos)
+				 cat_host_alias 				%% Lista (Chave-Valor) com os nomes alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
+				 }). 	
 
 
 

@@ -109,8 +109,10 @@ do_dispatch_request(Request) ->
 	end,
 	ok.
 
-%% @doc Executa o serviço local
-executa_servico(Request=#request{servico=#servico{host='', module=Module, function=Function}}) ->
+%% @doc Executa o serviço local (Serviço escrito em Erlang)
+executa_servico(Request=#request{servico=#servico{host='', 
+												  module=Module, 
+												  function=Function}}) ->
 	try
 		case whereis(Module) of
 			undefined -> 
@@ -125,14 +127,18 @@ executa_servico(Request=#request{servico=#servico{host='', module=Module, functi
 		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
 	end;
 
-%% @doc Executa o serviço Java
-executa_servico(Request=#request{servico=#servico{host=Host, module=Module, function=Function}}) ->
-	io:format("module ~p  \n", [Module]),
+%% @doc Executa o serviço em outro host (Serviço escrito em outra plataforma/linguagem)
+executa_servico(Request=#request{servico=#servico{host = Host, 
+												  module_name = ModuleName, 
+												  function_name = FunctionName, 
+												  module = Module}}) ->
 	{Module, Host} ! {{Request#request.rid, 
 					   Request#request.url, 
 					   Request#request.type, 
 					   Request#request.params_url, 
 					   Request#request.querystring_map,
-					   atom_to_list(Module),
-					   atom_to_list(Function)}, self()},
+					   ModuleName,
+					   FunctionName}, 
+					   self()
+					  },
 	ok.

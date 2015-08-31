@@ -80,9 +80,9 @@ le_config() ->
 		    tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"false">>)),
   		    tcp_nodelay     	= msbus_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, <<"true">>)),
   		    tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, 12),
-  		    log_file_dest 		= binary_to_list(maps:get(<<"log_file_path">>, Json, <<"logs">>)),
+  		    log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
   		    log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, 6000),
-  		    service_names		= maps:get(<<"service_names">>, Json, <<>>)
+  		    cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{})
   		    }.
 	
 

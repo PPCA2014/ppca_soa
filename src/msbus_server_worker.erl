@@ -222,17 +222,28 @@ log_status_requisicao(Code, Request, Reason, Latencia, StatusSend) when erlang:i
 	User_Agent = Request#request.user_agent,
 	Payload = Request#request.payload,
 	StatusSend2 = format_send_error(StatusSend),
+	Contract = Request#request.servico,
+	Query = Request#request.querystring,
+	case Contract of
+		undefined -> 
+			Service = "",
+			HostName = "";
+		_ -> 
+			Service = Contract#servico.service,
+			HostName = "em " ++ Contract#servico.host_name
+	end,
 	case Payload of
 		undefined ->
-			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tStatus: ~s <<~s>> (~pms)\n\t~s\n}",
-			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Code, Reason, Latencia, StatusSend2]);
+			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tStatus: ~s <<~s>> (~pms)\n\t~s\n}",
+			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Service, HostName, Query, Code, Reason, Latencia, StatusSend2]);
 		_ ->
 			Content_Type = Request#request.content_type,
-			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tStatus: ~s <<~s>> (~pms)\n\t~s\n}",
-			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Content_Type, Payload, Code, Reason, Latencia, StatusSend2])
+			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tStatus: ~s <<~s>> (~pms)\n\t~s\n}",
+			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Content_Type, Payload, Service, HostName, Query, Code, Reason, Latencia, StatusSend2])
 	end;
 	
 log_status_requisicao(Code, Request, Reason, Latencia, StatusSend) ->	
+	io:format("AQUI\n\n"),
 	StatusSend2 = format_send_error(StatusSend),
 	Texto =  "~s {\n\tStatus: ~s ~s (~pms)\n\t~s\n}", 
 	msbus_logger:info(Texto, [Request, Code, Reason, Latencia, StatusSend2]).

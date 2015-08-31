@@ -58,7 +58,7 @@ desregistra_interesse(Evento, Fun) ->
 notifica_evento(QualEvento, Motivo) -> 
 	gen_server:cast(?SERVER, {notifica_evento, QualEvento, Motivo}). 
 lista_evento() -> 
-	gen_server:call(?MODULE, msg_lista_evento). 
+	gen_server:call(?SERVER, msg_lista_evento). 
 lista_interesse() -> 
 	gen_server:call(?SERVER, lista_interesse). 
 

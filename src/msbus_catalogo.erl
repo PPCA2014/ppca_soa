@@ -33,11 +33,11 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do catálogo. 
 -record(state, {cat1, 		%% Catalogo JSON
 				cat2, 		%% Parsed catalog 
 				cat3, 		%% Regular expression parsed catalog
-				ult_lookup 	%% último lookup realizado
+				ult_lookup 	%% Último lookup realizado
 		}). 
 
 
@@ -186,7 +186,7 @@ is_url_com_re([H|T]) ->
 	end.
 
 %% @doc Valida o nome do serviço
-valida_name_servico(Name) ->
+valida_name_contract(Name) ->
 	case is_name_servico_valido(Name) of
 		true -> ok;
 		false -> erlang:error(invalid_name_servico)
@@ -214,14 +214,14 @@ valida_type_querystring(Type) ->
 	end.
 
 %% @doc Valida o método do serviço 
-valida_type_servico(Type) ->
+valida_type_contract(Type) ->
 	case msbus_http_util:is_metodo_suportado(Type) of
 		true -> ok;
 		false -> erlang:error(invalid_type_servico)
 	end.
 
-valida_url_servico(<<"/">>) -> ok;
-valida_url_servico(Url) ->
+valida_url_contract(<<"/">>) -> ok;
+valida_url_contract(Url) ->
 	case msbus_http_util:is_url_valido(Url) andalso is_valid_length(Url, 300) of
 		true -> ok;
 		false -> erlang:error(invalid_url_servico)
@@ -236,8 +236,12 @@ valida_length(Value, MaxLength) ->
 		true -> ok;
 		false -> erlang:error(invalid_length)
 	end.
+
+%% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
+parse_querystring(<<>>) -> {<<>>, 0};
+parse_querystring(Querystring) -> parse_querystring_def(Querystring, [], 0).
 	
-%% @doc Faz o parser da querystring
+%% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
 parse_querystring_def([], Querystring, QtdRequired) -> 	
 	{Querystring, QtdRequired};
 parse_querystring_def([H|T], Querystring, QtdRequired) -> 
@@ -294,14 +298,15 @@ parse_url_servico([H|T], Url) ->
 			parse_url_servico(T, [P | Url])
 	end.
 
-%% @doc Faz o parser dos serviços do catálogo
+%% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalogo([], Cat2, Cat3, Cat4, _Id) ->
 	{maps:from_list(Cat2), Cat3, Cat4};
 parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Name = maps:get(<<"name">>, H),
 	Url = maps:get(<<"url">>, H),
 	Url2 = parse_url_servico(Url),
-	{Module, Function} = parse_service_func(H),
+	Service = maps:get(<<"service">>, H),
+	{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_contract(Service),
 	Type = maps:get(<<"type">>, H, <<"GET">>),
 	Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
 	Comment = maps:get(<<"comment">>, H, <<>>),
@@ -309,52 +314,64 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Owner = maps:get(<<"owner">>, H, <<>>),
 	Async = maps:get(<<"async">>, H, <<"false">>),
 	Rowid = new_rowid_servico(Url2, Type),
-	Host = maps:get(<<"host">>, H, <<>>),
+	{Host, HostName} = parse_host_contract(maps:get(<<"host">>, H, <<>>), ModuleNameCanonical),
 	Result_Cache = maps:get(<<"result_cache">>, H, 0),
-	valida_name_servico(Name),
-	valida_url_servico(Url2),
-	valida_type_servico(Type),
+	valida_name_contract(Name),
+	valida_url_contract(Url2),
+	valida_type_contract(Type),
 	valida_bool(Apikey),
 	valida_bool(Async),
 	valida_length(Comment, 1000),
 	valida_length(Version, 10),
 	valida_length(Owner, 30),
-	case maps:get(<<"querystring">>, H, <<>>) of
-		<<>> -> 
-			Querystring2 = <<>>,
-			QtdQuerystringRequired = 0;
-		Querystring -> 
-			{Querystring2, QtdQuerystringRequired} = parse_querystring_def(Querystring, [], 0)
-	end,
+	{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
 	IdBin = list_to_binary(integer_to_list(Id)),
-	ServicoView = new_servico_view(IdBin, Name, Url, Module, Function, 
-								   Type, Apikey, Comment, Version, Owner, 
-								   Async, Host, Result_Cache),
-	case is_url_com_re(binary_to_list(Url2)) orelse Module =:= <<"msbus_static_file_service">> of
+	ContractView = new_contract_view(IdBin, Name, Url, ModuleName, FunctionName, 
+							         Type, Apikey, Comment, Version, Owner, 
+								     Async, Host, Result_Cache),
+	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "msbus_static_file_service" of
 		true -> 
-			Servico = new_servico_re(Rowid, IdBin, Name, Url2, Module, 
-									 Function, Type, Apikey, Comment, 
-									 Version, Owner, Async, 
-									 Querystring2, QtdQuerystringRequired,
-									 Host, Result_Cache),
-			parse_catalogo(T, Cat2, [Servico|Cat3], [ServicoView|Cat4], Id+1);
+			Contract = new_contract_re(Rowid, IdBin, Name, Url2, 
+									   Service,
+									   ModuleName, 
+									   ModuleNameCanonical,
+									   FunctionName, Type, Apikey, Comment, 
+									   Version, Owner, Async, 
+									   Querystring, QtdQuerystringRequired,
+									   Host, HostName, Result_Cache),
+			parse_catalogo(T, Cat2, [Contract|Cat3], [ContractView|Cat4], Id+1);
 		false -> 
-			Servico = new_servico(Rowid, IdBin, Name, Url2, Module,
-								  Function, Type, Apikey, Comment,
-								  Version, Owner, Async, 
-								  Querystring2, QtdQuerystringRequired,
-								  Host, Result_Cache),
-			parse_catalogo(T, [{Rowid, Servico}|Cat2], Cat3, [ServicoView|Cat4], Id+1)
+			Contract = new_contract(Rowid, IdBin, Name, Url2, 
+									Service,
+									ModuleName,
+									ModuleNameCanonical,
+									FunctionName, Type, Apikey, Comment,
+									Version, Owner, Async, 
+									Querystring, QtdQuerystringRequired,
+									Host, HostName, Result_Cache),
+			parse_catalogo(T, [{Rowid, Contract}|Cat2], Cat3, [ContractView|Cat4], Id+1)
 	end.	
 
-parse_service_func(Servico) ->
+parse_service_contract(Service) ->
 	try
-		Service = maps:get(<<"service">>, Servico),
-		[Module, Function] = binary:split(Service, <<":">>),
-		{Module, Function}
+		[ModuleName, FunctionName] = binary:split(Service, <<":">>),
+		ModuleName2 = binary_to_list(ModuleName),
+		FunctionName2 = binary_to_list(FunctionName),
+		ModuleNameCanonical = lists:last(string:tokens(ModuleName2, ".")),
+		{ModuleName2, ModuleNameCanonical, FunctionName2}
 	catch
-		_Exception:_Reason ->  erlang:error(invalid_service_servico)
+		_Exception:_Reason ->  erlang:error(invalid_service_contract)
 	end.
+	
+%% @doc O host pode ser um alias definido no arquivo de configuração
+parse_host_contract(<<>>, _) -> {'', atom_to_list(node())};
+parse_host_contract(Host, ModuleNameCanonical) ->
+	Conf = msbus_config:getConfig(),
+	HostAlias = Conf#config.cat_host_alias,
+	Host2 = binary_to_list(maps:get(Host, HostAlias, Host)),
+	Host3 = ModuleNameCanonical ++ "@" ++ Host2,
+	{list_to_atom(Host3), Host3}.
+	
 
 get_querystring(<<QueryName/binary>>, Servico) ->	
 	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#servico.comment == QueryName],
@@ -453,9 +470,9 @@ new_rowid_servico(Url, Type) ->
 		_  -> iolist_to_binary([Type, <<"#">>, Url])
 	end.
 	
-new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey, 
-			   Comment, Version, Owner, Async, Querystring, 
-			   QtdQuerystringRequired, Host, Result_Cache) ->
+new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
+			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
+			   QtdQuerystringRequired, Host, HostName, Result_Cache) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#servico{
 				rowid = Rowid,
@@ -463,8 +480,12 @@ new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey,
 				name = Name,
 				url = Url,
 				type = Type,
-			    module = list_to_atom(binary_to_list(Module)),
-			    function = list_to_atom(binary_to_list(Function)),
+				service = Service,
+			    module_name = ModuleName,
+			    module_name_canonical = ModuleNameCanonical,
+			    module = list_to_atom(ModuleName),
+			    function_name = FunctionName,
+			    function = list_to_atom(FunctionName),
 			    id_re_compiled = Id_re_compiled,
 			    apikey = msbus_util:binary_to_bool(Apikey),
 			    comment = Comment,
@@ -473,21 +494,26 @@ new_servico_re(Rowid, Id, Name, Url, Module, Function, Type, Apikey,
 				async = msbus_util:binary_to_bool(Async),
 			    querystring = Querystring,
 			    qtd_querystring_req = QtdQuerystringRequired,
-			    host = list_to_atom(binary_to_list(Host)),
+			    host = Host,
+			    host_name = HostName,
 			    result_cache = Result_Cache
 			}.
 
-new_servico(Rowid, Id, Name, Url, Module, Function, Type, Apikey, 
-			Comment, Version, Owner, Async, Querystring, 
-			QtdQuerystringRequired, Host, Result_Cache) ->
+new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
+			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
+			QtdQuerystringRequired, Host, HostName, Result_Cache) ->
 	#servico{
 				rowid = Rowid,
 				id = Id,
 				name = Name,
 				url = Url,
 				type = Type,
-			    module = list_to_atom(binary_to_list(Module)),
-			    function = list_to_atom(binary_to_list(Function)),
+				service = Service,
+			    module_name = ModuleName,
+			    module_name_canonical = ModuleNameCanonical,
+			    module = list_to_atom(ModuleName),
+			    function_name = FunctionName,
+			    function = list_to_atom(FunctionName),
 			    apikey = msbus_util:binary_to_bool(Apikey),
 			    comment = Comment,
 			    version = Version,
@@ -495,25 +521,26 @@ new_servico(Rowid, Id, Name, Url, Module, Function, Type, Apikey,
 			    async = msbus_util:binary_to_bool(Async),
 			    querystring = Querystring,
 			    qtd_querystring_req = QtdQuerystringRequired,
-			    host = list_to_atom(binary_to_list(Host)),
+			    host = Host,
+			    host_name = HostName,
 			    result_cache = Result_Cache
 			}.
 
-new_servico_view(Id, Name, Url, Module, Function, Type, Apikey, Comment,
-				 Version, Owner, Async, Host, Result_Cache) ->
-	Servico = #{<<"id">> => Id,
+new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
+				  Comment, Version, Owner, Async, Host, Result_Cache) ->
+	Contract = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
 				<<"type">> => Type,
-			    <<"module">> => Module,
-			    <<"function">> => Function,
+			    <<"module">> => list_to_binary(ModuleName),
+			    <<"function">> => list_to_binary(FunctionName),
 			    <<"apikey">> => Apikey,
 			    <<"comment">> => Comment,
 			    <<"version">> => Version,
 			    <<"owner">> => Owner,
 			    <<"async">> => Async,
-			    <<"host">> => Host,
+			    <<"host">> => list_to_binary(atom_to_list(Host)),
 			    <<"result_cache">> => Result_Cache},
-	Servico.
+	Contract.
 
 
