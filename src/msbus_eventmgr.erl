@@ -71,7 +71,7 @@ init([]) ->
     {ok, #state{}}.
     
 handle_cast({notifica_evento, QualEvento, Motivo}, State) ->
-	notifica_evento(QualEvento, Motivo, State),
+	notifica_evento(State#state.lista_interesse, QualEvento, Motivo),
 	{noreply, State};
     
 handle_cast(shutdown, State) ->
@@ -147,14 +147,19 @@ remove_interesse(Evento, Fun, State) ->
 		false -> {einteressenaocadastrado, State}
 	end.
 		
-notifica_evento(QualEvento, Motivo, State) ->
-	case existe_evento(QualEvento, State) of
-		true  -> 
-			[Fun(QualEvento, Motivo) || {Evento, Fun} <- State#state.lista_interesse, Evento == QualEvento],
-			ok;
-		false -> eeventonaocadastrado
+notifica_evento([], _QualEvento, _Motivo) -> ok;
+notifica_evento([{Evento, Fun} = _H|T], QualEvento, Motivo) ->
+	case Evento == QualEvento of
+		true ->
+			try
+				Fun(QualEvento, Motivo)
+			after
+				notifica_evento(T, QualEvento, Motivo)		
+			end;
+		false ->
+			notifica_evento(T, QualEvento, Motivo)
 	end.
-
+	
 lista_evento(State) -> State#state.lista_evento.	
 
 lista_interesse(State) -> State#state.lista_interesse.	
