@@ -19,10 +19,13 @@
 -define(FAVICON_PATH, code:priv_dir(msbus) ++ "/favicon.ico").
 
 % Caminho do catálogo de serviços
--define(CATALOGO_PATH, code:priv_dir(msbus) ++ "/conf/catalogo.conf").
+-define(CONF_PATH, code:priv_dir(msbus) ++ "/conf").
+
+% Caminho do catálogo de serviços
+-define(CATALOGO_PATH, ?CONF_PATH ++ "/catalogo.conf").
 
 % Caminho do arquivo de configuração
--define(CONF_FILE_PATH, code:priv_dir(msbus) ++ "/conf/msbus.conf").
+-define(CONF_FILE_PATH, ?CONF_PATH ++ "/msbus.conf").
 
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, code:priv_dir(msbus) ++ "/www").

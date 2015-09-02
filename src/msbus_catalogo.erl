@@ -134,7 +134,20 @@ do_lista_catalogo(State) -> State#state.cat1.
 
 %% @doc Obtém o catálogo
 get_catalogo() -> 
-	Cat1 = get_catalogo_from_disk(),
+	%% O arquivo do catálogo contém os includes para os catálogos com as definições de serviço
+	Cat0 = get_catalogo_from_disk(),
+	CatalogoDefsPath = ?CONF_PATH ++ "/catalogo/",
+	%% Obtém a lista do conteúdo de todos os catálogos
+	CatDefs = lists:map(fun(M) -> 
+							{ok, Arq} = file:read_file(CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M))),
+							Arq
+					    end, Cat0),
+	%% Adiciona "," entre as definições de cada catálogo
+	CatDefs1 = lists:foldl(fun(X, Y) -> iolist_to_binary([X, <<",">>, Y]) end, <<>>, CatDefs),
+	%% Adiciona abertura e fechamento de lista para o parser correto do JSON
+	CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
+	{ok, Cat1} = msbus_util:json_decode_as_map(CatDefs2),
+	%% Faz o parser do catálogo
 	{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1),
 	#state{cat1=Cat4, cat2=Cat2, cat3=Cat3}.
 

@@ -10,15 +10,7 @@
   {mod, { msbus_app, []}},
   {env, [
         {pools, [
-            {msbus_config_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
             {msbus_eventmgr_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
-            {msbus_logger_pool, [
                 {size, 1},
                 {max_overflow, 0}
             ], []},

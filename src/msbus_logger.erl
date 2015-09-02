@@ -142,7 +142,10 @@ write_msg(Tipo, <<Msg/binary>>, State) ->
     write_msg(Tipo, Msg1, State);
     
 write_msg(Tipo, Msg, State) ->
-	io:format("~s~n", [Msg]),
+	case erlang:is_list(Msg) of
+		true -> io:format("~s~n", [Msg]);
+		false -> io:format("~p~n", [Msg])
+	end,
 	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", msbus_util:timestamp_str(), "  ", Msg]),
 	set_checkpoint_timeout(State),
 	State#state{buffer = [Msg1|State#state.buffer], checkpoint = true}.

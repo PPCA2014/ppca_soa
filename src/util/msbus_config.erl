@@ -43,7 +43,7 @@ getConfig() -> gen_server:call(?SERVER, get_config).
 %% gen_server callbacks
 %%====================================================================
  
-init([]) -> {ok, le_config()}. 
+init([]) -> le_config().
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -73,18 +73,24 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 le_config() ->
-	{ok, Arq} = file:read_file(?CONF_FILE_PATH),
-	{ok, Json} = msbus_util:json_decode_as_map(Arq),
-	#config{tcp_listen_address 	= parse_tcp_listen_address(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
-			tcp_port        	= maps:get(<<"tcp_port">>, Json, 2301),
-		    tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"false">>)),
-  		    tcp_nodelay     	= msbus_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, <<"true">>)),
-  		    tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, 12),
-  		    log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
-  		    log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, 6000),
-  		    cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{})
-  		    }.
-	
+	try
+		{ok, Arq} = file:read_file(?CONF_FILE_PATH),
+		{ok, Json} = msbus_util:json_decode_as_map(Arq),
+		Config = #config{tcp_listen_address = parse_tcp_listen_address(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
+						tcp_port        	= maps:get(<<"tcp_port">>, Json, 2301),
+						tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"false">>)),
+						tcp_nodelay     	= msbus_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, <<"true">>)),
+						tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, 12),
+						log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
+						log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, 6000),
+						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{})
+						},
+		valida_port(Config#config.tcp_port),
+		valida_max_http_worker(Config#config.tcp_max_http_worker),
+		{ok, Config}
+	catch
+		_Exception:Reason -> {stop, Reason} 
+	end.
 
 parse_tcp_listen_address(ListenAddress) ->
 	lists:map(fun(L) -> 
@@ -92,5 +98,16 @@ parse_tcp_listen_address(ListenAddress) ->
 					L2 
 			  end, ListenAddress).
 
+valida_port(Value) -> 
+	case msbus_consiste:is_range_valido(Value, 1024, 5000) of
+		true -> ok;
+		false -> erlang:error(invalid_tcp_port)
+	end.
 
+valida_max_http_worker(Value) -> 
+	case msbus_consiste:is_range_valido(Value, 1, 1000) of
+		true -> ok;
+		false -> erlang:error(invalid_tcp_max_http_worker)
+	end.
+	
 

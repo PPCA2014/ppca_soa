@@ -12,12 +12,16 @@
 -include("../include/msbus_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
--export([is_email_valido/1]).
+-export([is_email_valido/1, is_range_valido/3]).
 -export([msg_campo_obrigatorio/2, msg_email_invalido/2, mensagens/1]).
 -export([msg_registro_ja_existe/1, msg_registro_ja_existe/2]).
 
 
 %% *********** Funções para validação de dados ************
+
+is_range_valido(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> true;
+is_range_valido(_Number, _RangeIni, _RangeFim) -> false.
+
 
 is_email_valido(Value) -> 
 	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
