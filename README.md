@@ -18,7 +18,7 @@ Como executar ErlangMS
 Se estiver no Linux, digite:
 
 ```console
-./start-server.sh
+./start.sh
 INFO 1/9/2015 21:11:30  Erlang Microservices (ErlangMS 1.0)
 INFO 1/9/2015 21:11:30  Inicializando o pool de módulos:
 INFO 1/9/2015 21:11:30     Módulo msbus_eventmgr com 1 worker.
@@ -45,7 +45,7 @@ INFO 1/9/2015 21:11:31  ErlangMS iniciado em 326ms.
 Caso estiver no Windows, digite:
 
 ```console
-start-server.bat
+start.bat
 INFO 1/9/2015 21:11:30  Erlang Microservices (ErlangMS 1.0)
 INFO 1/9/2015 21:11:30  Inicializando o pool de módulos:
 INFO 1/9/2015 21:11:30     Módulo msbus_eventmgr com 1 worker.
