@@ -62,14 +62,24 @@ header_cache_control(<<"image/x-icon">>) ->
 header_cache_control(<<_MimeType/binary>>) ->
 	<<"Cache-Control: no-cache"/utf8>>.
 
-get_querystring([]) -> #{};
-get_querystring([Querystring]) ->
+parse_querystring([]) -> #{};
+parse_querystring([Querystring]) ->
 	Q1 = string:tokens(Querystring, "&"),
 	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
-	Q3 = lists:map(fun([P|V]) -> {iolist_to_binary(P), iolist_to_binary(msbus_util:hd_or_empty(V))} end, Q2),
+	Q3 = lists:map(fun([P|V]) -> 
+						{iolist_to_binary(P), parse_querystring_value(msbus_util:hd_or_empty(V))} 
+				   end, Q2),
 	maps:from_list(Q3).
 
-create_rid() -> calendar:datetime_to_gregorian_seconds(calendar:local_time()).
+parse_querystring_value([]) -> <<>>;
+parse_querystring_value(Value) ->
+	Value1 = http_uri:decode(Value),
+    case hd(Value1) of
+		34 -> Value2 = string:substr(Value1, 2, length(Value1)-2);
+		_  -> Value2 = Value1
+	end,
+	iolist_to_binary(Value2).
+	
 
 rid_to_string(RID) -> integer_to_list(RID).
 
@@ -94,7 +104,7 @@ encode_request(Socket, RequestBin) ->
 		Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
 		Cache_Control = maps:get("cache_control", Outros2, "false"),
 		Host = maps:get("host", Outros2, ""),
-		QuerystringMap = get_querystring(Querystring),
+		QuerystringMap = parse_querystring(Querystring),
 		case is_metodo_suportado(Metodo) of
 			true ->
 				case is_payload_permitido(Metodo, Content_Length) of

@@ -129,9 +129,11 @@ executa_servico(Request=#request{servico=#servico{host='',
 
 %% @doc Executa o serviço em outro host (Serviço escrito em outra plataforma/linguagem)
 executa_servico(Request=#request{servico=#servico{host = Host, 
+												  host_name = HostName,	
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  module = Module}}) ->
+	msbus_logger:info("CALL ~s:~s em ~s.", [ModuleName, FunctionName, HostName]),
 	{Module, Host} ! {{Request#request.rid, 
 					   Request#request.url, 
 					   Request#request.type, 
