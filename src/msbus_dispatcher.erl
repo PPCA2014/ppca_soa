@@ -111,8 +111,12 @@ do_dispatch_request(Request) ->
 
 %% @doc Executa o serviço local (Serviço escrito em Erlang)
 executa_servico(Request=#request{servico=#servico{host='', 
+												  host_name = HostName,	
 												  module=Module, 
+												  module_name = ModuleName, 
+												  function_name = FunctionName, 
 												  function=Function}}) ->
+	msbus_logger:info("CALL ~s:~s em ~s.", [ModuleName, FunctionName, HostName]),
 	try
 		case whereis(Module) of
 			undefined -> 
@@ -139,6 +143,8 @@ executa_servico(Request=#request{servico=#servico{host = Host,
 					   Request#request.type, 
 					   Request#request.params_url, 
 					   Request#request.querystring_map,
+					   Request#request.payload,	
+					   Request#request.content_type,	
 					   ModuleName,
 					   FunctionName}, 
 					   self()
