@@ -34,6 +34,9 @@ start(_StartType, StartArgs) ->
 	end.
 
 stop(_State) ->
+    msbus_sup:stop(),
+    msbus_logger:stop(),
+	msbus_config:stop(),
     ok.
     
     

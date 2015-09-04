@@ -72,7 +72,8 @@ handle_info(_Msg, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    gen_tcp:close(State#state.lsocket),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->

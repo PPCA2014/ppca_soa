@@ -1,2 +1,2 @@
 #!/bin/sh
-erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname msbus -setcookie erlangms -eval "application:start(msbus)" -boot start_sasl -config ./priv/conf/elog
+erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname msbus -setcookie erlangms -eval "msbus:start()" -boot start_sasl -config ./priv/conf/elog

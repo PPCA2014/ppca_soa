@@ -25,7 +25,9 @@
 -export([cast/1]).
 
 % estado do servidor
--record(state, {lsocket, socket}).
+-record(state, {lsocket,	%% socket do listener
+				socket		%% socket da requisição
+				}).
 
 -define(SERVER, ?MODULE).
 
@@ -55,17 +57,18 @@ cast(Msg) -> msbus_pool:cast(msbus_server_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
+%% init para processos que vão processar a fila de requisições de entrada
 init({_Num, LSocket}) ->
     process_flag(trap_exit, true),
     State = #state{lsocket=LSocket},
     {ok, State, 0};
 
+%% init para processos que vão processar a fila de requisições de saída
 init(_Args) ->
     process_flag(trap_exit, true),
     msbus_eventmgr:registra_interesse(ok_request, fun(_Q, R) -> msbus_server_worker:cast(R) end),
     msbus_eventmgr:registra_interesse(erro_request, fun(_Q, R) -> msbus_server_worker:cast(R) end),
     {ok, #state{}}.
- 
    
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -107,9 +110,13 @@ handle_info(_Msg, State) ->
 handle_info(State) ->
    {noreply, State}.
 
+terminate(_Reason, #state{socket=Socket}) when Socket /= undefined ->
+	gen_tcp:close(Socket),
+    ok;
+
 terminate(_Reason, _State) ->
-    ok.
- 
+	ok.
+	
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
@@ -121,11 +128,8 @@ code_change(_OldVsn, State, _Extra) ->
 conexao_accept(State) ->
     case gen_tcp:accept(State#state.lsocket) of
 		{ok, Socket}   -> {noreply, State#state{socket=Socket}};
-		{error, Error} -> 
-			msbus_logger:error("Falha na chamada gen_tcp:accept. Erro interno: ~p.", [Error]),
-			{noreply, State}
+		{error, _Error} -> {noreply, State#state{socket=undefined}}
 	end.
-
 
 %% @doc Processa o pedido do request
 do_processa_request(Socket, RequestBin, State) -> 
