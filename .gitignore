@@ -14,4 +14,4 @@ Mnesia.nonode@nohost
 qlc_*
 Mnesia.*/**
 priv/www
-
+priv/conf/msbus.conf 
