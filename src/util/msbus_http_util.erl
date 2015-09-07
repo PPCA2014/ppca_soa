@@ -295,12 +295,12 @@ is_metodo_suportado(<<"GET">>) -> true;
 is_metodo_suportado(<<"POST">>) -> true;
 is_metodo_suportado(<<"PUT">>) -> true;
 is_metodo_suportado(<<"DELETE">>) -> true;
-is_metodo_suportado(<<"OPTION">>) -> true;
+is_metodo_suportado(<<"OPTIONS">>) -> true;
 is_metodo_suportado("GET") -> true;
 is_metodo_suportado("POST") -> true;
 is_metodo_suportado("PUT") -> true;
 is_metodo_suportado("DELETE") -> true;
-is_metodo_suportado("OPTION") -> true;
+is_metodo_suportado("OPTIONS") -> true;
 is_metodo_suportado(_) -> false.
 
 %% @doc Indica se a URL é valida
