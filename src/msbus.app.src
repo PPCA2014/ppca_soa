@@ -66,7 +66,7 @@
                 {size, 2},
                 {max_overflow, 6}
             ], []},
-            {msbus_option_service_pool, [
+            {msbus_options_service_pool, [
                 {size, 1},
                 {max_overflow, 6}
             ], []},

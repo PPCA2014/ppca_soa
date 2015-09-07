@@ -8,7 +8,7 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_option_service).
+-module(msbus_options_service).
 
 -behavior(gen_server). 
 

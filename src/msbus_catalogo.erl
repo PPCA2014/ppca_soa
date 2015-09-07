@@ -342,7 +342,7 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	ContractView = new_contract_view(IdBin, Name, Url, ModuleName, FunctionName, 
 							         Type, Apikey, Comment, Version, Owner, 
 								     Async, Host, Result_Cache),
-	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "msbus_static_file_service" of
+	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "msbus_static_file_service" orelse ModuleName =:= "msbus_options_service" of
 		true -> 
 			Contract = new_contract_re(Rowid, IdBin, Name, Url2, 
 									   Service,

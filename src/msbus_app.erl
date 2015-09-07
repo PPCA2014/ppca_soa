@@ -28,7 +28,7 @@ start(_StartType, StartArgs) ->
 			msbus_logger:info("Portal ErlangMS Api Management em http://127.0.0.1:~p/portal/index.html", [Config#config.tcp_port]),
 			msbus_logger:info("ErlangMS iniciado em ~pms.", [msbus_util:get_milliseconds() - T1]),
 			msbus_logger:sync(),
-			msbus_util:sleep(500),
+			msbus_util:sleep(1500),
 			registra_eventos(),
 			Ret;
 		{error, Error} ->
