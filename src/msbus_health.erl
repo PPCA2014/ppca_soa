@@ -132,7 +132,11 @@ get_requests_periodo_by_group(Periodo, FieldsGroup, State) ->
 
 %% @doc Retorna os serviços mais acessados de um período
 do_get_top_services(Top, Periodo, Sort, State) ->
-    Fields = fun(X) -> {X#request.servico#servico.name} end,
+    Fields = fun(X) -> case X#request.servico of
+						  undefined -> {};
+						  _ -> {X#request.servico#servico.name} 
+					   end
+			 end,
 	Requests = get_requests_periodo(Periodo, State), 
 	Urls = maps:keys(groupBy(Fields, Requests)),
 	Urls2 = count(Fields, Urls, Requests),
