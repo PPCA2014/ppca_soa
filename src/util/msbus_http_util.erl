@@ -23,7 +23,7 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 				<<"Content-Length: "/utf8>>, PayloadLength, <<"\n"/utf8>>,
 				<<"Access-Control-Allow-Origin: *\n"/utf8>>,
 				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS\n"/utf8>>,
-				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRF-Token\n"/utf8>>,
+				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token\n"/utf8>>,
 				header_cache_control(MimeType),
 				<<"\n\n"/utf8>>, 
 	            Payload],
