@@ -241,8 +241,8 @@ is_payload_permitido(Metodo, Content_Length) ->
 		{"POST", _} -> true;
 		{"PUT", 0} -> error;
 		{"PUT", _} -> true;
-		{"OPTION", 0} -> false;
-		{"OPTION", _} -> error;
+		{"OPTIONS", 0} -> false;
+		{"OPTIONS", _} -> error;
 		_ -> error
 	end.
 
