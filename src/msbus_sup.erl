@@ -50,6 +50,3 @@ init([]) ->
 	
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 
-
-
-

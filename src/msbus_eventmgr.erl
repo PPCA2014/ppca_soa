@@ -115,6 +115,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
+
 existe_evento(Evento, State) ->
 	lists:member(Evento, State#state.lista_evento).
 

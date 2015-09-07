@@ -23,6 +23,7 @@
 %% Client API
 -export([registra_request/1, 
 		 get_requests_periodo/1,
+		 get_requests_periodo/2,
 		 get_request_rid/1]).
 
 -export([get_property_request/2, 
@@ -70,9 +71,6 @@ update_request(Request) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
-   	msbus_eventmgr:adiciona_evento(new_request),
-	msbus_eventmgr:adiciona_evento(ok_request),
-	msbus_eventmgr:adiciona_evento(erro_request),
     {ok, #state{}}.
     
 handle_cast(shutdown, State) ->
@@ -120,6 +118,21 @@ get_requests_periodo(Periodo) ->
 				 qlc:q([R || R <- mnesia:table(request), 
 							 msbus_util:no_periodo(R#request.timestamp, Periodo)]), [{order, descending}]
 							 
+				)
+		  )
+	   end,
+	{atomic, Requests} = mnesia:transaction(Query),
+	Requests.
+
+%% @doc Retorna a lista de requisições por período e por code
+get_requests_periodo(Periodo, Code) ->
+	Query = fun() ->
+		  qlc:e(
+			 qlc:sort(
+				 qlc:q([R || R <- mnesia:table(request), 
+							 msbus_util:no_periodo(R#request.timestamp, Periodo),
+							 R#request.status == Code
+							 ]), [{order, descending}]
 				)
 		  )
 	   end,

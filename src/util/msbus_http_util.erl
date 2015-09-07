@@ -93,9 +93,9 @@ encode_request(Socket, RequestBin) ->
 		PosFimHeader = string:str(RequestText, "\r\n\r\n"),
 		Header = string:sub_string(RequestText, 1, PosFimHeader-1),
 		[Principal|Outros] = string:tokens(Header, "\r\n"),
-		[Metodo, Url, Versao_HTTP] = string:tokens(Principal, " "),
-		[Url2|Querystring] = string:tokens(Url, "?"),
-		Url3 = msbus_util:remove_ult_backslash_url(Url2),
+		[Metodo, Uri, Versao_HTTP] = string:tokens(Principal, " "),
+		[Url|Querystring] = string:tokens(Uri, "?"),
+		Url2 = msbus_util:remove_ult_backslash_url(Url),
 		Outros2 = get_http_header_adicionais(Outros),
 		Content_Length = maps:get("content-length", Outros2, 0),
 		Content_Type = maps:get("content-type", Outros2, "application/json"),
@@ -113,7 +113,8 @@ encode_request(Socket, RequestBin) ->
 						Request = #request{
 									rid = RID,
 									type = Metodo,
-									url = Url3,
+									uri = Uri,
+									url = Url2,
 									versao_http = Versao_HTTP,
 									querystring = Querystring,
 									querystring_map = QuerystringMap,
@@ -137,7 +138,8 @@ encode_request(Socket, RequestBin) ->
 								Request = #request{
 											rid = RID,
 											type = Metodo,
-											url = Url3,
+											uri = Uri,
+											url = Url2,
 											versao_http = Versao_HTTP,
 											querystring = Querystring,
 											querystring_map = QuerystringMap,
@@ -159,7 +161,8 @@ encode_request(Socket, RequestBin) ->
 								Request = #request{
 										rid = RID,
 										type = Metodo,
-										url = Url3,
+										uri = Uri,
+										url = Url2,
 										versao_http = Versao_HTTP,
 										querystring = Querystring,
 										querystring_map = QuerystringMap,
@@ -181,7 +184,8 @@ encode_request(Socket, RequestBin) ->
 						Request = #request{
 								rid = RID,
 								type = Metodo,
-								url = Url3,
+								uri = Uri,
+								url = Url2,
 								versao_http = Versao_HTTP,
 								querystring = Querystring,
 								querystring_map = QuerystringMap,
@@ -202,7 +206,8 @@ encode_request(Socket, RequestBin) ->
 				Request = #request{
 							rid = RID,
 							type = Metodo,
-							url = Url3,
+							uri = Uri,
+							url = Url2,
 							versao_http = Versao_HTTP,
 							querystring = Querystring,
 							querystring_map = QuerystringMap,
@@ -300,7 +305,7 @@ is_metodo_suportado(_) -> false.
 
 %% @doc Indica se a URL é valida
 is_url_valido(Url) ->
-	case re:run(Url, "^((http:\/\/)|(\/))?([a-z0-9\-]+\.)?[a-z0-9\-]+\.[a-z0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
+	case re:run(Url, "^((http:\/\/)|(\/))?([a-z_0-9\-]+\.)?[a-z_0-9\-]+\.[a-z_0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
 		nomatch -> false;
 		_ -> true
 	end.

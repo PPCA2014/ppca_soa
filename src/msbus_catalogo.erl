@@ -101,7 +101,7 @@ handle_call(lista_catalogo, _From, State) ->
     
 handle_call({lookup, Request}, _From, State) ->
 	{Reply, NewState} = lookup(Request, State),
-	{reply, Reply, NewState};
+	{reply, Reply, NewState, 60000};
 
 handle_call(list_cat2, _From, State) ->
 	{reply, State#state.cat2, State};

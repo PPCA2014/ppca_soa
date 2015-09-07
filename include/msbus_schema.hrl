@@ -20,7 +20,9 @@
 					  timestamp, 								%% Timestamp de quando que a requisição ocorreu
 					  latencia :: non_neg_integer(),			%% Latência (tempo que levou para processar a requisição)
 					  status,    								%% Código de retorno HTTP (Ex.: 202 OK, 404 Não Encontrado)
+					  reason,									%% Registra a mensagem de erro, quando status indicar um erro
 					  type :: string(),							%% Verbo HTTP (GET, POST, PUT, DELETE e OPTIONS)
+					  uri :: string(),							%% URI da requisição do serviço
 					  url :: string(),							%% URL da requisição do serviço
 					  versao_http :: string(),					%% Versão do cabeçalho HTTP
 					  payload :: string(),						%% Corpo da requisição (aceita somente JSON)
@@ -37,7 +39,8 @@
 					  host :: string(),							%% Host que iniciou a requisição
 					  t1,										%% Utilizado para cálculo da latência (Tempo inicial em milisegundos)
 					  socket :: gen_tcp:socket(),				%% Socket da requisição
-					  worker :: pid()							%% Processo worker http que vai atender a requisição
+					  worker :: pid(),							%% Processo worker http que vai atender a requisição
+					  status_send								%% Registra que a mensagem foi entregue ou o erro ocorrido na entrega
 				  }).
 
 -record(servico, {

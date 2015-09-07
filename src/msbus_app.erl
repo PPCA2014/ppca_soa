@@ -27,6 +27,9 @@ start(_StartType, StartArgs) ->
 			Ret = msbus_sup:start_link(StartArgs),
 			msbus_logger:info("Portal ErlangMS Api Management em http://127.0.0.1:~p/portal/index.html", [Config#config.tcp_port]),
 			msbus_logger:info("ErlangMS iniciado em ~pms.", [msbus_util:get_milliseconds() - T1]),
+			msbus_logger:sync(),
+			msbus_util:sleep(500),
+			registra_eventos(),
 			Ret;
 		{error, Error} ->
 			io:format("Erro ao processar arquivo de configuração: ~p.", [Error]),
@@ -39,4 +42,24 @@ stop(_State) ->
 	msbus_config:stop(),
     ok.
     
+registra_eventos() ->
+   	msbus_eventmgr:adiciona_evento(new_request),
+	msbus_eventmgr:adiciona_evento(ok_request),
+	msbus_eventmgr:adiciona_evento(erro_request),
+	msbus_eventmgr:adiciona_evento(close_request),
+	msbus_eventmgr:adiciona_evento(send_error_request),
+
+    msbus_eventmgr:registra_interesse(ok_request, fun(_Q, R) -> 
+														msbus_server_worker:cast(R) 
+												  end),
+
+    msbus_eventmgr:registra_interesse(erro_request, fun(_Q, R) -> 
+														msbus_server_worker:cast(R) 
+													end),
+
+	msbus_eventmgr:registra_interesse(close_request, fun(_Q, R) -> 
+														msbus_logger:log_request(R) 
+													 end).
+    
+													 
     

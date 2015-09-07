@@ -105,6 +105,7 @@ do_dispatch_request(Request) ->
 				Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, Error})
 			end;
 		notfound -> 
+			msbus_request:registra_request(Request),
 			msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, notfound}})
 	end,
 	ok.
@@ -116,7 +117,7 @@ executa_servico(Request=#request{servico=#servico{host='',
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  function=Function}}) ->
-	msbus_logger:info("CALL ~s:~s em ~s.", [ModuleName, FunctionName, HostName]),
+	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, HostName, Request#request.rid, Request#request.uri]),
 	try
 		case whereis(Module) of
 			undefined -> 
@@ -137,9 +138,9 @@ executa_servico(Request=#request{servico=#servico{host = Host,
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  module = Module}}) ->
-	msbus_logger:info("CALL ~s:~s em ~s.", [ModuleName, FunctionName, HostName]),
+	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, HostName, Request#request.rid, Request#request.uri]),
 	{Module, Host} ! {{Request#request.rid, 
-					   Request#request.url, 
+					   Request#request.uri, 
 					   Request#request.type, 
 					   Request#request.params_url, 
 					   Request#request.querystring_map,

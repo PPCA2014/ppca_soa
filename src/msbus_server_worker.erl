@@ -66,8 +66,6 @@ init({_Num, LSocket}) ->
 %% init para processos que vão processar a fila de requisições de saída
 init(_Args) ->
     process_flag(trap_exit, true),
-    msbus_eventmgr:registra_interesse(ok_request, fun(_Q, R) -> msbus_server_worker:cast(R) end),
-    msbus_eventmgr:registra_interesse(erro_request, fun(_Q, R) -> msbus_server_worker:cast(R) end),
     {ok, #state{}}.
    
 handle_cast(shutdown, State) ->
@@ -104,7 +102,8 @@ handle_info({tcp, Socket, RequestBin}, State) ->
 handle_info({tcp_closed, _Socket}, State) ->
 	{noreply, State, 0};
 
-handle_info(_Msg, State) ->
+handle_info(Msg, State) ->
+	io:format(Msg),
    {noreply, State}.
 
 handle_info(State) ->
@@ -131,7 +130,7 @@ conexao_accept(State) ->
 		{error, _Error} -> {noreply, State#state{socket=undefined}}
 	end.
 
-%% @doc Processa o pedido do request
+%% @doc Processa o request
 do_processa_request(Socket, RequestBin, State) -> 
 	case msbus_http_util:encode_request(Socket, RequestBin) of
 		 {ok, Request} -> msbus_dispatcher:dispatch_request(Request);
@@ -148,113 +147,51 @@ do_processa_response(Request, {async, true}, _State) ->
 	RID = msbus_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = msbus_http_util:encode_response(<<"200">>, Ticket),
-	do_processa_response("OK", <<"200">>, Request, Response),
-	ok;
+	do_processa_response(200, ok, Request, Response);
 
 do_processa_response(Request, {ok, Result}, _State) -> 
 	case Request#request.servico#servico.async of
 		true -> io:format("Ticket já foi entregue\n");
 		_ -> 
 			Response = msbus_http_util:encode_response(<<"200">>, Result),
-			do_processa_response("OK", <<"200">>, Request, Response)
-	end,
-	ok;
+			do_processa_response(200, ok, Request, Response)
+	end;
 
 do_processa_response(Request, {ok, Result, MimeType}, _State) ->
 	Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
-	do_processa_response("OK", <<"200">>, Request, Response),
-	ok;
+	do_processa_response(200, ok, Request, Response);
 
 do_processa_response(Request, {error, notfound}, _State) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
-	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
-	T2 = msbus_util:get_milliseconds(),
-	Latencia = T2 - Request#request.t1,
-	log_status_requisicao(<<"404">>, Request, notfound, Latencia, StatusSend),
-	ok;
+	do_processa_response(404, notfound, Request, Response);
 
 do_processa_response(Request, {error, invalid_payload}, _State) ->
 	Response = msbus_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
-	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
-	T2 = msbus_util:get_milliseconds(),
-	Latencia = T2 - Request#request.t1,
-	log_status_requisicao(<<"503">>, Request, invalid_payload, Latencia, StatusSend),
-	ok;
+	do_processa_response(415, invalid_payload, Request, Response);
 
 do_processa_response(Request, {error, file_not_found}, _State) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
-	T2 = msbus_util:get_milliseconds(),
-	Latencia = T2 - Request#request.t1,
-	log_status_requisicao(<<"503">>, Request, file_not_found, Latencia, StatusSend),
-	ok;
+	do_processa_response(404, file_not_found, Request, Response);
 
 do_processa_response(Request, {error, Reason}, _State) ->
 	Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
-	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
-	T2 = msbus_util:get_milliseconds(),
-	Latencia = T2 - Request#request.t1,
-	log_status_requisicao(<<"400">>, Request, Reason, Latencia, StatusSend),
-	ok;
+	do_processa_response(400, Reason, Request, Response);
 
 do_processa_response(Request, {error, Reason, ErroInterno}, State) ->
 	Reason2 = io_lib:format("~p ~p", [Reason, ErroInterno]),
 	do_processa_response(Request, {error, Reason2}, State);
 
 do_processa_response(Request, Result, State) ->
-	do_processa_response(Request, {ok, Result}, State),
-	ok.
+	do_processa_response(Request, {ok, Result}, State).
 
-do_processa_response(Code, Status, Request, Response) ->
+do_processa_response(Code, Reason, Request, Response) ->
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	Request2 = Request#request{latencia = Latencia, status = Code},
+	Request2 = Request#request{latencia = Latencia, status = Code, reason = Reason, status_send = StatusSend},
 	msbus_request:update_request(Request2),
 	case StatusSend of
-		ok -> log_status_requisicao(Code, Request2, Status, Latencia, StatusSend);
-		_Error -> log_status_requisicao(Code, Request2, Status, Latencia, StatusSend)
-	end,
-	ok.
-	
-%% @doc Imprime o status da requisição no log
-log_status_requisicao(Code, Request, Reason, Latencia, StatusSend) when erlang:is_record(Request, request) ->
-	Metodo = Request#request.type,
-	Url = Request#request.url,
-	HTTP_Version = Request#request.versao_http,
-	Accept = Request#request.accept,
-	User_Agent = Request#request.user_agent,
-	Payload = Request#request.payload,
-	StatusSend2 = format_send_error(StatusSend),
-	Contract = Request#request.servico,
-	Query = Request#request.querystring,
-	case Contract of
-		undefined -> 
-			Service = "",
-			HostName = "";
-		_ -> 
-			Service = Contract#servico.service,
-			HostName = "em " ++ Contract#servico.host_name
-	end,
-	case Payload of
-		undefined ->
-			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tStatus: ~s <<~s>> (~pms)\n\t~s\n}",
-			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Service, HostName, Query, Code, Reason, Latencia, StatusSend2]);
-		_ ->
-			Content_Type = Request#request.content_type,
-			Texto =  "~s ~s ~s {\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tStatus: ~s <<~s>> (~pms)\n\t~s\n}",
-			msbus_logger:info(Texto, [Metodo, Url, HTTP_Version, Accept, User_Agent, Content_Type, Payload, Service, HostName, Query, Code, Reason, Latencia, StatusSend2])
-	end;
-	
-log_status_requisicao(Code, Request, Reason, Latencia, StatusSend) ->	
-	io:format("AQUI\n\n"),
-	StatusSend2 = format_send_error(StatusSend),
-	Texto =  "~s {\n\tStatus: ~s ~s (~pms)\n\t~s\n}", 
-	msbus_logger:info(Texto, [Request, Code, Reason, Latencia, StatusSend2]).
-	
-	format_send_error(StatusSend) ->
-	case StatusSend of
-		ok -> "";
-		_Error -> io_lib:format("Erro tcp_send: ~p", [StatusSend]) 
+		ok -> msbus_eventmgr:notifica_evento(close_request, Request2);
+		_Error -> msbus_eventmgr:notifica_evento(send_error_request, Request2)
 	end.
 	

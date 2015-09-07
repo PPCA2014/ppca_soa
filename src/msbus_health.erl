@@ -25,7 +25,7 @@
 		 get_top_services_by_type/3, 
 		 get_qtd_requests_by_date/3,
 		 groupBy/2, 
-		 get_requests_submit/1, 
+		 get_requests_periodo/1, 
 		 count/3]).
 
 
@@ -65,8 +65,8 @@ get_qtd_requests_by_date(Top, Periodo, Sort) ->
 	msbus_pool:call(msbus_health_pool, {qtd_requets_by_date, Top, Periodo, Sort}).
 	
 %% @doc Lista os requests por período
-get_requests_submit(Periodo) ->	
-	msbus_pool:call(msbus_health_pool, {requests_submit, Periodo}).
+get_requests_periodo(Periodo) ->	
+	msbus_pool:call(msbus_health_pool, {requests_periodo, Periodo}).
 
  
 %%====================================================================
@@ -87,15 +87,19 @@ handle_cast(_Msg, State) ->
 
 handle_call({top_services, Top, Periodo, Sort}, _From, State) ->
 	Reply = do_get_top_services(Top, Periodo, Sort, State),
-	{reply, Reply, State};
+	{reply, Reply, State, 60000};
 
 handle_call({top_services_by_type, Top, Periodo, Sort}, _From, State) ->
 	Reply = do_get_top_services_by_type(Top, Periodo, Sort, State),
-	{reply, Reply, State};
+	{reply, Reply, State, 60000};
 
 handle_call({qtd_requets_by_date, Top, Periodo, Sort}, _From, State) ->
 	Reply = do_get_qtd_requests_by_date(Top, Periodo, Sort, State),
-	{reply, Reply, State}.
+	{reply, Reply, State, 60000};
+
+handle_call({requests_periodo, Periodo}, _From, State) ->
+	Reply = get_requests_periodo(Periodo, State),
+	{reply, Reply, State, 60000}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -115,21 +119,21 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 %% @doc Retorna a lista de requisições de um período
-get_requests_submit(Periodo, _State) ->
+get_requests_periodo(Periodo, _State) ->
 	msbus_cache:get(health_req_sub, 60000, Periodo, 
 					fun() -> 
 						msbus_request:get_requests_periodo(Periodo)
 					end).
 
 %% @doc Retorna a lista de requisições de um período agrupado por FieldsGroup
-get_requests_submit_by_group(Periodo, FieldsGroup, State) ->
-	Requests = get_requests_submit(Periodo, State),
+get_requests_periodo_by_group(Periodo, FieldsGroup, State) ->
+	Requests = get_requests_periodo(Periodo, State),
 	maps:keys(groupBy(FieldsGroup, Requests)).
 
 %% @doc Retorna os serviços mais acessados de um período
 do_get_top_services(Top, Periodo, Sort, State) ->
     Fields = fun(X) -> {X#request.servico#servico.name} end,
-	Requests = get_requests_submit(Periodo, State), 
+	Requests = get_requests_periodo(Periodo, State), 
 	Urls = maps:keys(groupBy(Fields, Requests)),
 	Urls2 = count(Fields, Urls, Requests),
 	case Sort of
@@ -142,7 +146,7 @@ do_get_top_services(Top, Periodo, Sort, State) ->
 do_get_top_services_by_type(Top, Periodo, Sort, State) ->
     Fields = fun(X) -> {X#request.servico#servico.type, 
 			  			X#request.servico#servico.name} end,
-	Requests = get_requests_submit(Periodo, State), 
+	Requests = get_requests_periodo(Periodo, State), 
 	Urls = maps:keys(groupBy(Fields, Requests)),
 	Urls2 = count(Fields, Urls, Requests),
 	case Sort of
@@ -154,7 +158,7 @@ do_get_top_services_by_type(Top, Periodo, Sort, State) ->
 %% @doc Retorna a quantidade de requisições por data de um período
 do_get_qtd_requests_by_date(Top, Periodo, Sort, State) ->
     Fields = fun(X) -> {msbus_util:date_to_string(X#request.timestamp)} end,
-	Requests = get_requests_submit(Periodo, State),
+	Requests = get_requests_periodo(Periodo, State),
 	Requests1 = maps:keys(groupBy(Fields, Requests)),
 	Requests2 = count(Fields, Requests1, Requests),
 	case Sort of
