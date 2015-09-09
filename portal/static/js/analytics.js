@@ -18,21 +18,25 @@
 				  width: 750,
 				  height: 340,
 				  legend: { position: 'none' },
-				  chart: { title: 'Os 10 serviços mais acessados',
+				  chart: { title: 'Os 10 serviços mais acessados no PPCA API Management Plataform',
 						   subtitle: 'Quantidade de acessos por mês' },
 				  bars: 'horizontal', // Required for Material Bar Charts.
 				  axes: {
 					x: {
-					  0: { side: 'top', label: 'Acessos'} // Top x-axis.
+					  0: { side: 'top', label: 'Acessos'}
+					  
+					  
 					}
+					
+					
 				  },
 		      bar: { groupWidth: "90%" }
 		    };
 			
 		    var chart = new google.charts.Bar(document.getElementById('top_x_div'));
-			var chart2 = new google.charts.Bar(document.getElementById('top_x_div2'));
+			
         	chart.draw(data, options); 
-        	chart2.draw(data, options); 
+        	 
 		});
       }
    
@@ -54,9 +58,9 @@
 				}; 		
 
 				var chart = new google.charts.Line(document.getElementById('linechart_material')); 
-				var chart2 = new google.charts.Line(document.getElementById('linechart_material2'));
+				
 				chart.draw(data, options);
-				chart2.draw(data, options);
+				
 
 		  });
 	   }
