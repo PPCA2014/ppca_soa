@@ -393,9 +393,11 @@ get_querystring(<<QueryName/binary>>, Servico) ->
 processa_querystring(notfound) -> notfound;
 	
 processa_querystring({ok, Request}) ->
-	%% Querystrings do módulo msbus_static_file não são processados.
+	%% Querystrings do módulo msbus_static_file_service e msbus_options_service não são processados.
 	case Request#request.servico#servico.module of
 		msbus_static_file_service ->
+			{ok, Request};
+		msbus_options_service ->
 			{ok, Request};
 		_ ->
 			QuerystringServico = Request#request.servico#servico.querystring,
@@ -432,8 +434,8 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 		{ok, Value} -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
 		error ->
 			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
-			case maps:get(<<"default">>, H) of
-				<<>> -> notfound;
+			case maps:get(<<"default">>, H, notfound) of
+				notfound -> notfound;
 				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
 			end
 	end.
