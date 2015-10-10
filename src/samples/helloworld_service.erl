@@ -55,9 +55,9 @@ init([]) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({hello_world, Request, From}, State) ->
+handle_cast({hello_world, Request, _From}, State) ->
 	Reply = do_hello_world(Request, State),
-	gen_server:cast(From, {servico, Request, Reply}), 
+	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
 	{noreply, State}.
     
 handle_call({hello_world, Request}, _From, State) ->
