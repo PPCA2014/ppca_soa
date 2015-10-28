@@ -139,11 +139,23 @@ get_catalogo() ->
 	CatalogoDefsPath = ?CONF_PATH ++ "/catalogo/",
 	%% Obtém a lista do conteúdo de todos os catálogos
 	CatDefs = lists:map(fun(M) -> 
-							{ok, Arq} = file:read_file(CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M))),
-							Arq
+							NomeArq = CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M)),
+							NomeCatalogo = binary_to_list(maps:get(<<"catalogo">>, M)),
+							case file:read_file(NomeArq) of
+								{ok, Arq} -> Arq;
+								{error, enoent} -> 
+									msbus_logger:error("Catalogo ~s não foi encontrado. Arquivo: ~s.", [NomeCatalogo, NomeArq]),
+									<<>>
+							end
 					    end, Cat0),
 	%% Adiciona "," entre as definições de cada catálogo
-	CatDefs1 = lists:foldl(fun(X, Y) -> iolist_to_binary([X, <<",">>, Y]) end, <<>>, CatDefs),
+	CatDefs1 = lists:foldl(fun(X, Y) ->
+								case Y of
+									<<>> -> X;
+									Y2 -> iolist_to_binary([X, <<",">>, Y2])
+								end 
+						    end, <<>>, CatDefs),
+
 	%% Adiciona abertura e fechamento de lista para o parser correto do JSON
 	CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
 	{ok, Cat1} = msbus_util:json_decode_as_map(CatDefs2),
