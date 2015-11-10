@@ -99,10 +99,15 @@ do_dispatch_request(Request) ->
 	case msbus_catalogo:lookup(Request) of
 		{ok, Request1} -> 
 			msbus_request:registra_request(Request1),
-			msbus_eventmgr:notifica_evento(new_request, Request1),
-			case executa_servico(Request1) of
-				ok -> ok;
-				Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, Error})
+			case msbus_auth_user:autentica(Request1) of
+				{ok, User} ->
+					Request2 = Request1#request{user = User},
+					msbus_eventmgr:notifica_evento(new_request, Request2),
+					case executa_servico(Request2) of
+						ok -> ok;
+						Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
+					end;
+				{error, no_authorization} -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, {error, no_authorization}})
 			end;
 		notfound -> 
 			msbus_request:registra_request(Request),

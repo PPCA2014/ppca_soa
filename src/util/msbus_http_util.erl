@@ -23,7 +23,7 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 				<<"Content-Length: "/utf8>>, PayloadLength, <<"\n"/utf8>>,
 				<<"Access-Control-Allow-Origin: *\n"/utf8>>,
 				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS\n"/utf8>>,
-				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token\n"/utf8>>,
+				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization\n"/utf8>>,
 				header_cache_control(MimeType),
 				<<"\n\n"/utf8>>, 
 	            Payload],
@@ -105,6 +105,7 @@ encode_request(Socket, RequestBin) ->
 		Cache_Control = maps:get("cache_control", Outros2, "false"),
 		Host = maps:get("host", Outros2, ""),
 		QuerystringMap = parse_querystring(Querystring),
+		Authorization = maps:get("authorization", Outros2, ""),
 		case is_metodo_suportado(Metodo) of
 			true ->
 				case is_payload_permitido(Metodo, Content_Length) of
@@ -127,7 +128,8 @@ encode_request(Socket, RequestBin) ->
 									host = Host,
 									socket = Socket, 
 									t1 = T1, 
-									timestamp = Timestamp
+									timestamp = Timestamp,
+									authorization = Authorization
 							},
 						{ok, Request};
 					true ->
@@ -154,7 +156,8 @@ encode_request(Socket, RequestBin) ->
 											t1 = T1, 
 											timestamp = Timestamp,
 											payload = Payload, 
-											payload_map = PayloadMap
+											payload_map = PayloadMap,
+											authorization = Authorization
 									},
 								{ok, Request};
 							{error, Reason} -> 
@@ -176,7 +179,8 @@ encode_request(Socket, RequestBin) ->
 										socket = Socket, 
 										t1 = T1, 
 										payload = Payload, 
-										timestamp = Timestamp
+										timestamp = Timestamp,
+										authorization = Authorization
 								},
 								{error, Request, Reason}
 						end;
@@ -198,7 +202,8 @@ encode_request(Socket, RequestBin) ->
 								host = Host,
 								socket = Socket, 
 								t1 = T1, 
-								timestamp = Timestamp
+								timestamp = Timestamp,
+								authorization = Authorization
 						},
 						{error, Request, payload_nao_permitido}
 				end;
@@ -220,7 +225,8 @@ encode_request(Socket, RequestBin) ->
 							host = Host,
 							socket = Socket, 
 							t1 = T1, 
-							timestamp = Timestamp
+							timestamp = Timestamp,
+							authorization = Authorization
 					},
 				{error, Request, metodo_nao_suportado}
 		end

@@ -197,6 +197,7 @@ do_log_request(Request, _State) ->
 	Reason = Request#request.reason, 
 	Latencia = Request#request.latencia, 
 	StatusSend = Request#request.status_send,
+	Authorization = Request#request.authorization,
 	case Contract of
 		undefined -> 
 			Service = "",
@@ -207,12 +208,12 @@ do_log_request(Request, _State) ->
 	end,
 	case Payload of
 		undefined ->
-			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Service, HostName, Query, Code, Reason, Latencia, StatusSend]);
+			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
+			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Service, HostName, Query, Authorization, Code, Reason, Latencia, StatusSend]);
 		_ ->
 			Content_Type = Request#request.content_type,
-			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Content_Type, Payload, Service, HostName, Query, Code, Reason, Latencia, StatusSend])
+			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
+			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Content_Type, Payload, Service, HostName, Query, Authorization, Code, Reason, Latencia, StatusSend])
 	end,
 	case Code of
 		200 -> msbus_logger:info(Texto1);

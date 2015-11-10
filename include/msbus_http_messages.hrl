@@ -14,6 +14,7 @@
 
 %% Mensagens de erro HTTP no formato JSON
 -define(HTTP_ERROR_400, <<"{\"error\":\"HTTP 400\",\"message\":\"Requisição inválida.\"}"/utf8>>).
+-define(HTTP_ERROR_401, <<"{\"error\":\"HTTP 401\",\"message\":\"Acesso não autorizado.\"}"/utf8>>).
 -define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"Serviço não encontrado.\"}"/utf8>>).
 -define(HTTP_ERROR_404_FILE_NOT_FOUND, <<"{\"error\":\"HTTP 404\",\"message\":\"Arquivo não encontrado.\"}"/utf8>>).
 -define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"O servidor aceita somente JSON.\"}"/utf8>>).

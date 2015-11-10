@@ -164,6 +164,10 @@ do_processa_response(Request, {error, notfound}, _State) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
 	do_processa_response(404, notfound, Request, Response);
 
+do_processa_response(Request, {error, no_authorization}, _State) ->
+	Response = msbus_http_util:encode_response(<<"401">>, ?HTTP_ERROR_401),
+	do_processa_response(401, no_authorization, Request, Response);
+
 do_processa_response(Request, {error, invalid_payload}, _State) ->
 	Response = msbus_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
 	do_processa_response(415, invalid_payload, Request, Response);

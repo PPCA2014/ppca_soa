@@ -11,15 +11,16 @@
 -behavior(gen_server). 
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
 
 %% Cliente interno API
--export([autentica/2]).
+-export([autentica/1]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, start_link/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -31,11 +32,12 @@
 %% Server API
 %%====================================================================
 
-start() -> 
-    Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
-    msbus_logger:info("msbus_auth_user iniciado."),
-    Result.
+start() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -44,8 +46,8 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-autentica(Request, From) ->
-	gen_server:cast(?SERVER, {autentica, Request, From}).
+autentica(Request) ->
+	gen_server:call(?SERVER, {autentica, Request}).
 	
 
 
@@ -57,16 +59,11 @@ init([]) ->
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
-    {stop, normal, State};
+    {stop, normal, State}.
 
-handle_cast({autentica, Request, From}, State) ->
-	{Reply, NewState} = do_autentica(Request, State),
-	gen_server:cast(From, {servico, Request, Reply}), 
-	{noreply, NewState}.
-    
 handle_call({autentica, Request}, _From, State) ->
-	{Reply, NewState} = do_autentica(Request, State),
-	{reply, Reply, NewState}.
+	Reply = do_autentica(Request),
+	{reply, Reply, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -85,9 +82,33 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-do_autentica(_Request, State) ->
-	Response = {token, 123456789},
-	NewState = State#state{},
-	{Response, NewState}.
+do_autentica(Request) ->
+	try
+		Contract = Request#request.servico,
+		case Contract#servico.authentication of
+			<<"Basic">> -> do_basic_authorization(Request);
+			<<>> -> {ok, anonimo}
+		end
+	catch
+		_Exception:_Reason ->  {error, no_authorization} 
+	end.
+
+do_basic_authorization(Request) ->
+	case Request#request.authorization /= "" of
+		true -> 
+			[Authorization|[UserNameEPassword|_]] = string:tokens(Request#request.authorization, " "),
+			case Authorization =:= "Basic" of
+				true -> 
+					UserNameEPassword2 = base64:decode_to_string(UserNameEPassword),
+					[UserName|[Password|_]] = string:tokens(UserNameEPassword2, ":"),
+					case msbus_user:call({find_by_username_and_password, list_to_binary(UserName), list_to_binary(Password)}) of
+						{ok, User} -> {ok, User};
+						_ -> {error, no_authorization}
+					end;
+				false -> {error, no_authorization}
+			end;
+		false -> {error, no_authorization}
+	end.
+ 	
 
 

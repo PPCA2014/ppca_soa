@@ -107,6 +107,10 @@ handle_call({delete, Id}, _From, State) ->
 	Reply = do_delete(Id),
 	{reply, Reply, State};
 
+handle_call({find_by_username_and_password, Username, Password}, _From, State) ->
+	Reply = find_by_username_and_password(Username, Password),
+	{reply, Reply, State};
+
 handle_call(all, _From, State) ->
 	Reply = do_all(),
 	{reply, Reply, State}.
@@ -178,4 +182,19 @@ valida(User, insert) ->
 valida(User, update) ->	valida(User, insert);
 
 valida(_User, delete) -> ok.	
+
+find_by_username_and_password(Username, Password) ->
+	Query = fun() ->
+		  qlc:e(
+			 qlc:q([R || R <- mnesia:table(user), 
+						 R#user.nome == Username,
+						 R#user.senha == Password])
+		  )
+	   end,
+	case mnesia:transaction(Query) of
+		{atomic, []} -> {error, notfound};
+		{atomic, [Record|_]} -> {ok, Record};
+		{aborted, _Reason} -> {error, aborted}
+	end.
+
 	

@@ -256,6 +256,10 @@ valida_bool(<<"true">>) -> ok;
 valida_bool(<<"false">>) -> ok;
 valida_bool(_) -> erlang:error(invalid_bool).
 
+valida_authentication(<<"Basic">>) -> ok;
+valida_authentication(<<>>) -> ok;
+valida_authentication(_) -> erlang:error(invalid_authentication).
+
 valida_length(Value, MaxLength) ->
 	case is_valid_length(Value, MaxLength) of
 		true -> ok;
@@ -341,6 +345,7 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Rowid = new_rowid_servico(Url2, Type),
 	{Host, HostName} = parse_host_contract(maps:get(<<"host">>, H, <<>>), ModuleNameCanonical),
 	Result_Cache = maps:get(<<"result_cache">>, H, 0),
+	Authentication = maps:get(<<"authentication">>, H, <<>>),
 	valida_name_contract(Name),
 	valida_url_contract(Url2),
 	valida_type_contract(Type),
@@ -349,11 +354,12 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	valida_length(Comment, 1000),
 	valida_length(Version, 10),
 	valida_length(Owner, 30),
+	valida_authentication(Authentication),
 	{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
 	IdBin = list_to_binary(integer_to_list(Id)),
 	ContractView = new_contract_view(IdBin, Name, Url, ModuleName, FunctionName, 
 							         Type, Apikey, Comment, Version, Owner, 
-								     Async, Host, Result_Cache),
+								     Async, Host, Result_Cache, Authentication),
 	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "msbus_static_file_service" orelse ModuleName =:= "msbus_options_service" of
 		true -> 
 			Contract = new_contract_re(Rowid, IdBin, Name, Url2, 
@@ -363,7 +369,8 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 									   FunctionName, Type, Apikey, Comment, 
 									   Version, Owner, Async, 
 									   Querystring, QtdQuerystringRequired,
-									   Host, HostName, Result_Cache),
+									   Host, HostName, Result_Cache,
+									   Authentication),
 			parse_catalogo(T, Cat2, [Contract|Cat3], [ContractView|Cat4], Id+1);
 		false -> 
 			Contract = new_contract(Rowid, IdBin, Name, Url2, 
@@ -373,7 +380,8 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 									FunctionName, Type, Apikey, Comment,
 									Version, Owner, Async, 
 									Querystring, QtdQuerystringRequired,
-									Host, HostName, Result_Cache),
+									Host, HostName, Result_Cache,
+									Authentication),
 			parse_catalogo(T, [{Rowid, Contract}|Cat2], Cat3, [ContractView|Cat4], Id+1)
 	end.	
 
@@ -499,7 +507,8 @@ new_rowid_servico(Url, Type) ->
 	
 new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
-			   QtdQuerystringRequired, Host, HostName, Result_Cache) ->
+			   QtdQuerystringRequired, Host, HostName, Result_Cache,
+			   Authentication) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#servico{
 				rowid = Rowid,
@@ -523,12 +532,14 @@ new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, 
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
 			    host_name = HostName,
-			    result_cache = Result_Cache
+			    result_cache = Result_Cache,
+			    authentication = Authentication
 			}.
 
 new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
-			QtdQuerystringRequired, Host, HostName, Result_Cache) ->
+			QtdQuerystringRequired, Host, HostName, Result_Cache,
+			Authentication) ->
 	#servico{
 				rowid = Rowid,
 				id = Id,
@@ -550,11 +561,13 @@ new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Fun
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
 			    host_name = HostName,
-			    result_cache = Result_Cache
+			    result_cache = Result_Cache,
+			    authentication = Authentication
 			}.
 
 new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
-				  Comment, Version, Owner, Async, Host, Result_Cache) ->
+				  Comment, Version, Owner, Async, Host, Result_Cache,
+				  Authentication) ->
 	Contract = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -567,7 +580,8 @@ new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"owner">> => Owner,
 			    <<"async">> => Async,
 			    <<"host">> => list_to_binary(atom_to_list(Host)),
-			    <<"result_cache">> => Result_Cache},
+			    <<"result_cache">> => Result_Cache,
+			    <<"authentication">> => Authentication},
 	Contract.
 
 
