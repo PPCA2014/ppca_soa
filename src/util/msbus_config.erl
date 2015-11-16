@@ -76,15 +76,15 @@ le_config() ->
 	try
 		{ok, Arq} = file:read_file(?CONF_FILE_PATH),
 		{ok, Json} = msbus_util:json_decode_as_map(Arq),
+		{ok, Hostname} = inet:gethostname(),
 		Config = #config{tcp_listen_address = parse_tcp_listen_address(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
 						tcp_port        	= maps:get(<<"tcp_port">>, Json, 2301),
-						tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"false">>)),
+						tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"true">>)),
 						tcp_nodelay     	= msbus_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, <<"true">>)),
 						tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, 12),
 						log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
 						log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, 6000),
-						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{})
-						},
+						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname})},
 		valida_port(Config#config.tcp_port),
 		valida_max_http_worker(Config#config.tcp_max_http_worker),
 		{ok, Config}

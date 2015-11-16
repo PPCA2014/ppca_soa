@@ -25,7 +25,11 @@ start(_StartType, StartArgs) ->
 			T1 = msbus_util:get_milliseconds(),
 			msbus_logger:info("~s", [?SERVER_NAME]),
 			Ret = msbus_sup:start_link(StartArgs),
-			msbus_logger:info("Portal ErlangMS Api Management em http://127.0.0.1:~p/portal/index.html", [Config#config.tcp_port]),
+			%% primeiro ip disponível informado na configuração
+			IpPortal = inet:ntoa(hd(Config#config.tcp_listen_address)), 
+			msbus_logger:info("Service aliases: ~p.", [Config#config.cat_host_alias]),
+			msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, 
+																								 Config#config.tcp_port]),
 			msbus_logger:info("ESB ErlangMS iniciado em ~pms.", [msbus_util:get_milliseconds() - T1]),
 			msbus_logger:sync(),
 			registra_eventos(),
