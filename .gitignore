@@ -1,6 +1,6 @@
 deps/**
 ebin/**
-/priv/conf/msbus.conf
+/priv/conf/msbus.conf**
 *.beam
 .eunit
 *~
