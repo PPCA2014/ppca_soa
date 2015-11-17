@@ -84,7 +84,7 @@ le_config() ->
 						tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, 12),
 						log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
 						log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, 6000),
-						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname})},
+						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => list_to_binary(Hostname)})},
 		valida_port(Config#config.tcp_port),
 		valida_max_http_worker(Config#config.tcp_max_http_worker),
 		{ok, Config}
