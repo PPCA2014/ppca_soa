@@ -7,7 +7,7 @@ ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido com o objetivo de
 
 * modular e multiplataforma (desenvolvido na linguagem Erlang/OTP) 
 
-* estilo arquitetural RESTful
+* aderente ao estilo arquitetural RESTful
 
 * orientado a contratos de serviços no formato JSON
 
