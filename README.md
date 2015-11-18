@@ -1,19 +1,30 @@
 ErlangMS
 =====
 
-ErlangMS é um Enterprise Service Bus (ESB) que segue uma arquitetura microservices composto por módulos que implementam serviços bem definidos e independentes.
+ErlangMS é um Enterprise Service Bus (ESB) desenvolvido por Everton de Vargas Agilar e visa facilitar a integração de sistemas legados através de uma abordagem orientada a serviço.
 
-Erlang/OTP é a linguagem/plataforma escolhida para o projeto. A linguagem possui características funcionais e um ambiente de execução para criação de aplicações distribuídas, tolerante a falhas e altamente escalável.
+O projeto é resultado de esforços para obter uma ferramenta simples e que fosse orientado a contrato de serviços para sustentar uma abordagem de modernização de software ágil.
 
-O projeto está sendo desenvolvido como projeto de mestrado e visa a integração de sistemas através de uma abordagem orientada a serviço.
+###As principais características do projeto são
 
-A interface de comunicação segue o estilo arquitetural REST e a representação de dados é em JSON.
+* multiplataforma (desenvolvido na linguagem Erlang/OTP) 
+
+* estilo arquitetural RESTful
+
+* orientado a contratos de serviços no formato JSON
+
+* representação de dados em JSON
+ 
+* implementação dos serviços independente de linguagem de programação
+
 
 Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
 
 Como executar ErlangMS
 -----------------------
+
+Se o projeto já estiver instalado e configurado, execute os comandos a seguir, de acordo com o sistema operacional:
 
 Se estiver no Linux, digite:
 
@@ -71,10 +82,10 @@ INFO 1/9/2015 21:11:31  ErlangMS iniciado em 326ms.
 
 Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser.
 
-Obs.: Veja como baixar o projeto, compilar e fazer deploy na Wiki do projeto.
+Obs.: Veja como baixar o projeto, compilar, configurar e fazer deploy na wiki https://github.com/erlangMS/msbus/wiki/Instalar-o-Barramento-ErlangMS-msbus.
 
 
-Dependências do projeto
+###Dependências do projeto
 ------------------------
 
 * Erlang R17B ou versão mais recente -
@@ -94,7 +105,7 @@ Dependências do projeto
     <https://github.com/talentdeficit/jsx>
 
 
-Documentação sobre programação funcional
+###Documentação sobre programação funcional
 -----------------------------------------
 
 Documentação sobre Erlang
