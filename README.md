@@ -13,7 +13,7 @@ ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido com o objetivo de
 
 * representação de dados em JSON
  
-* implementação dos serviços independente de linguagem de programação
+* implementação dos serviços independente da linguagem de programação
 
 
 
