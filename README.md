@@ -81,7 +81,8 @@ INFO 1/9/2015 21:11:31  ErlangMS iniciado em 326ms.
 
 Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser.
 
-Obs.: Veja como baixar o projeto, compilar, configurar e fazer deploy na wiki https://github.com/erlangMS/msbus/wiki/Instalar-o-Barramento-ErlangMS-msbus.
+Obs.: Veja como baixar o projeto, compilar, configurar e fazer deploy na wiki 
+https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
 
 
 ###Dependências do projeto
