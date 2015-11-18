@@ -23,7 +23,7 @@ Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/maste
 Como executar o barramento
 -----------------------
 
-Se o projeto já estiver instalado e configurado, execute os comandos a seguir, de acordo com o sistema operacional:
+Se o projeto já estiver instalado e configurado, execute o comando *start*, de acordo com o sistema operacional:
 
 Se estiver no Linux, digite:
 
