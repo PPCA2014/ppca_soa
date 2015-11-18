@@ -1,11 +1,9 @@
-ErlangMS
+ErlangMS msbus
 =====
 
-ErlangMS é um Enterprise Service Bus (ESB) desenvolvido por Everton de Vargas Agilar e visa facilitar a integração de sistemas legados através de uma abordagem orientada a serviço.
+ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido por Everton de Vargas Agilar e visa facilitar a integração de sistemas através de uma abordagem orientada a serviço. Este software é resultado de esforços conduzidos no projeto de dissertação de mestrado para obter uma ferramenta simples e que fosse orientado a contrato de serviços para sustentar uma abordagem de modernização de software ágil.
 
-O projeto é resultado de esforços para obter uma ferramenta simples e que fosse orientado a contrato de serviços para sustentar uma abordagem de modernização de software ágil.
-
-###As principais características do projeto são
+###As principais características do barramento são
 
 * multiplataforma (desenvolvido na linguagem Erlang/OTP) 
 
