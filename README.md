@@ -1,11 +1,11 @@
 ErlangMS msbus
 =====
 
-ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido por Everton de Vargas Agilar e visa facilitar a integração de sistemas através de uma abordagem orientada a serviço. Este software é resultado de esforços conduzidos no projeto de dissertação de mestrado para obter uma ferramenta simples e que fosse orientado a contrato de serviços para sustentar uma abordagem de modernização de software ágil.
+ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido com o objetivo de facilitar a integração de sistemas através de uma abordagem orientada a serviço. Este software é resultado de esforços conduzidos no mestrado em Computação Aplicada da Universidade de Brasília pelo mestrando Everton de Vargas Agilar.
 
-###As principais características do barramento são
+###As principais características do projeto são
 
-* multiplataforma (desenvolvido na linguagem Erlang/OTP) 
+* modular e multiplataforma (desenvolvido na linguagem Erlang/OTP) 
 
 * estilo arquitetural RESTful
 
@@ -14,6 +14,7 @@ ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido por Everton de Va
 * representação de dados em JSON
  
 * implementação dos serviços independente de linguagem de programação
+
 
 
 Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
