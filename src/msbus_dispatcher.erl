@@ -76,9 +76,7 @@ handle_info(State) ->
    {noreply, State}.
 
 handle_info({servico, RID, Reply}, State) ->
-	io:format("aqui1\n"),
 	{ok, Request} = msbus_request:get_request_rid(RID),
-	io:format("aqui2\n"),
 	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
 	{noreply, State};
 
