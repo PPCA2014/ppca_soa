@@ -20,7 +20,7 @@ ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido com o objetivo de
 Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
 
-Como executar ErlangMS
+Como executar o barramento
 -----------------------
 
 Se o projeto já estiver instalado e configurado, execute os comandos a seguir, de acordo com o sistema operacional:
