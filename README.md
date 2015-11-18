@@ -3,7 +3,7 @@ ErlangMS msbus
 
 ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido com o objetivo de facilitar a integração de sistemas através de uma abordagem orientada a serviços. Este software é resultado de esforços conduzidos no Mestrado em Computação Aplicada da Universidade de Brasília pelo mestrando Everton de Vargas Agilar.
 
-###As principais características do projeto são
+###Principais características do projeto
 
 * modular e multiplataforma (desenvolvido na linguagem Erlang/OTP) 
 
