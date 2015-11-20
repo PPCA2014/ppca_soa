@@ -80,6 +80,15 @@ handle_info({servico, RID, Reply}, State) ->
 	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
 	{noreply, State};
 
+handle_info({request, Reply, From}, State) ->
+	io:format("nova mesnagem ~p.\n\n", [Reply]),
+	
+	
+	
+	From ! {{"Pong", Reply}, self()},
+					  	
+	{noreply, State};
+
 handle_info(_Msg, State) ->
    {noreply, State}.
 
