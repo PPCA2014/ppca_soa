@@ -66,9 +66,10 @@
 					querystring :: string(),  					%% Definição da querystring para o contrato do serviço
 					qtd_querystring_req :: non_neg_integer(), 	%% Indica quantas querystrings são obrigatórias
 					host :: atom(),  							%% Atom do host onde está o módulo do serviço que vai processar a requisição
-					host_name :: string(),  					%% Nome do host onde está o módulo do serviço que vai processar a requisição
-					result_cache :: non_neg_integer(),  			%% Indica quanto tempo em milisegundos o resultado vai ficar armazenado em cache (somente para o módulo msbus_static_file_service)
-					authentication :: string()					%% Forma de autenticação (Por enquanto somente Basic)
+					host_name,				  					%% Nome do host onde está o módulo do serviço que vai processar a requisição
+					result_cache :: non_neg_integer(), 			%% Indica quanto tempo em milisegundos o resultado vai ficar armazenado em cache (somente para o módulo msbus_static_file_service)
+					authentication :: string(),					%% Forma de autenticação (Por enquanto somente Basic)
+					node
 				}).
 
 

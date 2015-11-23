@@ -147,13 +147,14 @@ executa_servico(Request=#request{servico=#servico{host='',
 	end;
 
 %% @doc Executa o serviço em outro host (Serviço escrito em outra plataforma/linguagem)
-executa_servico(Request=#request{servico=#servico{host = Host, 
-												  host_name = HostName,	
+executa_servico(Request=#request{servico=#servico{host = NodeList, 
+												  host_name = NodeNames,	
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  module = Module}}) ->
-	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, HostName, Request#request.rid, Request#request.uri]),
-	{Module, Host} ! {{Request#request.rid, 
+	{Node, NodeName} = get_work_node(NodeList, NodeNames),
+	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, NodeName, Request#request.rid, Request#request.uri]),
+	{Module, Node} ! {{Request#request.rid, 
 					   Request#request.uri, 
 					   Request#request.type, 
 					   Request#request.params_url, 
@@ -165,3 +166,11 @@ executa_servico(Request=#request{servico=#servico{host = Host,
 					   self()
 					  },
 	ok.
+
+
+get_work_node(NodeList, NodeNames) -> 
+	Index = random:uniform(length(NodeList)),
+	{lists:nth(Index, NodeList), lists:nth(Index, NodeNames)}.
+
+
+
