@@ -113,7 +113,9 @@ do_dispatch_request(Request) ->
 					Request2 = Request1#request{user = User},
 					msbus_eventmgr:notifica_evento(new_request, Request2),
 					case executa_servico(Request2) of
-						ok -> ok;
+						{ok, Request3} -> 
+							msbus_request:registra_request(Request3),
+							ok;
 						Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
 					end;
 				{error, no_authorization} -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, {error, no_authorization}})
@@ -136,41 +138,56 @@ executa_servico(Request=#request{servico=#servico{host='',
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
-				apply(Module, Function, [Request, self()]),
-				ok;
+				Request2 = Request#request{node_exec = node()},
+				apply(Module, Function, [Request2, self()]),
+				{ok, Request2};
 			_Pid -> 
+				Request2 = Request#request{node_exec = node()},
 				apply(Module, Function, [Request, self()]),
-				ok
+				{ok, Request2}
 		end
 	catch
 		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
 	end;
 
-%% @doc Executa o serviço em outro host (Serviço escrito em outra plataforma/linguagem)
+%% @doc Executa um serviço remotamente
 executa_servico(Request=#request{servico=#servico{host = NodeList, 
 												  host_name = NodeNames,	
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  module = Module}}) ->
-	{Node, NodeName} = get_work_node(NodeList, NodeNames),
-	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, NodeName, Request#request.rid, Request#request.uri]),
-	{Module, Node} ! {{Request#request.rid, 
-					   Request#request.uri, 
-					   Request#request.type, 
-					   Request#request.params_url, 
-					   Request#request.querystring_map,
-					   Request#request.payload,	
-					   Request#request.content_type,	
-					   ModuleName,
-					   FunctionName}, 
-					   self()
-					  },
-	ok.
+	case get_work_node(NodeList, NodeNames) of
+		{ok, Node} ->
+			msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, atom_to_list(Node), Request#request.rid, Request#request.uri]),
+			{Module, Node} ! {{Request#request.rid, 
+							   Request#request.uri, 
+							   Request#request.type, 
+							   Request#request.params_url, 
+							   Request#request.querystring_map,
+							   Request#request.payload,	
+							   Request#request.content_type,	
+							   ModuleName,
+							   FunctionName}, 
+							   self()
+							  },
+			{ok, Request#request{node_exec = Node}};
+		Error -> Error
+	end.
 
 
-get_work_node(NodeList, NodeNames) -> 
+get_work_node([], NodeNames) -> 
+	Motivo = lists:flatten(string:join(NodeNames, ", ")),
+	{error, servico_fora, Motivo};
+
+get_work_node([_H|T]=NodeList, NodeNames) -> 
 	Index = random:uniform(length(NodeList)),
-	{lists:nth(Index, NodeList), lists:nth(Index, NodeNames)}.
+	Node = lists:nth(Index, NodeList),
+	case is_node_alive(Node) of
+		true -> {ok, Node};
+		false -> get_work_node(T, NodeNames)
+	end.
 
+is_node_alive(Node) -> net_adm:ping(Node) =:= pong.
+	
 
 

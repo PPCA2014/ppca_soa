@@ -204,7 +204,10 @@ do_log_request(Request, _State) ->
 			HostName = "";
 		_ -> 
 			Service = Contract#servico.service,
-			HostName = "em " ++ Contract#servico.host_name
+			case Request#request.node_exec of
+				undefined -> HostName = "em " ++ atom_to_list(node());
+				Node  -> HostName = "em " ++ atom_to_list(Node)
+			end
 	end,
 	case Payload of
 		undefined ->

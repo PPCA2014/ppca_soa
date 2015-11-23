@@ -180,6 +180,11 @@ do_processa_response(Request, {error, Reason}, _State) ->
 	Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
 	do_processa_response(400, Reason, Request, Response);
 
+do_processa_response(Request, {error, servico_fora, ErroInterno}, _State) ->
+	Response = msbus_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
+	Reason2 = io_lib:format("~p ~p", [servico_fora, ErroInterno]),
+	do_processa_response(503, Reason2, Request, Response);
+
 do_processa_response(Request, {error, Reason, ErroInterno}, State) ->
 	Reason2 = io_lib:format("~p ~p", [Reason, ErroInterno]),
 	do_processa_response(Request, {error, Reason2}, State);

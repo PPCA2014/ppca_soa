@@ -20,4 +20,4 @@
 -define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"O servidor aceita somente JSON.\"}"/utf8>>).
 -define(HTTP_ERROR_502(Motivo), io_lib:format(<<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação. Motivo: ~p.\"}"/utf8>>, [Motivo])).
 -define(HTTP_ERROR_502, <<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação.\"}"/utf8>>).
--define(HTTP_ERROR_503, <<"{\"error\":\"HTTP 503\",\"message\":\"Serviço listado no catálogo de serviço mas não disponível.\"}"/utf8>>).
+-define(HTTP_ERROR_503, <<"{\"error\":\"HTTP 503\",\"message\":\"Serviço encontrado no catálogo de serviços mas está indisponível.\"}"/utf8>>).
