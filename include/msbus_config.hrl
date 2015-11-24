@@ -41,8 +41,12 @@
 				 tcp_max_http_worker,			%% Quantos workers serão criados para cada listener
 				 log_file_dest,					%% Caminho para a pasta dos logs do barramento
 				 log_file_checkpoint,			%% De quanto em quanto tempo será descarregado os buffers do módulo msbus_logger (DEFAULT 6 segundos)
-				 cat_host_alias 				%% Lista (Chave-Valor) com os nomes alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
-				 }). 	
+				 cat_host_alias, 				%% Lista (Chave-Valor) com os nomes alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
+				 cat_host_search,				%% Lista de hosts para pesquisar os serviços
+				 cat_node_search,				%% Lista de nodes para pesquisar os serviços
+				 msbus_hostname,				%% Nome da maquina onde o barramento está sendo executado
+				 msbus_host						%% Atom do nome da maquina onde o barramento está sendo executado
+		 }). 	
 
 
 

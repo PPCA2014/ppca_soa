@@ -160,7 +160,8 @@ get_catalogo() ->
 	CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
 	{ok, Cat1} = msbus_util:json_decode_as_map(CatDefs2),
 	%% Faz o parser do catálogo
-	{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1),
+	Conf = msbus_config:getConfig(),
+	{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1, Conf),
 	#state{cat1=Cat4, cat2=Cat2, cat3=Cat3}.
 
 %% @doc Lê o catálogo do disco
@@ -328,9 +329,9 @@ parse_url_servico([H|T], Url) ->
 	end.
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
-parse_catalogo([], Cat2, Cat3, Cat4, _Id) ->
+parse_catalogo([], Cat2, Cat3, Cat4, _Id, _Conf) ->
 	{maps:from_list(Cat2), Cat3, Cat4};
-parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
+parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Name = maps:get(<<"name">>, H),
 	Url = maps:get(<<"url">>, H),
 	Url2 = parse_url_servico(Url),
@@ -343,8 +344,16 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	Owner = maps:get(<<"owner">>, H, <<>>),
 	Async = maps:get(<<"async">>, H, <<"false">>),
 	Rowid = new_rowid_servico(Url2, Type),
-	Node = parse_node_contract(maps:get(<<"node">>, H, <<>>)),
-	{Host, HostName} = parse_host_contract(maps:get(<<"host">>, H, <<>>), ModuleNameCanonical, Node),
+	Lang = maps:get(<<"lang">>, H, <<>>),
+	case Lang of
+		<<"erlang">> -> 
+			Node = <<>>,
+			Host = '',
+			HostName = Conf#config.msbus_hostname;
+		_ ->	
+			Node = parse_node_contract(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
+			{Host, HostName} = parse_host_contract(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+	end,
 	Result_Cache = maps:get(<<"result_cache">>, H, 0),
 	Authentication = maps:get(<<"authentication">>, H, <<>>),
 	valida_name_contract(Name),
@@ -360,7 +369,7 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 	IdBin = list_to_binary(integer_to_list(Id)),
 	ContractView = new_contract_view(IdBin, Name, Url, ModuleName, FunctionName, 
 							         Type, Apikey, Comment, Version, Owner, 
-								     Async, Host, Result_Cache, Authentication, Node),
+								     Async, Host, Result_Cache, Authentication, Node, Lang),
 	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "msbus_static_file_service" orelse ModuleName =:= "msbus_options_service" of
 		true -> 
 			Contract = new_contract_re(Rowid, IdBin, Name, Url2, 
@@ -371,8 +380,8 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 									   Version, Owner, Async, 
 									   Querystring, QtdQuerystringRequired,
 									   Host, HostName, Result_Cache,
-									   Authentication, Node),
-			parse_catalogo(T, Cat2, [Contract|Cat3], [ContractView|Cat4], Id+1);
+									   Authentication, Node, Lang),
+			parse_catalogo(T, Cat2, [Contract|Cat3], [ContractView|Cat4], Id+1, Conf);
 		false -> 
 			Contract = new_contract(Rowid, IdBin, Name, Url2, 
 									Service,
@@ -382,8 +391,8 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id) ->
 									Version, Owner, Async, 
 									Querystring, QtdQuerystringRequired,
 									Host, HostName, Result_Cache,
-									Authentication, Node),
-			parse_catalogo(T, [{Rowid, Contract}|Cat2], Cat3, [ContractView|Cat4], Id+1)
+									Authentication, Node, Lang),
+			parse_catalogo(T, [{Rowid, Contract}|Cat2], Cat3, [ContractView|Cat4], Id+1, Conf)
 	end.	
 
 parse_service_contract(Service) ->
@@ -402,9 +411,8 @@ parse_node_contract(List) -> List.
 
 	
 %% @doc O host pode ser um alias definido no arquivo de configuração
-parse_host_contract(<<>>, _,_) -> {'', atom_to_list(node())};
-parse_host_contract(Host, ModuleNameCanonical, Node) ->
-	Conf = msbus_config:getConfig(),
+parse_host_contract(<<>>, _,_,_) -> {'', atom_to_list(node())};
+parse_host_contract(Host, ModuleNameCanonical, Node, Conf) ->
 	HostAlias = Conf#config.cat_host_alias,
 	case erlang:is_list(Host) of
 		true  -> ListHost = Host;
@@ -526,7 +534,7 @@ new_rowid_servico(Url, Type) ->
 new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
-			   Authentication, Node) ->
+			   Authentication, Node, Lang) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#servico{
 				rowid = Rowid,
@@ -552,13 +560,14 @@ new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, 
 			    host_name = HostName,
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
-			    node = Node
+			    node = Node,
+			    lang = Lang
 			}.
 
 new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
-			Authentication, Node) ->
+			Authentication, Node, Lang) ->
 	#servico{
 				rowid = Rowid,
 				id = Id,
@@ -582,12 +591,13 @@ new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Fun
 			    host_name = HostName,
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
-			    node = Node
+			    node = Node,
+			    lang = Lang
 			}.
 
 new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
-				  Authentication, Node) ->
+				  Authentication, Node, Lang) ->
 	Contract = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -602,7 +612,8 @@ new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"host">> => Host,
 			    <<"result_cache">> => Result_Cache,
 			    <<"authentication">> => Authentication,
-			    <<"node">> => Node},
+			    <<"node">> => Node,
+			    <<"lang">> => Lang},
 	Contract.
 
 

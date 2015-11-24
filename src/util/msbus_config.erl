@@ -77,6 +77,7 @@ le_config() ->
 		{ok, Arq} = file:read_file(?CONF_FILE_PATH),
 		{ok, Json} = msbus_util:json_decode_as_map(Arq),
 		{ok, Hostname} = inet:gethostname(),
+		Hostname2 = list_to_binary(Hostname),
 		Config = #config{tcp_listen_address = parse_tcp_listen_address(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
 						tcp_port        	= maps:get(<<"tcp_port">>, Json, 2301),
 						tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"true">>)),
@@ -84,7 +85,12 @@ le_config() ->
 						tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, 12),
 						log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
 						log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, 6000),
-						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => list_to_binary(Hostname)})},
+						cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
+						cat_host_search		= maps:get(<<"cat_host_search">>, Json, <<>>),							
+						cat_node_search		= maps:get(<<"cat_node_search">>, Json, <<>>),
+						msbus_hostname 		= Hostname2,
+						msbus_host	 		= list_to_atom(Hostname)
+				},
 		valida_port(Config#config.tcp_port),
 		valida_max_http_worker(Config#config.tcp_max_http_worker),
 		{ok, Config}
