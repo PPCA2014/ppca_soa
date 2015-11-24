@@ -141,7 +141,9 @@ code_change(_OldVsn, State, _Extra) ->
     
 get_filename_logger(State) -> 
 	{{Ano,Mes,Dia},{_Hora,_Min,_Seg}} = calendar:local_time(),
-	lists:flatten(io_lib:format("~s/server_~p_~p_~p.log", [State#state.log_file_dest, Ano, Mes, Dia])).
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/msbus_~p_~p_~p.log", [State#state.log_file_dest, node(), Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia])),
+	filelib:ensure_dir(NomeArqLog),
+	NomeArqLog.
 
 set_timeout_for_sync_buffer(#state{flag_checkpoint = false, log_file_checkpoint=Timeout}) ->    
 	erlang:send_after(Timeout, self(), checkpoint);

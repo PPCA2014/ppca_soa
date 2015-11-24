@@ -19,7 +19,8 @@
 		 tuple_to_binlist/1, 
 		 list_to_binlist/1,
 		 binary_to_bool/1,
-		 binary_to_integer/1]).
+		 binary_to_integer/1,
+		 mes_extenso/1]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -161,4 +162,23 @@ binary_to_bool(<<"false">>) -> false;
 binary_to_bool(_) -> false.
 
 binary_to_integer(Bin) -> list_to_integer(binary_to_list(Bin)).
+
+%% @doc Retorna o mês por extenso a partir do ordinal
+mes_extenso(1) -> "Janeiro";
+mes_extenso(2) -> "Fevereiro";
+mes_extenso(3) -> "Março";
+mes_extenso(4) -> "Abril";
+mes_extenso(5) -> "Maio";
+mes_extenso(6) -> "Junho";
+mes_extenso(7) -> "Julho";
+mes_extenso(8) -> "Agosto";
+mes_extenso(9) -> "Setembro";
+mes_extenso(10) -> "Outubro";
+mes_extenso(11) -> "Novembro";
+mes_extenso(12) -> "Dezembro";
+mes_extenso(_) -> erlang:error(badarg).
+
+
+
+
 
