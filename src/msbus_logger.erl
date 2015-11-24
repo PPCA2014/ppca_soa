@@ -199,24 +199,17 @@ do_log_request(Request, _State) ->
 	StatusSend = Request#request.status_send,
 	Authorization = Request#request.authorization,
 	case Contract of
-		undefined -> 
-			Service = "",
-			HostName = "";
-		_ -> 
-			Service = Contract#servico.service,
-			case Request#request.node_exec of
-				undefined -> HostName = "em " ++ atom_to_list(node());
-				Node  -> HostName = "em " ++ atom_to_list(Node)
-			end
+		undefined -> Service = "";
+		_ -> Service = Contract#servico.service
 	end,
 	case Payload of
 		undefined ->
-			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Service, HostName, Query, Authorization, Code, Reason, Latencia, StatusSend]);
+			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
+			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Service, Query, Authorization, Code, Reason, Latencia, StatusSend]);
 		_ ->
 			Content_Type = Request#request.content_type,
-			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Content_Type, Payload, Service, HostName, Query, Authorization, Code, Reason, Latencia, StatusSend])
+			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
+			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Content_Type, Payload, Service, Query, Authorization, Code, Reason, Latencia, StatusSend])
 	end,
 	case Code of
 		200 -> msbus_logger:info(Texto1);

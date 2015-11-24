@@ -57,7 +57,15 @@ dispatch_request(Request) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
+    createEtsControle(),
     {ok, #state{}}.
+ 
+createEtsControle() ->
+    try
+		ets:new(ctrl_node_dispatch, [ordered_set, named_table, public])
+	catch
+		_Exception:_Reason -> ok
+	end.
  
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -82,11 +90,7 @@ handle_info({servico, RID, Reply}, State) ->
 
 handle_info({request, Reply, From}, State) ->
 	io:format("nova mesnagem ~p.\n\n", [Reply]),
-	
-	
-	
 	From ! {{"Pong", Reply}, self()},
-					  	
 	{noreply, State};
 
 handle_info(_Msg, State) ->
@@ -156,7 +160,7 @@ executa_servico(Request=#request{servico=#servico{host = NodeList,
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  module = Module}}) ->
-	case get_work_node(NodeList, NodeNames) of
+	case get_work_node(NodeList, NodeNames, ModuleName) of
 		{ok, Node} ->
 			msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, atom_to_list(Node), Request#request.rid, Request#request.uri]),
 			{Module, Node} ! {{Request#request.rid, 
@@ -175,16 +179,27 @@ executa_servico(Request=#request{servico=#servico{host = NodeList,
 	end.
 
 
-get_work_node([], NodeNames) -> 
+get_work_node([], NodeNames, _ModuleName) -> 
 	Motivo = lists:flatten(string:join(NodeNames, ", ")),
 	{error, servico_fora, Motivo};
 
-get_work_node([_H|T]=NodeList, NodeNames) -> 
-	Index = random:uniform(length(NodeList)),
-	Node = lists:nth(Index, NodeList),
+get_work_node([_H|T]=NodeList, NodeNames, ModuleName) -> 
+	case ets:lookup(ctrl_node_dispatch, ModuleName) of
+		[] -> 
+			Index = 1;
+		[{_, Idx}] -> 
+			ets:delete(ctrl_node_dispatch, ModuleName),
+			Index = Idx+1
+	end,
+	case Index > length(NodeList) of
+		true -> Index2 = 1;
+		false -> Index2 = Index
+	end,
+	ets:insert(ctrl_node_dispatch, {ModuleName, Index2}),
+	Node = lists:nth(Index2, NodeList),
 	case is_node_alive(Node) of
 		true -> {ok, Node};
-		false -> get_work_node(T, NodeNames)
+		false -> get_work_node(T, NodeNames, ModuleName)
 	end.
 
 is_node_alive(Node) -> net_adm:ping(Node) =:= pong.

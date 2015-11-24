@@ -27,7 +27,7 @@ start(_StartType, StartArgs) ->
 			Ret = msbus_sup:start_link(StartArgs),
 			%% primeiro ip disponível informado na configuração
 			IpPortal = inet:ntoa(hd(Config#config.tcp_listen_address)), 
-			msbus_logger:info("Service aliases: ~p.", [Config#config.cat_host_alias]),
+			msbus_logger:info("Hostnames cluster: ~p.", [Config#config.cat_host_alias]),
 			msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, 
 																								 Config#config.tcp_port]),
 			msbus_logger:info("ESB ErlangMS iniciado em ~pms.", [msbus_util:get_milliseconds() - T1]),
