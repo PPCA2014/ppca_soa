@@ -20,7 +20,9 @@
 		 list_to_binlist/1,
 		 binary_to_bool/1,
 		 binary_to_integer/1,
-		 mes_extenso/1]).
+		 mes_extenso/1,
+		 binlist_to_list/1,
+		 join_binlist/2]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -43,6 +45,12 @@ tuple_to_binlist(T) ->
 list_to_binlist([]) -> [];
 list_to_binlist(<<V/binary>>) -> [V];
 list_to_binlist([H|T]) -> [item_to_binary(H)|list_to_binlist(T)].
+
+binlist_to_list([]) -> [];
+binlist_to_list([H|T]) -> [binary_to_list(H)|binlist_to_list(T)].
+
+join_binlist([], _) -> "";
+join_binlist(BinList, Str) -> string:join(binlist_to_list(BinList), Str).
 
 item_to_binary([]) -> <<>>;
 
