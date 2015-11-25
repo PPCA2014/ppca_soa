@@ -65,6 +65,12 @@ createEtsControle() ->
 		ets:new(ctrl_node_dispatch, [ordered_set, named_table, public])
 	catch
 		_Exception:_Reason -> ok
+	end,
+
+    try
+		ets:new(ctrl_ping_cache, [ordered_set, named_table, public])
+	catch
+		_Exception2:_Reason2 -> ok
 	end.
  
 handle_cast(shutdown, State) ->
@@ -197,13 +203,35 @@ get_work_node([_H|T]=HostList, HostNames, ModuleName, NodeList) ->
 	end,
 	ets:insert(ctrl_node_dispatch, {ModuleName, Index2}),
 	Node = lists:nth(Index2, HostList),
-	Host = list_to_atom(binary_to_list(lists:nth(Index2, NodeList))),
-	case is_node_alive(Host) of
+	case is_node_alive(Node) of
 		true  -> {ok, Node};
 		false -> get_work_node(T, HostNames, ModuleName, NodeList)
 	end.
 
-is_node_alive(Node) -> net_adm:ping(Node) =:= pong.
+is_node_alive(Node) -> 
+	case ets:lookup(ctrl_ping_cache, Node) of
+		[] -> 
+		io:format("aqui1\n"),
+		Hit = net_adm:ping(Node) =:= pong;
+		{Node, Time, Hit} -> 
+		io:format("aqui2\n"),
+			Time2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),	
+			case (Time2 - Time) < 10 of
+				true -> io:format("aqui4\n"), ok;
+				false ->
+				io:format("aqui3\n"),
+				 Hit = net_adm:ping(Node) =:= pong
+			end
+	end,
+	io:format("aqui5\n"),
+	NewTime = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
+	ets:delete(ctrl_ping_cache, Node),
+	ets:insert(ctrl_ping_cache, {Node, NewTime, Hit}).
+	
+		
+						
+	
+	
 	
 
 
