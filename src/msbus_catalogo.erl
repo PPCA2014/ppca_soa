@@ -330,7 +330,11 @@ parse_url_servico([H|T], Url) ->
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalogo([], Cat2, Cat3, Cat4, _Id, _Conf) ->
-	{maps:from_list(Cat2), Cat3, Cat4};
+	EtsCat2 = msbus_util:list_to_ets(Cat2, ets_cat2, [set, 
+													  private, 
+													  {read_concurrency, true}]),
+	{EtsCat2, Cat3, Cat4};
+	
 parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Name = maps:get(<<"name">>, H),
 	Url = maps:get(<<"url">>, H),
@@ -488,12 +492,11 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 	
 lookup(Request, State) ->
 	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
-	case maps:find(Rowid, State#state.cat2) of
-		{ok, Servico} -> 
+	case ets:lookup(State#state.cat2, Rowid) of
+		[] -> Result = lookup_re(Request, State#state.cat3);
+		[{Rowid, Servico}] -> 
 			Request2 = Request#request{servico = Servico},
-			Result = {ok, Request2};
-		error -> 
-			Result = lookup_re(Request, State#state.cat3)
+			Result = {ok, Request2}
 	end,
 	Result2 = processa_querystring(Result),
 	{Result2, State#state{ult_lookup = Result2}}.

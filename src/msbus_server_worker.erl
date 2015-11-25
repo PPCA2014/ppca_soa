@@ -59,7 +59,6 @@ cast(Msg) -> msbus_pool:cast(msbus_server_worker_pool, Msg).
 
 %% init para processos que vão processar a fila de requisições de entrada
 init({_Num, LSocket}) ->
-    process_flag(trap_exit, true),
     State = #state{lsocket=LSocket},
     {ok, State, 0};
 
@@ -94,22 +93,26 @@ handle_info(timeout, State) ->
 handle_info({tcp, Socket, RequestBin}, State) ->
 	msbus_pool:transaction(msbus_server_worker_pool, 
 		fun(Worker) ->
-			ok = gen_tcp:controlling_process(Socket, Worker),
-			gen_server:cast(Worker, {Socket, RequestBin})
+			case gen_tcp:controlling_process(Socket, Worker) of
+				ok -> gen_server:cast(Worker, {Socket, RequestBin});
+				{error, closed} -> 
+					{noreply, State#state{socket=undefined}};
+				{error, not_owner} -> msbus_logger:error("ocorreu um erro ao invocar gen_tcp:controlling_process")
+			end
 		end),
 	{noreply, State, 0};
 
 handle_info({tcp_closed, _Socket}, State) ->
-	{noreply, State, 0};
+	{noreply, State#state{socket=undefined}};
 
-handle_info(_Msg, State) ->
-   {noreply, State}.
+handle_info(Msg, State) ->
+   {noreply, State#state{socket=undefined}}.
 
 handle_info(State) ->
    {noreply, State}.
 
-terminate(_Reason, #state{socket=Socket}) when Socket /= undefined ->
-	gen_tcp:close(Socket),
+terminate(_Reason, #state{lsocket=LSocket}) ->
+	gen_tcp:close(LSocket),
     ok;
 
 terminate(_Reason, _State) ->
@@ -124,10 +127,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 conexao_accept(State) ->
-    case gen_tcp:accept(State#state.lsocket) of
+	case gen_tcp:accept(State#state.lsocket) of
 		{ok, Socket}   -> {noreply, State#state{socket=Socket}};
-		{error, _Error} -> {noreply, State#state{socket=undefined}}
+		{error, Error} -> {noreply, State#state{socket=undefined}}
 	end.
+		
 
 %% @doc Processa o request
 do_processa_request(Socket, RequestBin, State) -> 

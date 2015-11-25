@@ -22,7 +22,8 @@
 		 binary_to_integer/1,
 		 mes_extenso/1,
 		 binlist_to_list/1,
-		 join_binlist/2]).
+		 join_binlist/2,
+		 list_to_ets/3]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -186,7 +187,12 @@ mes_extenso(11) -> "Novembro";
 mes_extenso(12) -> "Dezembro";
 mes_extenso(_) -> erlang:error(badarg).
 
-
+%% @doc Retorna um ets a partir de uma lista
+list_to_ets(List, Name, Options) ->
+	Ets = ets:new(Name, Options),
+	lists:foreach(fun(X) -> ets:insert(Ets, X) end, List),
+	Ets.
+	
 
 
 

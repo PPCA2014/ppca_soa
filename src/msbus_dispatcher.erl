@@ -65,12 +65,6 @@ createEtsControle() ->
 		ets:new(ctrl_node_dispatch, [ordered_set, named_table, public])
 	catch
 		_Exception:_Reason -> ok
-	end,
-
-    try
-		ets:new(ctrl_ping_cache, [ordered_set, named_table, public])
-	catch
-		_Exception2:_Reason2 -> ok
 	end.
  
 handle_cast(shutdown, State) ->
@@ -90,9 +84,12 @@ handle_info(State) ->
    {noreply, State}.
 
 handle_info({servico, RID, Reply}, State) ->
-	{ok, Request} = msbus_request:get_request_rid(RID),
-	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
-	{noreply, State};
+	case msbus_request:get_request_rid(RID) of
+		{ok, Request} -> 
+			msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
+			{noreply, State};
+		{erro, notfound} -> {noreply, State}
+	end;
 
 handle_info({request, Reply, From}, State) ->
 	From ! {{"Pong", Reply}, self()},
@@ -164,10 +161,11 @@ executa_servico(Request=#request{servico=#servico{host = HostList,
 												  host_name = HostNames,	
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
-												  module = Module,
-												  node = NodeList}}) ->
-	case get_work_node(HostList, HostNames, ModuleName, NodeList) of
+												  module = Module}}) ->
+	% Pega um node disponível para executar o serviço (somente um que está vivo!)
+	case get_work_node(HostList, HostList, HostNames, ModuleName) of
 		{ok, Node} ->
+			% Envia uma mensagem assíncrona para o serviço
 			msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, atom_to_list(Node), Request#request.rid, Request#request.uri]),
 			{Module, Node} ! {{Request#request.rid, 
 							   Request#request.uri, 
@@ -180,54 +178,44 @@ executa_servico(Request=#request{servico=#servico{host = HostList,
 							   FunctionName}, 
 							   self()
 							  },
+			
+			% Retorna ok e o request atualizado com o node que foi utilizado para executar o serviço
 			{ok, Request#request{node_exec = Node}};
 		Error -> Error
 	end.
 
 
-get_work_node([], HostNames, _ModuleName, _NodeList) -> 
+get_work_node([], _HostList, HostNames, _ModuleName) -> 
 	Motivo = lists:flatten(string:join(HostNames, ", ")),
 	{error, servico_fora, Motivo};
 
-get_work_node([_H|T]=HostList, HostNames, ModuleName, NodeList) -> 
+get_work_node([_|T], HostList, HostNames, ModuleName) -> 
+	%% Localiza a entrada do módulo na tabela hash
 	case ets:lookup(ctrl_node_dispatch, ModuleName) of
 		[] -> 
+			% não encontrou, vamos selecionar o índice do primeiro node
 			Index = 1;
 		[{_, Idx}] -> 
+			% encontrou um node que foi utilizado anteriormente, vamos usar o próximo
 			ets:delete(ctrl_node_dispatch, ModuleName),
 			Index = Idx+1
 	end,
+	% Pegamos o primeiro node quando Index maior que o tamanho da lista de nodes disponíveis
 	case Index > length(HostList) of
 		true -> Index2 = 1;
 		false -> Index2 = Index
 	end,
+	% Inserimos na tabela hash os dados de controle
 	ets:insert(ctrl_node_dispatch, {ModuleName, Index2}),
-	Node = lists:nth(Index2, HostList),
-	case is_node_alive(Node) of
-		true  -> {ok, Node};
-		false -> get_work_node(T, HostNames, ModuleName, NodeList)
-	end.
 
-is_node_alive(Node) -> 
-	case ets:lookup(ctrl_ping_cache, Node) of
-		[] -> 
-		io:format("aqui1\n"),
-		Hit = net_adm:ping(Node) =:= pong;
-		{Node, Time, Hit} -> 
-		io:format("aqui2\n"),
-			Time2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),	
-			case (Time2 - Time) < 10 of
-				true -> io:format("aqui4\n"), ok;
-				false ->
-				io:format("aqui3\n"),
-				 Hit = net_adm:ping(Node) =:= pong
-			end
-	end,
-	io:format("aqui5\n"),
-	NewTime = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
-	ets:delete(ctrl_ping_cache, Node),
-	ets:insert(ctrl_ping_cache, {Node, NewTime, Hit}).
+	% Qual node vamos selecionar
+	Node = lists:nth(Index2, HostList),
 	
+	% Este node está vivo? Temos que rotear para um node existente
+	case net_adm:ping(Node) of
+		pong -> {ok, Node};
+		pang -> get_work_node(T, HostList, HostNames, ModuleName)
+	end.
 		
 						
 	
