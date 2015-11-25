@@ -50,7 +50,9 @@ init({Port, IpAddress}) ->
 			{send_timeout, ?TCP_SEND_TIMEOUT}, 
 			{keepalive, Conf#config.tcp_keepalive}, 
 			{nodelay, Conf#config.tcp_nodelay},
-			{ip, IpAddress}],
+			{backlog, ?TCP_BACKLOG},
+			{ip, IpAddress},
+			{reuseaddr, true}],
 	case gen_tcp:listen(Port, Opts) of
       {ok, LSocket} ->
             start_server_worker(Conf#config.tcp_max_http_worker, LSocket),

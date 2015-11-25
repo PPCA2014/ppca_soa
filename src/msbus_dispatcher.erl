@@ -89,7 +89,6 @@ handle_info({servico, RID, Reply}, State) ->
 	{noreply, State};
 
 handle_info({request, Reply, From}, State) ->
-	io:format("nova mesnagem ~p.\n\n", [Reply]),
 	From ! {{"Pong", Reply}, self()},
 	{noreply, State};
 
@@ -155,12 +154,13 @@ executa_servico(Request=#request{servico=#servico{host='',
 	end;
 
 %% @doc Executa um serviço remotamente
-executa_servico(Request=#request{servico=#servico{host = NodeList, 
-												  host_name = NodeNames,	
+executa_servico(Request=#request{servico=#servico{host = HostList, 
+												  host_name = HostNames,	
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
-												  module = Module}}) ->
-	case get_work_node(NodeList, NodeNames, ModuleName) of
+												  module = Module,
+												  node = NodeList}}) ->
+	case get_work_node(HostList, HostNames, ModuleName, NodeList) of
 		{ok, Node} ->
 			msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, atom_to_list(Node), Request#request.rid, Request#request.uri]),
 			{Module, Node} ! {{Request#request.rid, 
@@ -179,11 +179,11 @@ executa_servico(Request=#request{servico=#servico{host = NodeList,
 	end.
 
 
-get_work_node([], NodeNames, _ModuleName) -> 
-	Motivo = lists:flatten(string:join(NodeNames, ", ")),
+get_work_node([], HostNames, _ModuleName, _NodeList) -> 
+	Motivo = lists:flatten(string:join(HostNames, ", ")),
 	{error, servico_fora, Motivo};
 
-get_work_node([_H|T]=NodeList, NodeNames, ModuleName) -> 
+get_work_node([_H|T]=HostList, HostNames, ModuleName, NodeList) -> 
 	case ets:lookup(ctrl_node_dispatch, ModuleName) of
 		[] -> 
 			Index = 1;
@@ -191,15 +191,16 @@ get_work_node([_H|T]=NodeList, NodeNames, ModuleName) ->
 			ets:delete(ctrl_node_dispatch, ModuleName),
 			Index = Idx+1
 	end,
-	case Index > length(NodeList) of
+	case Index > length(HostList) of
 		true -> Index2 = 1;
 		false -> Index2 = Index
 	end,
 	ets:insert(ctrl_node_dispatch, {ModuleName, Index2}),
-	Node = lists:nth(Index2, NodeList),
-	case is_node_alive(Node) of
-		true -> {ok, Node};
-		false -> get_work_node(T, NodeNames, ModuleName)
+	Node = lists:nth(Index2, HostList),
+	Host = list_to_atom(binary_to_list(lists:nth(Index2, NodeList))),
+	case is_node_alive(Host) of
+		true  -> {ok, Node};
+		false -> get_work_node(T, HostNames, ModuleName, NodeList)
 	end.
 
 is_node_alive(Node) -> net_adm:ping(Node) =:= pong.

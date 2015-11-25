@@ -33,6 +33,8 @@
 % Propriedade TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 3000).
 
+-define(TCP_BACKLOG, 128).
+
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais interfaces de rede que o barramento vai ouvir (Permitido informar o IP ou DNS Name)
 				 tcp_port, 						%% Qual a porta que será utilizada para o barramento

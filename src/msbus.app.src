@@ -35,8 +35,8 @@
                 {max_overflow, 0}
             ], []},
             {msbus_server_worker_pool, [
-                {size, 12},
-                {max_overflow, 200}
+                {size, 128},
+                {max_overflow, 256}
             ], []},
             {msbus_health_pool, [
                 {size, 6},
@@ -47,12 +47,12 @@
                 {max_overflow, 1}
             ], []},
             {msbus_dispatcher_pool, [
-                {size, 12},
-                {max_overflow, 200}
+                {size, 128},
+                {max_overflow, 256}
             ], []},
             {msbus_static_file_service_pool, [
-                {size, 12},
-                {max_overflow, 24}
+                {size, 128},
+                {max_overflow, 256}
             ], []},
             {msbus_user_service_pool, [
                 {size, 2},
@@ -67,16 +67,16 @@
                 {max_overflow, 6}
             ], []},
             {msbus_favicon_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
+                {size, 38},
+                {max_overflow, 64}
             ], []},
             {msbus_options_service_pool, [
-                {size, 1},
-                {max_overflow, 6}
+                {size, 38},
+                {max_overflow, 64}
             ], []},
             {msbus_health_service_pool, [
-                {size, 6},
-                {max_overflow, 6}
+                {size, 12},
+                {max_overflow, 24}
             ], []}
         ]}
     ]}

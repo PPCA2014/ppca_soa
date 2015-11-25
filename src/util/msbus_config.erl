@@ -77,7 +77,7 @@ le_config() ->
 		{ok, Arq} = file:read_file(?CONF_FILE_PATH),
 		{ok, Json} = msbus_util:json_decode_as_map(Arq),
 		{ok, Hostname} = inet:gethostname(),
-		Hostname2 = list_to_binary(Hostname),
+		Hostname2 = list_to_binary(string:to_lower(Hostname)),
 		Config = #config{tcp_listen_address = parse_tcp_listen_address(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
 						tcp_port        	= maps:get(<<"tcp_port">>, Json, 2301),
 						tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"true">>)),
