@@ -105,14 +105,14 @@ handle_info({tcp, Socket, RequestBin}, State) ->
 handle_info({tcp_closed, _Socket}, State) ->
 	{noreply, State#state{socket=undefined}};
 
-handle_info(Msg, State) ->
+handle_info(_Msg, State) ->
    {noreply, State#state{socket=undefined}}.
 
 handle_info(State) ->
    {noreply, State}.
 
-terminate(_Reason, #state{lsocket=LSocket}) ->
-	gen_tcp:close(LSocket),
+terminate(_Reason, #state{lsocket=_LSocket}) ->
+	%gen_tcp:close(LSocket),
     ok;
 
 terminate(_Reason, _State) ->
@@ -129,7 +129,7 @@ code_change(_OldVsn, State, _Extra) ->
 conexao_accept(State) ->
 	case gen_tcp:accept(State#state.lsocket) of
 		{ok, Socket}   -> {noreply, State#state{socket=Socket}};
-		{error, Error} -> {noreply, State#state{socket=undefined}}
+		{error, _Reason} -> {noreply, State#state{socket=undefined}}
 	end.
 		
 
@@ -197,13 +197,17 @@ do_processa_response(Request, Result, State) ->
 	do_processa_response(Request, {ok, Result}, State).
 
 do_processa_response(Code, Reason, Request, Response) ->
-	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	Request2 = Request#request{latencia = Latencia, status = Code, reason = Reason, status_send = StatusSend},
-	msbus_request:update_request(Request2),
+	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
+	case  StatusSend of
+		ok -> Status = req_entregue;
+		_  -> Status = req_concluido
+	end,
+	Request2 = Request#request{latencia = Latencia, code = Code, reason = Reason, status_send = StatusSend, status = Status},
+	msbus_request:finaliza_request(Request2),
 	case StatusSend of
 		ok -> msbus_eventmgr:notifica_evento(close_request, Request2);
-		_Error -> msbus_eventmgr:notifica_evento(send_error_request, Request2)
+		_  -> msbus_eventmgr:notifica_evento(send_error_request, Request2)
 	end.
 	

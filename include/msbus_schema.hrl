@@ -19,7 +19,7 @@
 					  servico,   								%% Contrato que estabelece o serviço que vai atender a requisição
 					  timestamp, 								%% Timestamp de quando que a requisição ocorreu
 					  latencia :: non_neg_integer(),			%% Latência (tempo que levou para processar a requisição)
-					  status,    								%% Código de retorno HTTP (Ex.: 202 OK, 404 Não Encontrado)
+					  code, 	   								%% Código de retorno HTTP (Ex.: 202 OK, 404 Não Encontrado)
 					  reason,									%% Registra a mensagem de erro, quando status indicar um erro
 					  type :: string(),							%% Verbo HTTP (GET, POST, PUT, DELETE e OPTIONS)
 					  uri :: string(),							%% URI da requisição do serviço
@@ -43,7 +43,8 @@
 					  status_send,								%% Registra que a mensagem foi entregue ou o erro ocorrido na entrega
 					  authorization :: string(),				%% Dados da autenticação da requisição
 					  user :: user,								%% Usuário da requisição ou anonimo
-					  node_exec									%% Node que foi enviado a solicitação
+					  node_exec = undefined,					%% Node que foi enviado a solicitação
+					  status = req_processando					%% status: req_processando, req_concluido, req_entregue
 				  }).
 
 -record(servico, {

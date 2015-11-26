@@ -195,7 +195,7 @@ do_log_request(Request, _State) ->
 	StatusSend = Request#request.status_send,
 	Contract = Request#request.servico,
 	Query = Request#request.querystring,
-	Code = Request#request.status, 
+	Code = Request#request.code, 
 	Reason = Request#request.reason, 
 	Latencia = Request#request.latencia, 
 	StatusSend = Request#request.status_send,

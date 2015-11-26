@@ -84,8 +84,9 @@ handle_info(State) ->
    {noreply, State}.
 
 handle_info({servico, RID, Reply}, State) ->
-	case msbus_request:get_request_rid(RID) of
+	case msbus_request:get_request_em_andamento(RID) of
 		{ok, Request} -> 
+			msbus_request:registra_request(Request),
 			msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
 			{noreply, State};
 		{erro, notfound} -> {noreply, State}

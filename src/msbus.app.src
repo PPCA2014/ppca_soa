@@ -31,7 +31,7 @@
                 {max_overflow, 0}
             ], []},
             {msbus_request_pool, [
-                {size, 2},
+                {size, 1},
                 {max_overflow, 0}
             ], []},
             {msbus_server_worker_pool, [
