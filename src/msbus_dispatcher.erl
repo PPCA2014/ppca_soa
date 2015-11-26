@@ -62,9 +62,15 @@ init(_Args) ->
  
 createEtsControle() ->
     try
-		ets:new(ctrl_node_dispatch, [ordered_set, named_table, public])
+		ets:new(ctrl_ping_cache, [set, named_table, public])
 	catch
-		_Exception:_Reason -> ok
+		_:_ -> ok
+	end,
+
+    try
+		ets:new(ctrl_node_dispatch, [set, named_table, public])
+	catch
+		_:_ -> ok
 	end.
  
 handle_cast(shutdown, State) ->
@@ -164,7 +170,7 @@ executa_servico(Request=#request{servico=#servico{host = HostList,
 												  function_name = FunctionName, 
 												  module = Module}}) ->
 	% Pega um node disponível para executar o serviço (somente um que está vivo!)
-	case get_work_node(HostList, HostList, HostNames, ModuleName) of
+	case get_work_node(HostList, HostList, HostNames, ModuleName, 1) of
 		{ok, Node} ->
 			% Envia uma mensagem assíncrona para o serviço
 			msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, atom_to_list(Node), Request#request.rid, Request#request.uri]),
@@ -186,11 +192,14 @@ executa_servico(Request=#request{servico=#servico{host = HostList,
 	end.
 
 
-get_work_node([], _HostList, HostNames, _ModuleName) -> 
+get_work_node([], HostList, HostNames, ModuleName, 1) -> 
+	get_work_node(HostList, HostList, HostNames, ModuleName, 2);
+
+get_work_node([], _HostList, HostNames, _ModuleName, 2) -> 
 	Motivo = lists:flatten(string:join(HostNames, ", ")),
 	{error, servico_fora, Motivo};
 
-get_work_node([_|T], HostList, HostNames, ModuleName) -> 
+get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) -> 
 	%% Localiza a entrada do módulo na tabela hash
 	case ets:lookup(ctrl_node_dispatch, ModuleName) of
 		[] -> 
@@ -215,12 +224,24 @@ get_work_node([_|T], HostList, HostNames, ModuleName) ->
 	% Este node está vivo? Temos que rotear para um node existente
 	case net_adm:ping(Node) of
 		pong -> {ok, Node};
-		pang -> get_work_node(T, HostList, HostNames, ModuleName)
+		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.
 		
-						
 	
-	
+is_node_alive(Node) -> 
+	case ets:lookup(ctrl_ping_cache, Node) of		
+		[] -> 		
+			Hit = net_adm:ping(Node);
+		[{Node, Time, Hit2}] -> 		
+			Time2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),			
+			case (Time2 - Time) < 2 of		
+				true -> io:format("hit\n\n"), Hit = Hit2;
+				false -> Hit = net_adm:ping(Node)
+			end		
+	end,		
+	NewTime = calendar:datetime_to_gregorian_seconds(calendar:local_time()),		
+	ets:insert(ctrl_ping_cache, {Node, NewTime, Hit}),
+	Hit.
 	
 
 

@@ -31,11 +31,11 @@ create_database(Nodes) ->
 							   {attributes, record_info(fields, user)}]),
 
     mnesia:create_table(sequence, [{type, set},
-									{disc_copies, Nodes},
+									{ram_copies, Nodes},
 									{attributes, record_info(fields, sequence)}]),
 
     mnesia:create_table(request, [{type, set},
-									 {disc_copies, Nodes},
+									 {ram_copies, Nodes},
 									 {attributes, record_info(fields, request)},
 									 {index, [#request.timestamp]}]),
 

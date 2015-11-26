@@ -31,15 +31,12 @@
 -define(STATIC_FILE_PATH, code:priv_dir(msbus) ++ "/www").
 
 % Propriedade TCP Timeout para envio do response
--define(TCP_SEND_TIMEOUT, 3000).
+-define(TCP_SEND_TIMEOUT, 30000).
 
 % Number of TCP connections that have completed the SYN/ACK handshake and not yet been accepted by user
 -define(TCP_BACKLOG, 128).
 
-% Tempo que o dispatcher segura a última consulta de ping para verificar se um node está vivo.
--define(DIS_NODE_ALIVE_CACHE_HIT, 6).
-
--define(REQ_CACHE_SYNC_CHECKPOINT, 3000).
+-define(REQ_CACHE_SYNC_CHECKPOINT, 6000).
 
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais interfaces de rede que o barramento vai ouvir (Permitido informar o IP ou DNS Name)
