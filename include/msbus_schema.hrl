@@ -16,6 +16,7 @@
 			   
 -record(request, {
 					  rid,       								%% Request ID (Identificador da requisição gerada automaticamente)
+					  rowid,									%% Identificador interno da requisição
 					  servico,   								%% Contrato que estabelece o serviço que vai atender a requisição
 					  timestamp, 								%% Timestamp de quando que a requisição ocorreu
 					  latencia :: non_neg_integer(),			%% Latência (tempo que levou para processar a requisição)
@@ -48,7 +49,7 @@
 				  }).
 
 -record(servico, {
-					rowid :: string(),  						%% Identificador interno do contrato (utilizado para localizar o contrato)
+					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
 					id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
 					name :: string(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como nome)
 					url :: string(),  							%% URL do contrato do serviço

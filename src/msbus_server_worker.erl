@@ -65,12 +65,17 @@ init({_Num, LSocket}) ->
 %% init para processos que vão processar a fila de requisições de saída
 init(_Args) ->
     process_flag(trap_exit, true),
+    %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
    
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({Socket, RequestBin}, State) ->
+	%fprof:apply(do_processa_request, [Socket, RequestBin, State]),
+	%fprof:profile(),
+	%fprof:analyse(),
+
 	do_processa_request(Socket, RequestBin, State),
 	{noreply, State};
 	
@@ -136,7 +141,11 @@ conexao_accept(State) ->
 %% @doc Processa o request
 do_processa_request(Socket, RequestBin, State) -> 
 	case msbus_http_util:encode_request(Socket, RequestBin) of
-		 {ok, Request} -> msbus_dispatcher:dispatch_request(Request);
+		 {ok, Request} -> 
+			%fprof:apply(msbus_dispatcher, dispatch_request, [Request]);
+			%fprof:profile(),
+			%fprof:analyse();
+			msbus_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> do_processa_response(Request, {error, Reason}, State);
 		 {error, Reason} -> 
 			gen_tcp:close(Socket),

@@ -56,6 +56,7 @@ execute(Request, From)	->
 %%====================================================================
  
 init(_Args) ->
+	%fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->

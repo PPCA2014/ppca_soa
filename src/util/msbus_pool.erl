@@ -24,7 +24,7 @@ transaction(Pool, Fun) ->
 cast(Pool, Args) ->
 	Worker = poolboy:checkout(Pool),
 	gen_server:cast(Worker, Args),
-	true = msbus_util:sleep(1),
+	%true = msbus_util:sleep(1),
 	ok = poolboy:checkin(Pool, Worker).
 
 

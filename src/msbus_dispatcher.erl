@@ -58,6 +58,7 @@ dispatch_request(Request) ->
 init(_Args) ->
     process_flag(trap_exit, true),
     createEtsControle(),
+    %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
  
 createEtsControle() ->
@@ -118,6 +119,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Despacha o request para o serviço registrado no catálogo
 do_dispatch_request(Request) ->
+	io:format("Request: ~p\n", [Request]),
 	case msbus_catalogo:lookup(Request) of
 		{ok, Request1} -> 
 			msbus_request:registra_request(Request1),
@@ -135,7 +137,9 @@ do_dispatch_request(Request) ->
 			end;
 		notfound -> 
 			msbus_request:registra_request(Request),
-			msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, notfound}})
+			msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, notfound}});
+		Erro ->
+			io:format("ERRO -> ~p\n", [Erro])
 	end,
 	ok.
 
@@ -227,21 +231,21 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.
 		
-	
-is_node_alive(Node) -> 
-	case ets:lookup(ctrl_ping_cache, Node) of		
-		[] -> 		
-			Hit = net_adm:ping(Node);
-		[{Node, Time, Hit2}] -> 		
-			Time2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),			
-			case (Time2 - Time) < 2 of		
-				true -> io:format("hit\n\n"), Hit = Hit2;
-				false -> Hit = net_adm:ping(Node)
-			end		
-	end,		
-	NewTime = calendar:datetime_to_gregorian_seconds(calendar:local_time()),		
-	ets:insert(ctrl_ping_cache, {Node, NewTime, Hit}),
-	Hit.
+%	
+%is_node_alive(Node) -> 
+%	case ets:lookup(ctrl_ping_cache, Node) of		
+%		[] -> 		
+%			Hit = net_adm:ping(Node);
+%		[{Node, Time, Hit2}] -> 		
+%			Time2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),			
+%			case (Time2 - Time) < 2 of		
+%				true -> io:format("hit\n\n"), Hit = Hit2;
+%				false -> Hit = net_adm:ping(Node)
+%			end		
+%	end,		
+%	NewTime = calendar:datetime_to_gregorian_seconds(calendar:local_time()),		
+%	ets:insert(ctrl_ping_cache, {Node, NewTime, Hit}),
+%	Hit.
 	
 
 

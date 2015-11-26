@@ -25,12 +25,13 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do msbus_logger. 
--record(state, {buffer = [],             % As mensagens vão primeiro para um buffer, posteriormente para o arquivo de log         
-			    buffer_tela = [],        % As mensagens vão primeiro para um buffer, posteriormente para tela
-			    flag_checkpoint = false,      % checkpoint para descarregar o buffer no arquivo de log
-			    flag_checkpoint_tela = false, % checkpoint para descarregar o buffer da tela
-				log_file_dest,           % Configuração do caminho onde os logs serão gravados
-				log_file_checkpoint      % Configuração do timeout para descarregar buffer do arquivo
+-record(state, {buffer = [],             		% As mensagens vão primeiro para um buffer, posteriormente para o arquivo de log         
+			    buffer_tela = [],        		% As mensagens vão primeiro para um buffer, posteriormente para tela
+			    flag_checkpoint = false,      	% checkpoint para descarregar o buffer no arquivo de log
+			    flag_checkpoint_tela = false, 	% checkpoint para descarregar o buffer da tela
+				log_file_dest,           		% Configuração do caminho onde os logs serão gravados
+				log_file_checkpoint,      		% Configuração do timeout para descarregar buffer do arquivo
+				log_file_name		      		% Configuração do timeout para descarregar buffer do arquivo
  			   }). 
 
 
@@ -85,8 +86,11 @@ init(_Args) ->
 	Conf = msbus_config:getConfig(),
 	LogFileDest = Conf#config.log_file_dest,
 	Checkpoint = Conf#config.log_file_checkpoint,
+	set_timeout_for_get_filename_logger(),
+	%fprof:trace([start, {procs, [self()]}]),
     {ok, #state{log_file_dest = LogFileDest, 
-                log_file_checkpoint = Checkpoint}}. 
+                log_file_checkpoint = Checkpoint,
+                log_file_name = get_filename_logger(LogFileDest)}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -126,7 +130,13 @@ handle_info(checkpoint_tela, State) ->
 
 handle_info(checkpoint, State) ->
    NewState = sync_buffer(State),
-   {noreply, NewState}.
+   {noreply, NewState};
+
+handle_info(checkpoint_get_filename_logger, State) ->
+	io:format("ok"),
+	NewLogFileName = get_filename_logger(State#state.log_file_dest),
+	set_timeout_for_get_filename_logger(),
+   {noreply, State#state{log_file_name = NewLogFileName}}.
 
 terminate(_Reason, _State) ->
     ok.
@@ -139,9 +149,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-get_filename_logger(State) -> 
-	{{Ano,Mes,Dia},{_Hora,_Min,_Seg}} = calendar:local_time(),
-	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/msbus_~p_~p_~p.log", [State#state.log_file_dest, node(), Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia])),
+get_filename_logger(LogFileDest) -> 
+	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/msbus_~p_~p_~p_~p_~p.log", [LogFileDest, node(), Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia, Hora, Min])),
 	filelib:ensure_dir(NomeArqLog),
 	NomeArqLog.
 
@@ -156,6 +166,9 @@ set_timeout_for_sync_tela(#state{flag_checkpoint_tela = false}) ->
 
 set_timeout_for_sync_tela(_State) ->    
 	ok.
+
+set_timeout_for_get_filename_logger() ->    
+	erlang:send_after(?LOG_ARCHIVE_CHECKPOINT, self(), checkpoint_get_filename_logger).
 
 write_msg(Tipo, <<Msg/binary>>, State) ->
 	Msg1 = binary_to_list(Msg),
@@ -180,7 +193,7 @@ sync_buffer_tela(State) ->
 sync_buffer(State = #state{buffer = []}) -> State;
 
 sync_buffer(State) ->
-	FileName = get_filename_logger(State),
+	FileName = State#state.log_file_name,
 	file:write_file(FileName, lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
 	State#state{buffer = [], flag_checkpoint = false}.
 	

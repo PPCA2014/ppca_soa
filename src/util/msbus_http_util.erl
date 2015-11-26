@@ -106,6 +106,7 @@ encode_request(Socket, RequestBin) ->
 		Host = maps:get("host", Outros2, ""),
 		QuerystringMap = parse_querystring(Querystring),
 		Authorization = maps:get("authorization", Outros2, ""),
+		Rowid = msbus_util:new_rowid_servico(Url2, Metodo),
 		case is_metodo_suportado(Metodo) of
 			true ->
 				case is_payload_permitido(Metodo, Content_Length) of
@@ -113,6 +114,7 @@ encode_request(Socket, RequestBin) ->
 						% Requisições GET e DELETE
 						Request = #request{
 									rid = RID,
+									rowid = Rowid,
 									type = Metodo,
 									uri = Uri,
 									url = Url2,
@@ -139,6 +141,7 @@ encode_request(Socket, RequestBin) ->
 							{ok , PayloadMap} ->
 								Request = #request{
 											rid = RID,
+											rowid = Rowid,
 											type = Metodo,
 											uri = Uri,
 											url = Url2,
@@ -163,6 +166,7 @@ encode_request(Socket, RequestBin) ->
 							{error, Reason} -> 
 								Request = #request{
 										rid = RID,
+										rowid = Rowid,
 										type = Metodo,
 										uri = Uri,
 										url = Url2,
@@ -187,6 +191,7 @@ encode_request(Socket, RequestBin) ->
 					error ->
 						Request = #request{
 								rid = RID,
+								rowid = Rowid,
 								type = Metodo,
 								uri = Uri,
 								url = Url2,
@@ -210,6 +215,7 @@ encode_request(Socket, RequestBin) ->
 			false -> 
 				Request = #request{
 							rid = RID,
+							rowid = Rowid,
 							type = Metodo,
 							uri = Uri,
 							url = Url2,

@@ -36,7 +36,11 @@
 % Number of TCP connections that have completed the SYN/ACK handshake and not yet been accepted by user
 -define(TCP_BACKLOG, 128).
 
+% Armazena em cache as novas requisições por 6 segundos antes de persistir em uma única transação
 -define(REQ_CACHE_SYNC_CHECKPOINT, 6000).
+
+% Arquiva o log a cada 4 horas 
+-define(LOG_ARCHIVE_CHECKPOINT, 14400000).  % a cada 4 horas
 
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais interfaces de rede que o barramento vai ouvir (Permitido informar o IP ou DNS Name)

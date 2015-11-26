@@ -37,7 +37,8 @@
 -record(state, {cat1, 		%% Catalogo JSON
 				cat2, 		%% Parsed catalog 
 				cat3, 		%% Regular expression parsed catalog
-				ult_lookup 	%% Último lookup realizado
+				ult_lookup, 	%% Último lookup realizado
+				ult_rowid
 		}). 
 
 
@@ -86,6 +87,7 @@ init(_Args) ->
     process_flag(trap_exit, true),
 	%% Cat1 = JSON catalog, Cat2 = parsed catalog, Cat3 = regular expression parsed catalog
 	NewState = get_catalogo(),
+	fprof:trace([start, {procs, [self()]}]),
     {ok, NewState}. 
     
 handle_cast(shutdown, State) ->
@@ -347,7 +349,7 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Version = maps:get(<<"version">>, H, <<>>),
 	Owner = maps:get(<<"owner">>, H, <<>>),
 	Async = maps:get(<<"async">>, H, <<"false">>),
-	Rowid = new_rowid_servico(Url2, Type),
+	Rowid = msbus_util:new_rowid_servico(Url2, Type),
 	Lang = maps:get(<<"lang">>, H, <<>>),
 	case Lang of
 		<<"erlang">> -> 
@@ -489,25 +491,34 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
 			end
 	end.
+
+lookup(_Request=#request{type = "GET", 
+						rowid = Rowid}, State) when Rowid == State#state.ult_rowid ->
+	io:format("hit  ~p\n", [State#state.ult_lookup]),
+	State#state.ult_lookup;
 	
 lookup(Request, State) ->
-	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
+	io:format("no   hit  ~p  ~p\n", [Request#request.rowid, State#state.ult_lookup]),
+	Rowid = Request#request.rowid,
 	case ets:lookup(State#state.cat2, Rowid) of
-		[] -> Result = lookup_re(Request, State#state.cat3);
-		[{Rowid, Servico}] -> 
+		[] -> 
+			Result = lookup_re(Request, State#state.cat3);
+		[{_Rowid, Servico}] -> 
 			Request2 = Request#request{servico = Servico},
 			Result = {ok, Request2}
 	end,
 	Result2 = processa_querystring(Result),
-	{Result2, State#state{ult_lookup = Result2}}.
+	NewState = State#state{ult_rowid = Rowid, ult_lookup = Result2},
+	
+	io:format("hit  ~p\n", [NewState#state.ult_lookup]),
+	{Result2, NewState}.
 
 lookup_re(_Request, []) ->
 	notfound;
 
 lookup_re(Request, [H|T]) ->
 	RE = H#servico.id_re_compiled,
-	Rowid = new_rowid_servico(Request#request.url, Request#request.type),
-	case re:run(Rowid, RE, [{capture,all_names,binary}]) of
+	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
 		match -> 
 			Request2 = Request#request{servico = H},
 			{ok, Request2};
@@ -520,20 +531,6 @@ lookup_re(Request, [H|T]) ->
 		{error, _ErrType} -> notfound 
 	end.
 
-new_rowid_servico(<<Url/binary>>, <<Type/binary>>) ->	
-	[PrefixUrl|Url2] = binary_to_list(Url),
-	case PrefixUrl of
-		$^ -> iolist_to_binary([Type, <<"#">>, list_to_binary(Url2)]);
-		_  -> iolist_to_binary([Type, <<"#">>, Url])
-	end;
-
-new_rowid_servico(Url, Type) ->	
-	[PrefixUrl|Url2] = Url,
-	case PrefixUrl of
-		$^ -> iolist_to_binary([Type, <<"#">>, Url2]);
-		_  -> iolist_to_binary([Type, <<"#">>, Url])
-	end.
-	
 new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,

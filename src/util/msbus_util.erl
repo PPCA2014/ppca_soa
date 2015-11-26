@@ -23,7 +23,9 @@
 		 mes_extenso/1,
 		 binlist_to_list/1,
 		 join_binlist/2,
-		 list_to_ets/3]).
+		 list_to_ets/3,
+		 profile/0,
+		 new_rowid_servico/2]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -193,6 +195,22 @@ list_to_ets(List, Name, Options) ->
 	lists:foreach(fun(X) -> ets:insert(Ets, X) end, List),
 	Ets.
 	
+profile() ->
+	fprof:trace([stop]),
+	fprof:profile(),
+	fprof:analyse([totals, {dest, "fprof.txt"}]).
 
+new_rowid_servico(<<Url/binary>>, <<Type/binary>>) ->	
+	[PrefixUrl|Url2] = binary_to_list(Url),
+	case PrefixUrl of
+		$^ -> iolist_to_binary([Type, <<"#">>, list_to_binary(Url2)]);
+		_  -> iolist_to_binary([Type, <<"#">>, Url])
+	end;
 
+new_rowid_servico(Url, Type) ->	
+	[PrefixUrl|Url2] = Url,
+	case PrefixUrl of
+		$^ -> iolist_to_binary([Type, <<"#">>, Url2]);
+		_  -> iolist_to_binary([Type, <<"#">>, Url])
+	end.
 

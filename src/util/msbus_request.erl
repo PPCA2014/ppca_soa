@@ -76,6 +76,7 @@ init(_Args) ->
 									named_table,
 									{write_concurrency, true},
 									{keypos, 2}]),
+	%fprof:trace([start, {procs, [self()]}]),
 	{ok, #state{}}.
     
 handle_cast(shutdown, State) ->
