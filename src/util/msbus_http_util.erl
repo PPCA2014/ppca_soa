@@ -336,9 +336,12 @@ send_request(Socket, Response, Tentativa) ->
 				falhou -> 
 					gen_tcp:close(Socket),
 					timeout;
-				ok -> ok
+				ok -> 
+					gen_tcp:close(Socket),
+					ok
 			end;
         {error, closed} ->
+			gen_tcp:close(Socket),
 			ok;
         {error, OtherSendError} ->
 			msbus_logger:error("Erro send_request desconhecido ~p.", [OtherSendError]),

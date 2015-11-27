@@ -25,8 +25,9 @@
 -export([cast/1]).
 
 % estado do servidor
--record(state, {lsocket,	%% socket do listener
-				socket		%% socket da requisição
+-record(state, {worker_id = undefined,  %% identificador do worker
+				lsocket   = undefined,	%% socket do listener
+				socket	  = undefined	%% socket da requisição do cliente
 				}).
 
 -define(SERVER, ?MODULE).
@@ -57,72 +58,107 @@ cast(Msg) -> msbus_pool:cast(msbus_server_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-%% init para processos que vão processar a fila de requisições de entrada
-init({_Num, LSocket}) ->
-    State = #state{lsocket=LSocket},
+init({Worker_Id, LSocket}) ->
+    State = #state{worker_id = Worker_Id, lsocket=LSocket},
     {ok, State, 0};
 
 %% init para processos que vão processar a fila de requisições de saída
 init(_Args) ->
-    process_flag(trap_exit, true),
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
    
-handle_cast(shutdown, State) ->
+handle_cast(shutdown, State=#state{socket = undefined}) ->
+    io:format("shutdown worker undefined socket\n"),
     {stop, normal, State};
 
-handle_cast({Socket, RequestBin}, State) ->
-	%fprof:apply(do_processa_request, [Socket, RequestBin, State]),
-	%fprof:profile(),
-	%fprof:analyse(),
+handle_cast(shutdown, State=#state{socket = Socket}) ->
+    io:format("shutdown worker com socket\n"),
+    gen_tcp:close(Socket),
+    {stop, normal, State#state{socket = undefined}};
 
-	do_processa_request(Socket, RequestBin, State),
-	{noreply, State};
+handle_cast({Socket, RequestBin}, State) ->
+	trata_request(Socket, RequestBin, State),
+	{noreply, State#state{socket = undefined}};
 	
 handle_cast({static_file, Request, Result}, State) ->
-    do_processa_response(Request, Result, State),
-    {noreply, State};
+    envia_response(Request, Result, State),
+    {noreply, State#state{socket = undefined}};
 
 handle_cast({servico, Request, Result}, State) ->
-	case do_processa_response(Request, Result, State) of
-		em_andamento  -> {noreply, State};
-		ok			  -> {noreply, State}
-	end.
+	envia_response(Request, Result, State),
+	{noreply, State#state{socket = undefined}}.
 
 handle_call(_Msg, _From, State) ->
 	{reply, _Msg, State}.
 
-handle_info(timeout, State) ->
-    conexao_accept(State);
+handle_info(timeout, State=#state{lsocket = undefined}) ->
+	{noreply, State};
+
+handle_info(timeout, State=#state{lsocket = LSocket}) ->
+    io:format("Listen for accept server worker ~p com state ~p\n", [State#state.worker_id, State]),
+	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
+		{ok, Socket} -> 
+			% connection is established
+			io:format("Conexão estabelecida para o server worker ~p.\n", [State#state.worker_id]),
+			NewState = State#state{socket = Socket}, 
+			io:format("NewState is ~p.\n", [NewState]),
+			{noreply, NewState};
+		{error, closed} -> 
+			% ListenSocket is closed
+			io:format("Socket do listener foi fechado para o server worker ~p.", [State#state.worker_id]),
+			{noreply, State#state{lsocket = undefined, socket = undefined}};
+		{error, timeout} ->
+			% no connection is established within the specified time
+			io:format("Nenhuma conexão estabelecida durante ~p para o server socket ~p. Reiniciando o accept.", [timeout, State#state.worker_id]),
+			{noreply, State};
+		{error, system_limit} ->
+			io:format("No available ports in the Erlang emulator are in use for server worker ~p. System_limit: ~p", [State#state.worker_id, system_limit]),
+			msbus_util:sleep(3000),
+			{noreply, State};
+		{error, Posix} ->
+			io:format("Erro POSIX ~p ao tentar aceitar conexões no server worker ~p.", [Posix, State#state.worker_id]),
+			msbus_util:sleep(3000),
+			{noreply, State#state{socket = undefined}}
+	end;
 
 handle_info({tcp, Socket, RequestBin}, State) ->
+	io:format("init transaction com state ~p\n", [State]),
 	msbus_pool:transaction(msbus_server_worker_pool, 
 		fun(Worker) ->
 			case gen_tcp:controlling_process(Socket, Worker) of
-				ok -> gen_server:cast(Worker, {Socket, RequestBin});
-				{error, closed} -> 
-					{noreply, State#state{socket=undefined}};
-				{error, not_owner} -> msbus_logger:error("ocorreu um erro ao invocar gen_tcp:controlling_process")
+				ok -> 
+					io:format("cast to server worker transaction com state ~p\n", [State]),
+					gen_server:cast(Worker, {Socket, RequestBin});
+				{error, closed} -> {noreply, State#state{socket=undefined}};
+				{error, not_owner} -> msbus_logger:error("Http worker ~p não é o dono do socket", [State#state.worker_id])
 			end
 		end),
-	{noreply, State, 0};
+	NewState = State#state{socket=undefined}, 
+	io:format("finish transaction com state ~p\n", [NewState]),
+	{noreply, NewState, 0};
 
-handle_info({tcp_closed, _Socket}, State) ->
-	{noreply, State#state{socket=undefined}};
+handle_info({tcp_closed, Socket}, State) ->
+	io:format("tcp_closed of worker com state ~p\n", [State]),
+	gen_tcp:close(Socket),
+	{noreply, State#state{socket = undefined}};
 
-handle_info(_Msg, State) ->
-   {noreply, State#state{socket=undefined}}.
-
-handle_info(State) ->
+handle_info(Msg, State) ->
+	io:format("MENSAGEM ~p DESCONHECIDA COM STATE ~p!\n", [Msg, State]),
    {noreply, State}.
 
-terminate(_Reason, #state{lsocket=_LSocket}) ->
-	%gen_tcp:close(LSocket),
+handle_info(State) ->
+	io:format("WORKER STATE ~p!\n", [State]),
+   {noreply, State}.
+
+terminate(_Reason, #state{socket = undefined}) ->
+   io:format("terminate worker undefined  socket\n"),
     ok;
 
-terminate(_Reason, _State) ->
-	ok.
-	
+terminate(_Reason, #state{socket = Socket}) ->
+	io:format("terminate worker com socket\n"),
+	gen_tcp:close(Socket),
+    ok.
+
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
@@ -131,85 +167,75 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-conexao_accept(State) ->
-	case gen_tcp:accept(State#state.lsocket) of
-		{ok, Socket}   -> {noreply, State#state{socket=Socket}};
-		{error, _Reason} -> {noreply, State#state{socket=undefined}}
-	end.
-		
 
 %% @doc Processa o request
-do_processa_request(Socket, RequestBin, State) -> 
+trata_request(Socket, RequestBin, State) -> 
+	io:format("Server worker ~p trata request com state ~p\n", [State#state.worker_id, State]),
 	case msbus_http_util:encode_request(Socket, RequestBin) of
 		 {ok, Request} -> 
-			%fprof:apply(msbus_dispatcher, dispatch_request, [Request]);
-			%fprof:profile(),
-			%fprof:analyse();
 			msbus_dispatcher:dispatch_request(Request);
-		 {error, Request, Reason} -> do_processa_response(Request, {error, Reason}, State);
-		 {error, Reason} -> 
-			gen_tcp:close(Socket),
-			msbus_logger:error("Erro processa request: ~p.", [Reason])
+		 {error, Request, Reason} -> 
+			envia_response(Request, {error, Reason}, State)
 	end.	
 
-do_processa_response(_Request, {async, false}, _State) -> 
+envia_response(_Request, {async, false}, _State) -> 
 	em_andamento;
 
-do_processa_response(Request, {async, true}, _State) ->
+envia_response(Request, {async, true}, _State) ->
 	RID = msbus_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = msbus_http_util:encode_response(<<"200">>, Ticket),
-	do_processa_response(200, ok, Request, Response);
+	envia_response(200, ok, Request, Response);
 
-do_processa_response(Request, {ok, Result}, _State) -> 
+envia_response(Request, {ok, Result}, _State) -> 
 	try
 		case Request#request.servico#servico.async of
 			true -> io:format("Ticket já foi entregue\n");
 			_ -> 
 				Response = msbus_http_util:encode_response(<<"200">>, Result),
-				do_processa_response(200, ok, Request, Response)
+				envia_response(200, ok, Request, Response)
 		end
 	catch
 		_:_ -> io:format("deu erro nesse request: ~p\n", [Request])
 	end;
 
-do_processa_response(Request, {ok, Result, MimeType}, _State) ->
+envia_response(Request, {ok, Result, MimeType}, _State) ->
 	Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
-	do_processa_response(200, ok, Request, Response);
+	envia_response(200, ok, Request, Response);
 
-do_processa_response(Request, {error, notfound}, _State) ->
+envia_response(Request, {error, notfound}, _State) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
-	do_processa_response(404, notfound, Request, Response);
+	envia_response(404, notfound, Request, Response);
 
-do_processa_response(Request, {error, no_authorization}, _State) ->
+envia_response(Request, {error, no_authorization}, _State) ->
 	Response = msbus_http_util:encode_response(<<"401">>, ?HTTP_ERROR_401),
-	do_processa_response(401, no_authorization, Request, Response);
+	envia_response(401, no_authorization, Request, Response);
 
-do_processa_response(Request, {error, invalid_payload}, _State) ->
+envia_response(Request, {error, invalid_payload}, _State) ->
 	Response = msbus_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
-	do_processa_response(415, invalid_payload, Request, Response);
+	envia_response(415, invalid_payload, Request, Response);
 
-do_processa_response(Request, {error, file_not_found}, _State) ->
+envia_response(Request, {error, file_not_found}, _State) ->
 	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-	do_processa_response(404, file_not_found, Request, Response);
+	envia_response(404, file_not_found, Request, Response);
 
-do_processa_response(Request, {error, Reason}, _State) ->
+envia_response(Request, {error, Reason}, _State) ->
 	Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
-	do_processa_response(400, Reason, Request, Response);
+	envia_response(400, Reason, Request, Response);
 
-do_processa_response(Request, {error, servico_fora, ErroInterno}, _State) ->
+envia_response(Request, {error, servico_fora, ErroInterno}, _State) ->
 	Response = msbus_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
 	Reason2 = io_lib:format("~p ~p", [servico_fora, ErroInterno]),
-	do_processa_response(503, Reason2, Request, Response);
+	envia_response(503, Reason2, Request, Response);
 
-do_processa_response(Request, {error, Reason, ErroInterno}, State) ->
+envia_response(Request, {error, Reason, ErroInterno}, State) ->
 	Reason2 = io_lib:format("~p ~p", [Reason, ErroInterno]),
-	do_processa_response(Request, {error, Reason2}, State);
+	envia_response(Request, {error, Reason2}, State);
 
-do_processa_response(Request, Result, State) ->
-	do_processa_response(Request, {ok, Result}, State).
+envia_response(Request, Result, State) ->
+	envia_response(Request, {ok, Result}, State).
 
-do_processa_response(Code, Reason, Request, Response) ->
+envia_response(Code, Reason, Request, Response) ->
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),

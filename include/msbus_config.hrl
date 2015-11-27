@@ -43,7 +43,7 @@
 -define(LOG_FILE_CHECKPOINT, 6000).  
 
 % Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
--define(LOG_ARCHIVE_CHECKPOINT, 14400000).  % Por default são 4 horas
+-define(LOG_ARCHIVE_CHECKPOINT, 10000 * 60 * 60 * 4).  % Por default são 4 horas
 
 % Quantos workers HTTP instanciar se não especificado no arquivo de configuração
 -define(MAX_HTTP_WORKER, 12).
@@ -51,6 +51,8 @@
 % Quantos workers HTTP são permitidos especificar no arquivo de configuração (1 até MAX_HTTP_WORKER_RANGE)
 -define(MAX_HTTP_WORKER_RANGE, 1000).  % a cada 4 horas
 
+% Quanto tempo o listener vai aguardar uma conexão antes de ocorrer um timeout
+-define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 * 30). % 30 minutos
 
 
 %  Definição para o arquivo de configuração

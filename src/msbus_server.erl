@@ -18,7 +18,7 @@
 -export([start/0, stop/0]).
 
 %% Client API
--export([start_listen/2, stop_listen/2]).
+-export([start_listeners/2, stop_listener/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -42,31 +42,29 @@ stop() ->
 %%====================================================================
 %% Client API
 %%====================================================================
- 
-start_listen(Port, IpAddress) ->
-	gen_server:call(?SERVER, {start_listen, Port, IpAddress}).
 
-stop_listen(Port, IpAddress) ->
-	gen_server:call(?SERVER, {stop_listen, Port, IpAddress}).
+start_listeners(Port, Listen_Address) ->
+	gen_server:cast(?SERVER, {start_listeners, Port, Listen_Address}).
+ 
+stop_listener(Port, IpAddress) ->
+	gen_server:call(?SERVER, {stop_listener, Port, IpAddress}).
 	
  
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init(_Args) -> 
-	Conf = msbus_config:getConfig(),
-	start_listeners(Conf#config.tcp_listen_address, Conf#config.tcp_port, #state{}).
+init(_Args) -> {ok, #state{}}.
     
 handle_cast(shutdown, State) ->
-    {stop, normal, State}.
+    {stop, normal, State};
 
-handle_call({start_listen, Port, IpAddress}, _From, State) ->
-	{Reply, NewState} = do_start_listen(Port, IpAddress, State),
-	{reply, Reply, NewState};
+handle_cast({start_listeners, Port, Listen_Address}, State) ->
+	{_, NewState} = start_listeners(Listen_Address, Port, State),
+	{noreply, NewState}.
 
-handle_call({stop_listen, Port, IpAddress}, _From, State) ->
-	{Reply, NewState} = do_stop_listen(Port, IpAddress, State),
+handle_call({stop_listener, Port, IpAddress}, _From, State) ->
+	{Reply, NewState} = do_stop_listener(Port, IpAddress, State),
 	{reply, Reply, NewState}.
 
 handle_info(State) ->
@@ -89,12 +87,12 @@ code_change(_OldVsn, State, _Extra) ->
 start_listeners([], _Port, State) -> {ok, State};
 
 start_listeners([H|T], Port, State) ->
-	case do_start_listen(Port, H, State) of
+	case do_start_listener(Port, H, State) of
 		{ok, NewState} -> start_listeners(T, Port, NewState);
-		{{error, _Reason}, NewState} -> {error, NewState}
+		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 
-do_start_listen(Port, IpAddress, State) ->
+do_start_listener(Port, IpAddress, State) ->
 	case msbus_server_listener:start(Port, IpAddress) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
@@ -105,7 +103,7 @@ do_start_listen(Port, IpAddress, State) ->
 	end,
 	Reply.
 
-do_stop_listen(Port, IpAddress, State) ->
+do_stop_listener(Port, IpAddress, State) ->
 	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
 		[PidListener|_] ->
 			gen_server:call(PidListener, shutdown),
