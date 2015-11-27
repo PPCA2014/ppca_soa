@@ -27,6 +27,7 @@ start(_StartType, StartArgs) ->
 			Ret = msbus_sup:start_link(StartArgs),
 			%% primeiro ip disponível informado na configuração
 			IpPortal = inet:ntoa(hd(Config#config.tcp_listen_address)), 
+			msbus_logger:info("Config file dest: ~s", [Config#config.nome_arq_config]),
 			msbus_logger:info("Hostnames alias: ~p", [Config#config.cat_host_alias]),
 			msbus_logger:info("Host search: ~s", [msbus_util:join_binlist(Config#config.cat_host_search, ", ")]),
 			msbus_logger:info("Node search: ~s", [msbus_util:join_binlist(Config#config.cat_node_search, ", ")]),
@@ -35,7 +36,7 @@ start(_StartType, StartArgs) ->
 			msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, 
 																								 Config#config.tcp_port]),
 			msbus_logger:info("~s iniciado em ~pms.", [node(), msbus_util:get_milliseconds() - T1]),
-			msbus_util:sleep(1500),
+			msbus_util:sleep(2500), %% Facilita a depuração (se um erro ocorrer durante o carregamento)
 			registra_eventos(),
 			Ret;
 		{error, Error} ->

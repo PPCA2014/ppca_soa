@@ -36,11 +36,22 @@
 % Number of TCP connections that have completed the SYN/ACK handshake and not yet been accepted by user
 -define(TCP_BACKLOG, 128).
 
-% Armazena em cache as novas requisições por 6 segundos antes de persistir em uma única transação
+% Armazena em cache as novas requisições por REQ_CACHE_SYNC_CHECKPOINT ms antes de persistir no banco
 -define(REQ_CACHE_SYNC_CHECKPOINT, 6000).
 
-% Arquiva o log a cada 4 horas 
--define(LOG_ARCHIVE_CHECKPOINT, 14400000).  % a cada 4 horas
+% Armazena o buffer do log a cada LOG_FILE_CHECKPOINT ms (Aumente este valor se existir muita contenção na escrita em disco)
+-define(LOG_FILE_CHECKPOINT, 6000).  
+
+% Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
+-define(LOG_ARCHIVE_CHECKPOINT, 14400000).  % Por default são 4 horas
+
+% Quantos workers HTTP instanciar se não especificado no arquivo de configuração
+-define(MAX_HTTP_WORKER, 12).
+
+% Quantos workers HTTP são permitidos especificar no arquivo de configuração (1 até MAX_HTTP_WORKER_RANGE)
+-define(MAX_HTTP_WORKER_RANGE, 1000).  % a cada 4 horas
+
+
 
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais interfaces de rede que o barramento vai ouvir (Permitido informar o IP ou DNS Name)
@@ -54,7 +65,8 @@
 				 cat_host_search,				%% Lista de hosts para pesquisar os serviços
 				 cat_node_search,				%% Lista de nodes para pesquisar os serviços
 				 msbus_hostname,				%% Nome da maquina onde o barramento está sendo executado
-				 msbus_host						%% Atom do nome da maquina onde o barramento está sendo executado
+				 msbus_host,					%% Atom do nome da maquina onde o barramento está sendo executado
+				 nome_arq_config				%% Nome do arquivo de configuração (útil para saber o local do arquivo)
 		 }). 	
 
 
