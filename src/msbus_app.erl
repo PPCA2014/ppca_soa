@@ -34,8 +34,8 @@ start(_StartType, StartArgs) ->
 			msbus_logger:info("log_file_checkpoint: ~pms", [Config#config.log_file_checkpoint]),
 			msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, 
 																								 Config#config.tcp_port]),
-			msbus_logger:info("ESB ~s iniciado em ~pms.", [node(), msbus_util:get_milliseconds() - T1]),
-			msbus_logger:sync(),
+			msbus_logger:info("~s iniciado em ~pms.", [node(), msbus_util:get_milliseconds() - T1]),
+			msbus_util:sleep(1500),
 			registra_eventos(),
 			Ret;
 		{error, Error} ->

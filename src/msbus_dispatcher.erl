@@ -62,11 +62,11 @@ init(_Args) ->
     {ok, #state{}}.
  
 createEtsControle() ->
-    try
-		ets:new(ctrl_ping_cache, [set, named_table, public])
-	catch
-		_:_ -> ok
-	end,
+%    try
+%		ets:new(ctrl_ping_cache, [set, named_table, public])
+%	catch
+%		_:_ -> ok
+%	end,
 
     try
 		ets:new(ctrl_node_dispatch, [set, named_table, public])
@@ -119,21 +119,30 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Despacha o request para o serviço registrado no catálogo
 do_dispatch_request(Request) ->
-	io:format("Request: ~p\n", [Request]),
 	case msbus_catalogo:lookup(Request) of
-		{ok, Request1} -> 
-			msbus_request:registra_request(Request1),
-			case msbus_auth_user:autentica(Request1) of
+		{Contract, ParamsMap, Querystring} -> 
+			case msbus_auth_user:autentica(Contract, Request) of
 				{ok, User} ->
-					Request2 = Request1#request{user = User},
-					msbus_eventmgr:notifica_evento(new_request, Request2),
-					case executa_servico(Request2) of
-						{ok, Request3} -> 
-							msbus_request:registra_request(Request3),
-							ok;
-						Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
+					case get_work_node(Contract#servico.host, 
+									   Contract#servico.host,	
+									   Contract#servico.host_name, 
+									   Contract#servico.module_name, 1) of
+						{ok, Node} ->
+							Request2 = Request#request{user = User, 
+													   node_exec = Node,
+													   servico = Contract,
+													   params_url = ParamsMap,
+													   querystring = Querystring},
+							msbus_request:registra_request(Request2),
+							msbus_eventmgr:notifica_evento(new_request, Request2),
+							case executa_servico(Node, Request2) of
+								ok -> ok;
+								Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
+							end;
+						Error -> 
+							msbus_eventmgr:notifica_evento(erro_request, {servico, Request, Error})
 					end;
-				{error, no_authorization} -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request1, {error, no_authorization}})
+				{error, no_authorization} -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, no_authorization}})
 			end;
 		notfound -> 
 			msbus_request:registra_request(Request),
@@ -144,57 +153,56 @@ do_dispatch_request(Request) ->
 	ok.
 
 %% @doc Executa o serviço local (Serviço escrito em Erlang)
-executa_servico(Request=#request{servico=#servico{host='', 
+executa_servico(_Node, Request=#request{servico=#servico{host='', 
 												  host_name = HostName,	
 												  module=Module, 
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  function=Function}}) ->
-	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, HostName, Request#request.rid, Request#request.uri]),
 	try
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
-				Request2 = Request#request{node_exec = node()},
-				apply(Module, Function, [Request2, self()]),
-				{ok, Request2};
+				apply(Module, Function, [Request, self()]);
 			_Pid -> 
-				Request2 = Request#request{node_exec = node()},
-				apply(Module, Function, [Request, self()]),
-				{ok, Request2}
-		end
+				apply(Module, Function, [Request, self()])
+		end,
+		msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, 
+																   FunctionName, 
+																   HostName, 
+																   Request#request.rid, 
+																   Request#request.uri]),
+		ok
 	catch
 		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
 	end;
 
 %% @doc Executa um serviço remotamente
-executa_servico(Request=#request{servico=#servico{host = HostList, 
-												  host_name = HostNames,	
+executa_servico(Node, Request=#request{servico=#servico{host = _HostList, 
+												  host_name = _HostNames,	
 												  module_name = ModuleName, 
 												  function_name = FunctionName, 
 												  module = Module}}) ->
-	% Pega um node disponível para executar o serviço (somente um que está vivo!)
-	case get_work_node(HostList, HostList, HostNames, ModuleName, 1) of
-		{ok, Node} ->
-			% Envia uma mensagem assíncrona para o serviço
-			msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, FunctionName, atom_to_list(Node), Request#request.rid, Request#request.uri]),
-			{Module, Node} ! {{Request#request.rid, 
-							   Request#request.uri, 
-							   Request#request.type, 
-							   Request#request.params_url, 
-							   Request#request.querystring_map,
-							   Request#request.payload,	
-							   Request#request.content_type,	
-							   ModuleName,
-							   FunctionName}, 
-							   self()
-							  },
-			
-			% Retorna ok e o request atualizado com o node que foi utilizado para executar o serviço
-			{ok, Request#request{node_exec = Node}};
-		Error -> Error
-	end.
+	% Envia uma mensagem assíncrona para o serviço
+	{Module, Node} ! {{Request#request.rid, 
+					   Request#request.uri, 
+					   Request#request.type, 
+					   Request#request.params_url, 
+					   Request#request.querystring_map,
+					   Request#request.payload,	
+					   Request#request.content_type,	
+					   ModuleName,
+					   FunctionName}, 
+					   self()
+					  },
+	msbus_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, 
+															   FunctionName, 
+															   atom_to_list(Node), 
+															   Request#request.rid, 
+															   Request#request.uri]),
+	ok.
 
+get_work_node('', _, _, _, _) -> {ok, node()};
 
 get_work_node([], HostList, HostNames, ModuleName, 1) -> 
 	get_work_node(HostList, HostList, HostNames, ModuleName, 2);

@@ -34,11 +34,12 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do catálogo. 
--record(state, {cat1, 		%% Catalogo JSON
-				cat2, 		%% Parsed catalog 
-				cat3, 		%% Regular expression parsed catalog
+-record(state, {cat1, 			%% Catalogo JSON
+				cat2, 			%% Parsed catalog 
+				cat3, 			%% Regular expression parsed catalog
 				ult_lookup, 	%% Último lookup realizado
-				ult_rowid
+				ult_rowid,		%% Rowid da última requisição
+				tbl_cache_lookup
 		}). 
 
 
@@ -86,7 +87,11 @@ get_ult_lookup() ->
 init(_Args) ->
     process_flag(trap_exit, true),
 	%% Cat1 = JSON catalog, Cat2 = parsed catalog, Cat3 = regular expression parsed catalog
-	NewState = get_catalogo(),
+	{Cat1, Cat2, Cat3} = get_catalogo(),
+	Tbl_cache_lookup = ets:new(tbl_cache_lookup, [set, 
+												  private, 
+												  {read_concurrency, true}]),
+	NewState = #state{cat1=Cat1, cat2=Cat2, cat3=Cat3, tbl_cache_lookup=Tbl_cache_lookup},
 	fprof:trace([start, {procs, [self()]}]),
     {ok, NewState}. 
     
@@ -102,8 +107,11 @@ handle_call(lista_catalogo, _From, State) ->
 	{reply, Reply, State};
     
 handle_call({lookup, Request}, _From, State) ->
-	{Reply, NewState} = lookup(Request, State),
-	{reply, Reply, NewState, 60000};
+	Ult_lookup = lookup(Request, State),
+	Ult_rowid = Request#request.rowid,
+	ets:insert(State#state.tbl_cache_lookup, {Ult_rowid, Ult_lookup}),
+	NewState = State#state{ult_rowid = Ult_rowid, ult_lookup = Ult_lookup},
+	{reply, Ult_lookup, NewState, 60000};
 
 handle_call(list_cat2, _From, State) ->
 	{reply, State#state.cat2, State};
@@ -150,6 +158,7 @@ get_catalogo() ->
 									<<>>
 							end
 					    end, Cat0),
+
 	%% Adiciona "," entre as definições de cada catálogo
 	CatDefs1 = lists:foldl(fun(X, Y) ->
 								case Y of
@@ -164,7 +173,7 @@ get_catalogo() ->
 	%% Faz o parser do catálogo
 	Conf = msbus_config:getConfig(),
 	{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1, Conf),
-	#state{cat1=Cat4, cat2=Cat2, cat3=Cat3}.
+	{Cat4, Cat2, Cat3}.
 
 %% @doc Lê o catálogo do disco
 get_catalogo_from_disk() ->
@@ -442,39 +451,34 @@ get_querystring(<<QueryName/binary>>, Servico) ->
 	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#servico.comment == QueryName],
 	Query.
 
-processa_querystring(notfound) -> notfound;
-	
-processa_querystring({ok, Request}) ->
+
+processa_querystring(Contract, Request) ->
 	%% Querystrings do módulo msbus_static_file_service e msbus_options_service não são processados.
-	case Request#request.servico#servico.module of
-		msbus_static_file_service ->
-			{ok, Request};
-		msbus_options_service ->
-			{ok, Request};
+	QuerystringUser = Request#request.querystring_map,
+	case Contract#servico.module of
+		msbus_static_file_service -> QuerystringUser;
+		msbus_options_service -> QuerystringUser;
 		_ ->
-			QuerystringServico = Request#request.servico#servico.querystring,
-			QuerystringUser = Request#request.querystring_map,
-			case Request#request.querystring =:= "" of
+			QuerystringServico = Contract#servico.querystring,
+			case QuerystringUser =:= #{} of
 				true -> 
 					case QuerystringServico =:= <<>> of
-						true -> {ok, Request};
-						false -> valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
+						true -> QuerystringUser;
+						false -> valida_querystring(QuerystringServico, QuerystringUser)
 					end;
 				false -> 
 					case QuerystringServico =:= <<>> of
 						true -> notfound;
-						false -> valida_querystring({ok, Request}, QuerystringServico, QuerystringUser)
+						false -> valida_querystring(QuerystringServico, QuerystringUser)
 					end
 			end
 	end.
 
-valida_querystring({ok, Request}, QuerystringServico, QuerystringUser) ->
+valida_querystring(QuerystringServico, QuerystringUser) ->
 	case valida_querystring(QuerystringServico, QuerystringUser, []) of
-		{ok, Querystring} -> 
-			Request2 = Request#request{querystring_map = Querystring},
-			{ok, Request2};
+		{ok, Querystring} -> Querystring;
 		notfound -> notfound
-	end;
+	end.
 
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};
@@ -492,41 +496,45 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 			end
 	end.
 
-lookup(_Request=#request{type = "GET", 
-						rowid = Rowid}, State) when Rowid == State#state.ult_rowid ->
-	io:format("hit  ~p\n", [State#state.ult_lookup]),
-	State#state.ult_lookup;
+lookup(Request=#request{rowid = Rowid}, #state{ult_lookup = Ult_lookup,
+											   ult_rowid = Ult_rowid}) when Rowid == Ult_rowid ->
+	msbus_logger:info("HIT rowid ~p", [Request#request.rowid]),
+	Ult_lookup;
 	
 lookup(Request, State) ->
-	io:format("no   hit  ~p  ~p\n", [Request#request.rowid, State#state.ult_lookup]),
 	Rowid = Request#request.rowid,
-	case ets:lookup(State#state.cat2, Rowid) of
-		[] -> 
-			Result = lookup_re(Request, State#state.cat3);
-		[{_Rowid, Servico}] -> 
-			Request2 = Request#request{servico = Servico},
-			Result = {ok, Request2}
-	end,
-	Result2 = processa_querystring(Result),
-	NewState = State#state{ult_rowid = Rowid, ult_lookup = Result2},
-	
-	io:format("hit  ~p\n", [NewState#state.ult_lookup]),
-	{Result2, NewState}.
+	case ets:lookup(State#state.tbl_cache_lookup, Rowid) of
+		[] ->
+			msbus_logger:info("LOOKUP rowid ~p", [Request#request.rowid]),
+			case ets:lookup(State#state.cat2, Rowid) of
+				[] -> 
+					case lookup_re(Request, State#state.cat3) of
+						{Contract, ParamsMap} -> 
+							Querystring = processa_querystring(Contract, Request),
+							{Contract, ParamsMap, Querystring};
+						notfound -> notfound
+					end;
+				[{_Rowid, Contract}] -> 
+					Querystring = processa_querystring(Contract, Request),
+					{Contract, #{}, Querystring}
+			end;
+		[{Rowid, Ult_lookup}] -> 
+			msbus_logger:info("LOOKUP CACHE rowid ~p", [Request#request.rowid]),
+			Ult_lookup
+	end.
 
 lookup_re(_Request, []) ->
 	notfound;
 
 lookup_re(Request, [H|T]) ->
+	io:format("LOOKUP RE ~p\n", [Request#request.rowid]),
 	RE = H#servico.id_re_compiled,
 	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
-		match -> 
-			Request2 = Request#request{servico = H},
-			{ok, Request2};
+		match -> {H, #{}};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
-			Request2 = Request#request{servico = H, params_url = ParamsMap},
-			{ok, Request2};
+			{H, ParamsMap};
 		nomatch -> lookup_re(Request, T);
 		{error, _ErrType} -> notfound 
 	end.

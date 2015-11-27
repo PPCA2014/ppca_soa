@@ -162,11 +162,15 @@ do_processa_response(Request, {async, true}, _State) ->
 	do_processa_response(200, ok, Request, Response);
 
 do_processa_response(Request, {ok, Result}, _State) -> 
-	case Request#request.servico#servico.async of
-		true -> io:format("Ticket já foi entregue\n");
-		_ -> 
-			Response = msbus_http_util:encode_response(<<"200">>, Result),
-			do_processa_response(200, ok, Request, Response)
+	try
+		case Request#request.servico#servico.async of
+			true -> io:format("Ticket já foi entregue\n");
+			_ -> 
+				Response = msbus_http_util:encode_response(<<"200">>, Result),
+				do_processa_response(200, ok, Request, Response)
+		end
+	catch
+		_:_ -> io:format("deu erro nesse request: ~p\n", [Request])
 	end;
 
 do_processa_response(Request, {ok, Result, MimeType}, _State) ->

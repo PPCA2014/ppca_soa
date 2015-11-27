@@ -69,7 +69,6 @@ lista_interesse() ->
  
 init([]) ->
 	%fprof:trace([start, {procs, [self()]}]),
-	io:format("aqiu1\n"),
     {ok, #state{}}.
     
 handle_cast({notifica_evento, QualEvento, Motivo}, State) ->
