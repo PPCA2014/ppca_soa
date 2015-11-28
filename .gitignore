@@ -1,13 +1,12 @@
-deps/**
 ebin/**
-/priv/conf/msbus.conf**
+priv/conf/msbus.conf**
 *.beam
 .eunit
 *~
 #*
 .dialyzer.plt
 .rebar
-Mnesia.nonode@nohost
+Mnesia**
 *.log
 *.dump
 /logs
