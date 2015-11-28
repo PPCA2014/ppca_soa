@@ -16,3 +16,4 @@ priv/www
 fprof**
 _build/**
 rel/**
+deps/**
