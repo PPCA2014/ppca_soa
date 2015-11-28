@@ -1,5 +1,7 @@
 #!/bin/sh
-
-rm -Rf Mnesia*
-rebar compile
+#
+# start msbus and build before if necessary
+# author Everton de Vargas Agilar <<evertonagilar@gmail.com>>
+#
+./build.sh
 erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname msbus -setcookie erlangms -eval "msbus:start()" -boot start_sasl -config ./priv/conf/elog

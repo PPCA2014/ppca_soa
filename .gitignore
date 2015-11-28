@@ -14,3 +14,4 @@ Mnesia.nonode@nohost
 qlc_*
 Mnesia.*/**
 priv/www
+fprof**
