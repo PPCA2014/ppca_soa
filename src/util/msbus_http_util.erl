@@ -323,29 +323,18 @@ is_url_valido(Url) ->
 	end.
 
 %% @doc Envia os dados para o cliente. Método com tratamento de timeout
-send_request(Socket, Response) -> 
-	send_request(Socket, Response, 3).
-
-send_request(_Socket, _Response, 0) -> falhou;
-
-send_request(Socket, Response, Tentativa) ->
+send_request(Socket, Response) ->
 	case gen_tcp:send(Socket, [Response]) of
 		{error, timeout} ->
-			msbus_logger:error("Timeout ao enviar o response ao cliente. Tentativa ~p.", [3-Tentativa+1]),
-			case send_request(Socket, Response, Tentativa-1) of
-				falhou -> 
-					gen_tcp:close(Socket),
-					timeout;
-				ok -> 
-					gen_tcp:close(Socket),
-					ok
-			end;
+			gen_tcp:close(Socket),
+			msbus_logger:error("Timeout para enviar response ao cliente.\n");
         {error, closed} ->
 			gen_tcp:close(Socket),
+			msbus_logger:error("Não conseguiu enviar response para socket fechado\n."),
 			ok;
         {error, OtherSendError} ->
-			msbus_logger:error("Erro send_request desconhecido ~p.", [OtherSendError]),
 			gen_tcp:close(Socket),
+			msbus_logger:error("Erro ~p ao enviar response.\n", [OtherSendError]),
 			OtherSendError;
 		ok -> 
 			gen_tcp:close(Socket),

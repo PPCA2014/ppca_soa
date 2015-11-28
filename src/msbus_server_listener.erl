@@ -42,6 +42,7 @@ stop() ->
 %%====================================================================
  
 init({Port, IpAddress}) ->
+	process_flag(trap_exit, true),
 	Conf = msbus_config:getConfig(),
 	Opts = [binary, 
 			{packet, 0}, 
@@ -51,23 +52,24 @@ init({Port, IpAddress}) ->
 			{nodelay, Conf#config.tcp_nodelay},
 			{backlog, ?TCP_BACKLOG},
 			{ip, IpAddress},
-			{reuseaddr, true}],
+			{reuseaddr, true},
+			{delay_send, false}],
 	case gen_tcp:listen(Port, Opts) of
       {ok, LSocket} ->
-			io:format("Start workers for listener ~p com IP ~p\n", [self(), IpAddress]),    
+			%io:format("Start workers for listener ~p com IP ~p\n", [self(), IpAddress]),    
             start_server_workers(Conf#config.tcp_max_http_worker, LSocket),
-            io:format("Finish start workers for listener ~p com IP ~p\n", [self(), IpAddress]),    
+            %io:format("Finish start workers for listener ~p com IP ~p\n", [self(), IpAddress]),    
             {ok, #state{lsocket = LSocket}, 0};
       {error, Reason} ->
            {error, Reason}
      end.	
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
-	io:format("shutdown listener undefined LSocket\n"),
+	%io:format("shutdown listener undefined LSocket\n"),
     {stop, normal, State};
     
 handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    io:format("shutdown listener e close LSsocket\n"),
+    %io:format("shutdown listener e close LSsocket\n"),
     gen_tcp:close(LSocket),
     {stop, normal, State#state{lsocket = undefined}}.
 
@@ -81,11 +83,11 @@ handle_info(State) ->
    {noreply, State}.
 
 terminate(_Reason, #state{lsocket = undefined}) ->
-    io:format("terminate listener undefined LSocket\n"),
+    %io:format("terminate listener undefined LSocket\n"),
     ok;
    
 terminate(_Reason, #state{lsocket = LSocket}) ->
-	io:format("terminate listener e close LSocket\n"),    
+	%io:format("terminate listener e close LSocket\n"),    
     gen_tcp:close(LSocket),
     ok.
  

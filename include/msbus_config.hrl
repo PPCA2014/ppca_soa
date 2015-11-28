@@ -6,6 +6,10 @@
 %% @copyright erlangMS Team
 %%********************************************************************
 
+%-ifndef(PRINT).
+%-define(PRINT(Var), io:format("DEBUG: ~p", [??Var, Var])).
+%-endif.
+
 % Tamanho máximo do payload do POST. Por default é 1M
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
