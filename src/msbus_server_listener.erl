@@ -59,7 +59,7 @@ init({Port, IpAddress}) ->
 				msbus_logger:debug("Start workers for listener ~p com IP ~p.", [self(), IpAddress]),    
 				start_server_workers(Conf#config.tcp_max_http_worker, 
 									 LSocket,
-									 Conf#config.tcp_allowed_address),
+									 Conf#config.tcp_allowed_address_t),
 				msbus_logger:debug("Finish start workers for listener ~p com IP ~p.", [self(), IpAddress]),    
 				{ok, #state{lsocket = LSocket}, 0};
 		Error -> Error

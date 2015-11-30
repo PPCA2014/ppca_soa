@@ -114,6 +114,7 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 							{noreply, State#state{socket = Socket}};
 						_ -> 
 							%% Está na faixa de IPs autorizado a acessar o barramento?
+							msbus_logger:debug("Check ip autorizado: ~p", [Ip]),
 							case msbus_http_util:match_ip_address(Allowed_Address, Ip) of
 								true -> 
 									{noreply, State#state{socket = Socket}};

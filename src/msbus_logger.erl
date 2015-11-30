@@ -38,7 +38,7 @@
 				log_file_dest,           		% Configuração do caminho onde os logs serão gravados
 				log_file_checkpoint,      		% Configuração do timeout para descarregar buffer do arquivo
 				log_file_name,		      		% Configuração do timeout para descarregar buffer do arquivo
-				modo_debug						% Indica se está em modo debug
+				debug						% Indica se está em modo debug
  			   }). 
 
 
@@ -79,13 +79,13 @@ info(Msg, Params) ->
 	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
 
 debug(Msg) -> 
-	gen_server:cast(?SERVER, {write_msg, modo_debug, Msg}).
+	gen_server:cast(?SERVER, {write_msg, debug, Msg}).
 
 debug(Msg, Params) -> 
-	gen_server:cast(?SERVER, {write_msg, modo_debug, Msg, Params}). 
+	gen_server:cast(?SERVER, {write_msg, debug, Msg, Params}). 
 
 modo_debug(Flag) ->
-	gen_server:cast(?SERVER, {modo_debug, Flag}). 
+	gen_server:cast(?SERVER, {debug, Flag}). 
 
 sync() ->
 	gen_server:cast(?SERVER, sync_buffer). 		
@@ -107,23 +107,23 @@ init(_Args) ->
     {ok, #state{log_file_dest = LogFileDest, 
                 log_file_checkpoint = Checkpoint,
                 log_file_name = get_filename_logger(LogFileDest),
-                modo_debug = Conf#config.modo_debug}}. 
+                debug = Conf#config.modo_debug}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({write_msg, modo_debug, Msg}, State=#state{modo_debug = true}) ->
-	NewState = write_msg(modo_debug, Msg, State),
+handle_cast({write_msg, debug, Msg}, State=#state{debug = true}) ->
+	NewState = write_msg(debug, Msg, State),
 	{noreply, NewState};
 
-handle_cast({write_msg, modo_debug, Msg, Params}, State=#state{modo_debug = true}) ->
-	NewState = write_msg(modo_debug, Msg, Params, State),
+handle_cast({write_msg, debug, Msg, Params}, State=#state{debug = true}) ->
+	NewState = write_msg(debug, Msg, Params, State),
 	{noreply, NewState};
 
-handle_cast({write_msg, modo_debug, _Msg}, State) ->
+handle_cast({write_msg, debug, _Msg}, State) ->
 	{noreply, State};
 
-handle_cast({write_msg, modo_debug, _Msg, _Params}, State) ->
+handle_cast({write_msg, debug, _Msg, _Params}, State) ->
 	{noreply, State};
     
 handle_cast({write_msg, Tipo, Msg}, State) ->
@@ -139,7 +139,7 @@ handle_cast({log_request, Request}, State) ->
 	{noreply, State};
 
 handle_cast({modo_debug, Flag}, State) ->
-	{noreply, State#state{modo_debug = Flag}};
+	{noreply, State#state{debug = Flag}};
 
 handle_cast(sync_buffer, State) ->
 	sync_buffer_tela(State),

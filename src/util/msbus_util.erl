@@ -46,9 +46,11 @@ tuple_to_binlist(T) ->
 	list_to_binlist(L).
 
 list_to_binlist([]) -> [];
+list_to_binlist(<<>>) -> [];
 list_to_binlist(<<V/binary>>) -> [V];
 list_to_binlist([H|T]) -> [item_to_binary(H)|list_to_binlist(T)].
 
+binlist_to_list(<<>>) -> [];
 binlist_to_list([]) -> [];
 binlist_to_list([H|T]) -> [binary_to_list(H)|binlist_to_list(T)].
 
@@ -168,8 +170,16 @@ modernize([H|T]) ->
 	string:join(Lista, " ").
 
 %% @doc Converte boolean binário para o atom true|false
+binary_to_bool(true) -> true;
+binary_to_bool(false) -> false;
 binary_to_bool(<<"true">>) -> true;
 binary_to_bool(<<"false">>) -> false;
+binary_to_bool(<<true>>) -> true;
+binary_to_bool(<<false>>) -> false;
+binary_to_bool(<<"1">>) -> true;
+binary_to_bool(<<"0">>) -> false;
+binary_to_bool(<<1>>) -> true;
+binary_to_bool(<<0>>) -> false;
 binary_to_bool(_) -> false.
 
 binary_to_integer(Bin) -> list_to_integer(binary_to_list(Bin)).
