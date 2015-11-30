@@ -98,6 +98,7 @@ le_config() ->
 							tcp_keepalive   	= msbus_util:binary_to_bool(maps:get(<<"tcp_keepalive">>, Json, <<"true">>)),
 							tcp_nodelay     	= msbus_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, <<"true">>)),
 							tcp_max_http_worker = maps:get(<<"tcp_max_http_worker">>, Json, ?MAX_HTTP_WORKER),
+							tcp_allowed_address	= parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, [<<"127.0.0.1">>])),
 							log_file_dest 		= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
 							log_file_checkpoint	= maps:get(<<"log_file_checkpoint">>, Json, ?LOG_FILE_CHECKPOINT),
 							cat_host_alias		= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
@@ -105,7 +106,8 @@ le_config() ->
 							cat_node_search		= maps:get(<<"cat_node_search">>, Json, <<>>),
 							msbus_hostname 		= Hostname2,
 							msbus_host	 		= list_to_atom(Hostname),
-							nome_arq_config		= NomeArqConfig
+							nome_arq_config		= NomeArqConfig,
+							modo_debug			= maps:get(<<"modo_debug">>, Json, false)
 						},
 			valida_port(Config#config.tcp_port),
 			valida_max_http_worker(Config#config.tcp_max_http_worker);
@@ -116,6 +118,7 @@ le_config() ->
 							tcp_keepalive   	= <<"true">>,
 							tcp_nodelay     	= <<"true">>,
 							tcp_max_http_worker = 12,
+							tcp_allowed_address	= [<<"127.0.0.1">>],
 							log_file_dest 		= <<"logs">>,
 							log_file_checkpoint	= ?LOG_FILE_CHECKPOINT,
 							cat_host_alias		= #{<<"local">> => Hostname2},
@@ -123,16 +126,22 @@ le_config() ->
 							cat_node_search		= <<>>,
 							msbus_hostname 		= Hostname2,
 							msbus_host	 		= list_to_atom(Hostname),
-							nome_arq_config		= NomeArqConfig
+							nome_arq_config		= NomeArqConfig,
+							modo_debug			= false
 						}
 	 end,
 	{ok, Config}.
 
 parse_tcp_listen_address(ListenAddress) ->
-	lists:map(fun(L) -> 
-					{ok, L2} = inet:parse_address(binary_to_list(L)),
+	lists:map(fun(IP) -> 
+					{ok, L2} = inet:parse_address(binary_to_list(IP)),
 					L2 
 			  end, ListenAddress).
+
+parse_allowed_address(AllowedAddress) ->
+	lists:map(fun(IP) -> 
+					msbus_http_util:mask_ipaddress_to_tuple(IP)
+			  end, AllowedAddress).
 
 valida_port(Value) -> 
 	case msbus_consiste:is_range_valido(Value, 1024, 5000) of

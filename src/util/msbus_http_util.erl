@@ -327,19 +327,51 @@ send_request(Socket, Response) ->
 	case gen_tcp:send(Socket, [Response]) of
 		{error, timeout} ->
 			gen_tcp:close(Socket),
-			msbus_logger:error("Timeout para enviar response ao cliente.\n");
+			msbus_logger:error("Timeout para enviar response ao cliente."),
+			timeout;
         {error, closed} ->
 			gen_tcp:close(Socket),
-			msbus_logger:error("Não conseguiu enviar response para socket fechado\n."),
+			msbus_logger:error("Não conseguiu enviar response para socket fechado."),
 			ok;
         {error, OtherSendError} ->
 			gen_tcp:close(Socket),
-			msbus_logger:error("Erro ~p ao enviar response.\n", [OtherSendError]),
+			msbus_logger:error("Erro ~p ao enviar response.", [OtherSendError]),
 			OtherSendError;
 		ok -> 
 			gen_tcp:close(Socket),
 			ok
 	end.
+
+mask_ipaddress_to_tuple(<<IpAddress/binary>>) ->
+	mask_ipaddress_to_tuple(binary_to_list(IpAddress));
+	
+mask_ipaddress_to_tuple(IpAddress) ->
+	L = string:tokens(IpAddress, "."),
+	L2 = lists:map(fun(X) -> 
+								case X of
+									"*" -> '_';
+									_ -> list_to_integer(X)
+								end
+					end, L),
+	list_to_tuple(L2).
+
+
+%% @doc Retorna true se Ip2 combina com algum Ip da lista Ip1
+match_ip_address([H|T]=Ip1,	Ip2) when erlang:is_list(Ip1) ->
+	case match_ip_address(H, Ip2) of
+		true -> true;
+		false -> match_ip_address(T, Ip2)
+	end;
+
+%% @doc Retorna true se Ip2 combina com Ip1
+match_ip_address([], _) -> false;
+match_ip_address(Ip1, 	Ip2) ->
+   {O1, O2, O3, O4} = Ip1,
+   {X1, X2, X3, X4} = Ip2,
+   (O1 == '_' orelse O1 == X1) andalso
+   (O2 == '_' orelse O2 == X2) andalso
+   (O3 == '_' orelse O3 == X3) andalso
+   (O4 == '_' orelse O4 == X4).
 	
 	
 %% @doc Retorna o mime-type do arquivo

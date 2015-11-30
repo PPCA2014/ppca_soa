@@ -42,11 +42,11 @@ stop() ->
 %%====================================================================
  
 init({Port, IpAddress}) ->
-	process_flag(trap_exit, true),
 	Conf = msbus_config:getConfig(),
 	Opts = [binary, 
 			{packet, 0}, 
 			{active, true},
+			{send_timeout_close, true},
 			{send_timeout, ?TCP_SEND_TIMEOUT}, 
 			{keepalive, Conf#config.tcp_keepalive}, 
 			{nodelay, Conf#config.tcp_nodelay},
@@ -55,21 +55,20 @@ init({Port, IpAddress}) ->
 			{reuseaddr, true},
 			{delay_send, false}],
 	case gen_tcp:listen(Port, Opts) of
-      {ok, LSocket} ->
-			%io:format("Start workers for listener ~p com IP ~p\n", [self(), IpAddress]),    
-            start_server_workers(Conf#config.tcp_max_http_worker, LSocket),
-            %io:format("Finish start workers for listener ~p com IP ~p\n", [self(), IpAddress]),    
-            {ok, #state{lsocket = LSocket}, 0};
-      {error, Reason} ->
-           {error, Reason}
+		{ok, LSocket} ->
+				msbus_logger:debug("Start workers for listener ~p com IP ~p.", [self(), IpAddress]),    
+				start_server_workers(Conf#config.tcp_max_http_worker, 
+									 LSocket,
+									 Conf#config.tcp_allowed_address),
+				msbus_logger:debug("Finish start workers for listener ~p com IP ~p.", [self(), IpAddress]),    
+				{ok, #state{lsocket = LSocket}, 0};
+		Error -> Error
      end.	
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
-	%io:format("shutdown listener undefined LSocket\n"),
     {stop, normal, State};
     
 handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    %io:format("shutdown listener e close LSsocket\n"),
     gen_tcp:close(LSocket),
     {stop, normal, State#state{lsocket = undefined}}.
 
@@ -83,11 +82,9 @@ handle_info(State) ->
    {noreply, State}.
 
 terminate(_Reason, #state{lsocket = undefined}) ->
-    %io:format("terminate listener undefined LSocket\n"),
     ok;
    
 terminate(_Reason, #state{lsocket = LSocket}) ->
-	%io:format("terminate listener e close LSocket\n"),    
     gen_tcp:close(LSocket),
     ok.
  
@@ -99,9 +96,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_server_workers(0,_) ->
+start_server_workers(0,_,_) ->
     ok;
 
-start_server_workers(Num, LSocket) ->
-    msbus_server_worker:start({Num, LSocket}),
-    start_server_workers(Num-1, LSocket).
+start_server_workers(Num, LSocket, Allowed_Address) ->
+    msbus_server_worker:start_link({Num, LSocket, Allowed_Address}),
+    start_server_workers(Num-1, LSocket, Allowed_Address).

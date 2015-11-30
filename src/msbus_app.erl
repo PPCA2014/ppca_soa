@@ -33,6 +33,10 @@ start(_StartType, StartArgs) ->
 			msbus_logger:info("Node search: ~s", [msbus_util:join_binlist(Config#config.cat_node_search, ", ")]),
 			msbus_logger:info("Log file dest: ~s", [Config#config.log_file_dest]),
 			msbus_logger:info("log_file_checkpoint: ~pms", [Config#config.log_file_checkpoint]),
+			msbus_logger:info("Allowed ip address: ~s", [string:join(lists:map(fun(IP) -> 
+																						inet:ntoa(IP) 
+																			   end, Config#config.tcp_allowed_address), ", ")]),
+			msbus_logger:debug("Modo debug: ~p", [Config#config.modo_debug]),
 			msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, 
 																								 Config#config.tcp_port]),
 			msbus_logger:info("~s iniciado em ~pms.", [node(), msbus_util:get_milliseconds() - T1]),

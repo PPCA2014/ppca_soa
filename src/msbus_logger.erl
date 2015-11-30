@@ -17,7 +17,13 @@
 -export([start/0, start_link/1, stop/0]).
 
 %% Client API
--export([error/1, error/2, info/1, info/2, warn/1, warn/2, sync/0, log_request/1]).
+-export([error/1, error/2, 
+		 info/1, info/2, 
+		 warn/1, warn/2, 
+		 debug/1, debug/2,
+		 sync/0, 
+		 log_request/1,
+		 modo_debug/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -31,7 +37,8 @@
 			    flag_checkpoint_tela = false, 	% checkpoint para descarregar o buffer da tela
 				log_file_dest,           		% Configuração do caminho onde os logs serão gravados
 				log_file_checkpoint,      		% Configuração do timeout para descarregar buffer do arquivo
-				log_file_name		      		% Configuração do timeout para descarregar buffer do arquivo
+				log_file_name,		      		% Configuração do timeout para descarregar buffer do arquivo
+				modo_debug						% Indica se está em modo debug
  			   }). 
 
 
@@ -71,6 +78,15 @@ info(Msg) ->
 info(Msg, Params) -> 
 	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
 
+debug(Msg) -> 
+	gen_server:cast(?SERVER, {write_msg, modo_debug, Msg}).
+
+debug(Msg, Params) -> 
+	gen_server:cast(?SERVER, {write_msg, modo_debug, Msg, Params}). 
+
+modo_debug(Flag) ->
+	gen_server:cast(?SERVER, {modo_debug, Flag}). 
+
 sync() ->
 	gen_server:cast(?SERVER, sync_buffer). 		
 
@@ -90,10 +106,25 @@ init(_Args) ->
 	%fprof:trace([start, {procs, [self()]}]),
     {ok, #state{log_file_dest = LogFileDest, 
                 log_file_checkpoint = Checkpoint,
-                log_file_name = get_filename_logger(LogFileDest)}}. 
+                log_file_name = get_filename_logger(LogFileDest),
+                modo_debug = Conf#config.modo_debug}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
+
+handle_cast({write_msg, modo_debug, Msg}, State=#state{modo_debug = true}) ->
+	NewState = write_msg(modo_debug, Msg, State),
+	{noreply, NewState};
+
+handle_cast({write_msg, modo_debug, Msg, Params}, State=#state{modo_debug = true}) ->
+	NewState = write_msg(modo_debug, Msg, Params, State),
+	{noreply, NewState};
+
+handle_cast({write_msg, modo_debug, _Msg}, State) ->
+	{noreply, State};
+
+handle_cast({write_msg, modo_debug, _Msg, _Params}, State) ->
+	{noreply, State};
     
 handle_cast({write_msg, Tipo, Msg}, State) ->
 	NewState = write_msg(Tipo, Msg, State),
@@ -106,6 +137,9 @@ handle_cast({write_msg, Tipo, Msg, Params}, State) ->
 handle_cast({log_request, Request}, State) ->
 	do_log_request(Request, State),
 	{noreply, State};
+
+handle_cast({modo_debug, Flag}, State) ->
+	{noreply, State#state{modo_debug = Flag}};
 
 handle_cast(sync_buffer, State) ->
 	sync_buffer_tela(State),

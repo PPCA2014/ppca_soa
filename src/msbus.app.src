@@ -43,8 +43,8 @@
                 {max_overflow, 6}
             ], []},
             {msbus_dispatcher_pool, [
-                {size, 6},
-                {max_overflow, 24}
+                {size, 128},
+                {max_overflow, 0}
             ], []},
             {msbus_static_file_service_pool, [
                 {size, 6},

@@ -19,13 +19,28 @@ child_spec(PoolId, PoolArgs, WorkerArgs) ->
 
 -spec transaction(Pool :: poolboy:pool(), Fun :: fun((Worker :: pid()) -> any())) -> any().
 transaction(Pool, Fun) ->
-	poolboy:transaction(Pool, Fun).
+	Worker = poolboy:checkout(Pool),
+	try
+		Ret = Fun(Worker),
+		erlang:yield(),
+		erlang:yield(),
+		erlang:yield(),
+		Ret
+
+	after
+		poolboy:checkin(Pool, Worker)
+	end.
 
 cast(Pool, Args) ->
 	Worker = poolboy:checkout(Pool),
-	gen_server:cast(Worker, Args),
-	%true = msbus_util:sleep(1),
-	ok = poolboy:checkin(Pool, Worker).
+	try
+		gen_server:cast(Worker, Args),
+		erlang:yield(),
+		erlang:yield(),
+		erlang:yield()
+	after
+		poolboy:checkin(Pool, Worker)
+	end.
 
 
 -spec call(Pool :: poolboy:pool(), Args :: list()) -> any().

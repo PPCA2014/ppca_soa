@@ -27,8 +27,9 @@
 % estado do servidor
 -record(state, {worker_id = undefined,  %% identificador do worker
 				lsocket   = undefined,	%% socket do listener
-				socket	  = undefined	%% socket da requisição do cliente
-				}).
+				socket	  = undefined,	%% socket da requisição do cliente
+				allowed_address = undefined %% faixa de IPs permitidos que o servidor aceita
+			}).
 
 -define(SERVER, ?MODULE).
 
@@ -36,8 +37,8 @@
 %% Server API
 %%====================================================================
 
-start({Num, LSocket}) -> 
-    gen_server:start_link(?MODULE, {Num, LSocket}, []).
+start(Args) -> 
+    gen_server:start_link(?MODULE, Args, []).
     
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
@@ -58,37 +59,40 @@ cast(Msg) -> msbus_pool:cast(msbus_server_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-init({Worker_Id, LSocket}) ->
-	process_flag(trap_exit, true),
-    State = #state{worker_id = Worker_Id, lsocket=LSocket},
+init({Worker_Id, LSocket, Allowed_Address}=Args) ->
+    msbus_logger:debug("Server worker ~p init. Args: ~p.", [self(), Args]),
+    State = #state{worker_id = Worker_Id, 
+				   lsocket=LSocket, 
+				   allowed_address=Allowed_Address},
     {ok, State, 0};
 
 %% init para processos que vão processar a fila de requisições de saída
-init(_Args) ->
+init(Args) ->
     %fprof:trace([start, {procs, [self()]}]),
+    msbus_logger:debug("Server worker ~p init. Args: ~p.", [self(), Args]),
     {ok, #state{}}.
-   
-handle_cast(shutdown, State=#state{socket = undefined}) ->
-    %io:format("shutdown worker undefined socket\n"),
+
+handle_cast(shutdown, State) ->
+    msbus_logger:debug("Server worker ~p shutdown com state ~p.", [self(), State]),
     {stop, normal, State};
 
-handle_cast(shutdown, State=#state{socket = Socket}) ->
-    %io:format("shutdown worker com socket\n"),
-    gen_tcp:close(Socket),
-    {stop, normal, State#state{socket = undefined}};
-
 handle_cast({Socket, RequestBin}, State) ->
+	msbus_logger:debug("Init dispatch da requisição no client worker ~p.", [self()]),
 	trata_request(Socket, RequestBin, State),
+	msbus_logger:debug("Finish dispatch da requisição no client worker ~p.", [self()]),
 	{noreply, State#state{socket = undefined}};
 	
 handle_cast({static_file, Request, Result}, State) ->
-    %io:format("envia response static file\n"),
-    envia_response(Request, Result, State),
-    {noreply, State#state{socket = undefined}};
+	msbus_logger:debug("Init envio do static file response no client worker ~p.", [self()]),
+	envia_response(Request, Result, State),
+	msbus_logger:debug("Finish envio do static file response no client worker ~p.", [self()]),
+	{noreply, State#state{socket = undefined}};
+
 
 handle_cast({servico, Request, Result}, State) ->
-	%io:format("envia response servico\n"),
+	msbus_logger:debug("Init envio do service response no client worker ~p.", [self()]),
 	envia_response(Request, Result, State),
+	msbus_logger:debug("Finish envio do service response no client worker ~p.", [self()]),
 	{noreply, State#state{socket = undefined}}.
 
 handle_call(_Msg, _From, State) ->
@@ -97,74 +101,96 @@ handle_call(_Msg, _From, State) ->
 handle_info(timeout, State=#state{lsocket = undefined}) ->
 	{noreply, State};
 
-handle_info(timeout, State=#state{lsocket = LSocket}) ->
-    %io:format("Listen for accept server worker ~p com state ~p\n", [State#state.worker_id, State]),
+handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Address}) ->
+    msbus_logger:debug("Listen for accept em server worker ~p.", [State#state.worker_id]),
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
 			% connection is established
-			%io:format("Conexão estabelecida para o server worker ~p.\n", [State#state.worker_id]),
-			NewState = State#state{socket = Socket}, 
-			io:format("NewState is ~p.\n", [NewState]),
-			{noreply, NewState};
+			msbus_logger:debug("Conexão estabelecida para server worker ~p.", [State#state.worker_id]),
+			case inet:peername(Socket) of
+				{ok, {Ip,_Port}} -> 
+					case Ip of
+						{127, 0, _,_} -> 
+							{noreply, State#state{socket = Socket}};
+						_ -> 
+							%% Está na faixa de IPs autorizado a acessar o barramento?
+							case msbus_http_util:match_ip_address(Allowed_Address, Ip) of
+								true -> 
+									{noreply, State#state{socket = Socket}};
+								false -> 
+									msbus_logger:warn("Request para host ~s não autorizado!", [inet:ntoa(Ip)]),
+									gen_tcp:close(Socket),
+									{noreply, State, 0}
+							end
+					end;
+				_ -> 
+					gen_tcp:close(Socket),
+					{noreply, State, 0}
+			end;
 		{error, closed} -> 
 			% ListenSocket is closed
-			io:format("Socket do listener foi fechado para o server worker ~p.\n", [State#state.worker_id]),
+			msbus_logger:info("Socket do listener foi fechado para o server worker ~p.", [State#state.worker_id]),
 			{noreply, State#state{lsocket = undefined, socket = undefined}};
 		{error, timeout} ->
 			% no connection is established within the specified time
-			io:format("Nenhuma conexão estabelecida durante ~p para o server socket ~p. Reiniciando o accept.\n", [timeout, State#state.worker_id]),
+			msbus_logger:info("Nenhuma conexão estabelecida durante ~p para o server socket ~p.", [timeout, State#state.worker_id]),
 			{noreply, State, 0};
 		{error, system_limit} ->
-			io:format("No available ports in the Erlang emulator are in use for server worker ~p. System_limit: ~p\n", [State#state.worker_id, system_limit]),
+			msbus_logger:error("No available ports in the Erlang emulator are in use for server worker ~p. System_limit: ~p.", [State#state.worker_id, system_limit]),
 			msbus_util:sleep(3000),
-			{noreply, State};
+			{noreply, State, 0};
 		{error, PosixError} ->
-			io:format("Erro POSIX ~p ao tentar aceitar conexões no server worker ~p.\n", [PosixError, State#state.worker_id]),
+			msbus_logger:error("Erro POSIX ~p ao tentar aceitar conexões no server worker ~p.", [PosixError, State#state.worker_id]),
 			msbus_util:sleep(3000),
-			{noreply, State#state{socket = undefined}}
+			{noreply, State, 0}
 	end;
 
 handle_info({tcp, Socket, RequestBin}, State) ->
-	%io:format("init transaction com state ~p\n", [State]),
-	msbus_pool:transaction(msbus_server_worker_pool, 
-		fun(Worker) ->
-			case gen_tcp:controlling_process(Socket, Worker) of
-				ok -> 
-					inet:setopts(Socket,[{active,once}]),
-					%io:format("cast to server worker transaction com state ~p\n", [State]),
-					gen_server:cast(Worker, {Socket, RequestBin});
-				{error, closed} -> 
-					io:format("Falhou gen_tcp:controlling_process pois socket foi fechado no server socket ~p.\n", [State#state.worker_id]),
-					{noreply, State#state{socket=undefined}};
-				{error, not_owner} -> 
-					msbus_logger:error("Http worker ~p não é o dono do socket.\n", [State#state.worker_id]);
-				{error, PosixError} ->
-					gen_tcp:close(Socket),
-					io:format("Erro POSIX ~p em gen_tcp:controlling_process no server worker ~p.\n", [PosixError, State#state.worker_id])
-			end
-		end),
-	NewState = State#state{socket=undefined}, 
-	%io:format("finish transaction com state ~p\n", [NewState]),
-	{noreply, NewState, 0};
+	try
+		msbus_pool:transaction(msbus_server_worker_pool, 
+			fun(Worker) ->
+				msbus_logger:debug("Init gen_tcp:controlling_process server worker pool ~p.", [Worker]),
+				case gen_tcp:controlling_process(Socket, Worker) of
+					ok -> 
+						inet:setopts(Socket,[{active,once}]),
+						% TCP_LINGER2 for Linux
+						inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
+						% TCP_DEFER_ACCEPT for Linux
+						inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+						gen_server:cast(Worker, {Socket, RequestBin}),
+						msbus_logger:debug("Finish gen_tcp:controlling_process server worker pool ~p.", [Worker]),
+						{noreply, State#state{socket=undefined}, 0};
+					{error, closed} -> 
+						msbus_logger:error("Socket fechado durante gen_tcp:controlling_process em server worker ~p.", [State#state.worker_id]),
+						{noreply, State#state{socket=undefined}, 0};
+					{error, not_owner} -> 
+						msbus_logger:error("Server worker ~p não é o dono do socket.", [State#state.worker_id]),
+						{noreply, State#state{socket=undefined}, 0};
+					{error, PosixError} ->
+						gen_tcp:close(Socket),
+						msbus_logger:error("Erro POSIX ~p em gen_tcp:controlling_process no server worker ~p.", [PosixError, State#state.worker_id]),
+						{noreply, State#state{socket=undefined}, 0}
+				end
+			end)
+	catch
+		_Exception:Reason -> msbus_logger:error("Erro ao fazer o despacho da requisição. Reason: ~p.", [Reason])
+	end;
+	
 
 handle_info({tcp_closed, _Socket}, State) ->
-	%io:format("tcp_closed of worker com state ~p\n", [State]),
 	{noreply, State#state{socket = undefined}};
 
 handle_info(_Msg, State) ->
-	%io:format("MENSAGEM ~p DESCONHECIDA COM STATE ~p!\n", [Msg, State]),
    {noreply, State}.
 
 handle_info(State) ->
-	%io:format("WORKER STATE ~p!\n", [State]),
    {noreply, State}.
 
 terminate(_Reason, #state{socket = undefined}) ->
-   %io:format("Terminate server worker undefined socket. Reason: ~p\n", [Reason]),
     ok;
 
-terminate(_Reason, #state{socket = Socket}) ->
-	%io:format("Terminate server worker com socket. Reason: ~p\n", [Reason]),
+terminate(Reason, #state{worker_id = Worker_id, socket = Socket}) ->
+	msbus_logger:debug("Terminate server worker ~p. Reason: ~p.", [Worker_id, Reason]),
 	gen_tcp:close(Socket),
     ok.
 
@@ -179,13 +205,12 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Processa o request
 trata_request(Socket, RequestBin, State) -> 
-	%io:format("Server worker ~p trata request com state ~p\n", [State#state.worker_id, State]),
 	case msbus_http_util:encode_request(Socket, RequestBin) of
 		 {ok, Request} -> 
 			msbus_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> 
 			envia_response(Request, {error, Reason}, State)
-	end.	
+	end.
 
 envia_response(_Request, {async, false}, _State) -> 
 	em_andamento;
@@ -205,7 +230,7 @@ envia_response(Request, {ok, Result}, _State) ->
 				envia_response(200, ok, Request, Response)
 		end
 	catch
-		_:_ -> io:format("deu erro nesse request: ~p\n", [Request])
+		_:_ -> msbus_logger:error("deu erro nesse request: ~p\n", [Request])
 	end;
 
 envia_response(Request, {ok, Result, MimeType}, _State) ->
