@@ -25,7 +25,9 @@
 		 join_binlist/2,
 		 list_to_ets/3,
 		 profile/0,
-		 new_rowid_servico/2]).
+		 make_rowid_from_url/2,
+		 get_params_from_url/1,
+		 get_rowid_and_params_from_url/2]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -223,4 +225,60 @@ new_rowid_servico(Url, Type) ->
 		$^ -> iolist_to_binary([Type, <<"#">>, Url2]);
 		_  -> iolist_to_binary([Type, <<"#">>, Url])
 	end.
+
+make_rowid_from_url(<<Url/binary>>, <<Type/binary>>) ->	
+	make_rowid_from_url(binary_to_list(Url), binary_to_list(Type));
+
+make_rowid_from_url(Url, Type) ->	
+	Ret1 = parse_url(Url),
+	Ret2 = lists:map(fun({U, _}) -> U end, Ret1),
+	Ret3 = string:join(Ret2, "/"),
+	iolist_to_binary([Type, <<"#/">>, Ret3]).
+
+get_rowid_and_params_from_url(<<Url/binary>>, <<Type/binary>>) ->	
+	get_rowid_and_params_from_url(binary_to_list(Url), binary_to_list(Type));
+
+get_rowid_and_params_from_url(Url, Type) ->
+	UrlParsed = parse_url(Url),
+	UrlParsed2 = lists:map(fun({U, _}) -> U end, UrlParsed),
+	UrlParsed3 = string:join(UrlParsed2, "/"),
+	Rowid = iolist_to_binary([Type, <<"#/">>, UrlParsed3]),
+	ParamsUrl = [{list_to_binary(U), list_to_binary(P)} || {[_|U], P} <- UrlParsed, P /= [] ],
+	ParamsUrlMap = maps:from_list(ParamsUrl),
+	{Rowid, ParamsUrlMap}.
+	
+
+get_params_from_url(Url) -> [X || {_, P} = X <- parse_url(Url), P /= [] ].
+
+
+parse_url(Url) ->	
+	Url2 = string:tokens(Url, "/"),
+	parse_url_tail(Url2, 1).
+
+parse_url_tail([], _SeqId) -> [];
+	
+parse_url_tail([H|T], SeqId) ->	
+    {UrlParte, Param, SeqId2} = parse_parte_url(H, SeqId),
+	[{UrlParte, Param} | parse_url_tail(T, SeqId2)].
+	
+parse_parte_url(UrlParte, SeqId) ->
+	case string_is_integer(UrlParte) of
+		true  -> 
+			case SeqId of
+				1 -> SeqId_ = ":id";
+				_ -> SeqId_ = ":id_" ++ integer_to_list(SeqId)
+			end,
+			{SeqId_, UrlParte, SeqId+1};
+		false -> {UrlParte, [], SeqId}
+	end.
+
+
+string_is_integer(S) ->
+    try
+        _ = list_to_integer(S),
+        true
+    catch error:badarg ->
+        false
+    end.
+
 

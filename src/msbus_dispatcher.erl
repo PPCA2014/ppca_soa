@@ -56,7 +56,6 @@ dispatch_request(Request) ->
 %%====================================================================
  
 init(_Args) ->
-    process_flag(trap_exit, true),
     createEtsControle(),
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
@@ -120,19 +119,23 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Despacha o request para o serviço registrado no catálogo
 do_dispatch_request(Request) ->
 	case msbus_catalogo:lookup(Request) of
-		{Contract, ParamsMap, Querystring} -> 
+		{Contract, ParamsMap, QuerystringMap} -> 
+			msbus_logger:debug("Contrato de serviço: ~p.", [Contract]),
+			msbus_logger:debug("Params e querystring: ~p.", [{ParamsMap, QuerystringMap}]),
 			case msbus_auth_user:autentica(Contract, Request) of
 				{ok, User} ->
+					msbus_logger:debug("User request: ~p.", [User]),
 					case get_work_node(Contract#servico.host, 
 									   Contract#servico.host,	
 									   Contract#servico.host_name, 
 									   Contract#servico.module_name, 1) of
 						{ok, Node} ->
+							msbus_logger:debug("Get work node ~p para request ~p.", [Node, Request#request.url]),
 							Request2 = Request#request{user = User, 
 													   node_exec = Node,
 													   servico = Contract,
 													   params_url = ParamsMap,
-													   querystring = Querystring},
+													   querystring_map = QuerystringMap},
 							msbus_request:registra_request(Request2),
 							msbus_eventmgr:notifica_evento(new_request, Request2),
 							case executa_servico(Node, Request2) of
@@ -140,9 +143,12 @@ do_dispatch_request(Request) ->
 								Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
 							end;
 						Error -> 
+							msbus_logger:debug("Erro ao obter work node: ~p", [Error]),
 							msbus_eventmgr:notifica_evento(erro_request, {servico, Request, Error})
 					end;
-				{error, no_authorization} -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, no_authorization}})
+				{error, no_authorization} -> 
+					msbus_logger:debug("Host não autorizado a acessar request ~p.", [Request#request.url]),
+					msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, no_authorization}})
 			end;
 		notfound -> 
 			msbus_request:registra_request(Request),
@@ -154,15 +160,17 @@ do_dispatch_request(Request) ->
 
 %% @doc Executa o serviço local (Serviço escrito em Erlang)
 executa_servico(_Node, Request=#request{servico=#servico{host='', 
-												  host_name = HostName,	
-												  module=Module, 
-												  module_name = ModuleName, 
-												  function_name = FunctionName, 
-												  function=Function}}) ->
+														 host_name = HostName,	
+														 module=Module, 
+														 module_name = ModuleName, 
+														 function_name = FunctionName, 
+														 function=Function}}) ->
 	try
+		msbus_logger:debug("Msg enviada para ~p: ~p.", [Module, Request]),
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
+				msbus_logger:debug("Serviço ~p não está ativo. Iniciando...", [Module]),
 				apply(Module, Function, [Request, self()]);
 			_Pid -> 
 				apply(Module, Function, [Request, self()])
@@ -179,11 +187,23 @@ executa_servico(_Node, Request=#request{servico=#servico{host='',
 
 %% @doc Executa um serviço remotamente
 executa_servico(Node, Request=#request{servico=#servico{host = _HostList, 
-												  host_name = _HostNames,	
-												  module_name = ModuleName, 
-												  function_name = FunctionName, 
-												  module = Module}}) ->
+														host_name = _HostNames,	
+														module_name = ModuleName, 
+														function_name = FunctionName, 
+														module = Module}}) ->
 	% Envia uma mensagem assíncrona para o serviço
+	Msg = {{Request#request.rid, 
+					   Request#request.uri, 
+					   Request#request.type, 
+					   Request#request.params_url, 
+					   Request#request.querystring_map,
+					   Request#request.payload,	
+					   Request#request.content_type,	
+					   ModuleName,
+					   FunctionName}, 
+					   self()
+					  },
+	msbus_logger:debug("Msg enviada para ~p: ~p.", [Node, Msg]),
 	{Module, Node} ! {{Request#request.rid, 
 					   Request#request.uri, 
 					   Request#request.type, 

@@ -114,12 +114,12 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 							{noreply, State#state{socket = Socket}};
 						_ -> 
 							%% Está na faixa de IPs autorizado a acessar o barramento?
-							msbus_logger:debug("Check ip autorizado: ~p", [Ip]),
+							msbus_logger:debug("Check se ip autorizado: ~p", [Ip]),
 							case msbus_http_util:match_ip_address(Allowed_Address, Ip) of
 								true -> 
 									{noreply, State#state{socket = Socket}};
 								false -> 
-									msbus_logger:warn("Request para host ~s não autorizado!", [inet:ntoa(Ip)]),
+									msbus_logger:warn("Host ~s não autorizado!", [inet:ntoa(Ip)]),
 									gen_tcp:close(Socket),
 									{noreply, State, 0}
 							end
@@ -208,8 +208,10 @@ code_change(_OldVsn, State, _Extra) ->
 trata_request(Socket, RequestBin, State) -> 
 	case msbus_http_util:encode_request(Socket, RequestBin) of
 		 {ok, Request} -> 
+			msbus_logger:debug("Request: ~p.", [Request]),
 			msbus_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> 
+			msbus_logger:debug("Request: ~p.", [Request]),
 			envia_response(Request, {error, Reason}, State)
 	end.
 

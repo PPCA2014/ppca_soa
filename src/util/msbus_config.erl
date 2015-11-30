@@ -140,8 +140,6 @@ le_config() ->
 	{ok, Config}.
 
 parse_keepalive(Keepalive) ->
-	io:format("valor eh ~p\n\n", [Keepalive]),
-	io:format("valor eh ~p\n\n", [msbus_util:binary_to_bool(Keepalive)]),
 	msbus_util:binary_to_bool(Keepalive).
 
 parse_tcp_port(<<Port/binary>>) -> binary_to_list(Port);		

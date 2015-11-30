@@ -106,7 +106,7 @@ encode_request(Socket, RequestBin) ->
 		Host = maps:get("host", Outros2, ""),
 		QuerystringMap = parse_querystring(Querystring),
 		Authorization = maps:get("authorization", Outros2, ""),
-		Rowid = msbus_util:new_rowid_servico(Url2, Metodo),
+		{Rowid, Params_url} = msbus_util:get_rowid_and_params_from_url(Url2, Metodo),
 		case is_metodo_suportado(Metodo) of
 			true ->
 				case is_payload_permitido(Metodo, Content_Length) of
@@ -121,6 +121,7 @@ encode_request(Socket, RequestBin) ->
 									versao_http = Versao_HTTP,
 									querystring = Querystring,
 									querystring_map = QuerystringMap,
+									params_url = Params_url,
 									content_length = Content_Length,
 									content_type = Content_Type,
 									accept = Accept,
@@ -148,6 +149,7 @@ encode_request(Socket, RequestBin) ->
 											versao_http = Versao_HTTP,
 											querystring = Querystring,
 											querystring_map = QuerystringMap,
+											params_url = Params_url,
 											content_length = Content_Length,
 											content_type = Content_Type,
 											accept = Accept,
@@ -173,6 +175,7 @@ encode_request(Socket, RequestBin) ->
 										versao_http = Versao_HTTP,
 										querystring = Querystring,
 										querystring_map = QuerystringMap,
+										params_url = Params_url,
 										content_length = Content_Length,
 										content_type = Content_Type,
 										accept = Accept,
@@ -198,6 +201,7 @@ encode_request(Socket, RequestBin) ->
 								versao_http = Versao_HTTP,
 								querystring = Querystring,
 								querystring_map = QuerystringMap,
+								params_url = Params_url,
 								content_length = Content_Length,
 								content_type = Content_Type,
 								accept = Accept,
@@ -222,6 +226,7 @@ encode_request(Socket, RequestBin) ->
 							versao_http = Versao_HTTP,
 							querystring = Querystring,
 							querystring_map = QuerystringMap,
+							params_url = Params_url,
 							content_length = Content_Length,
 							content_type = Content_Type,
 							accept = Accept,

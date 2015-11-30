@@ -349,16 +349,17 @@ parse_catalogo([], Cat2, Cat3, Cat4, _Id, _Conf) ->
 parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Name = maps:get(<<"name">>, H),
 	Url = maps:get(<<"url">>, H),
-	Url2 = parse_url_servico(Url),
+	Url2 = Url,
+	Type = maps:get(<<"type">>, H, <<"GET">>),
+	valida_url_contract(Url2),
 	Service = maps:get(<<"service">>, H),
 	{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_contract(Service),
-	Type = maps:get(<<"type">>, H, <<"GET">>),
 	Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
 	Comment = maps:get(<<"comment">>, H, <<>>),
 	Version = maps:get(<<"version">>, H, <<>>),
 	Owner = maps:get(<<"owner">>, H, <<>>),
 	Async = maps:get(<<"async">>, H, <<"false">>),
-	Rowid = msbus_util:new_rowid_servico(Url2, Type),
+	Rowid = msbus_util:make_rowid_from_url(Url2, Type),
 	Lang = maps:get(<<"lang">>, H, <<>>),
 	case Lang of
 		<<"erlang">> -> 
@@ -372,7 +373,6 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Result_Cache = maps:get(<<"result_cache">>, H, 0),
 	Authentication = maps:get(<<"authentication">>, H, <<>>),
 	valida_name_contract(Name),
-	valida_url_contract(Url2),
 	valida_type_contract(Type),
 	valida_bool(Apikey),
 	valida_bool(Async),
@@ -496,31 +496,21 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 			end
 	end.
 
-lookup(Request=#request{rowid = Rowid}, #state{ult_lookup = Ult_lookup,
-											   ult_rowid = Ult_rowid}) when Rowid == Ult_rowid ->
-	msbus_logger:info("HIT rowid ~p", [Request#request.rowid]),
-	Ult_lookup;
-	
+
 lookup(Request, State) ->
 	Rowid = Request#request.rowid,
-	case ets:lookup(State#state.tbl_cache_lookup, Rowid) of
-		[] ->
-			msbus_logger:info("LOOKUP rowid ~p", [Request#request.rowid]),
-			case ets:lookup(State#state.cat2, Rowid) of
-				[] -> 
-					case lookup_re(Request, State#state.cat3) of
-						{Contract, ParamsMap} -> 
-							Querystring = processa_querystring(Contract, Request),
-							{Contract, ParamsMap, Querystring};
-						notfound -> notfound
-					end;
-				[{_Rowid, Contract}] -> 
+	msbus_logger:info("REQUEST ROWID ~p.", [Request#request.rowid]),
+	case ets:lookup(State#state.cat2, Rowid) of
+		[] -> 
+			case lookup_re(Request, State#state.cat3) of
+				{Contract, ParamsMap} -> 
 					Querystring = processa_querystring(Contract, Request),
-					{Contract, #{}, Querystring}
+					{Contract, ParamsMap, Querystring};
+				notfound -> notfound
 			end;
-		[{Rowid, Ult_lookup}] -> 
-			msbus_logger:info("LOOKUP CACHE rowid ~p", [Request#request.rowid]),
-			Ult_lookup
+		[{_Rowid, Contract}] -> 
+			Querystring = processa_querystring(Contract, Request),
+			{Contract, Request#request.params_url, Querystring}
 	end.
 
 lookup_re(_Request, []) ->
