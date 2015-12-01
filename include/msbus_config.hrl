@@ -56,7 +56,7 @@
 -define(MAX_HTTP_WORKER_RANGE, 1000).  % a cada 4 horas
 
 % Quanto tempo o listener vai aguardar uma conexão antes de ocorrer um timeout
--define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 * 30). % 30 minutos
+-define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 *60 * 30). % 30 minutos
 
 
 %  Definição para o arquivo de configuração

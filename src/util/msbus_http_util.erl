@@ -84,7 +84,7 @@ parse_querystring_value(Value) ->
 rid_to_string(RID) -> integer_to_list(RID).
 
 %%-spec get_http_header(Header::list()) -> tuple.
-encode_request(Socket, RequestBin) ->
+encode_request(Socket, RequestBin, WorkerSend) ->
 	try
 		RID = os:system_time(),
 		Timestamp = calendar:local_time(),
@@ -132,7 +132,8 @@ encode_request(Socket, RequestBin) ->
 									socket = Socket, 
 									t1 = T1, 
 									timestamp = Timestamp,
-									authorization = Authorization
+									authorization = Authorization,
+									worker_send = WorkerSend
 							},
 						{ok, Request};
 					true ->
@@ -162,7 +163,8 @@ encode_request(Socket, RequestBin) ->
 											timestamp = Timestamp,
 											payload = Payload, 
 											payload_map = PayloadMap,
-											authorization = Authorization
+											authorization = Authorization,
+											worker_send = WorkerSend
 									},
 								{ok, Request};
 							{error, Reason} -> 
@@ -187,7 +189,8 @@ encode_request(Socket, RequestBin) ->
 										t1 = T1, 
 										payload = Payload, 
 										timestamp = Timestamp,
-										authorization = Authorization
+										authorization = Authorization,
+										worker_send = WorkerSend
 								},
 								{error, Request, Reason}
 						end;
@@ -212,7 +215,8 @@ encode_request(Socket, RequestBin) ->
 								socket = Socket, 
 								t1 = T1, 
 								timestamp = Timestamp,
-								authorization = Authorization
+								authorization = Authorization,
+								worker_send = WorkerSend
 						},
 						{error, Request, payload_nao_permitido}
 				end;
@@ -237,7 +241,8 @@ encode_request(Socket, RequestBin) ->
 							socket = Socket, 
 							t1 = T1, 
 							timestamp = Timestamp,
-							authorization = Authorization
+							authorization = Authorization,
+							worker_send = WorkerSend
 					},
 				{error, Request, metodo_nao_suportado}
 		end

@@ -35,8 +35,8 @@
                 {max_overflow, 0}
             ], []},
             {msbus_server_worker_pool, [
-                {size, 128},
-                {max_overflow, 256}
+                {size, 100},
+                {max_overflow, 0}
             ], []},
             {msbus_health_pool, [
                 {size, 6},

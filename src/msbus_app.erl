@@ -3,6 +3,8 @@
 -behaviour(application).
 
 -include("../include/msbus_config.hrl").
+-include("../include/msbus_schema.hrl").
+
 
 %% Application callbacks
 -export([start/0, start/2, stop/0, stop/1]).
@@ -64,8 +66,8 @@ registra_eventos() ->
 	msbus_eventmgr:adiciona_evento(close_request),
 	msbus_eventmgr:adiciona_evento(send_error_request),
 
-    msbus_eventmgr:registra_interesse(ok_request, fun(_Q, R) -> 
-														msbus_server_worker:cast(R) 
+    msbus_eventmgr:registra_interesse(ok_request, fun(_Q, {_, #request{worker_send=Worker}, _} = R) -> 
+														gen_server:cast(Worker, R)
 												  end),
 
     msbus_eventmgr:registra_interesse(erro_request, fun(_Q, R) -> 

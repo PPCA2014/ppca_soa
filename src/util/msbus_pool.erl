@@ -8,7 +8,7 @@
 
 -module(msbus_pool).
 
--export([child_spec/3, transaction/2, call/2, cast/2, status/0]).
+-export([child_spec/3, transaction/2, call/2, cast/2, status/0, checkout/1, checkin/2]).
 
 -spec child_spec(PoolId :: term(),
                  PoolArgs :: proplists:proplist(),
@@ -30,6 +30,10 @@ transaction(Pool, Fun) ->
 	after
 		poolboy:checkin(Pool, Worker)
 	end.
+
+checkout(Pool) -> poolboy:checkout(Pool).
+
+checkin(Pool, Worker) -> poolboy:checkin(Pool, Worker).
 
 cast(Pool, Args) ->
 	Worker = poolboy:checkout(Pool),
