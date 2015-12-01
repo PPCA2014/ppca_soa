@@ -93,7 +93,7 @@ le_config() ->
 		{ok, ArqConfig} -> 
 			% Lê as configurações do arquivo de configuração
 			{ok, Json} = msbus_util:json_decode_as_map(ArqConfig),
-			Listen_address = maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>]),
+			Listen_address = msbus_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
 			Listen_address_t = parse_tcp_listen_address(Listen_address),
 			Allowed_address = msbus_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Json, [])),
 			Allowed_address_t = parse_allowed_address(Allowed_address),
@@ -147,7 +147,7 @@ parse_tcp_port(Port) -> Port.
 
 parse_tcp_listen_address(ListenAddress) ->
 	lists:map(fun(IP) -> 
-					{ok, L2} = inet:parse_address(binary_to_list(IP)),
+					{ok, L2} = inet:parse_address(IP),
 					L2 
 			  end, ListenAddress).
 

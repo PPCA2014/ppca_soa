@@ -103,7 +103,7 @@ handle_info(timeout, State=#state{lsocket = undefined}) ->
 	{noreply, State};
 
 handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Address}) ->
-    msbus_logger:info("Listen for accept em server worker ~p.", [State#state.worker_id]),
+    msbus_logger:debug("Listen for accept em server worker ~p.", [State#state.worker_id]),
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
 			% connection is established
