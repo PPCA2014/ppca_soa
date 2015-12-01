@@ -27,7 +27,9 @@
 		 profile/0,
 		 make_rowid_from_url/2,
 		 get_params_from_url/1,
-		 get_rowid_and_params_from_url/2]).
+		 get_rowid_and_params_from_url/2,
+		 string_is_integer/1,
+		 read_file_as_map/1]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -281,4 +283,13 @@ string_is_integer(S) ->
         false
     end.
 
+read_file_as_map(FileName) ->
+	case file:read_file(FileName) of
+		{ok, Arq} -> 
+			case json_decode_as_map(Arq) of
+				{ok, Json} -> {ok, Json};
+				_ -> {error, enojsonformat}
+			end;
+		Error -> Error
+	end.
 
