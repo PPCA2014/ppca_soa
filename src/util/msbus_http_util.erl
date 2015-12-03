@@ -248,8 +248,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 		end
 		
 	catch
-		_Exception:_Reason ->  
-			{error, iolist_to_binary(io_lib:format(<<"invalid_http_header <<~p>>"/utf8>>, [RequestBin]))} 
+		_Exception: _Reason ->  {error, invalid_http_header} 
 	end.
 	
 %% @doc Retorna boolean indicando se possui payload

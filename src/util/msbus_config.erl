@@ -125,16 +125,16 @@ le_config() ->
 			catch 
 				_Exception:Reason ->
 					io:format("Não foi possível processar o arquivo de configuração. Motivo: ~p.\n", [Reason]),
-					io:format("Executando o barramento com configurações padrão.\n"),
+					io:format("Executando o barramento com configurações padrão...\n"),
 					get_default_config()
 			end;
 		{error, enojsonformat} -> 
-			io:format("Layout do arquivo de configuração inválido.\n"),
-			io:format("Executando o barramento com configurações padrão.\n"),
+			io:format("Layout do arquivo de configuração não é um JSON válido!\n"),
+			io:format("Executando o barramento com configurações padrão...\n"),
 			get_default_config();
 		{error, _Reason} -> 
-			io:format("Arquivo de configuração inexistente ou inacessível.\n"),
-			io:format("Executando o barramento com configurações padrão.\n"),
+			io:format("Arquivo de configuração inexistente ou inacessível!\n"),
+			io:format("Executando o barramento com configurações padrão...\n"),
 			get_default_config()
 	end.
 

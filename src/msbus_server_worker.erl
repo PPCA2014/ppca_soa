@@ -107,7 +107,7 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
 			% connection is established
-			msbus_logger:debug("Conexão estabelecida para server worker ~p.", [State#state.worker_id]),
+			msbus_logger:debug("Conexão estabelecida no server worker ~p.", [State#state.worker_id]),
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case Ip of
@@ -131,7 +131,7 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 			end;
 		{error, closed} -> 
 			% ListenSocket is closed
-			msbus_logger:info("Socket do listener foi fechado para o server worker ~p.", [State#state.worker_id]),
+			msbus_logger:info("Socket do listener foi fechado."),
 			{noreply, State#state{lsocket = undefined}}; %% para de fazer accept
 		{error, timeout} ->
 			% no connection is established within the specified time
@@ -214,8 +214,11 @@ trata_request(Socket, RequestBin, State) ->
 					NewState = State#state{socket=undefined}
 			end;
 		 {error, Request, Reason} -> 
-			msbus_logger:debug("Close error request: ~p.", [Request]),
 			envia_response(Request, {error, Reason}, State),
+			NewState = State#state{socket = undefined};
+		 {error, invalid_http_header} -> 
+			gen_tcp:close(Socket),
+			msbus_logger:error("Requisição HTTP inválida! Close socket."),
 			NewState = State#state{socket = undefined}
 	end,
 	msbus_pool:checkin(msbus_server_worker_pool, Worker),
