@@ -185,8 +185,7 @@ code_change(_OldVsn, State, _Extra) ->
     
 get_filename_logger(LogFileDest) -> 
 	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
-	Node = node(),
-	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~p_~p_~p_~p_~p.log", [LogFileDest, Node, Node, Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia, Hora, Min])),
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/msbus/~p_~p_~p_~p_~p_~p.log", [LogFileDest, node(), Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia, Hora, Min])),
 	filelib:ensure_dir(NomeArqLog),
 	NomeArqLog.
 

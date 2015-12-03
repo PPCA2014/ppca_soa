@@ -67,7 +67,13 @@ function start() {
 		node_name="msbus@$hostname"
 	fi
 	echo "Iniciando instância ErlangMS $node_name..."
-	erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname $node_name -setcookie $ems_cookie -eval $ems_init -boot start_sasl -config $ems_log_conf
+	erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname $node_name -setcookie $ems_cookie -eval $ems_init -boot start_sasl -config $ems_log_conf 
+	if [ $? != 0 ]; then
+		echo
+		echo
+		echo "ATENÇÃO: A instância $node_name já está sendo executada, conectando na instância em vez disso!"
+		console $node_name
+	fi
 }
 
 # Instanciar um node ErlangMS como daemon
