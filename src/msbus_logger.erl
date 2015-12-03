@@ -38,7 +38,7 @@
 				log_file_dest,           		% Configuração do caminho onde os logs serão gravados
 				log_file_checkpoint,      		% Configuração do timeout para descarregar buffer do arquivo
 				log_file_name,		      		% Configuração do timeout para descarregar buffer do arquivo
-				debug						% Indica se está em modo debug
+				debug							% Indica se está em modo debug
  			   }). 
 
 
@@ -185,7 +185,8 @@ code_change(_OldVsn, State, _Extra) ->
     
 get_filename_logger(LogFileDest) -> 
 	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
-	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/msbus_~p_~p_~p_~p_~p.log", [LogFileDest, node(), Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia, Hora, Min])),
+	Node = node(),
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~p_~p_~p_~p_~p.log", [LogFileDest, Node, Node, Ano, msbus_util:mes_extenso(Mes), Ano, Mes, Dia, Hora, Min])),
 	filelib:ensure_dir(NomeArqLog),
 	NomeArqLog.
 

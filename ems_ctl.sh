@@ -1,36 +1,41 @@
 #!/bin/bash
 #
-# Objetivo: Script de inicialização do barramento ErlangMS msbus
+# ErlangMS Control Manager
 # Autor: Everton de Vargas Agilar
 # Data: 03/12/2015
 #
 
 
-# Documentação sobre o comando start.sh
+# Documentação sobre o comando ems_ctl.sh
 #--------------------------------------------------------------------
-# 1) Opções que podem ser utilizadas no comando start.sh
+# 1) Opções que podem ser utilizadas no comando ems_ctl.sh
 #     $1 -> opção do comando (start, start-daemon, stop e console)
 #     $2 -> nome do node que quer instanciar ou conectar
 #
 #
 # 2) Como instânciar um node ErlangMS com nome padrão "msbus": 
 #    
-#            ./start.sh start
+#            ./ems_ctl.sh start
 #
 #
 # 3) Instanciar um node ErlangMS com um node específico): 
 #
-#            ./start.sh start nome_do_node
+#            ./ems_ctl.sh start nome_do_node
 #
-#         Exemplo 1: ./start.sh start node_01
-#         Exemplo 2: ./start.sh start prod_esb
+#         Exemplo 1: ./ems_ctl.sh start node_01
+#         Exemplo 2: ./ems_ctl.sh start prod_esb
 #
 #
-# 4) Conectar em uma instância de um node ErlangMS
+# 4) Instanciar um node ErlangMS como daemon
 #
-#            ./start.sh start nome_do_node
+#            ./ems_ctl.sh start_daemon
 #
-#         Exemplo 1: ./start.sh console node_01
+# 5) Conectar em uma instância ErlangMS
+#
+#            ./ems_ctl.sh console nome_do_node
+#
+#         Exemplo 1: ./ems_ctl.sh console node_01
+#         Exemplo 2: ./ems_ctl.sh console   (vai conectar na instância padrão msbus)
 #
 
 
@@ -87,7 +92,7 @@ function stop() {
 	fi
 	echo "Parando instância ErlangMS $remote_node..."
 	my_node="msbus_shell_`date +"%I%M%S"`"
-	erl -sname $my_node -setcookie $ems_cookie -eval $ems_stop -remsh $remote_node
+	erl -sname $my_node -setcookie $ems_cookie -remsh $remote_node -eval $ems_stop
 }
 
 
