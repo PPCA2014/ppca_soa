@@ -96,7 +96,6 @@ do_start_listener(Port, IpAddress, State) ->
 	case msbus_server_listener:start(Port, IpAddress) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
-			msbus_logger:info("Escutando no endereço ~s:~p.", [inet:ntoa(IpAddress), Port]),
 			Reply = {ok, NewState};
 		{error, Reason} ->
 			Reply = {{error, Reason}, State}
