@@ -29,7 +29,9 @@
 		 get_params_from_url/1,
 		 get_rowid_and_params_from_url/2,
 		 string_is_integer/1,
-		 read_file_as_map/1]).
+		 read_file_as_map/1,
+		 node_is_live/1,
+		 get_node_name/0]).
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->
@@ -293,3 +295,11 @@ read_file_as_map(FileName) ->
 		Error -> Error
 	end.
 
+node_is_live(Node) -> 
+	case net_adm:ping(Node) of
+		pong -> 1;
+		_ -> 0
+	end.
+
+% Retorna somente a parte do nome do node sem a parte do hostname após @
+get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).

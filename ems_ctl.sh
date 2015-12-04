@@ -45,34 +45,33 @@ ems_node="msbus"
 ems_init="msbus:start()"
 ems_stop="msbus:stop()"
 ems_log_conf="./priv/conf/elog"
+ems_hostname=`hostname`
+ems_ctl_node="msbus_shell_`date +"%I%M%S"`@$ems_hostname"
 
-# Conectar a um node como shell
+
+# Conectar no terminal de uma instância ErlangMS
 function console() {
-	remote_node=$1
-	hostname=`hostname`
-	if [ "$remote_node" == "" ]; then
+	node_name=$1
+	if [ "$node_name" == "" ]; then
 		remote_node="msbus@$hostname"
 	fi
-	echo "Conectando na instância ErlangMS $remote_node..."
-	my_node="msbus_shell_`date +"%I%M%S"`"
-	erl -sname $my_node -setcookie erlangms -remsh $remote_node
+	echo "Conectando na instância ErlangMS $node_name..."
+	erl -sname $ems_ctl_node -setcookie $ems_cookie -remsh $node_name
 }
 
 # Instanciar um node ErlangMS
 function start() {
 	./build.sh
 	node_name=$1
-	hostname=`hostname`
 	if [ "$node_name" == "" ]; then
-		node_name="msbus@$hostname"
+		node_name="msbus@$ems_hostname"
 	fi
-	echo "Iniciando instância ErlangMS $node_name..."
-	erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname $node_name -setcookie $ems_cookie -eval $ems_init -boot start_sasl -config $ems_log_conf 
+	status $node_name
 	if [ $? != 0 ]; then
-		echo
-		echo
-		echo "ATENÇÃO: A instância $node_name já está sendo executada, conectando na instância em vez disso!"
 		console $node_name
+	else
+		echo "Iniciando instância ErlangMS $node_name..."
+		erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname $node_name -setcookie $ems_cookie -eval $ems_init -boot start_sasl -config $ems_log_conf 
 	fi
 }
 
@@ -101,7 +100,30 @@ function stop() {
 	erl -sname $my_node -setcookie $ems_cookie -remsh $remote_node -eval $ems_stop
 }
 
+# Verifica se uma instância ErlangMS está executando
+function status(){
+	remote_node=$1
+	if [ "$remote_node" == "" ]; then
+		remote_node="msbus@$ems_hostname"
+	fi
+	echo "Verificando se há uma instância $remote_node executando..."
+	is_running=`erl -noshell -pa ../msbus/ebin -boot start_clean -sname $ems_ctl_node \
+			   -setcookie erlangms -eval 'io:format("~p", [ msbus_util:node_is_live( '$remote_node' ) ] ), halt()'`
+	if [ "$is_running" == "1" ]; then
+		echo "$remote_node já está executando!"
+		return 1
+	else
+		echo "$remote_node está parado!"
+		return 0
+	fi
+}
 
+
+# header do comando
+clear
+echo "ErlangMS Control Manager [ Version 1.0 ]"
+
+# Aciona o comando escolhido
 case "$1" in
 
 	  'start')
@@ -122,6 +144,10 @@ case "$1" in
 
 	  'stop')
 			stop $2
+	  ;;
+
+	  'status')
+			status $2
 	  ;;
 
 	  *)
