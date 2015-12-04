@@ -60,8 +60,11 @@ init({Port, IpAddress}) ->
 				start_server_workers(Conf#config.tcp_max_http_worker, 
 									 LSocket,
 									 Conf#config.tcp_allowed_address_t),
-				msbus_logger:debug("Finish start workers for listener ~p com IP ~p.", [self(), IpAddress]),    
+				msbus_logger:info("Escutando no endereço ~s:~p.", [inet:ntoa(IpAddress), Port]),
 				{ok, #state{lsocket = LSocket}, 0};
+		{error,eaddrnotavail} ->
+			msbus_logger:error("ATENÇÃO: Interface de rede para o IP ~p não disponível! Ignorando esta interface...", [inet:ntoa(IpAddress)]),
+			{ok, #state{}};    
 		Error -> Error
      end.	
 

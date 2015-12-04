@@ -17,3 +17,4 @@ fprof**
 _build/**
 rel/**
 deps/**
+.DS_Store*
