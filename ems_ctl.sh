@@ -40,6 +40,7 @@
 
 
 # Parâmetros
+ems_ctl_version="1.0"
 ems_cookie="erlangms"
 ems_node="msbus"
 ems_init="msbus:start()"
@@ -61,8 +62,8 @@ function console() {
 
 # Instanciar um node ErlangMS
 function start() {
-	./build.sh
 	node_name=$1
+	is_daemon=$2
 	if [ "$node_name" == "" ]; then
 		node_name="msbus@$ems_hostname"
 	fi
@@ -70,22 +71,18 @@ function start() {
 	if [ $? != 0 ]; then
 		console $node_name
 	else
-		echo "Iniciando instância ErlangMS $node_name..."
-		erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname $node_name -setcookie $ems_cookie -eval $ems_init -boot start_sasl -config $ems_log_conf 
+		if [ "$is_daemon" == "daemon" ]; then
+			echo "Iniciando instância ErlangMS $node_name como daemon ..."
+			erl -detached -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin \
+				-sname $node_name -setcookie $ems_cookie \
+				-eval $ems_init -boot start_sasl -config $ems_log_conf 
+		else
+			echo "Iniciando instância ErlangMS $node_name..."
+			erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin \
+				-sname $node_name -setcookie $ems_cookie -eval $ems_init \
+				-boot start_sasl -config $ems_log_conf 
+		fi
 	fi
-}
-
-# Instanciar um node ErlangMS como daemon
-function start_daemon() {
-	./build.sh
-	node_name=$1
-	hostname=`hostname`
-	if [ "$node_name" == "" ]; then
-		node_name="msbus@$hostname"
-	fi
-	echo "Iniciando instância ErlangMS $node_name como daemon..."
-	erl -detached -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin -sname $node_name -setcookie $ems_cookie -eval $ems_init -boot start_sasl -config $ems_log_conf
-	echo "ok."
 }
 
 # Parar uma instância de um node ErlangMS
@@ -121,7 +118,7 @@ function status(){
 
 # header do comando
 clear
-echo "ErlangMS Control Manager [ Version 1.0 ]"
+echo "ErlangMS Control Manager [ Hostname: $ems_hostname,  Version: $ems_ctl_version ]"
 
 # Aciona o comando escolhido
 case "$1" in
@@ -131,11 +128,13 @@ case "$1" in
 	  ;;
 
 	  'start_daemon')
-			start_daemon $2
+			Node="$2"
+			start "$Node" "daemon"
 	  ;;
 
 	  'start-daemon')
-			start_daemon $2
+			Node="$2"
+			start "$Node" "daemon"
 	  ;;
 
 	  'console')
