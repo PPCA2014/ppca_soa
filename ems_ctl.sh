@@ -43,21 +43,25 @@
 ems_ctl_version="1.0"
 ems_cookie=erlangms
 ems_node="msbus"
-ems_init="msbus:start()"
-ems_stop="msbus:stop()"
+ems_init="application:start(msbus)"
+ems_stop="application:stop(msbus)."
 ems_log_conf="./priv/conf/elog"
 ems_hostname=`hostname`
 ems_ctl_node="msbus_shell_`date +"%I%M%S"`@$ems_hostname"
-
+ems_path="-pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin"
 
 # Conectar no terminal de uma instância ErlangMS
 function console() {
 	node_name=$1
 	if [ "$node_name" == "" ]; then
-		remote_node="msbus@$hostname"
+		node_name="msbus@$ems_hostname"
 	fi
 	echo "Conectando na instância ErlangMS $node_name..."
-	erl -sname $ems_ctl_node -setcookie $ems_cookie -remsh $node_name
+	erl -remsh $node_name -sname $ems_ctl_node \
+		-setcookie $ems_cookie \
+		$ems_path \
+		-boot start_sasl -config $ems_log_conf \
+		
 }
 
 # Instanciar um node ErlangMS
@@ -73,33 +77,18 @@ function start() {
 	else
 		if [ "$is_daemon" == "daemon" ]; then
 			echo "Iniciando instância ErlangMS $node_name como daemon ..."
-			erl -detached -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin \
+			erl -detached $ems_path \
 				-sname $node_name -setcookie $ems_cookie \
 				-eval $ems_init -boot start_sasl -config $ems_log_conf 
 		else
 			echo "Iniciando instância ErlangMS $node_name..."
-			erl -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin \
+			erl $ems_path \
 				-sname $node_name -setcookie $ems_cookie -eval $ems_init \
 				-boot start_sasl -config $ems_log_conf 
 		fi
 	fi
 }
 
-# Parar uma instância de um node ErlangMS
-function stop() {
-	node_name=$1
-	if [ "$node_name" == "" ]; then
-		node_name="msbus@$ems_hostname"
-	fi
-	status $node_name
-	if [ $? != 0 ]; then
-		echo "Finalizando instância $node_name..."
-	else
-		echo "Finalizando instância $node_name..."
-		erl -sname $ems_ctl_node -setcookie $ems_cookie \
-		    -remsh $node_name -eval $ems_stop
-	fi
-}
 
 # Verifica se uma instância ErlangMS está executando
 function status(){
@@ -108,12 +97,11 @@ function status(){
 		remote_node="msbus@$ems_hostname"
 	fi
 	echo "Verificando se há uma instância $remote_node executando..."
-	is_running=`erl --no-shell -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin \
+	is_running=`erl -noshell $ems_path \
 				-boot start_clean  \
 				-sname $ems_ctl_node \
-			   -setcookie $ems_cookie \
-			   -eval 'io:format( "~p", [ msbus_util:node_is_live( list_to_atom( "$remote_node" ) ) ] ), halt()'`
-	echo "valor is " $is_running
+				-setcookie $ems_cookie \
+				-eval 'io:format( "~p", [ msbus_util:node_is_live( '$remote_node' ) ] ), halt()'`
 	if [ "$is_running" == "1" ]; then
 		echo "$remote_node já está executando!"
 		return 1
@@ -123,6 +111,9 @@ function status(){
 	fi
 }
 
+function list_nodes(){
+	epmd -names
+}
 
 # header do comando
 clear
@@ -149,8 +140,8 @@ case "$1" in
 			console $2
 	  ;;
 
-	  'stop')
-			stop $2
+	  'list')
+			list_nodes
 	  ;;
 
 	  'status')
@@ -158,7 +149,11 @@ case "$1" in
 	  ;;
 
 	  *)
-			start $2
+			if [ $1 != "" ]; then
+				echo "Uso: ems_ctl.sh start|start-daemon|console|list|status [node]"
+			else
+				start $2
+			fi
 	  ;;
 
 esac
