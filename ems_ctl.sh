@@ -87,14 +87,18 @@ function start() {
 
 # Parar uma instância de um node ErlangMS
 function stop() {
-	remote_node=$1
-	hostname=`hostname`
-	if [ "$remote_node" == "" ]; then
-		remote_node="msbus@$hostname"
+	node_name=$1
+	if [ "$node_name" == "" ]; then
+		node_name="msbus@$ems_hostname"
 	fi
-	echo "Parando instância ErlangMS $remote_node..."
-	my_node="msbus_shell_`date +"%I%M%S"`"
-	erl -sname $my_node -setcookie $ems_cookie -remsh $remote_node -eval $ems_stop
+	status $node_name
+	if [ $? != 0 ]; then
+		echo "Finalizando instância $node_name..."
+	else
+		echo "Finalizando instância $node_name..."
+		erl -sname $ems_ctl_node -setcookie $ems_cookie \
+		    -remsh $node_name -eval $ems_stop
+	fi
 }
 
 # Verifica se uma instância ErlangMS está executando
@@ -104,8 +108,7 @@ function status(){
 		remote_node="msbus@$ems_hostname"
 	fi
 	echo "Verificando se há uma instância $remote_node executando..."
-	is_running=`erl -noshell -pa ../msbus/ebin -boot start_clean -sname $ems_ctl_node \
-			   -setcookie erlangms -eval 'io:format("~p", [ msbus_util:node_is_live( '$remote_node' ) ] ), halt()'`
+	is_running=`erl -noshell -pa ../msbus/ebin -boot start_clean -sname $ems_ctl_node -setcookie erlangms -eval 'io:format("~p", [ msbus_util:node_is_live( list_to_atom( "$remote_node" ) ) ] ), halt()'`
 	if [ "$is_running" == "1" ]; then
 		echo "$remote_node já está executando!"
 		return 1
