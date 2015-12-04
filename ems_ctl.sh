@@ -41,7 +41,7 @@
 
 # Parâmetros
 ems_ctl_version="1.0"
-ems_cookie="erlangms"
+ems_cookie=erlangms
 ems_node="msbus"
 ems_init="msbus:start()"
 ems_stop="msbus:stop()"
@@ -108,7 +108,12 @@ function status(){
 		remote_node="msbus@$ems_hostname"
 	fi
 	echo "Verificando se há uma instância $remote_node executando..."
-	is_running=`erl -noshell -pa ../msbus/ebin -boot start_clean -sname $ems_ctl_node -setcookie erlangms -eval 'io:format("~p", [ msbus_util:node_is_live( list_to_atom( "$remote_node" ) ) ] ), halt()'`
+	is_running=`erl --no-shell -pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin \
+				-boot start_clean  \
+				-sname $ems_ctl_node \
+			   -setcookie $ems_cookie \
+			   -eval 'io:format( "~p", [ msbus_util:node_is_live( list_to_atom( "$remote_node" ) ) ] ), halt()'`
+	echo "valor is " $is_running
 	if [ "$is_running" == "1" ]; then
 		echo "$remote_node já está executando!"
 		return 1
