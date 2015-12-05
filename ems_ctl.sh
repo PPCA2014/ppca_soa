@@ -52,10 +52,7 @@ ems_path="-pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin"
 
 # Conectar no terminal de uma instância ErlangMS
 function console() {
-	node_name=$1
-	if [ "$node_name" == "" ]; then
-		node_name="msbus@$ems_hostname"
-	fi
+	node_name=$(format_node_name $1)
 	echo "Conectando na instância ErlangMS $node_name..."
 	erl -remsh $node_name -sname $ems_ctl_node \
 		-setcookie $ems_cookie \
@@ -66,11 +63,7 @@ function console() {
 
 # Instanciar um node ErlangMS
 function start() {
-	node_name=$1
-	is_daemon=$2
-	if [ "$node_name" == "" ]; then
-		node_name="msbus@$ems_hostname"
-	fi
+	node_name=$(format_node_name $1)
 	status $node_name
 	if [ $? != 0 ]; then
 		console $node_name
@@ -92,21 +85,18 @@ function start() {
 
 # Verifica se uma instância ErlangMS está executando
 function status(){
-	remote_node=$1
-	if [ "$remote_node" == "" ]; then
-		remote_node="msbus@$ems_hostname"
-	fi
-	echo "Verificando se há uma instância $remote_node executando..."
+	node_name=$(format_node_name $1)
+	echo "Verificando se há uma instância $node_name executando..."
 	is_running=`erl -noshell $ems_path \
 				-boot start_clean  \
 				-sname $ems_ctl_node \
 				-setcookie $ems_cookie \
-				-eval 'io:format( "~p", [ msbus_util:node_is_live( '$remote_node' ) ] ), halt()'`
+				-eval 'io:format( "~p", [ msbus_util:node_is_live( '$node_name' ) ] ), halt()'`
 	if [ "$is_running" == "1" ]; then
-		echo "$remote_node já está executando!"
+		echo "$node_name já está executando!"
 		return 1
 	else
-		echo "$remote_node está parado!"
+		echo "$node_name está parado!"
 		return 0
 	fi
 }
@@ -114,6 +104,18 @@ function status(){
 function list_nodes(){
 	epmd -names
 }
+
+function format_node_name(){
+	node_name=$1
+	if [ "$node_name" == "" ]; then
+		node_name="msbus@$ems_hostname"
+	fi
+	if [ `expr index "$node_name" "@"` == 0 ]; then
+		node_name="$node_name@$ems_hostname" 
+	fi
+	echo $node_name
+}
+
 
 # header do comando
 clear
