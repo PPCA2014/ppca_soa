@@ -88,7 +88,7 @@ modo_debug(Flag) ->
 	gen_server:cast(?SERVER, {debug, Flag}). 
 
 sync() ->
-	gen_server:cast(?SERVER, sync_buffer). 		
+	gen_server:call(?SERVER, sync_buffer). 		
 
 log_request(Request) -> 
 	gen_server:cast(?SERVER, {log_request, Request}). 

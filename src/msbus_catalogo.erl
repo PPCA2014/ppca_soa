@@ -20,7 +20,8 @@
 -export([start/0, start_link/1, stop/0]).
 
 %% Client
--export([lista_catalogo/0, 
+-export([init_catalogo/0,
+		 lista_catalogo/0, 
 		 update_catalogo/0,
 		 lookup/1,
 		 get_querystring/2, 
@@ -39,7 +40,8 @@
 				cat3, 			%% Regular expression parsed catalog
 				ult_lookup, 	%% Último lookup realizado
 				ult_rowid,		%% Rowid da última requisição
-				tbl_cache_lookup
+				tbl_cache_lookup = [],
+				tbl_cache_index = 0
 		}). 
 
 
@@ -85,15 +87,12 @@ get_ult_lookup() ->
 %%====================================================================
  
 init(_Args) ->
-    process_flag(trap_exit, true),
-	%% Cat1 = JSON catalog, Cat2 = parsed catalog, Cat3 = regular expression parsed catalog
-	{Cat1, Cat2, Cat3} = get_catalogo(),
-	Tbl_cache_lookup = ets:new(tbl_cache_lookup, [set, 
-												  private, 
-												  {read_concurrency, true}]),
-	NewState = #state{cat1=Cat1, cat2=Cat2, cat3=Cat3, tbl_cache_lookup=Tbl_cache_lookup},
-	fprof:trace([start, {procs, [self()]}]),
-    {ok, NewState}. 
+	case ets:lookup(ets_msbus_catalogo, cat) of
+		[] -> 
+			{stop, nocatalog};
+		[{cat, {Cat1, Cat2, Cat3}}] ->
+			{ok, #state{cat1 = Cat1, cat2 = Cat2, cat3 = Cat3}}
+	end.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -107,10 +106,14 @@ handle_call(lista_catalogo, _From, State) ->
 	{reply, Reply, State};
     
 handle_call({lookup, Request}, _From, State) ->
-	Ult_lookup = lookup(Request, State),
-	Ult_rowid = Request#request.rowid,
-	ets:insert(State#state.tbl_cache_lookup, {Ult_rowid, Ult_lookup}),
-	NewState = State#state{ult_rowid = Ult_rowid, ult_lookup = Ult_lookup},
+	case lookup_cache(Request#request.rowid, State) of
+		[] -> 
+			Ult_lookup = lookup(Request, State),
+			NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State);
+		Cache -> 
+			Ult_lookup = Cache,
+			NewState = State
+	end,
 	{reply, Ult_lookup, NewState, 60000};
 
 handle_call(list_cat2, _From, State) ->
@@ -139,47 +142,99 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
+init_catalogo() ->
+	ets:new(ets_msbus_catalogo, [set, named_table, public]),
+	case get_catalogo() of
+		{ok, Cat1, Cat2, Cat3} -> 
+			ets:insert(ets_msbus_catalogo, {cat, {Cat1, Cat2, Cat3}}),
+			ok;
+		{error, emfile} ->
+			msbus_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Muitos arquivos abertos no sistema operacional.", [self()]),
+			{error, invalidcatalog};
+		{error, eacces} ->
+			msbus_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Não tem permissão para ler o catálogo de serviços.", [self()]),
+			{error, invalidcatalog};
+		{error, enoent} ->
+			msbus_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Catálogo de serviços não encontrado.", [self()]),
+			{error, invalidcatalog};
+		{error, enomem} ->
+			msbus_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Não há memória suficiente para ler o catálogo de serviços.", [self()]),
+			{error, invalidcatalog};
+		{error, Reason} ->
+			msbus_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Erro interno: ~p.", [self(), Reason]),
+			{stop, invalidcatalog}
+	end.
+	
+
+
+add_lookup_cache(Ult_rowid, Ult_lookup, State=#state{tbl_cache_lookup=Tbl,
+													 tbl_cache_index=Index}) when Index < 10 ->
+	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}|Tbl],
+	            tbl_cache_index = Index+1};
+
+add_lookup_cache(Ult_rowid, Ult_lookup, State) ->
+	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}], 
+				tbl_cache_index = 1}.
+
+
+lookup_cache(Rowid, State) ->
+	lookup_cache_tail(State#state.tbl_cache_lookup, Rowid).
+
+lookup_cache_tail([], _Rowid) -> [];
+
+lookup_cache_tail([{Ult_rowid, Ult_lookup}|T], Rowid) ->
+	case Rowid == Ult_rowid of
+		true -> Ult_lookup;
+		false -> lookup_cache_tail(T, Rowid)
+	end.
+
+
 %% @doc Serviço que lista o catálogo
 do_lista_catalogo(State) -> State#state.cat1.
 
 %% @doc Obtém o catálogo
 get_catalogo() -> 
-	%% O arquivo do catálogo contém os includes para os catálogos com as definições de serviço
-	Cat0 = get_catalogo_from_disk(),
-	CatalogoDefsPath = ?CONF_PATH ++ "/catalogo/",
-	%% Obtém a lista do conteúdo de todos os catálogos
-	CatDefs = lists:map(fun(M) -> 
-							NomeArq = CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M)),
-							NomeCatalogo = binary_to_list(maps:get(<<"catalogo">>, M)),
-							case file:read_file(NomeArq) of
-								{ok, Arq} -> Arq;
-								{error, enoent} -> 
-									msbus_logger:error("Catalogo ~s não foi encontrado. Arquivo: ~s.", [NomeCatalogo, NomeArq]),
-									<<>>
-							end
-					    end, Cat0),
+	case get_catalogo_mestre() of
+		{ok, CatMestre} ->
+			CatalogoDefsPath = ?CONF_PATH ++ "/catalogo/",
+			%% Obtém a lista do conteúdo de todos os catálogos
+			CatDefs = lists:map(fun(M) -> 
+									NomeArq = CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M)),
+									NomeCatalogo = binary_to_list(maps:get(<<"catalogo">>, M)),
+									case file:read_file(NomeArq) of
+										{ok, Arq} -> Arq;
+										{error, enoent} -> 
+											msbus_logger:error("Catalogo ~s não foi encontrado. Arquivo: ~s.", [NomeCatalogo, NomeArq]),
+											<<>>
+									end
+								end, CatMestre),
 
-	%% Adiciona "," entre as definições de cada catálogo
-	CatDefs1 = lists:foldl(fun(X, Y) ->
-								case Y of
-									<<>> -> X;
-									Y2 -> iolist_to_binary([X, <<",">>, Y2])
-								end 
-						    end, <<>>, CatDefs),
+			%% Adiciona "," entre as definições de cada catálogo
+			CatDefs1 = lists:foldl(fun(X, Y) ->
+										case Y of
+											<<>> -> X;
+											Y2 -> iolist_to_binary([X, <<",">>, Y2])
+										end 
+									end, <<>>, CatDefs),
 
-	%% Adiciona abertura e fechamento de lista para o parser correto do JSON
-	CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
-	{ok, Cat1} = msbus_util:json_decode_as_map(CatDefs2),
-	%% Faz o parser do catálogo
-	Conf = msbus_config:getConfig(),
-	{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1, Conf),
-	{Cat4, Cat2, Cat3}.
+			%% Adiciona abertura e fechamento de lista para o parser correto do JSON
+			CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
+			{ok, Cat1} = msbus_util:json_decode_as_map(CatDefs2),
+			%% Faz o parser do catálogo
+			Conf = msbus_config:getConfig(),
+			{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1, Conf),
+			{ok, Cat4, Cat2, Cat3};
+		Error -> Error
+	end.
+			
 
-%% @doc Lê o catálogo do disco
-get_catalogo_from_disk() ->
-	{ok, Cat} = file:read_file(?CATALOGO_PATH),
-	{ok, Cat2} = msbus_util:json_decode_as_map(Cat),
-	Cat2.
+%% @doc O catálogo mestre possui os includes para os catálogos
+
+get_catalogo_mestre() ->
+	case file:read_file(?CATALOGO_PATH) of
+		{ok, Arq} -> msbus_util:json_decode_as_map(Arq);
+		Error -> Error
+	end.
 
 %% @doc Indica se o nome da querystring é valido
 is_name_querystring_valido(Name) ->
@@ -342,7 +397,7 @@ parse_url_servico([H|T], Url) ->
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalogo([], Cat2, Cat3, Cat4, _Id, _Conf) ->
 	EtsCat2 = msbus_util:list_to_ets(Cat2, ets_cat2, [set, 
-													  private, 
+													  public, 
 													  {read_concurrency, true}]),
 	{EtsCat2, Cat3, Cat4};
 	
@@ -517,7 +572,6 @@ lookup_re(_Request, []) ->
 	notfound;
 
 lookup_re(Request, [H|T]) ->
-	io:format("LOOKUP RE ~p\n", [Request#request.rowid]),
 	RE = H#servico.id_re_compiled,
 	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
 		match -> {H, #{}};
