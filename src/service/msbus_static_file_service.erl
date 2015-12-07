@@ -57,7 +57,6 @@ execute(Request, From) ->
 %%====================================================================
  
 init(_Args) ->
-    process_flag(trap_exit, true),
     create_shared_cache(),
     {ok, #state{}}.
 
