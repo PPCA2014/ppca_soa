@@ -106,15 +106,9 @@ handle_call(lista_catalogo, _From, State) ->
 	{reply, Reply, State};
     
 handle_call({lookup, Request}, _From, State) ->
-	case lookup_cache(Request#request.rowid, State) of
-		[] -> 
-			Ult_lookup = lookup(Request, State),
-			NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State);
-		Cache -> 
-			Ult_lookup = Cache,
-			NewState = State
-	end,
-	{reply, Ult_lookup, NewState, 60000};
+	Ult_lookup = lookup(Request, State),
+	%NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State),
+	{reply, Ult_lookup, State, 60000};
 
 handle_call(list_cat2, _From, State) ->
 	{reply, State#state.cat2, State};
@@ -567,6 +561,7 @@ lookup(Request, State) ->
 			Querystring = processa_querystring(Contract, Request),
 			{Contract, Request#request.params_url, Querystring}
 	end.
+
 
 lookup_re(_Request, []) ->
 	notfound;
