@@ -83,200 +83,91 @@ parse_querystring_value(Value) ->
 
 rid_to_string(RID) -> integer_to_list(RID).
 
-%%-spec get_http_header(Header::list()) -> tuple.
-encode_request(Socket, RequestBin, WorkerSend) ->
-	try
-		RID = os:system_time(),
-		Timestamp = calendar:local_time(),
-		T1 = msbus_util:get_milliseconds(),
-		RequestText = binary_to_list(RequestBin), 
-		PosFimHeader = string:str(RequestText, "\r\n\r\n"),
-		Header = string:sub_string(RequestText, 1, PosFimHeader-1),
-		[Principal|Outros] = string:tokens(Header, "\r\n"),
-		[Metodo, Uri, Versao_HTTP] = string:tokens(Principal, " "),
-		[Url|Querystring] = string:tokens(Uri, "?"),
-		Url2 = msbus_util:remove_ult_backslash_url(Url),
-		Outros2 = get_http_header_adicionais(Outros),
-		Content_Length = maps:get("content-length", Outros2, 0),
-		Content_Type = maps:get("content-type", Outros2, "application/json"),
-		Accept = maps:get("accept", Outros2, "*/*"),
-		User_Agent = maps:get("user-agent", Outros2, ""),
-		Accept_Encoding = maps:get("accept-encoding", Outros2, ""),
-		Cache_Control = maps:get("cache_control", Outros2, "false"),
-		Host = maps:get("host", Outros2, ""),
-		QuerystringMap = parse_querystring(Querystring),
-		Authorization = maps:get("authorization", Outros2, ""),
-		{Rowid, Params_url} = msbus_util:get_rowid_and_params_from_url(Url2, Metodo),
-		case is_metodo_suportado(Metodo) of
-			true ->
-				case is_payload_permitido(Metodo, Content_Length) of
-					false ->
-						% Requisições GET e DELETE
-						Request = #request{
-									rid = RID,
-									rowid = Rowid,
-									type = Metodo,
-									uri = Uri,
-									url = Url2,
-									versao_http = Versao_HTTP,
-									querystring = Querystring,
-									querystring_map = QuerystringMap,
-									params_url = Params_url,
-									content_length = Content_Length,
-									content_type = Content_Type,
-									accept = Accept,
-									user_agent = User_Agent,
-									accept_encoding = Accept_Encoding,
-									cache_control = Cache_Control,
-									host = Host,
-									socket = Socket, 
-									t1 = T1, 
-									timestamp = Timestamp,
-									authorization = Authorization,
-									worker_send = WorkerSend
-							},
-						{ok, Request};
-					true ->
-						% Requisições POST e PUT
-						Payload = string:sub_string(RequestText, PosFimHeader+4),
-						case decode_payload(Payload) of
-							{ok , PayloadMap} ->
-								Request = #request{
-											rid = RID,
-											rowid = Rowid,
-											type = Metodo,
-											uri = Uri,
-											url = Url2,
-											versao_http = Versao_HTTP,
-											querystring = Querystring,
-											querystring_map = QuerystringMap,
-											params_url = Params_url,
-											content_length = Content_Length,
-											content_type = Content_Type,
-											accept = Accept,
-											user_agent = User_Agent,
-											accept_encoding = Accept_Encoding,
-											cache_control = Cache_Control,
-											host = Host,
-											socket = Socket, 
-											t1 = T1, 
-											timestamp = Timestamp,
-											payload = Payload, 
-											payload_map = PayloadMap,
-											authorization = Authorization,
-											worker_send = WorkerSend
-									},
-								{ok, Request};
-							{error, Reason} -> 
-								Request = #request{
-										rid = RID,
-										rowid = Rowid,
-										type = Metodo,
-										uri = Uri,
-										url = Url2,
-										versao_http = Versao_HTTP,
-										querystring = Querystring,
-										querystring_map = QuerystringMap,
-										params_url = Params_url,
-										content_length = Content_Length,
-										content_type = Content_Type,
-										accept = Accept,
-										user_agent = User_Agent,
-										accept_encoding = Accept_Encoding,
-										cache_control = Cache_Control,
-										host = Host,
-										socket = Socket, 
-										t1 = T1, 
-										payload = Payload, 
-										timestamp = Timestamp,
-										authorization = Authorization,
-										worker_send = WorkerSend
-								},
-								{error, Request, Reason}
-						end;
-					error ->
-						Request = #request{
-								rid = RID,
-								rowid = Rowid,
-								type = Metodo,
-								uri = Uri,
-								url = Url2,
-								versao_http = Versao_HTTP,
-								querystring = Querystring,
-								querystring_map = QuerystringMap,
-								params_url = Params_url,
-								content_length = Content_Length,
-								content_type = Content_Type,
-								accept = Accept,
-								user_agent = User_Agent,
-								accept_encoding = Accept_Encoding,
-								cache_control = Cache_Control,
-								host = Host,
-								socket = Socket, 
-								t1 = T1, 
-								timestamp = Timestamp,
-								authorization = Authorization,
-								worker_send = WorkerSend
-						},
-						{error, Request, payload_nao_permitido}
-				end;
-			false -> 
-				Request = #request{
-							rid = RID,
-							rowid = Rowid,
-							type = Metodo,
-							uri = Uri,
-							url = Url2,
-							versao_http = Versao_HTTP,
-							querystring = Querystring,
-							querystring_map = QuerystringMap,
-							params_url = Params_url,
-							content_length = Content_Length,
-							content_type = Content_Type,
-							accept = Accept,
-							user_agent = User_Agent,
-							accept_encoding = Accept_Encoding,
-							cache_control = Cache_Control,
-							host = Host,
-							socket = Socket, 
-							t1 = T1, 
-							timestamp = Timestamp,
-							authorization = Authorization,
-							worker_send = WorkerSend
-					},
-				{error, Request, metodo_nao_suportado}
-		end
-		
-	catch
-		_Exception: _Reason ->  {error, invalid_http_header} 
-	end.
-	
-%% @doc Retorna boolean indicando se possui payload
-is_payload_permitido(Metodo, Content_Length) ->
-	case {Metodo, Content_Length} of
-		{"GET", 0} -> false;
-		{"GET", _} -> error;
-		{"DELETE", 0} -> false;
-		{"DELETE", _} -> error;
-		{"POST", 0} -> error;
-		{"POST", _} -> true;
-		{"PUT", 0} -> error;
-		{"PUT", _} -> true;
-		{"OPTIONS", 0} -> false;
-		{"OPTIONS", _} -> error;
-		_ -> error
+method_to_string(Method) when is_atom(Method) -> atom_to_list(Method);
+method_to_string(Method) -> Method.
+
+decode_http_header(Headers, Params) ->
+    case erlang:decode_packet(httph, Headers, []) of
+        { ok, http_eoh, Rest } -> 
+			{maps:from_list(Params), Rest};
+        { ok, {http_header,_,P,_,V}, Rest } ->
+            decode_http_header(Rest, [{P, V} | Params])
+    end.
+
+decode_http_request(RequestBin) ->
+	case erlang:decode_packet(http_bin, RequestBin, []) of
+		{ok, Req, Rest} ->
+			{http_request, Method, {abs_path, Uri}, {Http_Version_Major, Http_Version_Minor}} = Req,
+			Http_Version = io_lib:format("HTTP/~p.~p", [Http_Version_Major, Http_Version_Minor]),
+			case decode_http_header(Rest, []) of
+				{Http_Params, Payload} -> {method_to_string(Method), 
+										   binary_to_list(Uri), 
+										   Http_Params, 
+										   Http_Version,
+										   Payload};
+				Error -> Error
+			end;
+		Error -> Error
 	end.
 
+
+%%-spec get_http_header(Header::list()) -> tuple.
+encode_request(Socket, RequestBin, WorkerSend) ->
+	case decode_http_request(RequestBin) of
+		{Method, Uri, HttpParams, Http_Version, Payload} -> 
+			RID = os:system_time(),
+			Timestamp = calendar:local_time(),
+			T1 = msbus_util:get_milliseconds(),
+			[Url|Querystring] = string:tokens(Uri, "?"),
+			Url2 = msbus_util:remove_ult_backslash_url(Url),
+			Content_Length = maps:get('Content-Length', HttpParams, 0),
+			Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
+			Accept = maps:get('Accept', HttpParams, "*/*"),
+			Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
+			User_Agent = maps:get('User-Agent', HttpParams, ""),
+			Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
+			Host = maps:get('Host', HttpParams, ""),
+			QuerystringMap = parse_querystring(Querystring),
+			Authorization = maps:get('Authorization', HttpParams, ""),
+			{Rowid, Params_url} = msbus_util:get_rowid_and_params_from_url(Url2, Method),
+			{ok, #request{
+				rid = RID,
+				rowid = Rowid,
+				type = Method,
+				uri = Uri,
+				url = Url2,
+				versao_http = Http_Version,
+				querystring = Querystring,
+				querystring_map = QuerystringMap,
+				params_url = Params_url,
+				content_length = Content_Length,
+				content_type = Content_Type,
+				accept = Accept,
+				user_agent = User_Agent,
+				accept_encoding = Accept_Encoding,
+				cache_control = Cache_Control,
+				host = Host,
+				socket = Socket, 
+				t1 = T1, 
+				payload = binary_to_list(Payload), 
+				payload_map = decode_payload(Payload),
+				timestamp = Timestamp,
+				authorization = Authorization,
+				worker_send = WorkerSend
+			}};
+		Error -> Error
+	end.
+	
+
 %% @doc Decodifica o payload e transforma em um tipo Erlang
-decode_payload([]) ->
+decode_payload(<<>>) ->
 	{ok, #{}};
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
-decode_payload(Payload) ->
-	PayloadBin = list_to_binary(Payload),
+decode_payload(PayloadBin) ->
 	case msbus_util:json_decode_as_map(PayloadBin) of
-		{ok, PayloadMap} -> {ok, PayloadMap};
-		{error, _Reason} -> {error, invalid_payload}
+		{ok, PayloadMap} -> PayloadMap;
+		{error, _Reason} -> erlang:error(invalid_payload)
 	end.
 	
 get_http_header_adicionais(Header) ->
