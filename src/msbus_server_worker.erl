@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_server_worker
+%% @title Module msbus_server_worker
 %% @version 1.0.0
-%% @doc Módulo responsável pelo processamento das requisições HTTP.
+%% @doc Module responsible for processing HTTP requests.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -27,8 +27,8 @@
 % estado do servidor
 -record(state, {worker_id = undefined,  	 %% identificador do worker
 				lsocket   = undefined,		 %% socket do listener
-				socket	  = undefined,		 %% socket da requisição do cliente
-				allowed_address = undefined, %% faixa de IPs permitidos que o servidor aceita
+				socket	  = undefined,		 %% socket do request
+				allowed_address = undefined, %% faixa de IPs que podem acessar o servidor
 				open_requests = []
 			}).
 
@@ -52,7 +52,7 @@ stop() ->
 %% Client API
 %%====================================================================
 
-%% @doc Obtém os serviços mais usados
+%% @doc Envia mensagem ao worker
 cast(Msg) -> msbus_pool:cast(msbus_server_worker_pool, Msg).
 
 
@@ -83,7 +83,7 @@ handle_cast({Socket, RequestBin}, State) ->
 	NewState = trata_request(Socket, RequestBin, State),
 	{noreply, NewState, 0};
 	
-handle_cast({_, Request, Result}, State) ->
+handle_cast({HttpCode, Request, Result}, State) ->
 	Worker = self(),
 	Socket = Request#request.socket,
 	msbus_logger:debug("Init envio do response por ~p.", [Worker]),
@@ -92,7 +92,40 @@ handle_cast({_, Request, Result}, State) ->
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 	% TCP_DEFER_ACCEPT for Linux
 	inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-	envia_response(Request, Result, State),
+	case is_integer(HttpCode) of
+		true -> Code = HttpCode;
+		false -> Code = 200
+	end,
+	case Code of 
+		200 -> Status = ok;
+		201 -> Status = ok;
+		400 -> Status = error;
+		404 -> Status = error;
+		_ ->
+			case Code >= 400 of
+				true -> Status = error;
+				false -> Status = ok
+			end
+	end,
+	CodeBin = integer_to_binary(Code), 
+	case Result of
+		<<>> -> 
+			Response = msbus_http_util:encode_response(<<"200">>, <<>>),
+			envia_response(Code, ok, Request, Response);
+		{ok, Content} -> 
+			Response = msbus_http_util:encode_response(CodeBin, Content),
+			case Status of
+				error -> envia_response(Code, Content, Request, Response);
+				_-> envia_response(Code, ok, Request, Response)
+			end;
+		{ok, Content, MimeType} -> 
+			Response = msbus_http_util:encode_response(CodeBin, Content, MimeType),
+			envia_response(Code, Status, Request, Response);
+		{error, _Reason} -> 
+			envia_response(Request, Result, State);
+		{error, _Reason, _Motivo} -> 
+			envia_response(Request, Result, State)
+	end,
 	msbus_logger:debug("Finish envio response por ~p.", [Worker]),
 	{noreply, State#state{socket=undefined}}.
 
@@ -106,8 +139,6 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
     msbus_logger:debug("Listen for accept em server worker ~p.", [State#state.worker_id]),
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
-			% connection is established
-			msbus_logger:debug("Conexão estabelecida no server worker ~p.", [State#state.worker_id]),
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case Ip of
@@ -115,7 +146,6 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 							{noreply, State#state{socket = Socket}};
 						_ -> 
 							%% Está na faixa de IPs autorizado a acessar o barramento?
-							msbus_logger:debug("Check se ip autorizado: ~p", [Ip]),
 							case msbus_http_util:match_ip_address(Allowed_Address, Ip) of
 								true -> 
 									{noreply, State#state{socket = Socket}};
@@ -139,11 +169,11 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 			%close_timeout_connections(State),
 			{noreply, State#state{open_requests = []}, 0};
 		{error, system_limit} ->
-			msbus_logger:error("No available ports in the Erlang emulator are in use for server worker ~p. System_limit: ~p.", [State#state.worker_id, system_limit]),
+			msbus_logger:error("No available ports in the Erlang emulator for worker ~p. System_limit: ~p.", [State#state.worker_id, system_limit]),
 			msbus_util:sleep(3000),
 			{noreply, State, 0};
 		{error, PosixError} ->
-			msbus_logger:error("Erro POSIX ~p ao tentar aceitar conexões no server worker ~p.", [PosixError, State#state.worker_id]),
+			msbus_logger:error("Erro POSIX ~p no worker ~p.", [PosixError, State#state.worker_id]),
 			msbus_util:sleep(3000),
 			{noreply, State, 0}
 	end;
@@ -203,14 +233,13 @@ trata_request(Socket, RequestBin, State) ->
 					NewState = State#state{socket = undefined, 
 										   open_requests = [Request | State#state.open_requests]};
 				{error, closed} -> 
-					msbus_logger:error("Socket fechado durante gen_tcp:controlling_process em server worker ~p.", [State#state.worker_id]),
 					NewState = State#state{socket=undefined};
 				{error, not_owner} -> 
 					msbus_logger:error("Server worker ~p não é o dono do socket.", [Worker]),
 					NewState = State#state{socket=undefined};
 				{error, PosixError} ->
 					gen_tcp:close(Socket),
-					msbus_logger:error("Erro POSIX ~p em gen_tcp:controlling_process no server worker ~p.", [PosixError, State#state.worker_id]),
+					msbus_logger:error("Erro POSIX ~p no worker ~p.", [PosixError, State#state.worker_id]),
 					NewState = State#state{socket=undefined}
 			end;
 		 {error, Request, Reason} -> 
@@ -234,15 +263,11 @@ envia_response(Request, {async, true}, _State) ->
 	envia_response(200, ok, Request, Response);
 
 envia_response(Request, {ok, Result}, _State) -> 
-	try
-		case Request#request.servico#servico.async of
-			true -> io:format("Ticket já foi entregue\n");
-			_ -> 
-				Response = msbus_http_util:encode_response(<<"200">>, Result),
-				envia_response(200, ok, Request, Response)
-		end
-	catch
-		_:_ -> msbus_logger:error("deu erro nesse request: ~p\n", [Request])
+	case Request#request.servico#servico.async of
+		true -> io:format("Ticket já foi entregue.\n");
+		_ -> 
+			Response = msbus_http_util:encode_response(<<"200">>, Result),
+			envia_response(200, ok, Request, Response)
 	end;
 
 envia_response(Request, {ok, Result, MimeType}, _State) ->

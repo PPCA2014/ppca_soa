@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo dispatcher
+%% @title Module dispatcher
 %% @version 1.0.0
-%% @doc Responsável pelo encaminhamento das requisições de/para os serviços REST.
+%% @doc Responsible for forwarding the requests to / from the REST services.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -89,18 +89,14 @@ handle_call(Msg, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({servico, RID, Reply}, State) ->
+handle_info({Code, RID, Reply}, State) ->
 	case msbus_request:get_request_em_andamento(RID) of
 		{ok, Request} -> 
 			msbus_request:registra_request(Request),
-			msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
+			msbus_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
 			{noreply, State};
 		{erro, notfound} -> {noreply, State}
 	end;
-
-handle_info({request, Reply, From}, State) ->
-	From ! {{"Pong", Reply}, self()},
-	{noreply, State};
 
 handle_info(_Msg, State) ->
    {noreply, State}.
@@ -116,7 +112,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-%% @doc Despacha o request para o serviço registrado no catálogo
+%% @doc Dispatches the request to the service registered in the catalog
 do_dispatch_request(Request) ->
 	case msbus_catalogo:lookup(Request) of
 		{Contract, ParamsMap, QuerystringMap} -> 

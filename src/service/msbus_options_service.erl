@@ -63,7 +63,7 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({option, Request, _From}, State) ->
-	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, <<>>}),
+	msbus_eventmgr:notifica_evento(ok_request, {200, Request, <<>>}),
 	%gen_server:cast(From, {servico, Request, <<>>}), 
 	{noreply, State}.
     

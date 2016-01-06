@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_eventmgr
+%% @title Module msbus_eventmgr
 %% @version 1.0.0
-%% @doc Módulo publisher/subscribe do erlangMS.
+%% @doc Module publisher/subscribe of ErlangMS.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
