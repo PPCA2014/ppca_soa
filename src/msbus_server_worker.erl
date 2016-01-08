@@ -124,6 +124,9 @@ handle_cast({HttpCode, Request, Result}, State) ->
 		{error, _Reason} -> 
 			envia_response(Request, Result, State);
 		{error, _Reason, _Motivo} -> 
+			envia_response(Request, Result, State);
+		_ ->
+			Response = msbus_http_util:encode_response(<<"200">>, Result),
 			envia_response(Request, Result, State)
 	end,
 	msbus_logger:debug("Finish envio response por ~p.", [Worker]),
