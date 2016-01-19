@@ -46,6 +46,7 @@ init({Port, IpAddress}) ->
 	Opts = [binary, 
 			{packet, 0}, 
 			{active, true},
+			{buffer, 8000},
 			{send_timeout_close, true},
 			{send_timeout, ?TCP_SEND_TIMEOUT}, 
 			{keepalive, Conf#config.tcp_keepalive}, 
