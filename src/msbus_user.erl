@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_user
+%% @title Module msbus_user
 %% @version 1.0.0
-%% @doc Gerencia informações sobre os users
+%% @doc Manages information about users
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -129,7 +129,7 @@ code_change(_OldVsn, State, _Extra) ->
     
     
 %%====================================================================
-%% Funções internas
+%% Internal functions
 %%====================================================================
 
 do_get(Id) -> msbus_db:get(user, Id).

@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_config
+%% @title Module msbus_config
 %% @version 1.0.0
-%% @doc Módulo para gerenciamento das configurações
+%% @doc Module for configuration management
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************

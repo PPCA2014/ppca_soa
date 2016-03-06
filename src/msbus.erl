@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Módulo msbus
 %% @version 1.0.0
-%% @doc Módulo principal do ESB ErlangMS
+%% @doc Main Module of ErlangsMS
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************

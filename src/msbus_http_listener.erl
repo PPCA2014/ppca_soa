@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Módulo msbus_server_listener
+%% @title Module msbus_http_listener
 %% @version 1.0.0
-%% @doc Módulo listener para o servidor HTTP
+%% @doc Listener module for HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_server_listener).
+-module(msbus_http_listener).
 
 -behavior(gen_server). 
 
@@ -57,14 +57,14 @@ init({Port, IpAddress}) ->
 			{delay_send, false}],
 	case gen_tcp:listen(Port, Opts) of
 		{ok, LSocket} ->
-				msbus_logger:debug("Start workers for listener ~p com IP ~p.", [self(), IpAddress]),    
+				msbus_logger:debug("Start http workers for listener ~p, IP ~p.", [self(), IpAddress]),    
 				start_server_workers(Conf#config.tcp_max_http_worker, 
 									 LSocket,
 									 Conf#config.tcp_allowed_address_t),
-				msbus_logger:info("Escutando no endereço ~s:~p.", [inet:ntoa(IpAddress), Port]),
+				msbus_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
 				{ok, #state{lsocket = LSocket}, 0};
 		{error,eaddrnotavail} ->
-			msbus_logger:error("ATENÇÃO: Interface de rede para o IP ~p não disponível! Ignorando esta interface...", [inet:ntoa(IpAddress)]),
+			msbus_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
 			{ok, #state{}};    
 		Error -> Error
      end.	
@@ -104,5 +104,5 @@ start_server_workers(0,_,_) ->
     ok;
 
 start_server_workers(Num, LSocket, Allowed_Address) ->
-    msbus_server_worker:start_link({Num, LSocket, Allowed_Address}),
+    msbus_http_worker:start_link({Num, LSocket, Allowed_Address}),
     start_server_workers(Num-1, LSocket, Allowed_Address).

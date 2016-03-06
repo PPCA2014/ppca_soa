@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Servidor HTTP
+%% @title Module msbus_http_server
 %% @version 1.0.0
-%% @doc Módulo principal do servidor HTTP
+%% @doc Main module HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
 
--module(msbus_server).
+-module(msbus_http_server).
 
 -behavior(gen_server). 
 
@@ -93,7 +93,7 @@ start_listeners([H|T], Port, State) ->
 	end.
 
 do_start_listener(Port, IpAddress, State) ->
-	case msbus_server_listener:start(Port, IpAddress) of
+	case msbus_http_listener:start(Port, IpAddress) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			Reply = {ok, NewState};
@@ -107,7 +107,7 @@ do_stop_listener(Port, IpAddress, State) ->
 		[PidListener|_] ->
 			gen_server:call(PidListener, shutdown),
 			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
-			msbus_logger:info("Parou de escutar no endereço ~p:~p.", [inet:ntoa(IpAddress), Port]),
+			msbus_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
 			Reply = {ok, NewState};
 		_ -> 
 			Reply = {{error, enolisten}, State}

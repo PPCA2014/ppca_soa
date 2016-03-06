@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo info
+%% @title Module info
 %% @version 1.0.0
-%% @doc Fornece informações sobre o erlangMS em tempo de execução.
+%% @doc It provides information about the bus in runtime.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************

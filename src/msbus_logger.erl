@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_logger
+%% @title Module msbus_logger
 %% @version 1.0.0
-%% @doc Módulo responsável pelo componente de logger.
+%% @doc Module responsible for the logger component.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -31,14 +31,14 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do msbus_logger. 
--record(state, {buffer = [],             		% As mensagens vão primeiro para um buffer, posteriormente para o arquivo de log         
-			    buffer_tela = [],        		% As mensagens vão primeiro para um buffer, posteriormente para tela
-			    flag_checkpoint = false,      	% checkpoint para descarregar o buffer no arquivo de log
-			    flag_checkpoint_tela = false, 	% checkpoint para descarregar o buffer da tela
-				log_file_dest,           		% Configuração do caminho onde os logs serão gravados
-				log_file_checkpoint,      		% Configuração do timeout para descarregar buffer do arquivo
-				log_file_name,		      		% Configuração do timeout para descarregar buffer do arquivo
-				debug							% Indica se está em modo debug
+-record(state, {buffer = [],             		% The messages go first to a buffer subsequently to the log file        
+			    buffer_tela = [],        		% The messages go first to a buffer subsequently to screen
+			    flag_checkpoint = false,      	% checkpoint to unload the buffer to the log file
+			    flag_checkpoint_tela = false, 	% checkpoint to unload the screen buffer
+				log_file_dest,           		% path configuration where the logs will be written
+				log_file_checkpoint,      		% timeout configuration to unload file buffer
+				log_file_name,		      		% timeout configuration to unload file buffer
+				debug							% It indicates whether it is in debug mode
  			   }). 
 
 
@@ -180,7 +180,7 @@ code_change(_OldVsn, State, _Extra) ->
     
     
 %%====================================================================
-%% Funções internas
+%% Internal functions
 %%====================================================================
     
 get_filename_logger(LogFileDest) -> 

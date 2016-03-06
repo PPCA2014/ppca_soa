@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_db
+%% @title Module msbus_db
 %% @version 1.0.0
-%% @doc Módulo que provê interface com o banco de dados.
+%% @doc Module that provides interface with the database.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -17,7 +17,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 
-%% *********** Criação do schema do banco ************
+%% *********** Database schema creation ************
 
 start() ->
 	create_database([node()]).
@@ -43,7 +43,7 @@ create_database(Nodes) ->
 
 
 
-%% *********** Funções para CRUD ************
+%% *********** Functions for CRUD ************
 
 get(RecordType, Id) when is_list(Id) ->
 	Id2 = list_to_integer(Id),

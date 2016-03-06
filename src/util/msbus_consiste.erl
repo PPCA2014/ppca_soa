@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_consiste
+%% @title Module msbus_consiste
 %% @version 1.0.0
-%% @doc Módulo utilitário para rotinas de validação e consistência.
+%% @doc Utility module for validation routines and consistency.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -17,7 +17,7 @@
 -export([msg_registro_ja_existe/1, msg_registro_ja_existe/2]).
 
 
-%% *********** Funções para validação de dados ************
+%% *********** Functions for data validation ************
 
 is_range_valido(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> true;
 is_range_valido(_Number, _RangeIni, _RangeFim) -> false.

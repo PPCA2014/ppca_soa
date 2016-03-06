@@ -29,8 +29,11 @@ start(_StartType, StartArgs) ->
 			case msbus_catalogo:init_catalogo() of
 				ok ->
 					Ret = msbus_sup:start_link(StartArgs),
-					%% primeiro ip disponível informado na configuração
+
+					%% first ip for the portal
 					IpPortal = hd(Config#config.tcp_listen_address), 
+
+					%% show config parameters 
 					msbus_logger:info("config_file_dest: ~s", [Config#config.config_file_dest]),
 					msbus_logger:info("cat_host_alias: ~p", [Config#config.cat_host_alias]),
 					msbus_logger:info("cat_host_search: ~s", [msbus_util:join_binlist(Config#config.cat_host_search, ", ")]),
@@ -45,18 +48,24 @@ start(_StartType, StartArgs) ->
 					msbus_logger:info("tcp_max_http_worker: ~p", [Config#config.tcp_max_http_worker]),
 					msbus_logger:debug("modo_debug: ~p", [Config#config.modo_debug]),
 					msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, Config#config.tcp_port]),
-					msbus_logger:info("~s iniciado em ~pms.", [node(), msbus_util:get_milliseconds() - T1]),
+					msbus_logger:info("~s started in ~pms.", [node(), msbus_util:get_milliseconds() - T1]),
 					msbus_logger:sync(),
-					msbus_server:start_listeners(Config#config.tcp_port, Config#config.tcp_listen_address_t),
-					msbus_util:sleep(2500), %% Facilita a depuração (se um erro ocorrer durante o carregamento)
-					registra_eventos(),
+
+					%% Start servers...
+					msbus_http_server:start_listeners(Config#config.tcp_port, Config#config.tcp_listen_address_t),
+					msbus_ldap_server:start_listeners(2389, Config#config.tcp_listen_address_t),
+
+					%% Facilitates depuration on initialization
+					msbus_util:sleep(2500), 
+
+					register_events(),
 					Ret;
 				{error, Reason} -> 
 					msbus_logger:sync(),
 					{error, Reason}
 			end;
 		{error, Reason} ->
-			io:format("Erro ao processar arquivo de configuração: ~p.", [Reason]),
+			io:format("Error processing configuration file: ~p.", [Reason]),
 			{error, finish}
 	end.
 
@@ -66,7 +75,7 @@ stop(_State) ->
 	msbus_config:stop(),
     ok.
     
-registra_eventos() ->
+register_events() ->
    	msbus_eventmgr:adiciona_evento(new_request),
 	msbus_eventmgr:adiciona_evento(ok_request),
 	msbus_eventmgr:adiciona_evento(erro_request),
@@ -78,7 +87,7 @@ registra_eventos() ->
 												  end),
 
     msbus_eventmgr:registra_interesse(erro_request, fun(_Q, R) -> 
-														msbus_server_worker:cast(R) 
+														msbus_http_worker:cast(R) 
 													end),
 
 	msbus_eventmgr:registra_interesse(close_request, fun(_Q, R) -> 

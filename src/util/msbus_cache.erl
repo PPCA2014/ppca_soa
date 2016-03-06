@@ -1,8 +1,8 @@
 %%********************************************************************
-%% @title Módulo msbus_cache
+%% @title Module msbus_cache
 %% @version 1.0.0
-%% @doc Módulo para gerenciamento de cache. 
-%%      Baseado na solução http://inaka.net/blog/2013/03/05/ETS-simple-cache.
+%% @doc Module for cache management.
+%%      Based on solution http://inaka.net/blog/2013/03/05/ETS-simple-cache.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************

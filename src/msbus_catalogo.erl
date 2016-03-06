@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo catálogo de serviços
+%% @title Module msbus_catalogo
 %% @version 1.0.0
-%% @doc Módulo responsável pelo gerenciamento do catálogo de serviços
+%% @doc Module responsible for catalog management services
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -60,7 +60,7 @@ stop() ->
  
  
 %%====================================================================
-%% Cliente API
+%% Client API
 %%====================================================================
  
 lista_catalogo() ->

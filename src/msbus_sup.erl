@@ -23,9 +23,9 @@ start_link(Args) ->
 init([]) ->
 	msbus_db:start(),
 	
-	%% Instância o pool de processos
+	%% Instantiate the process pool
 	{ok, Pools} = application:get_env(msbus, pools),
-	msbus_logger:info("Inicializando o pool de módulos:"),
+	msbus_logger:info("Initializing the module pool:"),
     PoolSpecs = lists:map(
 		fun
 			({Name, [{size, SizePool}, _] = SizeArgs, WorkerArgs}) ->
@@ -34,13 +34,13 @@ init([]) ->
 				Worker = list_to_atom(WorkerName),
 				case SizePool of
 					1 -> 
-						msbus_logger:info("   Módulo ~s com 1 worker.", [WorkerName]),
+						msbus_logger:info("   Module ~s with 1 worker.", [WorkerName]),
 						{Worker,
 							{Worker, start, WorkerArgs},
 							permanent, 10000, worker,  [Worker]
 						};
 					_ ->
-						msbus_logger:info("   Módulo ~s com ~p workers.", [WorkerName, SizePool]),
+						msbus_logger:info("   Module ~s with ~p workers.", [WorkerName, SizePool]),
 						PoolArgs = [{strategy, fifo},
 									{name, {local, Name}},
 									{worker_module, Worker}] ++ SizeArgs,

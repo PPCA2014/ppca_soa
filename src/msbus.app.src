@@ -1,6 +1,6 @@
 {application, msbus,
  [
-  {description, "erlangMS Microservices"},
+  {description, "ErlangMS Bus"},
   {vsn, "1.0"},
   {registered, []},
   {applications, [
@@ -26,7 +26,11 @@
                 {size, 1},
                 {max_overflow, 0}
             ], []},
-            {msbus_server_pool, [
+            {msbus_http_server_pool, [
+                {size, 1},
+                {max_overflow, 0}
+            ], []},
+            {msbus_ldap_server_pool, [
                 {size, 1},
                 {max_overflow, 0}
             ], []},
@@ -34,8 +38,12 @@
                 {size, 1},
                 {max_overflow, 0}
             ], []},
-            {msbus_server_worker_pool, [
-                {size, 100},
+            {msbus_http_worker_pool, [
+                {size, 128},
+                {max_overflow, 0}
+            ], []},
+            {msbus_ldap_worker_pool, [
+                {size, 128},
                 {max_overflow, 0}
             ], []},
             {msbus_health_pool, [
