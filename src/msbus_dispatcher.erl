@@ -1,5 +1,5 @@
 %%********************************************************************
-%% @title Module dispatcher
+%% @title Module msbus_dispatcher
 %% @version 1.0.0
 %% @doc Responsible for forwarding the requests to / from the REST services.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
@@ -61,12 +61,6 @@ init(_Args) ->
     {ok, #state{}}.
  
 createEtsControle() ->
-%    try
-%		ets:new(ctrl_ping_cache, [set, named_table, public])
-%	catch
-%		_:_ -> ok
-%	end,
-
     try
 		ets:new(ctrl_node_dispatch, [set, named_table, public])
 	catch
@@ -116,11 +110,8 @@ code_change(_OldVsn, State, _Extra) ->
 do_dispatch_request(Request) ->
 	case msbus_catalogo:lookup(Request) of
 		{Contract, ParamsMap, QuerystringMap} -> 
-			msbus_logger:debug("Contrato de serviço: ~p.", [Contract]),
-			msbus_logger:debug("Params e querystring: ~p.", [{ParamsMap, QuerystringMap}]),
 			case msbus_auth_user:autentica(Contract, Request) of
 				{ok, User} ->
-					msbus_logger:debug("User request: ~p.", [User]),
 					case get_work_node(Contract#servico.host, 
 									   Contract#servico.host,	
 									   Contract#servico.host_name, 
@@ -255,21 +246,3 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.
 		
-%	
-%is_node_alive(Node) -> 
-%	case ets:lookup(ctrl_ping_cache, Node) of		
-%		[] -> 		
-%			Hit = net_adm:ping(Node);
-%		[{Node, Time, Hit2}] -> 		
-%			Time2 = calendar:datetime_to_gregorian_seconds(calendar:local_time()),			
-%			case (Time2 - Time) < 2 of		
-%				true -> io:format("hit\n\n"), Hit = Hit2;
-%				false -> Hit = net_adm:ping(Node)
-%			end		
-%	end,		
-%	NewTime = calendar:datetime_to_gregorian_seconds(calendar:local_time()),		
-%	ets:insert(ctrl_ping_cache, {Node, NewTime, Hit}),
-%	Hit.
-	
-
-

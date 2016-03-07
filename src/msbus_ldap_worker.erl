@@ -61,7 +61,6 @@ cast(Msg) -> msbus_pool:cast(msbus_ldap_worker_pool, Msg).
 %%====================================================================
 
 init({Worker_Id, LSocket, Allowed_Address}=Args) ->
-    msbus_logger:debug("LDAP worker ~p init. Args: ~p.", [self(), Args]),
     State = #state{worker_id = Worker_Id, 
 				   lsocket = LSocket, 
 				   allowed_address = Allowed_Address,
@@ -71,7 +70,6 @@ init({Worker_Id, LSocket, Allowed_Address}=Args) ->
 %% init for processes that will process the queue of outgoing requests
 init(Args) ->
     %fprof:trace([start, {procs, [self()]}]),
-    msbus_logger:debug("LDAP worker ~p init. Args: ~p.", [self(), Args]),
     {ok, #state{}}.
 
 handle_cast(shutdown, State) ->
@@ -214,7 +212,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Trata o request
 trata_request(Socket, RequestBin, State) -> 
 	Worker = msbus_pool:checkout(msbus_ldap_worker_pool),
-	case msbus_http_util:encode_request(Socket, RequestBin, Worker) of
+	case msbus_ldap_util:encode_request(Socket, RequestBin, Worker) of
 		 {ok, Request} -> 
 			case gen_tcp:controlling_process(Socket, Worker) of
 				ok -> 
@@ -223,6 +221,7 @@ trata_request(Socket, RequestBin, State) ->
 					inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 					% TCP_DEFER_ACCEPT for Linux
 					inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+					io:format("ate aqui sem erro\n\n"),
 					msbus_logger:debug("Dispatch new request: ~p.", [Request]),
 					msbus_dispatcher:dispatch_request(Request),
 					NewState = State#state{socket = undefined, 

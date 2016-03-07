@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_http_util
+%% @title Module msbus_http_util
 %% @version 1.0.0
-%% @doc Módulo com funções úteis para o servidor HTTP do erlangMS.
+%% @doc Module with useful functions for the HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************
@@ -13,6 +13,55 @@
 -include("../../include/msbus_config.hrl").
 -include("../../include/msbus_schema.hrl").
 -include("../../include/msbus_http_messages.hrl").
+
+
+%%-spec get_http_header(Header::list()) -> tuple.
+encode_request(Socket, RequestBin, WorkerSend) ->
+	case decode_http_request(RequestBin) of
+		{Method, Uri, HttpParams, Http_Version, Payload} -> 
+			RID = os:system_time(),
+			Timestamp = calendar:local_time(),
+			T1 = msbus_util:get_milliseconds(),
+			[Url|Querystring] = string:tokens(Uri, "?"),
+			Url2 = msbus_util:remove_ult_backslash_url(Url),
+			Content_Length = maps:get('Content-Length', HttpParams, 0),
+			Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
+			Accept = maps:get('Accept', HttpParams, "*/*"),
+			Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
+			User_Agent = maps:get('User-Agent', HttpParams, ""),
+			Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
+			Host = maps:get('Host', HttpParams, ""),
+			QuerystringMap = parse_querystring(Querystring),
+			Authorization = maps:get('Authorization', HttpParams, ""),
+			{Rowid, Params_url} = msbus_util:get_rowid_and_params_from_url(Url2, Method),
+			{ok, #request{
+				rid = RID,
+				rowid = Rowid,
+				type = Method,
+				uri = Uri,
+				url = Url2,
+				versao_http = Http_Version,
+				querystring = Querystring,
+				querystring_map = QuerystringMap,
+				params_url = Params_url,
+				content_length = Content_Length,
+				content_type = Content_Type,
+				accept = Accept,
+				user_agent = User_Agent,
+				accept_encoding = Accept_Encoding,
+				cache_control = Cache_Control,
+				host = Host,
+				socket = Socket, 
+				t1 = T1, 
+				payload = binary_to_list(Payload), 
+				payload_map = decode_payload(Payload),
+				timestamp = Timestamp,
+				authorization = Authorization,
+				worker_send = WorkerSend
+			}};
+		Error -> Error
+	end.
+
 
 %% @doc Gera o response para enviar para o cliente
 encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
@@ -110,54 +159,6 @@ decode_http_request(RequestBin) ->
 		Error -> Error
 	end.
 
-
-%%-spec get_http_header(Header::list()) -> tuple.
-encode_request(Socket, RequestBin, WorkerSend) ->
-	case decode_http_request(RequestBin) of
-		{Method, Uri, HttpParams, Http_Version, Payload} -> 
-			RID = os:system_time(),
-			Timestamp = calendar:local_time(),
-			T1 = msbus_util:get_milliseconds(),
-			[Url|Querystring] = string:tokens(Uri, "?"),
-			Url2 = msbus_util:remove_ult_backslash_url(Url),
-			Content_Length = maps:get('Content-Length', HttpParams, 0),
-			Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
-			Accept = maps:get('Accept', HttpParams, "*/*"),
-			Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
-			User_Agent = maps:get('User-Agent', HttpParams, ""),
-			Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
-			Host = maps:get('Host', HttpParams, ""),
-			QuerystringMap = parse_querystring(Querystring),
-			Authorization = maps:get('Authorization', HttpParams, ""),
-			{Rowid, Params_url} = msbus_util:get_rowid_and_params_from_url(Url2, Method),
-			{ok, #request{
-				rid = RID,
-				rowid = Rowid,
-				type = Method,
-				uri = Uri,
-				url = Url2,
-				versao_http = Http_Version,
-				querystring = Querystring,
-				querystring_map = QuerystringMap,
-				params_url = Params_url,
-				content_length = Content_Length,
-				content_type = Content_Type,
-				accept = Accept,
-				user_agent = User_Agent,
-				accept_encoding = Accept_Encoding,
-				cache_control = Cache_Control,
-				host = Host,
-				socket = Socket, 
-				t1 = T1, 
-				payload = binary_to_list(Payload), 
-				payload_map = decode_payload(Payload),
-				timestamp = Timestamp,
-				authorization = Authorization,
-				worker_send = WorkerSend
-			}};
-		Error -> Error
-	end.
-	
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
 decode_payload(<<>>) ->

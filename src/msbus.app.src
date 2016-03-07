@@ -39,11 +39,11 @@
                 {max_overflow, 0}
             ], []},
             {msbus_http_worker_pool, [
-                {size, 128},
+                {size, 2},
                 {max_overflow, 0}
             ], []},
             {msbus_ldap_worker_pool, [
-                {size, 128},
+                {size, 2},
                 {max_overflow, 0}
             ], []},
             {msbus_health_pool, [
@@ -51,7 +51,7 @@
                 {max_overflow, 6}
             ], []},
             {msbus_dispatcher_pool, [
-                {size, 128},
+                {size, 6},
                 {max_overflow, 0}
             ], []},
             {msbus_static_file_service_pool, [
@@ -75,6 +75,10 @@
                 {max_overflow, 6}
             ], []},
             {msbus_options_service_pool, [
+                {size, 2},
+                {max_overflow, 6}
+            ], []},
+            {msbus_ldap_service_pool, [
                 {size, 2},
                 {max_overflow, 6}
             ], []},

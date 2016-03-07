@@ -61,7 +61,6 @@ cast(Msg) -> msbus_pool:cast(msbus_http_worker_pool, Msg).
 %%====================================================================
 
 init({Worker_Id, LSocket, Allowed_Address}=Args) ->
-    msbus_logger:debug("HTTP worker ~p init. Args: ~p.", [self(), Args]),
     State = #state{worker_id = Worker_Id, 
 				   lsocket = LSocket, 
 				   allowed_address = Allowed_Address,
@@ -71,7 +70,6 @@ init({Worker_Id, LSocket, Allowed_Address}=Args) ->
 %% init for processes that will process the queue of outgoing requests
 init(Args) ->
     %fprof:trace([start, {procs, [self()]}]),
-    msbus_logger:debug("HTTP worker ~p init. Args: ~p.", [self(), Args]),
     {ok, #state{}}.
 
 handle_cast(shutdown, State) ->
