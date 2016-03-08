@@ -60,7 +60,7 @@ cast(Msg) -> msbus_pool:cast(msbus_http_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-init({Worker_Id, LSocket, Allowed_Address}=Args) ->
+init({Worker_Id, LSocket, Allowed_Address}) ->
     State = #state{worker_id = Worker_Id, 
 				   lsocket = LSocket, 
 				   allowed_address = Allowed_Address,
@@ -68,7 +68,7 @@ init({Worker_Id, LSocket, Allowed_Address}=Args) ->
     {ok, State, 0};
 
 %% init for processes that will process the queue of outgoing requests
-init(Args) ->
+init(_Args) ->
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
 
@@ -136,7 +136,6 @@ handle_info(timeout, State=#state{lsocket = undefined}) ->
 	{noreply, State};
 
 handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Address}) ->
-    msbus_logger:debug("Listen for accept in http server worker ~p.", [State#state.worker_id]),
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
 			case inet:peername(Socket) of

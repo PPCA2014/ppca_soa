@@ -40,13 +40,20 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 		Error -> Error
 	end.
 
+encode_response(Msg) ->
+    case asn1rt:encode('LDAP', 'LDAPMessage', Msg) of
+        {ok, Result} -> Result;
+        Error -> {error_encoding, Error}
+    end.
 
 
 decode_ldap_request(RequestBin) ->
 	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
-        {ok, {'LDAPMessage', MessageID, ProtocolOp, _}} ->
-			%io:format("MessageID: ~p~n  ProtocolOp: ~p  P: ~p~n", [MessageID, ProtocolOp, P]),
+        {ok, {'LDAPMessage', MessageID, ProtocolOp, P}=Msg} ->
+			io:format("Mensagem entrou: ~p\n\n", [Msg]),
 			{MessageID, ProtocolOp};
 		Error -> 
 			Error
     end.
+
+

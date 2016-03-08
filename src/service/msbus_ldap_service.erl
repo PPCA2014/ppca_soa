@@ -13,11 +13,13 @@
 
 
 -include("../../include/msbus_config.hrl").
+-include("../../include/LDAP.hrl").
+
 
 %% Server API
 -export([start/0, start_link/1, stop/0]).
 
-%% Cliente interno API
+%% Client API
 -export([execute/2]).
 
 %% gen_server callbacks
@@ -25,7 +27,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Stores the state of the service.
 -record(state, {}). 
 
 
@@ -89,6 +91,59 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 do_search(_Request, State) ->
-	Result = <<"{\"message\": \"It works!!!\"}">>,
-	{Result, State}.
+	%-record('SearchResultEntry',{
+	%objectName, attributes}).
+
+	%-record('LDAPResult',{
+	%resultCode, matchedDN, diagnosticMessage, referral = asn1_NOVALUE}).
+
+
+
+	Result = #'LDAPMessage'{messageID = 1,
+						   protocolOp = {bindResponse, #'BindResponse'{	resultCode = success,
+																		matchedDN =  <<"uid=agilar,dc=unb,dc=com">>,
+																		diagnosticMessage = <<"">>,
+																		referral = asn1_NOVALUE,
+																		serverSaslCreds = asn1_NOVALUE}},
+						   controls = asn1_NOVALUE},
+
+
+
+	%Entry = #'SearchResultEntry'{
+	%	objectName = "uid=tobbe,ou=People,dc=bluetail,dc=com",
+	%	attributes = [{"cn",["Torbjorn Tornkvist"]}]
+	%},
+
+	%LPAPResult = #'LDAPResult'{
+	%	resultCode = 0, 
+	%	matchedDN = <<"teste">>, 
+	%	diagnosticMessage = <<"teste">>, 
+	%	referral = asn1_NOVALUE
+	%},
+	
+	%BindResponse = #'BindResponse'{
+	%			resultCode = 1,
+	%			matchedDN = <<"com">>,
+	%			diagnosticMessage = <<"teste teste">>,
+	%			referral = asn1_NOVALUE, 
+	%			serverSaslCreds = asn1_NOVALUE
+	%		},
+	
+	
+	%T = #eldap_search_result{
+    %   entries = [#eldap_entry{
+    %                 object_name = "uid=tobbe,ou=People,dc=bluetail,dc=com",
+    %                 attributes = [{"cn",["Torbjorn Tornkvist"]}]}],
+    %   referrals = []},
+
+	%T = {
+    %   entries, [{
+    %                 object_name, "uid=tobbe,ou=People,dc=bluetail,dc=com",
+    %                 attributes, [{"cn",["Torbjorn Tornkvist"]}]
+    %             }],
+    %   referrals, []},
+
+	
+	io:format("Mensagem saida: ~p\n\n", [Result]),
+	{{ok, Result}, State}.
 

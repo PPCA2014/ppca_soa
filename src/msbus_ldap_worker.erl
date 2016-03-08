@@ -80,11 +80,11 @@ handle_cast(shutdown, State) ->
 handle_cast({Socket, RequestBin}, State) ->
 	NewState = trata_request(Socket, RequestBin, State),
 	{noreply, NewState, 0};
-	
+
+%% Handle respose	
 handle_cast({HttpCode, Request, Result}, State) ->
 	Worker = self(),
 	Socket = Request#request.socket,
-	msbus_logger:debug("Init send response in ~p.", [Worker]),
 	inet:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
@@ -94,6 +94,7 @@ handle_cast({HttpCode, Request, Result}, State) ->
 		true -> Code = HttpCode;
 		false -> Code = 200
 	end,
+	
 	case Code of 
 		200 -> Status = ok;
 		201 -> Status = ok;
@@ -111,11 +112,8 @@ handle_cast({HttpCode, Request, Result}, State) ->
 			Response = msbus_http_util:encode_response(<<"200">>, <<>>),
 			envia_response(Code, ok, Request, Response);
 		{ok, Content} -> 
-			Response = msbus_http_util:encode_response(CodeBin, Content),
-			case Status of
-				error -> envia_response(Code, Content, Request, Response);
-				_-> envia_response(Code, ok, Request, Response)
-			end;
+			Response = msbus_ldap_util:encode_response(Content),
+			envia_response(Code, ok, Request, Response);
 		{ok, Content, MimeType} -> 
 			Response = msbus_http_util:encode_response(CodeBin, Content, MimeType),
 			envia_response(Code, Status, Request, Response);
@@ -126,7 +124,6 @@ handle_cast({HttpCode, Request, Result}, State) ->
 		_ ->
 			envia_response(Request, Result, State)
 	end,
-	msbus_logger:debug("Finish send response in ~p.", [Worker]),
 	{noreply, State#state{socket=undefined}}.
 
 handle_call(_Msg, _From, State) ->
@@ -135,8 +132,15 @@ handle_call(_Msg, _From, State) ->
 handle_info(timeout, State=#state{lsocket = undefined}) ->
 	{noreply, State};
 
+handle_info({tcp, Socket, RequestBin}, State) ->
+	NewState = trata_request(Socket, RequestBin, State),
+	{noreply, NewState, 0};
+
+handle_info({tcp_closed, _Socket}, State) ->
+	{noreply, State#state{socket = undefined}};
+
+%% Handle requets
 handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Address}) ->
-    msbus_logger:debug("Listen for accept in ldap worker ~p.", [State#state.worker_id]),
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
 			case inet:peername(Socket) of
@@ -177,13 +181,6 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 			msbus_util:sleep(3000),
 			{noreply, State, 0}
 	end;
-
-handle_info({tcp, Socket, RequestBin}, State) ->
-	NewState = trata_request(Socket, RequestBin, State),
-	{noreply, NewState, 0};
-
-handle_info({tcp_closed, _Socket}, State) ->
-	{noreply, State#state{socket = undefined}};
 
 handle_info(_Msg, State) ->
    {noreply, State}.
@@ -302,6 +299,7 @@ envia_response(Request, Result, State) ->
 envia_response(Code, Reason, Request, Response) ->
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
+	io:format("estou a enviar ~p\n\n", [Response]),
 	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
 	case  StatusSend of
 		ok -> Status = req_entregue;
