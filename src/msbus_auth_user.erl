@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo msbus_auth_user
+%% @title Module msbus_auth_user
 %% @version 1.0.0
-%% @doc Módulo responsável pela autenticação dos usuários.
+%% @doc Module responsible for authenticating users.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright erlangMS Team
 %%********************************************************************

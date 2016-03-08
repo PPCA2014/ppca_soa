@@ -57,7 +57,9 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 				payload_map = decode_payload(Payload),
 				timestamp = Timestamp,
 				authorization = Authorization,
-				worker_send = WorkerSend
+				worker_send = WorkerSend,
+				protocolo = http
+				
 			}};
 		Error -> Error
 	end.

@@ -47,7 +47,7 @@ start(_StartType, StartArgs) ->
 					msbus_logger:info("tcp_nodelay: ~p", [Config#config.tcp_nodelay]),
 					msbus_logger:info("tcp_max_http_worker: ~p", [Config#config.tcp_max_http_worker]),
 					msbus_logger:debug("modo_debug: ~p", [Config#config.modo_debug]),
-					msbus_logger:info("Portal ErlangMS Api Management: http://~s:~p/portal/index.html", [IpPortal, Config#config.tcp_port]),
+					msbus_logger:info("Portal Api Management: http://~s:~p/portal/index.html", [IpPortal, Config#config.tcp_port]),
 					msbus_logger:info("~s started in ~pms.", [node(), msbus_util:get_milliseconds() - T1]),
 					msbus_logger:sync(),
 

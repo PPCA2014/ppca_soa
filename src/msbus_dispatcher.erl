@@ -117,7 +117,6 @@ do_dispatch_request(Request) ->
 									   Contract#servico.host_name, 
 									   Contract#servico.module_name, 1) of
 						{ok, Node} ->
-							msbus_logger:debug("Get work node ~p para request ~p.", [Node, Request#request.url]),
 							Request2 = Request#request{user = User, 
 													   node_exec = Node,
 													   servico = Contract,
@@ -130,11 +129,9 @@ do_dispatch_request(Request) ->
 								Error -> msbus_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
 							end;
 						Error -> 
-							msbus_logger:debug("Erro ao obter work node: ~p", [Error]),
 							msbus_eventmgr:notifica_evento(erro_request, {servico, Request, Error})
 					end;
 				{error, no_authorization} -> 
-					msbus_logger:debug("Host não autorizado a acessar request ~p.", [Request#request.url]),
 					msbus_eventmgr:notifica_evento(erro_request, {servico, Request, {error, no_authorization}})
 			end;
 		notfound -> 

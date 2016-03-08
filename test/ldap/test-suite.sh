@@ -15,11 +15,11 @@ run_test() {
 }
 
 
-#run_test "Search for 'objectClass=*'" "ldap_search" "000-search.txt"
+run_test "Search for 'objectClass=*'" "ldap_search" "000-search.txt"
 
 #run_test "Search for '(&(uid=*)(cn=Ma*))'" "ldap_search \"(&(uid=*)(cn=Ma*))\"" "001-search.txt"
 
 #run_test "Search with attribute selection" "ldap_search \"sn=*\" cn sn" "002-search.txt"
 
-run_test "Search with size limit" "ldap_search \"sn=*\" cn sn -z1" "003-search.txt"
+#run_test "Search with size limit" "ldap_search \"sn=*\" cn sn -z1" "003-search.txt"
 

@@ -231,12 +231,37 @@ sync_buffer(State) ->
 	FileName = State#state.log_file_name,
 	file:write_file(FileName, lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
 	State#state{buffer = [], flag_checkpoint = false}.
+
+do_log_request(Request = #request{protocolo = ldap}, _State) ->
+	RID = Request#request.rid,
+	Version = Request#request.versao_http,
+	Metodo = Request#request.type,
+	Url = Request#request.url,
+	StatusSend = Request#request.status_send,
+	Payload = Request#request.payload,
+	Contract = Request#request.servico,
+	Code = Request#request.code, 
+	Reason = Request#request.reason, 
+	Latencia = Request#request.latencia, 
+	StatusSend = Request#request.status_send,
+	Authorization = Request#request.authorization,
+	case Contract of
+		undefined -> Service = "";
+		_ -> Service = Contract#servico.service
+	end,
+	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
+	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, Service, Authorization, Code, Reason, Latencia, StatusSend]),
+	case Code of
+		200 -> msbus_logger:info(Texto1);
+		_ 	-> msbus_logger:error(Texto1)
+	end;
 	
-do_log_request(Request, _State) ->
+	
+do_log_request(Request = #request{protocolo = http}, _State) ->
 	RID = Request#request.rid,
 	Metodo = Request#request.type,
 	Url = Request#request.url,
-	HTTP_Version = Request#request.versao_http,
+	Version = Request#request.versao_http,
 	Accept = Request#request.accept,
 	User_Agent = Request#request.user_agent,
 	Payload = Request#request.payload,
@@ -255,11 +280,11 @@ do_log_request(Request, _State) ->
 	case Payload of
 		undefined ->
 			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Service, Query, Authorization, Code, Reason, Latencia, StatusSend]);
+			Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, Service, Query, Authorization, Code, Reason, Latencia, StatusSend]);
 		_ ->
 			Content_Type = Request#request.content_type,
 			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, HTTP_Version, RID, Accept, User_Agent, Content_Type, Payload, Service, Query, Authorization, Code, Reason, Latencia, StatusSend])
+			Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, Content_Type, Payload, Service, Query, Authorization, Code, Reason, Latencia, StatusSend])
 	end,
 	case Code of
 		200 -> msbus_logger:info(Texto1);

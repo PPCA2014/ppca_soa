@@ -14,10 +14,10 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, io_lib:format(<<"Erlang Microservices (ErlangMS ~s)">>, [case application:get_key(msbus, vsn) of 
+-define(SERVER_NAME, io_lib:format(<<"ErlangMS Development Version ~s">>, [case application:get_key(msbus, vsn) of 
 																					{ok, Version} -> Version;
 																					undefined -> "1"
-																			  end])).
+																			end])).
 
 % Caminho do favicon
 -define(FAVICON_PATH, code:priv_dir(msbus) ++ "/favicon.ico").

@@ -60,7 +60,7 @@ cast(Msg) -> msbus_pool:cast(msbus_ldap_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-init({Worker_Id, LSocket, Allowed_Address}=Args) ->
+init({Worker_Id, LSocket, Allowed_Address}) ->
     State = #state{worker_id = Worker_Id, 
 				   lsocket = LSocket, 
 				   allowed_address = Allowed_Address,
@@ -68,7 +68,7 @@ init({Worker_Id, LSocket, Allowed_Address}=Args) ->
     {ok, State, 0};
 
 %% init for processes that will process the queue of outgoing requests
-init(Args) ->
+init(_Args) ->
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
 
@@ -221,7 +221,6 @@ trata_request(Socket, RequestBin, State) ->
 					inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 					% TCP_DEFER_ACCEPT for Linux
 					inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-					io:format("ate aqui sem erro\n\n"),
 					msbus_logger:debug("Dispatch new request: ~p.", [Request]),
 					msbus_dispatcher:dispatch_request(Request),
 					NewState = State#state{socket = undefined, 

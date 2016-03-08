@@ -39,11 +39,11 @@
                 {max_overflow, 0}
             ], []},
             {msbus_http_worker_pool, [
-                {size, 2},
+                {size, 3},
                 {max_overflow, 0}
             ], []},
             {msbus_ldap_worker_pool, [
-                {size, 2},
+                {size, 3},
                 {max_overflow, 0}
             ], []},
             {msbus_health_pool, [

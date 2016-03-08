@@ -46,7 +46,8 @@
 					  user :: user,								%% Usuário da requisição ou anonimo
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = req_processando,					%% status: req_processando, req_concluido, req_entregue
-					  worker_send
+					  worker_send,
+					  protocolo = http							%% Protocol (http, ldap)
 				  }).
 
 -record(servico, {

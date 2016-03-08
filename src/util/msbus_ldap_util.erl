@@ -17,7 +17,7 @@
 
 encode_request(Socket, RequestBin, WorkerSend) ->
 	case decode_ldap_request(RequestBin) of
-		{MessageID, ProtocolOp} -> 
+		{_MessageID, ProtocolOp} -> 
 			RID = os:system_time(),
 			Timestamp = calendar:local_time(),
 			T1 = msbus_util:get_milliseconds(),
@@ -25,10 +25,17 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 			{ok, #request{
 				rid = RID,
 				rowid = Rowid,
+				versao_http = "LDAPv3",
+				type = "GET",
+				uri = "/ldap",
+				url = "/ldap",
+				socket = Socket, 
 				t1 = T1, 
 				payload = ProtocolOp, 
 				timestamp = Timestamp,
-				worker_send = WorkerSend
+				authorization = "",
+				worker_send = WorkerSend,
+				protocolo = ldap
 			}};
 		Error -> Error
 	end.
@@ -37,10 +44,9 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 
 decode_ldap_request(RequestBin) ->
 	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
-        {ok, {'LDAPMessage', MessageID, ProtocolOp, P}} ->
-			io:format("MessageID: ~p~n  ProtocolOp: ~p  P: ~p~n", [MessageID, ProtocolOp, P]),
+        {ok, {'LDAPMessage', MessageID, ProtocolOp, _}} ->
+			%io:format("MessageID: ~p~n  ProtocolOp: ~p  P: ~p~n", [MessageID, ProtocolOp, P]),
 			{MessageID, ProtocolOp};
 		Error -> 
-			io:format("erro...~p\n", [Error]),
 			Error
     end.
