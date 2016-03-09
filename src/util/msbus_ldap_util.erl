@@ -16,8 +16,10 @@
 -include("../../include/LDAP.hrl").
 
 encode_request(Socket, RequestBin, WorkerSend) ->
-	case decode_ldap_request(RequestBin) of
-		{_MessageID, ProtocolOp} -> 
+	case decode_ldap_message(RequestBin) of
+		{error, Reason} -> 
+			{error, Reason};
+		LdapMsg -> 
 			RID = os:system_time(),
 			Timestamp = calendar:local_time(),
 			T1 = msbus_util:get_milliseconds(),
@@ -31,29 +33,35 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 				url = "/ldap",
 				socket = Socket, 
 				t1 = T1, 
-				payload = ProtocolOp, 
+				payload = LdapMsg, 
 				timestamp = Timestamp,
 				authorization = "",
 				worker_send = WorkerSend,
 				protocolo = ldap
-			}};
-		Error -> Error
+			}}
 	end.
 
 encode_response(Msg) ->
-    case asn1rt:encode('LDAP', 'LDAPMessage', Msg) of
+	Response = #'LDAPMessage'{messageID = 1,
+							  protocolOp = Msg,
+							  controls = asn1_NOVALUE},
+    
+    io:format("Encode ~p\n\n", [Response]),
+    case asn1rt:encode('LDAP', 'LDAPMessage', Response) of
         {ok, Result} -> Result;
-        Error -> {error_encoding, Error}
+        Error -> 
+			io:format("erro em encode ~p\n\n", [Response]),
+			{error_encoding, Error}
     end.
 
 
-decode_ldap_request(RequestBin) ->
+decode_ldap_message(RequestBin) ->
 	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
-        {ok, {'LDAPMessage', MessageID, ProtocolOp, P}=Msg} ->
-			io:format("Mensagem entrou: ~p\n\n", [Msg]),
-			{MessageID, ProtocolOp};
-		Error -> 
-			Error
+        {ok, {'LDAPMessage', MessageID, ProtocolOp, P} = LdapMsg} ->
+			io:format("Mensagem entrou: ~p\n\n", [LdapMsg]),
+			LdapMsg;
+		{error, Reason} -> 
+			{error, Reason}
     end.
 
 

@@ -13,6 +13,7 @@
 
 
 -include("../../include/msbus_config.hrl").
+-include("../../include/msbus_schema.hrl").
 -include("../../include/LDAP.hrl").
 
 
@@ -65,12 +66,12 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({search, Request, _From}, State) ->
-	{Result, NewState} = do_search(Request, State),
+	{Result, NewState} = handle_request(Request, State),
 	msbus_eventmgr:notifica_evento(ok_request, {servico, Request, Result}),
 	{noreply, NewState}.
     
 handle_call({search, Request}, _From, State) ->
-	{Result, NewState} = do_search(Request, State),
+	{Result, NewState} = handle_request(Request, State),
 	{reply, Result, NewState}.
 
 handle_info(State) ->
@@ -90,60 +91,47 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
-do_search(_Request, State) ->
-	%-record('SearchResultEntry',{
-	%objectName, attributes}).
+handle_request({bindRequest, #'BindRequest'{version = Version, 
+											name = Name, 
+											authentication = Authentication}}) ->
+	io:format("processar bind\n\n"),
+	Result = {bindResponse, #'BindResponse'{resultCode = success,
+											matchedDN =  <<"uid=agilar,dc=unb,dc=com">>,
+											diagnosticMessage = <<"">>,
+											referral = asn1_NOVALUE,
+											serverSaslCreds = asn1_NOVALUE}
+			 },
+	{ok, Result};
+    
 
-	%-record('LDAPResult',{
-	%resultCode, matchedDN, diagnosticMessage, referral = asn1_NOVALUE}).
+handle_request({searchRequest, #'SearchRequest'{baseObject = BaseObject, 
+												scope = Scope, 
+												derefAliases = DerefAliases, 
+												sizeLimit = SizeLimit, 
+												timeLimit = TimeLimit, 
+												typesOnly = TypesOnly, 
+												filter = Filter, 
+												attributes = Attributes}}) ->
+	io:format("processar search request\n\n"),
 
-
-
-	Result = #'LDAPMessage'{messageID = 1,
-						   protocolOp = {bindResponse, #'BindResponse'{	resultCode = success,
-																		matchedDN =  <<"uid=agilar,dc=unb,dc=com">>,
-																		diagnosticMessage = <<"">>,
-																		referral = asn1_NOVALUE,
-																		serverSaslCreds = asn1_NOVALUE}},
-						   controls = asn1_NOVALUE},
-
-
-
-	%Entry = #'SearchResultEntry'{
-	%	objectName = "uid=tobbe,ou=People,dc=bluetail,dc=com",
-	%	attributes = [{"cn",["Torbjorn Tornkvist"]}]
-	%},
-
-	%LPAPResult = #'LDAPResult'{
-	%	resultCode = 0, 
-	%	matchedDN = <<"teste">>, 
-	%	diagnosticMessage = <<"teste">>, 
-	%	referral = asn1_NOVALUE
-	%},
+	Result1 = {searchResEntry, #'SearchResultEntry'{objectName = <<"cn=Magnus Froberg, dc=bluetail, dc=com">>,
+												    attributes = []
+												   }
+			  },
 	
-	%BindResponse = #'BindResponse'{
-	%			resultCode = 1,
-	%			matchedDN = <<"com">>,
-	%			diagnosticMessage = <<"teste teste">>,
-	%			referral = asn1_NOVALUE, 
-	%			serverSaslCreds = asn1_NOVALUE
-	%		},
+	Result2 = {searchResDone, #'LDAPResult'{resultCode = success, 
+										   matchedDN = <<"cn=Magnus Froberg, dc=bluetail, dc=com">>, 
+										   diagnosticMessage = <<"">>,
+										   referral = asn1_NOVALUE}
 	
-	
-	%T = #eldap_search_result{
-    %   entries = [#eldap_entry{
-    %                 object_name = "uid=tobbe,ou=People,dc=bluetail,dc=com",
-    %                 attributes = [{"cn",["Torbjorn Tornkvist"]}]}],
-    %   referrals = []},
+			  },
+	{ok, [Result2, Result1]}.
 
-	%T = {
-    %   entries, [{
-    %                 object_name, "uid=tobbe,ou=People,dc=bluetail,dc=com",
-    %                 attributes, [{"cn",["Torbjorn Tornkvist"]}]
-    %             }],
-    %   referrals, []},
 
-	
+handle_request(#request{payload = LdapMsg}, State) ->
+	io:format("Mensagem que vou tratar -> ~p\n\n\n", [LdapMsg]),
+	{ok, Result} = handle_request(LdapMsg#'LDAPMessage'.protocolOp),
 	io:format("Mensagem saida: ~p\n\n", [Result]),
 	{{ok, Result}, State}.
+
 

@@ -107,13 +107,34 @@ handle_cast({HttpCode, Request, Result}, State) ->
 			end
 	end,
 	CodeBin = integer_to_binary(Code), 
+	
+	io:format("Result to snd: ~p\n\n\n", [Result]),
+	
 	case Result of
 		<<>> -> 
 			Response = msbus_http_util:encode_response(<<"200">>, <<>>),
 			envia_response(Code, ok, Request, Response);
-		{ok, Content} -> 
-			Response = msbus_ldap_util:encode_response(Content),
-			envia_response(Code, ok, Request, Response);
+		{ok, Msg = [M1 | [M2|_]]} when is_list(Msg)  -> 
+			io:format("duas mensaegns\n"),
+			
+			io:format("mensagem M1: ~p\n\n", [M1]),
+			Response1 = msbus_ldap_util:encode_response(M1),
+			envia_response(Code, ok, Request, Response1),
+			io:format("mensagem M1 ok\n\n"),
+			
+			io:format("mensagem M1: ~p\n\n", [M2]),
+			Response2 = msbus_ldap_util:encode_response(M2),
+			envia_response(Code, ok, Request, Response2),
+			io:format("mensagem M2 ok\n\n"),
+			
+			%gen_tcp:close(Socket),
+			
+			io:format("2 mensaegm ok\n");
+		{ok, Msg} -> 
+			io:format("1 mensaegm\n"),
+			Response = msbus_ldap_util:encode_response(Msg),
+			envia_response(Code, ok, Request, Response),
+			io:format("1 mensaegm ok\n");
 		{ok, Content, MimeType} -> 
 			Response = msbus_http_util:encode_response(CodeBin, Content, MimeType),
 			envia_response(Code, Status, Request, Response);
@@ -139,7 +160,7 @@ handle_info({tcp, Socket, RequestBin}, State) ->
 handle_info({tcp_closed, _Socket}, State) ->
 	{noreply, State#state{socket = undefined}};
 
-%% Handle requets
+%% Handle ldap requests
 handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Address}) ->
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
@@ -206,7 +227,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 	
 
-%% @doc Trata o request
+%% @doc Treats ldap request
 trata_request(Socket, RequestBin, State) -> 
 	Worker = msbus_pool:checkout(msbus_ldap_worker_pool),
 	case msbus_ldap_util:encode_request(Socket, RequestBin, Worker) of
@@ -247,12 +268,14 @@ envia_response(_Request, {async, false}, _State) ->
 	em_andamento;
 
 envia_response(Request, {async, true}, _State) ->
+	io:format("aqui0\n"),
 	RID = msbus_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = msbus_http_util:encode_response(<<"200">>, Ticket),
 	envia_response(200, ok, Request, Response);
 
 envia_response(Request, {ok, Result}, _State) -> 
+	io:format("aqui1\n"),
 	case Request#request.servico#servico.async of
 		true -> io:format("Ticket já foi entregue.\n");
 		_ -> 
@@ -261,6 +284,7 @@ envia_response(Request, {ok, Result}, _State) ->
 	end;
 
 envia_response(Request, {ok, Result, MimeType}, _State) ->
+	io:format("aqui2\n"),
 	Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
 	envia_response(200, ok, Request, Response);
 
@@ -294,13 +318,15 @@ envia_response(Request, {error, Reason, ErroInterno}, State) ->
 	envia_response(Request, {error, Reason2}, State);
 
 envia_response(Request, Result, State) ->
+	io:format("aqui3\n"),
 	envia_response(Request, {ok, Result}, State).
 
 envia_response(Code, Reason, Request, Response) ->
+	io:format("aqui4\n"),
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
 	io:format("estou a enviar ~p\n\n", [Response]),
-	StatusSend = msbus_http_util:send_request(Request#request.socket, Response),
+	StatusSend = msbus_tcp_util:send_request(Request#request.socket, Response),
 	case  StatusSend of
 		ok -> Status = req_entregue;
 		_  -> Status = req_concluido
