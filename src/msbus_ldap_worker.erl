@@ -108,33 +108,28 @@ handle_cast({HttpCode, Request, Result}, State) ->
 	end,
 	CodeBin = integer_to_binary(Code), 
 	
-	io:format("Result to snd: ~p\n\n\n", [Result]),
-	
+
 	case Result of
 		<<>> -> 
 			Response = msbus_http_util:encode_response(<<"200">>, <<>>),
 			envia_response(Code, ok, Request, Response);
-		{ok, Msg = [M1 | [M2|_]]} when is_list(Msg)  -> 
+		{ok, Msg = [M1 | [M2|[M3|_]]]} when is_list(Msg)  -> 
 			io:format("duas mensaegns\n"),
 			
-			io:format("mensagem M1: ~p\n\n", [M1]),
 			Response1 = msbus_ldap_util:encode_response(M1),
 			envia_response(Code, ok, Request, Response1),
-			io:format("mensagem M1 ok\n\n"),
 			
-			io:format("mensagem M1: ~p\n\n", [M2]),
 			Response2 = msbus_ldap_util:encode_response(M2),
 			envia_response(Code, ok, Request, Response2),
-			io:format("mensagem M2 ok\n\n"),
 			
-			%gen_tcp:close(Socket),
+			Response3 = msbus_ldap_util:encode_response(M3),
+			envia_response(Code, ok, Request, Response3);
+
+			%gen_tcp:close(Socket);
 			
-			io:format("2 mensaegm ok\n");
 		{ok, Msg} -> 
-			io:format("1 mensaegm\n"),
 			Response = msbus_ldap_util:encode_response(Msg),
-			envia_response(Code, ok, Request, Response),
-			io:format("1 mensaegm ok\n");
+			envia_response(Code, ok, Request, Response);
 		{ok, Content, MimeType} -> 
 			Response = msbus_http_util:encode_response(CodeBin, Content, MimeType),
 			envia_response(Code, Status, Request, Response);

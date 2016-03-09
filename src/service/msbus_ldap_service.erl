@@ -96,7 +96,7 @@ handle_request({bindRequest, #'BindRequest'{version = Version,
 											authentication = Authentication}}) ->
 	io:format("processar bind\n\n"),
 	Result = {bindResponse, #'BindResponse'{resultCode = success,
-											matchedDN =  <<"uid=agilar,dc=unb,dc=com">>,
+											matchedDN =  <<"uid=evertonagilar,dc=unb,dc=br">>,
 											diagnosticMessage = <<"">>,
 											referral = asn1_NOVALUE,
 											serverSaslCreds = asn1_NOVALUE}
@@ -114,18 +114,28 @@ handle_request({searchRequest, #'SearchRequest'{baseObject = BaseObject,
 												attributes = Attributes}}) ->
 	io:format("processar search request\n\n"),
 
-	Result1 = {searchResEntry, #'SearchResultEntry'{objectName = <<"cn=Magnus Froberg, dc=bluetail, dc=com">>,
+	Result1 = {searchResEntry, #'SearchResultEntry'{objectName = <<"uid=evertonagilar,dc=unb,dc=br">>,
 												    attributes = []
 												   }
 			  },
 	
 	Result2 = {searchResDone, #'LDAPResult'{resultCode = success, 
-										   matchedDN = <<"cn=Magnus Froberg, dc=bluetail, dc=com">>, 
+										   matchedDN = <<"uid=evertonagilar,dc=unb,dc=br">>, 
 										   diagnosticMessage = <<"">>,
 										   referral = asn1_NOVALUE}
 	
 			  },
-	{ok, [Result2, Result1]}.
+
+
+	Result3 = {unbindRequest, #'BindResponse'{resultCode = success,
+											matchedDN =  <<"uid=evertonagilar,dc=unb,dc=br">>,
+											diagnosticMessage = <<"">>,
+											referral = asn1_NOVALUE,
+											serverSaslCreds = asn1_NOVALUE}
+			 },
+
+	
+	{ok, [Result1, Result2, Result3]}.
 
 
 handle_request(#request{payload = LdapMsg}, State) ->
