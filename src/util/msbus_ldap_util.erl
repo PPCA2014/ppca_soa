@@ -41,8 +41,8 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 			}}
 	end.
 
-encode_response(Msg) ->
-	Response = #'LDAPMessage'{messageID = 1,
+encode_response(MessageID, Msg) ->
+	Response = #'LDAPMessage'{messageID = MessageID,
 							  protocolOp = Msg,
 							  controls = asn1_NOVALUE},
     

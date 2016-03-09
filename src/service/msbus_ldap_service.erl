@@ -94,9 +94,9 @@ code_change(_OldVsn, State, _Extra) ->
 handle_request({bindRequest, #'BindRequest'{version = Version, 
 											name = Name, 
 											authentication = Authentication}}) ->
-	io:format("processar bind\n\n"),
+	%io:format("processar bind\n\n"),
 	Result = {bindResponse, #'BindResponse'{resultCode = success,
-											matchedDN =  <<"uid=evertonagilar,dc=unb,dc=br">>,
+											matchedDN =  <<"uid=edmilsoncosme,ou=funcdis,ou=Classes,dc=unb,dc=br">>,
 											diagnosticMessage = <<"">>,
 											referral = asn1_NOVALUE,
 											serverSaslCreds = asn1_NOVALUE}
@@ -112,36 +112,39 @@ handle_request({searchRequest, #'SearchRequest'{baseObject = BaseObject,
 												typesOnly = TypesOnly, 
 												filter = Filter, 
 												attributes = Attributes}}) ->
-	io:format("processar search request\n\n"),
+	%io:format("processar search request\n\n"),
 
-	Result1 = {searchResEntry, #'SearchResultEntry'{objectName = <<"uid=evertonagilar,dc=unb,dc=br">>,
-												    attributes = []
+	Result1 = {searchResEntry, #'SearchResultEntry'{objectName = <<"uid=edmilsoncosme,ou=funcdis,ou=Classes,dc=unb,dc=br">>,
+												    attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [<<"edmilsoncosme">>]},
+																  #'PartialAttribute'{type = <<"cn">>, vals = [<<"Edmilson">>]},
+																  #'PartialAttribute'{type = <<"mail">>, vals = [<<"edmilsoncosme@unb.br">>]},
+																  #'PartialAttribute'{type = <<"givenName">>, vals = [<<"Edmilson">>]},
+																  #'PartialAttribute'{type = <<"employeeNumber">>, vals = [<<"1079484">>]}
+																 ]
 												   }
 			  },
 	
 	Result2 = {searchResDone, #'LDAPResult'{resultCode = success, 
-										   matchedDN = <<"uid=evertonagilar,dc=unb,dc=br">>, 
+										   matchedDN = <<"">>, 
 										   diagnosticMessage = <<"">>,
 										   referral = asn1_NOVALUE}
 	
 			  },
 
 
-	Result3 = {unbindRequest, #'BindResponse'{resultCode = success,
-											matchedDN =  <<"uid=evertonagilar,dc=unb,dc=br">>,
-											diagnosticMessage = <<"">>,
-											referral = asn1_NOVALUE,
-											serverSaslCreds = asn1_NOVALUE}
-			 },
+	Result3 = {unbindRequest, <<"">>},
 
 	
-	{ok, [Result1, Result2, Result3]}.
+	{ok, [Result1, Result2, Result3]};
+
+
+handle_request({unbindRequest, _}) ->
+	%io:format("unbindRequest\n\n"),
+	{ok, unbindRequest}.
 
 
 handle_request(#request{payload = LdapMsg}, State) ->
-	io:format("Mensagem que vou tratar -> ~p\n\n\n", [LdapMsg]),
 	{ok, Result} = handle_request(LdapMsg#'LDAPMessage'.protocolOp),
-	io:format("Mensagem saida: ~p\n\n", [Result]),
 	{{ok, Result}, State}.
 
 

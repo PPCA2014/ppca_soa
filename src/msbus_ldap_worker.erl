@@ -14,6 +14,7 @@
 -include("../include/msbus_config.hrl").
 -include("../include/msbus_schema.hrl").
 -include("../include/msbus_http_messages.hrl").
+-include("../include/LDAP.hrl").
 
 %% Server API
 -export([start/1, start_link/1, stop/0]).
@@ -85,6 +86,7 @@ handle_cast({Socket, RequestBin}, State) ->
 handle_cast({HttpCode, Request, Result}, State) ->
 	Worker = self(),
 	Socket = Request#request.socket,
+	MessageID = Request#request.payload#'LDAPMessage'.messageID,
 	inet:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
@@ -113,23 +115,26 @@ handle_cast({HttpCode, Request, Result}, State) ->
 		<<>> -> 
 			Response = msbus_http_util:encode_response(<<"200">>, <<>>),
 			envia_response(Code, ok, Request, Response);
+		{ok, unbindRequest} ->
+			envia_response(Code, ok, Request, <<>>),
+			gen_tcp:close(Socket);
 		{ok, Msg = [M1 | [M2|[M3|_]]]} when is_list(Msg)  -> 
-			io:format("duas mensaegns\n"),
+		%{ok, Msg = [M1 | [M2|_]]} when is_list(Msg)  -> 
 			
-			Response1 = msbus_ldap_util:encode_response(M1),
+			Response1 = msbus_ldap_util:encode_response(MessageID, M1),
+			%msbus_tcp_util:send_request(Socket, Response1),
 			envia_response(Code, ok, Request, Response1),
 			
-			Response2 = msbus_ldap_util:encode_response(M2),
+			Response2 = msbus_ldap_util:encode_response(MessageID, M2),
+			%msbus_tcp_util:send_request(Socket, Response2),					
 			envia_response(Code, ok, Request, Response2),
 			
-			Response3 = msbus_ldap_util:encode_response(M3),
-			envia_response(Code, ok, Request, Response3);
-
-			%gen_tcp:close(Socket);
-			
+			ok;
 		{ok, Msg} -> 
-			Response = msbus_ldap_util:encode_response(Msg),
-			envia_response(Code, ok, Request, Response);
+			Response = msbus_ldap_util:encode_response(MessageID, Msg),
+			%msbus_tcp_util:send_request(Socket, Response),					
+			envia_response(Code, ok, Request, Response),
+			ok;
 		{ok, Content, MimeType} -> 
 			Response = msbus_http_util:encode_response(CodeBin, Content, MimeType),
 			envia_response(Code, Status, Request, Response);
@@ -234,7 +239,6 @@ trata_request(Socket, RequestBin, State) ->
 					inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 					% TCP_DEFER_ACCEPT for Linux
 					inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-					msbus_logger:debug("Dispatch new request: ~p.", [Request]),
 					msbus_dispatcher:dispatch_request(Request),
 					NewState = State#state{socket = undefined, 
 										   open_requests = [Request | State#state.open_requests]};
@@ -263,14 +267,12 @@ envia_response(_Request, {async, false}, _State) ->
 	em_andamento;
 
 envia_response(Request, {async, true}, _State) ->
-	io:format("aqui0\n"),
 	RID = msbus_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = msbus_http_util:encode_response(<<"200">>, Ticket),
 	envia_response(200, ok, Request, Response);
 
 envia_response(Request, {ok, Result}, _State) -> 
-	io:format("aqui1\n"),
 	case Request#request.servico#servico.async of
 		true -> io:format("Ticket já foi entregue.\n");
 		_ -> 
@@ -279,7 +281,6 @@ envia_response(Request, {ok, Result}, _State) ->
 	end;
 
 envia_response(Request, {ok, Result, MimeType}, _State) ->
-	io:format("aqui2\n"),
 	Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
 	envia_response(200, ok, Request, Response);
 
@@ -313,14 +314,11 @@ envia_response(Request, {error, Reason, ErroInterno}, State) ->
 	envia_response(Request, {error, Reason2}, State);
 
 envia_response(Request, Result, State) ->
-	io:format("aqui3\n"),
 	envia_response(Request, {ok, Result}, State).
 
 envia_response(Code, Reason, Request, Response) ->
-	io:format("aqui4\n"),
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	io:format("estou a enviar ~p\n\n", [Response]),
 	StatusSend = msbus_tcp_util:send_request(Request#request.socket, Response),
 	case  StatusSend of
 		ok -> Status = req_entregue;
@@ -331,5 +329,4 @@ envia_response(Code, Reason, Request, Response) ->
 	case StatusSend of
 		ok -> msbus_eventmgr:notifica_evento(close_request, Request2);
 		_  -> msbus_eventmgr:notifica_evento(send_error_request, Request2)
-	end.
-	
+	end.	
