@@ -26,6 +26,8 @@ start(_StartType, StartArgs) ->
 			Config = msbus_config:getConfig(),
 			msbus_logger:start(),
 			msbus_logger:info("~s", [?SERVER_NAME]),
+			odbc:start(),
+
 			case msbus_catalogo:init_catalogo() of
 				ok ->
 					Ret = msbus_sup:start_link(StartArgs),
