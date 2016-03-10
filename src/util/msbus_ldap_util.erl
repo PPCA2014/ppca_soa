@@ -12,7 +12,6 @@
 
 -include("../../include/msbus_config.hrl").
 -include("../../include/msbus_schema.hrl").
--include("../../include/msbus_http_messages.hrl").
 -include("../../include/LDAP.hrl").
 
 encode_request(Socket, RequestBin, WorkerSend) ->
@@ -45,20 +44,15 @@ encode_response(MessageID, Msg) ->
 	Response = #'LDAPMessage'{messageID = MessageID,
 							  protocolOp = Msg,
 							  controls = asn1_NOVALUE},
-    
-    io:format("Encode ~p\n\n", [Response]),
     case asn1rt:encode('LDAP', 'LDAPMessage', Response) of
         {ok, Result} -> Result;
-        Error -> 
-			io:format("erro em encode ~p\n\n", [Response]),
-			{error_encoding, Error}
+        {error, Reason} -> {error, Reason}
     end.
 
 
 decode_ldap_message(RequestBin) ->
 	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
-        {ok, {'LDAPMessage', MessageID, ProtocolOp, P} = LdapMsg} ->
-			io:format("Mensagem entrou: ~p\n\n", [LdapMsg]),
+        {ok, {'LDAPMessage', _MessageID, _ProtocolOp, _} = LdapMsg} ->
 			LdapMsg;
 		{error, Reason} -> 
 			{error, Reason}

@@ -83,8 +83,7 @@ handle_cast({Socket, RequestBin}, State) ->
 	{noreply, NewState, 0};
 
 %% Handle respose	
-handle_cast({HttpCode, Request, Result}, State) ->
-	Worker = self(),
+handle_cast({_StatusCode, Request, Result}, State) ->
 	Socket = Request#request.socket,
 	MessageID = Request#request.payload#'LDAPMessage'.messageID,
 	inet:setopts(Socket,[{active,once}]),
@@ -92,58 +91,14 @@ handle_cast({HttpCode, Request, Result}, State) ->
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 	% TCP_DEFER_ACCEPT for Linux
 	inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-	case is_integer(HttpCode) of
-		true -> Code = HttpCode;
-		false -> Code = 200
-	end,
-	
-	case Code of 
-		200 -> Status = ok;
-		201 -> Status = ok;
-		400 -> Status = error;
-		404 -> Status = error;
-		_ ->
-			case Code >= 400 of
-				true -> Status = error;
-				false -> Status = ok
-			end
-	end,
-	CodeBin = integer_to_binary(Code), 
-	
-
 	case Result of
-		<<>> -> 
-			Response = msbus_http_util:encode_response(<<"200">>, <<>>),
-			envia_response(Code, ok, Request, Response);
 		{ok, unbindRequest} ->
-			envia_response(Code, ok, Request, <<>>),
-			gen_tcp:close(Socket);
-		{ok, Msg = [M1 | [M2|[M3|_]]]} when is_list(Msg)  -> 
-		%{ok, Msg = [M1 | [M2|_]]} when is_list(Msg)  -> 
-			
-			Response1 = msbus_ldap_util:encode_response(MessageID, M1),
-			%msbus_tcp_util:send_request(Socket, Response1),
-			envia_response(Code, ok, Request, Response1),
-			
-			Response2 = msbus_ldap_util:encode_response(MessageID, M2),
-			%msbus_tcp_util:send_request(Socket, Response2),					
-			envia_response(Code, ok, Request, Response2),
-			
-			ok;
+			msbus_tcp_util:send_data(Socket, [<<>>]),
+			gen_tcp:close(Socket),
+			finaliza_request(Request);
 		{ok, Msg} -> 
-			Response = msbus_ldap_util:encode_response(MessageID, Msg),
-			%msbus_tcp_util:send_request(Socket, Response),					
-			envia_response(Code, ok, Request, Response),
-			ok;
-		{ok, Content, MimeType} -> 
-			Response = msbus_http_util:encode_response(CodeBin, Content, MimeType),
-			envia_response(Code, Status, Request, Response);
-		{error, _Reason} -> 
-			envia_response(Request, Result, State);
-		{error, _Reason, _Motivo} -> 
-			envia_response(Request, Result, State);
-		_ ->
-			envia_response(Request, Result, State)
+			Response = lists:map(fun(M) -> msbus_ldap_util:encode_response(MessageID, M) end, Msg),
+			msbus_tcp_util:send_data(Socket, Response)
 	end,
 	{noreply, State#state{socket=undefined}}.
 
@@ -225,9 +180,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-	
-
-%% @doc Treats ldap request
+	%% @doc Treats ldap request
 trata_request(Socket, RequestBin, State) -> 
 	Worker = msbus_pool:checkout(msbus_ldap_worker_pool),
 	case msbus_ldap_util:encode_request(Socket, RequestBin, Worker) of
@@ -252,81 +205,17 @@ trata_request(Socket, RequestBin, State) ->
 					msbus_logger:error("Erro POSIX ~p in ldap worker ~p.", [PosixError, State#state.worker_id]),
 					NewState = State#state{socket=undefined}
 			end;
-		 {error, Request, Reason} -> 
-			envia_response(Request, {error, Reason}, State),
-			NewState = State#state{socket = undefined};
-		 {error, invalid_http_header} -> 
+		 {error, Reason} -> 
 			gen_tcp:close(Socket),
-			msbus_logger:error("Invalid LDAP request, close socket."),
+			msbus_logger:error("Invalid LDAP request. Reason: ~p.", [Reason]),
 			NewState = State#state{socket = undefined}
 	end,
 	msbus_pool:checkin(msbus_ldap_worker_pool, Worker),
 	NewState.
 
-envia_response(_Request, {async, false}, _State) -> 
-	em_andamento;
-
-envia_response(Request, {async, true}, _State) ->
-	RID = msbus_http_util:rid_to_string(Request#request.rid),
-	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
-	Response = msbus_http_util:encode_response(<<"200">>, Ticket),
-	envia_response(200, ok, Request, Response);
-
-envia_response(Request, {ok, Result}, _State) -> 
-	case Request#request.servico#servico.async of
-		true -> io:format("Ticket já foi entregue.\n");
-		_ -> 
-			Response = msbus_http_util:encode_response(<<"200">>, Result),
-			envia_response(200, ok, Request, Response)
-	end;
-
-envia_response(Request, {ok, Result, MimeType}, _State) ->
-	Response = msbus_http_util:encode_response(<<"200">>, Result, MimeType),
-	envia_response(200, ok, Request, Response);
-
-envia_response(Request, {error, notfound}, _State) ->
-	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
-	envia_response(404, notfound, Request, Response);
-
-envia_response(Request, {error, no_authorization}, _State) ->
-	Response = msbus_http_util:encode_response(<<"401">>, ?HTTP_ERROR_401),
-	envia_response(401, no_authorization, Request, Response);
-
-envia_response(Request, {error, invalid_payload}, _State) ->
-	Response = msbus_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
-	envia_response(415, invalid_payload, Request, Response);
-
-envia_response(Request, {error, file_not_found}, _State) ->
-	Response = msbus_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-	envia_response(404, file_not_found, Request, Response);
-
-envia_response(Request, {error, Reason}, _State) ->
-	Response = msbus_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
-	envia_response(400, Reason, Request, Response);
-
-envia_response(Request, {error, servico_fora, ErroInterno}, _State) ->
-	Response = msbus_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
-	Reason2 = io_lib:format("~p ~p", [servico_fora, ErroInterno]),
-	envia_response(503, Reason2, Request, Response);
-
-envia_response(Request, {error, Reason, ErroInterno}, State) ->
-	Reason2 = io_lib:format("~p ~p", [Reason, ErroInterno]),
-	envia_response(Request, {error, Reason2}, State);
-
-envia_response(Request, Result, State) ->
-	envia_response(Request, {ok, Result}, State).
-
-envia_response(Code, Reason, Request, Response) ->
+finaliza_request(Request) ->
 	T2 = msbus_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	StatusSend = msbus_tcp_util:send_request(Request#request.socket, Response),
-	case  StatusSend of
-		ok -> Status = req_entregue;
-		_  -> Status = req_concluido
-	end,
-	Request2 = Request#request{latencia = Latencia, code = Code, reason = Reason, status_send = StatusSend, status = Status},
+	Request2 = Request#request{latencia = Latencia, code = 200, reason = ok, status_send = ok, status = req_concluido},
 	msbus_request:finaliza_request(Request2),
-	case StatusSend of
-		ok -> msbus_eventmgr:notifica_evento(close_request, Request2);
-		_  -> msbus_eventmgr:notifica_evento(send_error_request, Request2)
-	end.	
+	msbus_eventmgr:notifica_evento(close_request, Request2).

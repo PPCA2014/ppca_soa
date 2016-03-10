@@ -8,16 +8,16 @@
 
 -module(msbus_tcp_util).
 
--export([send_request/2]).
+-export([send_data/2]).
 
 -include("../../include/msbus_config.hrl").
 -include("../../include/msbus_schema.hrl").
 
 %% @doc Sends the data to the client. Method timeout treatment
-send_request(Socket, Response) ->
-	case gen_tcp:send(Socket, [Response]) of
+send_data(Socket, Data) ->
+	case gen_tcp:send(Socket, Data) of
 		{error, timeout} ->
-			gen_tcp:close(Socket),
+			gen_tcp:close(Socket, Data),
 			msbus_logger:error("Timeout response to send to the client."),
 			timeout;
         {error, closed} ->

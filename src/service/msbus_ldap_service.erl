@@ -63,8 +63,7 @@ find_user_by_login(UsuLogin) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
-    Conn = get_database_connection(),
-    State = #state{connection = Conn},
+    State = #state{connection = close_connection},
     {ok, State}. 
     
 handle_cast(shutdown, State) ->
@@ -100,62 +99,34 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
-handle_request({bindRequest, #'BindRequest'{version = Version, 
-											name = Name, 
-											authentication = Authentication}}, State) ->
-	%io:format("processar bind\n\n"),
-	Result = {bindResponse, #'BindResponse'{resultCode = success,
-											matchedDN =  <<"uid=edmilsoncosme,ou=funcdis,ou=Classes,dc=unb,dc=br">>,
-											diagnosticMessage = <<"">>,
-											referral = asn1_NOVALUE,
-											serverSaslCreds = asn1_NOVALUE}
-			 },
-	{ok, Result};
+handle_request({bindRequest, #'BindRequest'{version = _Version, 
+											name = _Name, 
+											authentication = _Authentication}}, _State) ->
+	BindResponse = make_bind_response(),
+	{ok, [BindResponse]};
     
 
-handle_request({searchRequest, #'SearchRequest'{baseObject = BaseObject, 
-												scope = Scope, 
-												derefAliases = DerefAliases, 
-												sizeLimit = SizeLimit, 
-												timeLimit = TimeLimit, 
-												typesOnly = TypesOnly, 
-												filter = Filter, 
-												attributes = Attributes}}, State) ->
-	%io:format("processar search request\n\n"),
-
+handle_request({searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
+												scope = _Scope, 
+												derefAliases = _DerefAliases, 
+												sizeLimit = _SizeLimit, 
+												timeLimit = _TimeLimit, 
+												typesOnly = _TypesOnly, 
+												filter = _Filter, 
+												attributes = _Attributes}}, State) ->
 	UsuLogin = "geral",
-	{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha} = find_user_by_login(UsuLogin, State),
-	io:format("dados da consulta ~p\n\n", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
+	case find_user_by_login(UsuLogin, State) of
+		{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha} ->
+			ResultEntry = make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}),
+			ResultDone = make_result_done(success),
+			{ok, [ResultEntry, ResultDone]};
+		{error, ldap_out} ->
+			ResultDone = make_result_done(operationsError),
+			{ok, [ResultDone]}
+	end;
 
 
-	Result1 = {searchResEntry, #'SearchResultEntry'{objectName = <<"uid=edmilsoncosme,ou=funcdis,ou=Classes,dc=unb,dc=br">>,
-												    attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [list_to_binary(UsuLogin)]},
-																  #'PartialAttribute'{type = <<"cn">>, vals = [list_to_binary(UsuNome)]},
-																  #'PartialAttribute'{type = <<"mail">>, vals = [list_to_binary(string:strip(UsuEmail))]},
-																  #'PartialAttribute'{type = <<"givenName">>, vals = [list_to_binary(UsuNome)]},
-																  #'PartialAttribute'{type = <<"employeeNumber">>, vals = [list_to_binary(integer_to_list(UsuId))]}
-																 ]
-												   }
-			  },
-	
-
-	
-	Result2 = {searchResDone, #'LDAPResult'{resultCode = success, 
-										   matchedDN = <<"">>, 
-										   diagnosticMessage = <<"">>,
-										   referral = asn1_NOVALUE}
-	
-			  },
-
-
-	Result3 = {unbindRequest, <<"">>},
-
-	
-	{ok, [Result1, Result2, Result3]};
-
-
-handle_request({unbindRequest, _}, State) ->
-	%io:format("unbindRequest\n\n"),
+handle_request({unbindRequest, _}, _State) ->
 	{ok, unbindRequest};
 
 
@@ -164,18 +135,72 @@ handle_request(#request{payload = LdapMsg}, State) ->
 	{{ok, Result}, State}.
 
 
-find_user_by_login(UserLogin, #state{connection = Conn}) ->
-	Sql = "select  top 1 p.PesCodigoPessoa, p.PesNome, p.PesCpf, p.PesEmail, u.UsuSenha from BDPessoa.dbo.TB_Pessoa p left join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa where u.UsuLogin = ?", 
-	Params = [{{sql_varchar, 100}, [UserLogin]}],
-	ResultSet = odbc:param_query(Conn, Sql, Params),
-	 {_, _, [User={UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]} = ResultSet,
-	User.
+make_bind_response() ->
+	{bindResponse, #'BindResponse'{resultCode = success,
+												  matchedDN =  <<"uid=edmilsoncosme,ou=funcdis,ou=Classes,dc=unb,dc=br">>,
+												  diagnosticMessage = <<"">>,
+												  referral = asn1_NOVALUE,
+												  serverSaslCreds = asn1_NOVALUE}
+	}.
+
+make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}) ->
+	{searchResEntry, #'SearchResultEntry'{objectName = <<"uid=edmilsoncosme,ou=funcdis,ou=Classes,dc=unb,dc=br">>,
+												    attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [list_to_binary(UsuLogin)]},
+																  #'PartialAttribute'{type = <<"cn">>, vals = [list_to_binary(UsuNome)]},
+																  #'PartialAttribute'{type = <<"mail">>, vals = [list_to_binary(string:strip(UsuEmail))]},
+																  #'PartialAttribute'{type = <<"cpf">>, vals = [list_to_binary(string:strip(UsuCpf))]},
+																  #'PartialAttribute'{type = <<"passwd">>, vals = [list_to_binary(string:strip(UsuSenha))]},
+																  #'PartialAttribute'{type = <<"givenName">>, vals = [list_to_binary(UsuNome)]},
+																  #'PartialAttribute'{type = <<"employeeNumber">>, vals = [list_to_binary(integer_to_list(UsuId))]}
+																 ]
+												   }
+	}.
+
+
+make_result_done(ResultCode) ->
+	{searchResDone, #'LDAPResult'{resultCode = ResultCode, 
+										   matchedDN = <<"">>, 
+										   diagnosticMessage = <<"">>,
+										   referral = asn1_NOVALUE}
 	
-get_database_connection() ->
-	io:format("Criando conexão...\n"),
-	{ok, Conn} = odbc:connect("DSN=pessoa;UID=usupessoa;PWD=usupessoa", []),
-	io:format("Criando conexão: OK!\n"),
-	Conn.
+	}.
+	
+
+find_user_by_login(UserLogin, State) ->
+	case get_database_connection(State) of
+		close_connection -> 
+			{error, ldap_out};
+		Conn -> 
+			Sql = "select  top 1 p.PesCodigoPessoa, p.PesNome, p.PesCpf, p.PesEmail, u.UsuSenha from BDPessoa.dbo.TB_Pessoa p left join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa where u.UsuLogin = ?", 
+			Params = [{{sql_varchar, 100}, [UserLogin]}],
+			ResultSet = odbc:param_query(Conn, Sql, Params),
+			 {_, _, [User]} = ResultSet,
+			User
+	end.
+
+
+get_database_connection(#state{connection = Conn}) when Conn == close_connection ->
+	try
+		case odbc:connect("DSN=pessoa;UID=usupessoa;PWD=usupessoa", [{scrollable_cursors, off},
+																	 {timeout, 500},
+																	 {trace_driver, off}]) of
+			{ok, Conn}	->																	  
+				io:format("Criando conexão: OK!\n"),
+				Conn;
+			{error, Reason} -> 
+				io:format("Connection ldap database error. Reason: ~p\n", [Reason]),
+				close_connection
+		end
+	catch
+		_Exception:Reason2 -> 
+			io:format("Connection ldap database error. Reason: ~p\n", [Reason2]),
+			close_connection
+	end;
+
+	
+get_database_connection(#state{connection = Conn}) -> Conn.
+	
+			
 
 
 
