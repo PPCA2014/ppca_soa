@@ -179,10 +179,10 @@ find_user_by_login(UserLogin, State) ->
 	end.
 
 
-get_database_connection(#state{connection = Conn}) when Conn == close_connection ->
+get_database_connection(#state{connection = close_connection}) ->
 	try
 		case odbc:connect("DSN=pessoa;UID=usupessoa;PWD=usupessoa", [{scrollable_cursors, off},
-																	 {timeout, 500},
+																	 {timeout, 3500},
 																	 {trace_driver, off}]) of
 			{ok, Conn}	->																	  
 				io:format("Criando conexão: OK!\n"),
