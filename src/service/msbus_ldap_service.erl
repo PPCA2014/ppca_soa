@@ -33,7 +33,7 @@
 				data_source,		 	%% odbc datasource
 				sql_find_user,		 	%% sql to find user
 				dn_admin_ldap,		 	%% DN of admin ldap
-				password_admin_ldap}). %% Password of admin ldap
+				password_admin_ldap}).  %% Password of admin ldap
 
 
 %%====================================================================
@@ -108,54 +108,47 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
-autentica("cn", DnAdmin, Password, #state{dn_admin_ldap = DnAdminLdap, 
-											  password_admin_ldap = PasswordAdminLdap}) -> 
-	io:format("passei aqui ~p ~p ~p ~p\n\n", [DnAdmin, Password, DnAdminLdap, PasswordAdminLdap]),
-	autentica(list_to_binary(DnAdmin), Password, DnAdminLdap, PasswordAdminLdap);
+autentica("cn", DnAdmin, Password, State = #state{dn_admin_ldap = DnAdminLdap, 
+												  password_admin_ldap = PasswordAdminLdap}) -> 
+	autentica(list_to_binary(DnAdmin), Password, DnAdminLdap, PasswordAdminLdap, State);
 
-autentica("uid", DnUser, Password, State) -> 
-	io:format("passei aqui >>>>> ~p ~p\n\n", [DnUser, Password]),
+autentica("uid", DnUser, _Password, State) -> 
 	case find_user_by_login(DnUser, State) of
-		{error, ldap_out} -> operationsError;
-		{} -> invalidCredentials;
-		{_, _, _, _, PasswordLdap} -> 
-			io:format("aqui3 ~p ~p ~p ~p\n\n\n", [DnUser, Password, DnUser, PasswordLdap]),
+		{error, unavailable} -> 
+			{unavailable, State};
+		{{}, State2} -> 
+			{invalidCredentials, State2};
+		{{_, _, _, _, _PasswordLdap}, State2} -> 
 			%autentica(DnUser, Password, DnUser, PasswordLdap)
-			success
-	end;
+			{success, State2}
+	end.
 
-autentica(Dn, Password, DnLdap, PasswordLdap) when Dn =:= DnLdap, Password =:= PasswordLdap -> success;
+autentica(Dn, Password, DnLdap, PasswordLdap, State) when Dn =:= DnLdap, Password =:= PasswordLdap -> {success, State};
 
-autentica(_, _, _, _) -> invalidCredentials.
+autentica(_, _, _, _, State) -> {invalidCredentials, State}.
 
 	
     
-handle_request({bindRequest, X = #'BindRequest'{version = _Version, 
-												name = Name, 
-												authentication = {_, Password}}}, State) ->
-	io:format("autentica: ~p\n", [X]),
-
+handle_request({bindRequest, #'BindRequest'{version = _Version, 
+											name = Name, 
+											authentication = {_, Password}}}, State) ->
 	Name2 = parse_base_object(Name),
-	io:format("DN request is ~p\n\n", [Name2]),
-	%% <<cn>> is the admin and <<uid>> is the user
 	case lists:keytake("cn", 1, Name2) of  
 		{_, {"cn", CnValue}, _} -> 
-			io:format("aqui1\n"),
-			ResultCode = autentica("cn", CnValue, Password, State);
+			{ResultCode, State2} = autentica("cn", CnValue, Password, State);
 		false -> 
 			case lists:keytake("uid", 1, Name2) of  
 				{_, {"uid", UIdValue}, _} -> 
-					ResultCode = autentica("uid", UIdValue, Password, State);
+					{ResultCode, State2} = autentica("uid", UIdValue, Password, State);
 				false -> 
-					ResultCode = operationsError
+					{ResultCode, State2} = {operationsError, State}
 			end
 	end,
-
 	BindResponse = make_bind_response(ResultCode, Name),
-	{ok, [BindResponse]};
+	{{ok, [BindResponse]}, State2};
     
 
-handle_request({searchRequest, X = #'SearchRequest'{baseObject = BaseObject, 
+handle_request({searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
 												scope = _Scope, 
 												derefAliases = _DerefAliases, 
 												sizeLimit = _SizeLimit, 
@@ -163,38 +156,28 @@ handle_request({searchRequest, X = #'SearchRequest'{baseObject = BaseObject,
 												typesOnly = _TypesOnly, 
 												filter =  {equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}},
 												attributes = _Attributes}}, State) ->
-	
 	UsuLogin = binary_to_list(UsuLoginBin),
-	io:format("X ~p\n", [X]),
-	
-	io:format("parse ~p\n", [BaseObject]),
-	BaseObject2 = parse_base_object(BaseObject),
-	io:format("parse2 ~p\n", [BaseObject2]),
-	
-	io:format("UsuLogin ~p\n", [UsuLogin]),
-	
-
+	%BaseObject2 = parse_base_object(BaseObject),
 	case find_user_by_login(UsuLogin, State) of
-		{error, ldap_out} ->
-			ResultDone = make_result_done(operationsError),
-			{ok, [ResultDone]};
-		{} -> 
+		{error, unavailable} ->
+			ResultDone = make_result_done(unavailable),
+			{{ok, [ResultDone]}, State};
+		{{}, State2} -> 
 			ResultDone = make_result_done(invalidCredentials),
-			{ok, [ResultDone]};
-		DadosUser ->
-			ResultEntry = make_result_entry(UsuLoginBin, DadosUser, State),
+			{{ok, [ResultDone]}, State2};
+		{DadosUser, State2} ->
+			ResultEntry = make_result_entry(UsuLoginBin, DadosUser, State2),
 			ResultDone = make_result_done(success),
-			{ok, [ResultEntry, ResultDone]}
+			{{ok, [ResultEntry, ResultDone]}, State2}
 	end;
 
 
-handle_request({unbindRequest, _}, _State) ->
-	{ok, unbindRequest};
+handle_request({unbindRequest, _}, State) ->
+	{{ok, unbindRequest}, State};
 
 
 handle_request(#request{payload = LdapMsg}, State) ->
-	{ok, Result} = handle_request(LdapMsg#'LDAPMessage'.protocolOp, State),
-	{{ok, Result}, State}.
+	handle_request(LdapMsg#'LDAPMessage'.protocolOp, State).
 
 
 parse_base_object(BaseObject) ->
@@ -208,10 +191,16 @@ make_object_name(UsuId) ->
 	R2 = iolist_to_binary(R1),
 	R2.
 
+make_bind_response(unavailable, _) ->
+	make_bind_response(unavailable, <<"">>, <<"LDAP database or server machine unavailable!!!">>);
+
 make_bind_response(ResultCode, MatchedDN) ->
+	make_bind_response(ResultCode, MatchedDN, <<"">>).
+
+make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 	{bindResponse, #'BindResponse'{resultCode = ResultCode,
 												  matchedDN = MatchedDN,
-												  diagnosticMessage = <<"">>,
+												  diagnosticMessage = DiagnosticMessage,
 												  referral = asn1_NOVALUE,
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
@@ -219,45 +208,45 @@ make_bind_response(ResultCode, MatchedDN) ->
 make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}, #state{dn_admin_ldap = DnAdminLdap}) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
-												    attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
-																  #'PartialAttribute'{type = <<"cn">>, vals = [DnAdminLdap]},
-																  #'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
-																  #'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf]},
-																  #'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
-																  #'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome]},
-																  #'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId]}
-																 ]
-												   }
+										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
+														#'PartialAttribute'{type = <<"cn">>, vals = [DnAdminLdap]},
+														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
+														#'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf]},
+														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
+														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome]},
+														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId]}
+														]
+										}
 	}.
 
 
 make_result_done(ResultCode) ->
 	{searchResDone, #'LDAPResult'{resultCode = ResultCode, 
-										   matchedDN = <<"">>, 
-										   diagnosticMessage = <<"">>,
-										   referral = asn1_NOVALUE}
+								  matchedDN = <<"">>, 
+								  diagnosticMessage = <<"">>,
+								  referral = asn1_NOVALUE}
 	
 	}.
 	
 
 find_user_by_login(UserLogin, State = #state{sql_find_user = Sql}) ->
-	io:format("buscar login = ~p", [UserLogin]),
 	case get_database_connection(State) of
 		close_connection -> 
-			{error, ldap_out};
+			{error, unavailable};
 		Conn -> 
+			State2 = State#state{connection = Conn},
 			Params = [{{sql_varchar, 100}, [UserLogin]}],
-			ResultSet = odbc:param_query(Conn, Sql, Params),
-			 {_, _, DadosUser} = ResultSet,
+			 {_, _, DadosUser} = odbc:param_query(Conn, Sql, Params),
 			case DadosUser of
 				[{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}] ->
-					{format_user_field(UsuId),
-					 format_user_field(UsuNome),
-					 format_user_field(UsuCpf),
-					 format_user_field(UsuEmail),
-					 format_user_field(UsuSenha)};
+					DadosUser2 = {format_user_field(UsuId),
+								  format_user_field(UsuNome),
+								  format_user_field(UsuCpf),
+								  format_user_field(UsuEmail),
+								  format_user_field(UsuSenha)}, 
+					{DadosUser2, State2};
 				_->
-					{}
+					{{}, State2}
 			end
 	end.
 
@@ -268,13 +257,14 @@ format_user_field(Number) when is_integer(Number) -> list_to_binary(integer_to_l
 format_user_field(Text) -> list_to_binary(string:strip(Text)).
 	
 
-get_database_connection(#state{connection = close_connection, data_source = DataSource}) ->
+get_database_connection(#state{connection = close_connection, 
+							   data_source = DataSource}) ->
 	try
 		case odbc:connect(DataSource, [{scrollable_cursors, off},
 									   {timeout, 3500},
 									   {trace_driver, off}]) of
 			{ok, Conn}	->																	  
-				msbus_logger:info("Create connection to ldap database: OK!"),
+				msbus_logger:info("Create connection to ldap datasource ~p.", [DataSource]),
 				Conn;
 			{error, Reason} -> 
 				msbus_logger:error("Connection ldap database error. Reason: ~p", [Reason]),
