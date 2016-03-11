@@ -98,6 +98,7 @@ handle_cast({_StatusCode, Request, Result}, State) ->
 			finaliza_request(Request);
 		{ok, Msg} -> 
 			Response = lists:map(fun(M) -> msbus_ldap_util:encode_response(MessageID, M) end, Msg),
+			io:format("~p\n", [Msg]),
 			msbus_tcp_util:send_data(Socket, Response)
 	end,
 	{noreply, State#state{socket=undefined}}.
