@@ -1,7 +1,7 @@
 ErlangMS
 =====
 
-ErlangMS is a platform developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas agilar*. 
+ErlangMS is a platform developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas Agilar*. 
 
 The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
 
@@ -58,7 +58,7 @@ Initializing the module pool:
    Module msbus_options_service with 2 workers.
    Module msbus_ldap_service with 2 workers.
    Module msbus_health_service with 12 workers.
-config_file_dest: /home/viper/.erlangms/msbus@puebla.conf
+config_file_dest: /home/puebla/.erlangms/msbus@puebla.conf
 cat_host_alias: #{<<"local">> => <<"puebla">>}
 cat_host_search: local
 cat_node_search: node01, node02, node03
@@ -77,14 +77,14 @@ Listening ldap packets on 127.0.0.1:2389.
 ```
 
 
-If everything is OK, go to http://localhost:2301/samples/hello_world on your browser.
+If everything is OK, go to http://localhost:2301/ on your browser.
 
 *{"message": "It works!!!"}*
 
 
-###Running multiple instances of bus
+###Running multiples instances of bus
 
-You can start multiple instances of the bus (locally or on different servers) to avoid SPOFs.
+You can start multiples instances of the bus (locally or on different servers) to avoid SPOFs.
 
 ```console
 $ ./ems_ctl.sh start bus_01
@@ -108,22 +108,11 @@ Starting instance ErlangMS bus_01@puebla...
 
 
 
-###Compiling the project:
-
-Check the wiki below to see how to download the project, compile and configure: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
-
-
-###Project dependencies for the bus
-------------------------
-
-* Erlang R18 - <http://www.erlang.org/download.html>
-* jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
-
 
 ###Implementing a helloworld_service in Java EE
 ------------------------
 
-1) First, you must specify the service
+#####1) First, you must specify the service
 ```console
 {
 	"name" : "/samples/hello_world_java",
@@ -141,7 +130,7 @@ Check the wiki below to see how to download the project, compile and configure: 
 
 *This contract is saved in the catalog directory of the bus (localized in the folder priv/catalog)*
 
-2) Service implementation
+#####2) Service implementation
 
 ```console
 package br.erlangms.samples.service;
@@ -165,12 +154,12 @@ public class HelloWorldFacade extends EmsServiceFacade {
 
 The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here.
 
-The publication of services in a node depends on the programming language. Java services can be published in a JBoss or Wildfly container.
+The publication of services in a node depends on the programming language. Java services can be published in a *JBoss or Wildfly* container.
 
 
-3) Consuming the service
+#####3) Consuming the service
 
-*To execute the specified service can make an HTTP/REST request to the service bus.*
+*To execute the specified service can make an HTTP/REST request to the service through your url.*
 
 Exemplifying with the curl utility
 ```
@@ -178,26 +167,36 @@ curl -X GET localhost:2301/samples/hello_world
 {"message": "Hello World!!!"}
 ```
 
-Log in the bus
+Log data bus
 ```
 REQUEST ROWID <<"GET#/samples/hello_world">>.
-CAST helloworld_service:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
+CAST helloworld_facade:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
 GET /samples/hello_world HTTP/1.1 {
         RID: 1457890196200613870
         Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8:
         User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36
         Content-Type: application/json
         Payload: 
-        Service: helloworld_service:execute
+        Service: br.erlangms.samples.service.HelloWorldFacade:helloWorld
         Query: []
         Authorization: 
-        Status: 200 <<ok>> (6ms)
+        Status: 200 <<ok>> (2ms)
         Send: ok
 }
 ```
 
 
 
+###Compiling the project:
+
+Check the wiki below to see how to download the project, compile and configure: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
+
+
+###Project dependencies for the bus
+------------------------
+
+* Erlang R18 - <http://www.erlang.org/download.html>
+* jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
 
 
 ###Documentation of functional programming
