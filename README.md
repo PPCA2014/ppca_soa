@@ -203,7 +203,7 @@ Remember that *consumers* invoke services through REST calls. Moreover, within t
 The following example shows two services. The second service invokes the service 1 by calling the *GetStream()* method.
 
 
-### Class that implements the service *PerguntaService* of the module *unb_questionario*
+#### Class *PerguntaService* of the module *unb_questionario*
 
 ```java
 @Stateless
@@ -233,7 +233,7 @@ public class PerguntaService {
 ```
 
 
-### Class that implements the *service proxy* of the module *unb_sae*
+#### Class *service proxy* of the module *unb_sae* for access PerguntaQuestionario
 
 ```java
 @Stateless
