@@ -193,6 +193,62 @@ GET /samples/hello_world HTTP/1.1 {
 }
 ```
 
+Communication between services in the cluster
+=====
+
+Remember that *consumers* invoke services through REST calls. Moreover, within the cluster, the services(who are also consumers) can communicate with each other asynchronously instead of making REST calls. 
+
+The following example shows two services. The second service invokes the service 1 by calling the *GetStream()* method.
+
+
+## Class that implements the service *PerguntaService* of the module *unb_questionario*
+
+```java
+@Stateless
+public class PerguntaService {
+	
+	public Pergunta findById(Integer id) {
+		return QuestionarioInfra.getInstance()
+			.getPerguntaRepository()
+			.findById(id);
+	}
+
+	public Pergunta update(Pergunta pergunta){
+		pergunta.validar();
+		return QuestionarioInfra.getInstance()
+			.getPerguntaRepository()
+			.update(pergunta);
+	}
+
+	public Pergunta insert(Pergunta pergunta) {
+		pergunta.validar();
+		return QuestionarioInfra.getInstance()
+			.getPerguntaRepository()
+			.insert(pergunta);
+	}
+	
+	...
+```
+
+
+## Class that implements the *service proxy* of the module *unb_sae* for access service *PerguntaService* in the *unb_questionario*
+
+```java
+@Stateless
+public class PerguntaQuestionarioProxy extends EmsServiceProxy {
+
+	public PerguntaVo findById(Integer id){
+		return getStream().from("/questionario/pergunta/:id")
+				.setParameter(id)
+				.request()
+				.getObject(PerguntaVo.class);
+	}
+	
+	...
+}
+```
+
+*Facade classes omitted in this code*
 
 
 Compiling the project:
