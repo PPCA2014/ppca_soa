@@ -165,15 +165,20 @@ public class HelloWorldFacade extends EmsServiceFacade {
 
 The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here.
 
+The publication of services in a node depends on the programming language. Java services can be published in a JBoss or Wildfly container.
+
+
 3) Consuming the service
 
-curl:
+*To execute the specified service can make an HTTP/REST request to the service bus.*
+
+Exemplifying with the curl utility
 ```
 curl -X GET localhost:2301/samples/hello_world
 {"message": "Hello World!!!"}
 ```
 
-Log in the bus:
+Log in the bus
 ```
 REQUEST ROWID <<"GET#/samples/hello_world">>.
 CAST helloworld_service:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
@@ -198,7 +203,7 @@ GET /samples/hello_world HTTP/1.1 {
 ###Documentation of functional programming
 -----------------------------------------
 
-Documentação sobre Erlang
+Documentation on the Erlang
 
 <http://www.erlang.org/>
 
