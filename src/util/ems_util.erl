@@ -31,7 +31,14 @@
 		 string_is_integer/1,
 		 read_file_as_map/1,
 		 node_is_live/1,
-		 get_node_name/0]).
+		 get_node_name/0,
+		 get_priv_dir/0]).
+
+
+get_priv_dir() ->
+	{ok, Path} = file:get_cwd(),
+	Path ++ "/priv".
+
 
 %% @doc Dorme por um determinado tempo
 sleep(T) ->

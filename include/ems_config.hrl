@@ -19,11 +19,15 @@
 																					undefined -> "1"
 																			end])).
 
-% Caminho do favicon
--define(FAVICON_PATH, code:priv_dir(emsbus) ++ "/favicon.ico").
+
+% Caminho do diretório privado
+-define(PRIV_PATH, ems_util:get_priv_dir()).
 
 % Caminho do catálogo de serviços
--define(CONF_PATH, code:priv_dir(emsbus) ++ "/conf").
+-define(CONF_PATH, ?PRIV_PATH ++ "/conf").
+
+% Caminho do favicon
+-define(FAVICON_PATH, ?PRIV_PATH ++ "/favicon.ico").
 
 % Caminho do catálogo de serviços
 -define(CATALOGO_PATH, ?CONF_PATH ++ "/catalog.conf").
