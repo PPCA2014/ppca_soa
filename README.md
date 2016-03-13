@@ -128,7 +128,7 @@ Starting instance ErlangMS bus_01@puebla...
 }
 ```
 
-*This contract is saved in the catalog directory of the bus (localized in the folder priv/catalog)*
+*This contract is saved in the catalog directory of the bus (localized in the folder priv/conf/catalog)*
 
 #####2) Service implementation
 
