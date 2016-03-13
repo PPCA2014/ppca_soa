@@ -1,121 +1,111 @@
-ErlangMS msbus
+ErlangMS
 =====
 
-ErlangMS msbus é um Enterprise Service Bus (ESB) desenvolvido com o objetivo de facilitar a integração de sistemas através de uma abordagem orientada a serviços. Este software é resultado de esforços conduzidos no Mestrado em Computação Aplicada da Universidade de Brasília pelo mestrando Everton de Vargas Agilar.
+ErlangMS is a platform developed in Erlang/OTP to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student Everton Vargas agilar. 
 
-###Principais características do projeto
+The platform consists of a Enterprise Service Bus (ESB), called EmsBus, and a documented architecture to implement the services in Erlang, Java and future in .NET Framework languages.
 
-* modular e multiplataforma (desenvolvido na linguagem Erlang/OTP) 
+###Main design features
 
-* aderente ao estilo arquitetural RESTful
+* Modular and multi-platform;
 
-* orientado a contratos de serviços no formato JSON
+* Communication services is through asynchronous messages and requests for services by customers through REST and LDAP;
 
-* representação de dados em JSON
+* Published services are specified in a service catalog in JSON format;
+
+* Services can be published in one or more nodes in the cluster (eg, Containers JBoss in Java EE) to avoid single points of failure (SPOFs);
+
+* Support HTTP Authentication;
  
-* implementação dos serviços independente da linguagem de programação
+* Preliminary support Lightweight Directory Access Protocol (LDAP v3) for authentication;
+
+* OAuth2 authentication (in progress)
+
+* Front-end lightweight and optimized for service-oriented computing (https://github.com/eliot-framework/eliot)
 
 
 
-Veja a arquitetura do barramento em https://github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
+*See the platform architecture em https:*//github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
 
-Como executar o barramento
+Running the bus
 -----------------------
 
-Se o projeto já estiver instalado e configurado, execute o comando *start*, de acordo com o sistema operacional:
+If the project is already installed and configured, run the *start* command, according to the operating system:
 
-Se estiver no Linux, digite:
-
-```console
-./start.sh
-INFO 1/9/2015 21:11:30  Erlang Microservices (ErlangMS 1.0)
-INFO 1/9/2015 21:11:30  Inicializando o pool de módulos:
-INFO 1/9/2015 21:11:30     Módulo msbus_eventmgr com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_catalogo com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_user com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_cache com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_server com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_request com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_server_worker com 12 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_health com 6 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_dispatcher com 12 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_static_file_service com 12 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_user_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_catalogo_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_info_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_favicon_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_option_service com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_health_service com 6 workers.
-INFO 1/9/2015 21:11:31  Escutando no endereço 127.0.0.1:2301.
-INFO 1/9/2015 21:11:31  Portal ErlangMS Api Management em http://127.0.0.1:2301/portal/index.html
-INFO 1/9/2015 21:11:31  ErlangMS iniciado em 326ms.
-```
-
-Caso estiver no Windows, digite:
+If you are in Linux, type:
 
 ```console
-start.bat
-INFO 1/9/2015 21:11:30  Erlang Microservices (ErlangMS 1.0)
-INFO 1/9/2015 21:11:30  Inicializando o pool de módulos:
-INFO 1/9/2015 21:11:30     Módulo msbus_eventmgr com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_catalogo com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_user com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_cache com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_server com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_request com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_server_worker com 12 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_health com 6 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_dispatcher com 12 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_static_file_service com 12 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_user_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_catalogo_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_info_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_favicon_service com 2 workers.
-INFO 1/9/2015 21:11:30     Módulo msbus_option_service com 1 worker.
-INFO 1/9/2015 21:11:30     Módulo msbus_health_service com 6 workers.
-INFO 1/9/2015 21:11:31  Escutando no endereço 127.0.0.1:2301.
-INFO 1/9/2015 21:11:31  Portal ErlangMS Api Management em http://127.0.0.1:2301/portal/index.html
-INFO 1/9/2015 21:11:31  ErlangMS iniciado em 326ms.
+$ ./start.sh
+(msbus@puebla)1> ErlangMS Development Version 1.0
+Initializing the module pool:
+   Module msbus_eventmgr with 1 worker.
+   Module msbus_catalogo with 2 workers.
+   Module msbus_user with 2 workers.
+   Module msbus_cache with 1 worker.
+   Module msbus_http_server with 1 worker.
+   Module msbus_ldap_server with 1 worker.
+   Module msbus_request with 1 worker.
+   Module msbus_http_worker with 3 workers.
+   Module msbus_ldap_worker with 3 workers.
+   Module msbus_health with 6 workers.
+   Module msbus_dispatcher with 6 workers.
+   Module msbus_static_file_service with 6 workers.
+   Module msbus_user_service with 2 workers.
+   Module msbus_catalogo_service with 2 workers.
+   Module msbus_info_service with 2 workers.
+   Module msbus_favicon_service with 2 workers.
+   Module msbus_options_service with 2 workers.
+   Module msbus_ldap_service with 2 workers.
+   Module msbus_health_service with 12 workers.
+config_file_dest: /home/viper/.erlangms/msbus@puebla.conf
+cat_host_alias: #{<<"local">> => <<"puebla">>}
+cat_host_search: local
+cat_node_search: node01, node02, node03
+log_file_dest: logs
+log_file_checkpoint: 6000ms
+tcp_listen_address: ["127.0.0.1"]
+tcp_allowed_address: []
+tcp_port: 2301
+tcp_keepalive: true
+tcp_nodelay: true
+tcp_max_http_worker: 128
+Portal Api Management: http://127.0.0.1:2301/portal/index.html
+msbus@puebla started in 244ms.
+Listening http packets on 127.0.0.1:2301.
+Listening ldap packets on 127.0.0.1:2389.
 ```
 
-Se estiver tudo Ok, visite http://localhost:2301/hello_world em seu browser.
+```
 
-Obs.: Veja como baixar o projeto, compilar, configurar e fazer deploy na wiki 
-https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
+If everything is OK, go to http://localhost:2301/samples/hello_world on your browser.
+
+*{"message": "Hello World!!!"}*
 
 
-###Dependências do projeto
+###Compiling the project:
+
+Check the wiki below to see how to download the project, compile and start the bus: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
+
+
+###Project dependencies
 ------------------------
 
-* Erlang R17B ou versão mais recente -
-
-    <http://www.erlang.org/download.html>
-
-  * Verifique com `erlang:system_info(otp_release)`.
+* Erlang R18 - <http://www.erlang.org/download.html>
+* jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
 
 
-* No Windows -
-
-  * Erlang e Rebar bin devem estar na variável PATH.
-
-
-* jsx - encode/decore JSON
-
-    <https://github.com/talentdeficit/jsx>
-
-
-###Documentação sobre programação funcional
+###Documentation of functional programming
 -----------------------------------------
 
 Documentação sobre Erlang
 
 <http://www.erlang.org/>
 
-Para quem quiser iniciar na programação Erlang, visite este livro online:
+Excellent online book about distributed programming in Erlang
 
 <http://learnyousomeerlang.com/>
 
-Lista de artigos sobre Erlang
+List of articles about programming in Erlang
 
 <https://github.com/0xAX/erlang-bookmarks/blob/master/ErlangBookmarks.md>
