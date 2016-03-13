@@ -28,7 +28,7 @@ The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a 
 *See the platform architecture em https:*//github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
 
-###Running the bus
+##Running the bus
 =====
 
 If the project is already installed and configured, run the *start* command, according to the operating system:
@@ -82,7 +82,7 @@ If everything is OK, go to http://localhost:2301/ on your browser.
 *{"message": "It works!!!"}*
 
 
-###Running multiples instances of bus
+##Running multiples instances of bus
 =====
 
 You can start multiples instances of the bus (locally or on different servers) to avoid SPOFs.
@@ -110,7 +110,7 @@ Starting instance ErlangMS bus_01@puebla...
 
 
 
-###Implementing a Hello World Service in Java EE
+##Implementing a Hello World Service in Java EE
 =====
 
 #####1) First, you must specify the service contract
@@ -150,6 +150,8 @@ public class HelloWorldFacade extends EmsServiceFacade {
 }
 
 ```
+
+##### Details
 
 * The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here;
 
@@ -193,20 +195,20 @@ GET /samples/hello_world HTTP/1.1 {
 
 
 
-###Compiling the project:
+##Compiling the project:
 =====
 
 Check the wiki below to see how to download the project, compile and configure: <https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus>
 
 
-###Project dependencies for the bus
+##Project dependencies for the bus
 =====
 
 * Erlang R18 - <http://www.erlang.org/download.html>
 * jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
 
 
-###Documentation of functional programming
+##Documentation of functional programming
 =====
 
 Documentation on the Erlang
