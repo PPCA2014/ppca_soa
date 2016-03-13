@@ -29,7 +29,7 @@ The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a 
 
 
 ###Running the bus
------------------------
+=====
 
 If the project is already installed and configured, run the *start* command, according to the operating system:
 
@@ -83,6 +83,7 @@ If everything is OK, go to http://localhost:2301/ on your browser.
 
 
 ###Running multiples instances of bus
+=====
 
 You can start multiples instances of the bus (locally or on different servers) to avoid SPOFs.
 
@@ -110,9 +111,9 @@ Starting instance ErlangMS bus_01@puebla...
 
 
 ###Implementing a Hello World Service in Java EE
-------------------------
+=====
 
-#####1) First, you must specify the service
+#####1) First, you must specify the service contract
 ```console
 {
 	"name" : "/samples/hello_world",
@@ -150,15 +151,16 @@ public class HelloWorldFacade extends EmsServiceFacade {
 
 ```
 
-The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here;
+* The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here;
 
-The publication of services in a node depends on the programming language. Java services can be published in a *JBoss or Wildfly* container;
+* The publication of services in a node depends on the programming language. Java services can be published in a *JBoss or Wildfly* container;
 
-The services can communicate with each other with any other service on the same node or another node within the cluster transparently;
+* The services can communicate with each other with any other service on the same node or another node within the cluster transparently;
 
-When a consumer invokes a service on the bus through a REST request is made the order for the code of the appropriate service at any node in the cluster;
+* When a consumer invokes a service on the bus through a REST request is made the order for the code of the appropriate service at any node in the cluster;
 
-If more than one node with the same published service, the request is sent to only one node following a round-robin strategy.
+* If more than one node with the same published service, the request is sent to only one node following a round-robin strategy.
+
 
 
 #####3) Consuming the service
@@ -192,19 +194,20 @@ GET /samples/hello_world HTTP/1.1 {
 
 
 ###Compiling the project:
+=====
 
-Check the wiki below to see how to download the project, compile and configure: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
+Check the wiki below to see how to download the project, compile and configure: <https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus>
 
 
 ###Project dependencies for the bus
-------------------------
+=====
 
 * Erlang R18 - <http://www.erlang.org/download.html>
 * jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
 
 
 ###Documentation of functional programming
------------------------------------------
+=====
 
 Documentation on the Erlang
 
