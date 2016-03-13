@@ -42,13 +42,13 @@
 # Parâmetros
 ems_ctl_version="1.0"
 ems_cookie=erlangms
-ems_node="msbus"
-ems_init="application:start(msbus)"
-ems_stop="application:stop(msbus)."
+ems_node="emsbus"
+ems_init="application:start(ems_bus)"
+ems_stop="application:stop(ems_bus)."
 ems_log_conf="./priv/conf/elog"
 ems_hostname=`hostname`
 ems_ctl_node="msbus_shell_`date +"%I%M%S"`@$ems_hostname"
-ems_path="-pa ../msbus/ebin deps/jsx/ebin deps/poolboy/ebin"
+ems_path="-pa ../emsbus/ebin deps/jsx/ebin deps/poolboy/ebin"
 
 # Conectar no terminal de uma instância ErlangMS
 function console() {
@@ -69,12 +69,12 @@ function start() {
 		console $node_name
 	else
 		if [ "$is_daemon" == "daemon" ]; then
-			echo "Iniciando instância ErlangMS $node_name como daemon ..."
+			echo "Starting instance ErlangMS $node_name como daemon ..."
 			erl -detached $ems_path \
 				-sname $node_name -setcookie $ems_cookie \
 				-eval $ems_init -boot start_sasl -config $ems_log_conf 
 		else
-			echo "Iniciando instância ErlangMS $node_name..."
+			echo "Starting instance ErlangMS $node_name..."
 			erl $ems_path \
 				-sname $node_name -setcookie $ems_cookie -eval $ems_init \
 				-boot start_sasl -config $ems_log_conf 
@@ -86,17 +86,17 @@ function start() {
 # Verifica se uma instância ErlangMS está executando
 function status(){
 	node_name=$(format_node_name $1)
-	echo "Verificando se há uma instância $node_name executando..."
+	echo "Checking for an instance $node_name puebla running..."
 	is_running=`erl -noshell $ems_path \
 				-boot start_clean  \
 				-sname $ems_ctl_node \
 				-setcookie $ems_cookie \
 				-eval 'io:format( "~p", [ msbus_util:node_is_live( '$node_name' ) ] ), halt()'`
 	if [ "$is_running" == "1" ]; then
-		echo "$node_name já está executando!"
+		echo "$node_name is already running!"
 		return 1
 	else
-		echo "$node_name está parado!"
+		echo "$node_name is stopped!"
 		return 0
 	fi
 }
@@ -108,7 +108,7 @@ function list_nodes(){
 function format_node_name(){
 	node_name=$1
 	if [ "$node_name" == "" ]; then
-		node_name="msbus@$ems_hostname"
+		node_name="emsbus@$ems_hostname"
 	fi
 	if [ `expr index "$node_name" "@"` == 0 ]; then
 		node_name="$node_name@$ems_hostname" 
