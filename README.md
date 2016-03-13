@@ -109,21 +109,19 @@ Starting instance ErlangMS bus_01@puebla...
 
 
 
-###Implementing a helloworld_service in Java EE
+###Implementing a Hello World Service in Java EE
 ------------------------
 
 #####1) First, you must specify the service
 ```console
 {
-	"name" : "/samples/hello_world_java",
+	"name" : "/samples/hello_world",
 	"comment": "Hello World in Java",
 	"owner": "samples",
 	"version": "1",
 	"service" : "br.erlangms.samples.service.HelloWorldFacade:helloWorld",
-	"url": "/samples/hello_world_java",
-	"host": "local",
+	"url": "/samples/hello_world",
 	"type": "GET",
-	"APIkey":"true",
 	"lang" : "java"
 }
 ```
@@ -145,16 +143,22 @@ import br.erlangms.IEmsRequest;
 public class HelloWorldFacade extends EmsServiceFacade {
 
 	 public String helloWorld(IEmsRequest request) {
-		    return "Hello World Java!!!";
+		    return "Hello World!!!";
 	 }
 
 }
 
 ```
 
-The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here.
+The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here;
 
-The publication of services in a node depends on the programming language. Java services can be published in a *JBoss or Wildfly* container.
+The publication of services in a node depends on the programming language. Java services can be published in a *JBoss or Wildfly* container;
+
+The services can communicate with each other with any other service on the same node or another node within the cluster transparently;
+
+When a consumer invokes a service on the bus through a REST request is made the order for the code of the appropriate service at any node in the cluster;
+
+If more than one node with the same published service, the request is sent to only one node following a round-robin strategy.
 
 
 #####3) Consuming the service
