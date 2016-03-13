@@ -21,7 +21,7 @@ The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a 
 
 * OAuth2 authentication (in progress);
 
-* Front-end lightweight and optimized for service-oriented computing in HTML5 e Angular 2 (Project in https://github.com/eliot-framework/eliot).
+* Front-end lightweight and optimized for service-oriented computing in HTML5 and Angular 2. Source code of the project in <https://github.com/eliot-framework/eliot>.
 
 
 
@@ -113,7 +113,7 @@ Starting instance ErlangMS bus_01@puebla...
 Implementing a Hello World Service in Java EE
 =====
 
-#####1) First, you must specify the service contract
+##1) First, you must specify the service contract
 ```console
 {
 	"name" : "/samples/hello_world",
@@ -129,7 +129,7 @@ Implementing a Hello World Service in Java EE
 
 *This contract is saved in the catalog directory of the bus (localized in the folder priv/conf/catalog)*
 
-#####2) Service implementation
+##2) Service implementation
 
 ```console
 package br.erlangms.samples.service;
@@ -151,7 +151,7 @@ public class HelloWorldFacade extends EmsServiceFacade {
 
 ```
 
-##### Details
+### Details of the architecture
 
 * The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here;
 
@@ -165,7 +165,7 @@ public class HelloWorldFacade extends EmsServiceFacade {
 
 
 
-#####3) Consuming the service
+##3) Consuming the service
 
 *To execute the specified service can make an HTTP/REST request to the service through your url.*
 
