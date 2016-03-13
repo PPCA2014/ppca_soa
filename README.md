@@ -1,19 +1,19 @@
 ErlangMS
 =====
 
-ErlangMS is a platform developed in Erlang/OTP to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student Everton Vargas agilar. 
+ErlangMS is a platform developed in Erlang/OTP to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas agilar*. 
 
-The platform consists of a Enterprise Service Bus (ESB), called EmsBus, and a documented architecture to implement the services in Erlang, Java and future in .NET Framework languages.
+The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
 
 ###Main design features
 
 * Back-end modular and multi-platform;
 
-* Communication services is through asynchronous messages and requests for services by customers through REST and LDAP;
+* Communication services is through asynchronous messages and requests for services by customers through HTTP/REST and LDAP;
 
 * Published services are specified in a service catalog in JSON format;
 
-* Services can be published in one or more nodes in the cluster (eg, Containers JBoss in Java EE) to avoid single points of failure (SPOFs);
+* Services can be published in one or more nodes in the cluster (eg, Containers JBoss in Java EE ou native Erlang node), to avoid single points of failure (SPOFs);
 
 * Support HTTP Authentication;
  
@@ -21,14 +21,14 @@ The platform consists of a Enterprise Service Bus (ESB), called EmsBus, and a do
 
 * OAuth2 authentication (in progress);
 
-* Front-end lightweight and optimized for service-oriented computing (https://github.com/eliot-framework/eliot).
+* Front-end lightweight and optimized for service-oriented computing in HTML5 e Angular 2 (Project in https://github.com/eliot-framework/eliot).
 
 
 
 *See the platform architecture em https:*//github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
 
 
-Running the bus
+###Running the bus
 -----------------------
 
 If the project is already installed and configured, run the *start* command, according to the operating system:
@@ -79,33 +79,58 @@ Listening ldap packets on 127.0.0.1:2389.
 
 If everything is OK, go to http://localhost:2301/samples/hello_world on your browser.
 
-*{"message": "Hello World!!!"}*
+*{"message": "It works!!!"}*
+
+
+###Running multiple instances of bus
+
+You can start multiple instances of the bus (locally or on different servers) to avoid SPOFs.
+
+```console
+$ ./ems_ctl.sh start bus_01
+
+ErlangMS Control Manager [ Hostname: puebla,  Version: 1.0 ]
+Checking for an instance bus_01 @ puebla running...
+bus_01@puebla is stopped!
+Starting instance ErlangMS bus_01@puebla...
+...
+
+
+$ ./ems_ctl.sh start bus_02
+
+ErlangMS Control Manager [ Hostname: puebla,  Version: 1.0 ]
+Checking for an instance bus_02 @ puebla running...
+bus_02@puebla is stopped!
+Starting instance ErlangMS bus_01@puebla...
+...
+
+```
+
 
 
 ###Compiling the project:
 
-Check the wiki below to see how to download the project, compile and start the bus: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
+Check the wiki below to see how to download the project, compile and configure: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
 
 
-###Project dependencies for EmsBus
+###Project dependencies for the bus
 ------------------------
 
 * Erlang R18 - <http://www.erlang.org/download.html>
 * jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
 
 
-###Implementing a helloworld_service in Java
+###Implementing a helloworld_service in Java EE
 ------------------------
 
+1) First, you must specify the service
 ```console
-1) Service contract
-
 {
 	"name" : "/samples/hello_world_java",
-	"comment": "Hello World em Java",
+	"comment": "Hello World in Java",
 	"owner": "samples",
 	"version": "1",
-	"service" : "br.erlangms.samples.service.HelloWorldService:helloWorld",
+	"service" : "br.erlangms.samples.service.HelloWorldFacade:helloWorld",
 	"url": "/samples/hello_world_java",
 	"host": "local",
 	"type": "GET",
@@ -114,7 +139,7 @@ Check the wiki below to see how to download the project, compile and start the b
 }
 ```
 
-This contract is saved in the catalog directory (folder priv/catalog)
+*This contract is saved in the catalog directory of the bus (localized in the folder priv/catalog)*
 
 2) Service implementation
 
@@ -123,7 +148,6 @@ package br.erlangms.samples.service;
 
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
-
 import br.erlangms.EmsServiceFacade;
 import br.erlangms.IEmsRequest;
 
@@ -149,7 +173,7 @@ curl -X GET localhost:2301/samples/hello_world
 {"message": "Hello World!!!"}
 ```
 
-Log in the EmsBus:
+Log in the bus:
 ```
 REQUEST ROWID <<"GET#/samples/hello_world">>.
 CAST helloworld_service:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
