@@ -182,7 +182,7 @@ CAST helloworld_facade:execute em puebla {RID: 1457890196200613870, URI: /sample
 GET /samples/hello_world HTTP/1.1 {
         RID: 1457890196200613870
         Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8:
-        User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36
+        User-Agent: Mozilla/5.0 (X11; Linux x86_64) Chrome/49.0.2623.87 Safari/537.36
         Content-Type: application/json
         Payload: 
         Service: br.erlangms.samples.service.HelloWorldFacade:helloWorld
