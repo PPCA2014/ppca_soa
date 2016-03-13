@@ -7,7 +7,7 @@ The platform consists of a Enterprise Service Bus (ESB), called EmsBus, and a do
 
 ###Main design features
 
-* Modular and multi-platform;
+* Back-end modular and multi-platform;
 
 * Communication services is through asynchronous messages and requests for services by customers through REST and LDAP;
 
@@ -19,9 +19,9 @@ The platform consists of a Enterprise Service Bus (ESB), called EmsBus, and a do
  
 * Preliminary support Lightweight Directory Access Protocol (LDAP v3) for authentication;
 
-* OAuth2 authentication (in progress)
+* OAuth2 authentication (in progress);
 
-* Front-end lightweight and optimized for service-oriented computing (https://github.com/eliot-framework/eliot)
+* Front-end lightweight and optimized for service-oriented computing (https://github.com/eliot-framework/eliot).
 
 
 
@@ -76,7 +76,6 @@ Listening http packets on 127.0.0.1:2301.
 Listening ldap packets on 127.0.0.1:2389.
 ```
 
-```
 
 If everything is OK, go to http://localhost:2301/samples/hello_world on your browser.
 
@@ -88,11 +87,88 @@ If everything is OK, go to http://localhost:2301/samples/hello_world on your bro
 Check the wiki below to see how to download the project, compile and start the bus: https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus
 
 
-###Project dependencies
+###Project dependencies for EmsBus
 ------------------------
 
 * Erlang R18 - <http://www.erlang.org/download.html>
 * jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
+
+
+###Implementing a helloworld_service in Java
+------------------------
+
+```console
+1) Service contract
+
+{
+	"name" : "/samples/hello_world_java",
+	"comment": "Hello World em Java",
+	"owner": "samples",
+	"version": "1",
+	"service" : "br.erlangms.samples.service.HelloWorldService:helloWorld",
+	"url": "/samples/hello_world_java",
+	"host": "local",
+	"type": "GET",
+	"APIkey":"true",
+	"lang" : "java"
+}
+```
+
+This contract is saved in the catalog directory (folder priv/catalog)
+
+2) Service implementation
+
+```console
+package br.erlangms.samples.service;
+
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
+
+import br.erlangms.EmsServiceFacade;
+import br.erlangms.IEmsRequest;
+
+@Singleton
+@Startup
+public class HelloWorldFacade extends EmsServiceFacade {
+
+	 public String helloWorld(IEmsRequest request) {
+		    return "Hello World Java!!!";
+	 }
+
+}
+
+```
+
+The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here.
+
+3) Consuming the service
+
+curl:
+```
+curl -X GET localhost:2301/samples/hello_world
+{"message": "Hello World!!!"}
+```
+
+Log in the EmsBus:
+```
+REQUEST ROWID <<"GET#/samples/hello_world">>.
+CAST helloworld_service:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
+GET /samples/hello_world HTTP/1.1 {
+        RID: 1457890196200613870
+        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8:
+        User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36
+        Content-Type: application/json
+        Payload: 
+        Service: helloworld_service:execute
+        Query: []
+        Authorization: 
+        Status: 200 <<ok>> (6ms)
+        Send: ok
+}
+```
+
+
+
 
 
 ###Documentation of functional programming
