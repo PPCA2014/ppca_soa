@@ -131,7 +131,7 @@ Implementing a Hello World Service in Java EE
 
 ##2) Service implementation
 
-```console
+```java
 package br.erlangms.samples.service;
 
 import javax.ejb.Singleton;
@@ -170,13 +170,15 @@ public class HelloWorldFacade extends EmsServiceFacade {
 *To execute the specified service can make an HTTP/REST request to the service through your url.*
 
 Exemplifying with the curl utility
+
 ```
 curl -X GET localhost:2301/samples/hello_world
 {"message": "Hello World!!!"}
 ```
 
 Log data bus
-```
+
+```console
 REQUEST ROWID <<"GET#/samples/hello_world">>.
 CAST helloworld_facade:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
 GET /samples/hello_world HTTP/1.1 {
@@ -201,7 +203,7 @@ Remember that *consumers* invoke services through REST calls. Moreover, within t
 The following example shows two services. The second service invokes the service 1 by calling the *GetStream()* method.
 
 
-## Class that implements the service *PerguntaService* of the module *unb_questionario*
+### Class that implements the service *PerguntaService* of the module *unb_questionario*
 
 ```java
 @Stateless
@@ -231,7 +233,7 @@ public class PerguntaService {
 ```
 
 
-## Class that implements the *service proxy* of the module *unb_sae* for access service *PerguntaService* in the *unb_questionario*
+### Class that implements the *service proxy* of the module *unb_sae*
 
 ```java
 @Stateless
