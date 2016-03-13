@@ -37,28 +37,29 @@ If you are in Linux, type:
 
 ```console
 $ ./start.sh
-(msbus@puebla)1> ErlangMS Development Version 1.0
-Initializing the module pool:
-   Module msbus_eventmgr with 1 worker.
-   Module msbus_catalogo with 2 workers.
-   Module msbus_user with 2 workers.
-   Module msbus_cache with 1 worker.
-   Module msbus_http_server with 1 worker.
-   Module msbus_ldap_server with 1 worker.
-   Module msbus_request with 1 worker.
-   Module msbus_http_worker with 3 workers.
-   Module msbus_ldap_worker with 3 workers.
-   Module msbus_health with 6 workers.
-   Module msbus_dispatcher with 6 workers.
-   Module msbus_static_file_service with 6 workers.
-   Module msbus_user_service with 2 workers.
-   Module msbus_catalogo_service with 2 workers.
-   Module msbus_info_service with 2 workers.
-   Module msbus_favicon_service with 2 workers.
-   Module msbus_options_service with 2 workers.
-   Module msbus_ldap_service with 2 workers.
-   Module msbus_health_service with 12 workers.
-config_file_dest: /home/puebla/.erlangms/msbus@puebla.conf
+(emsbus@puebla)1> 
+ErlangMS Development Version 1
+Initializing the pool of the main services...
+Start ems_eventmgr with 1 worker
+Start ems_catalog with 2 workers
+Start ems_user with 2 workers
+Start ems_cache with 1 worker
+Start ems_http_server with 1 worker
+Start ems_ldap_server with 1 worker
+Start ems_request with 1 worker
+Start ems_http_worker with 3 workers
+Start ems_ldap_worker with 3 workers
+Start ems_health with 6 workers
+Start ems_dispatcher with 6 workers
+Start ems_static_file_service with 6 workers
+Start ems_user_service with 2 workers
+Start ems_catalog_service with 2 workers
+Start ems_info_service with 2 workers
+Start ems_favicon_service with 2 workers
+Start ems_options_service with 2 workers
+Start ems_ldap_service with 2 workers
+Start ems_health_service with 12 workers
+Reading config parameters from ../emsbus/priv/conf/emsbus.conf...
 cat_host_alias: #{<<"local">> => <<"puebla">>}
 cat_host_search: local
 cat_node_search: node01, node02, node03
@@ -71,7 +72,7 @@ tcp_keepalive: true
 tcp_nodelay: true
 tcp_max_http_worker: 128
 Portal Api Management: http://127.0.0.1:2301/portal/index.html
-msbus@puebla started in 244ms.
+Node emsbus@puebla started in 246ms.
 Listening http packets on 127.0.0.1:2301.
 Listening ldap packets on 127.0.0.1:2389.
 ```
