@@ -200,14 +200,14 @@ Communication between services in the cluster
 
 Remember that *consumers* invoke services through REST calls. Moreover, within the cluster, the services(who are also consumers) can communicate with each other asynchronously instead of making REST calls. 
 
-The following example shows two services. The second service invokes the service 1 by calling the *GetStream()* method.
+The following example shows two services. The second service invokes the first service by calling the *GetStream()* method.
 
 
-#### Class *PerguntaService* of the module *unb_questionario*
+#### Class *PerguntaQuestionarioService* of the module *unb_questionario*
 
 ```java
 @Stateless
-public class PerguntaService {
+public class PerguntaQuestionarioService {
 	
 	public Pergunta findById(Integer id) {
 		return QuestionarioInfra.getInstance()
@@ -233,7 +233,7 @@ public class PerguntaService {
 ```
 
 
-#### Class *service proxy* of the module *unb_sae* for access PerguntaQuestionario
+#### Class *service proxy* of the module *unb_sae* for access *PerguntaQuestionarioService*
 
 ```java
 @Stateless
