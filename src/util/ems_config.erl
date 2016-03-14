@@ -78,7 +78,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-% Retorna o name do arquivo de configuração
+% Returns the name of the configuration file
 % Locais do arquivo: home do user (.erlangms/node@hostname.conf) ou na pasta priv/conf do barramento
 get_name_arq_config() ->
 	case init:get_argument(home) of
@@ -99,47 +99,54 @@ le_config() ->
 	case ems_util:read_file_as_map(NomeArqConfig) of
 		{ok, Json} -> 
 			try
-				{ok, Hostname} = inet:gethostname(),
-				Hostname2 = list_to_binary(Hostname),
-				Listen_address = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
-				Listen_address_t = parse_tcp_listen_address(Listen_address),
-				Allowed_address = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Json, [])),
-				Allowed_address_t = parse_allowed_address(Allowed_address),
-				#config{tcp_listen_address 		= Listen_address,
-						 tcp_listen_address_t 		= Listen_address_t,
-						 tcp_port        			= parse_tcp_port(maps:get(<<"tcp_port">>, Json, 2301)),
-						 tcp_keepalive   			= parse_keepalive(maps:get(<<"tcp_keepalive">>, Json, true)),
-						 tcp_nodelay     			= ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, true)),
-						 tcp_max_http_worker 		= parse_max_http_worker(maps:get(<<"tcp_max_http_worker">>, Json, ?MAX_HTTP_WORKER)),
-						 tcp_allowed_address		= Allowed_address,
-						 tcp_allowed_address_t 		= Allowed_address_t,
-						 log_file_dest 				= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
-						 log_file_checkpoint		= maps:get(<<"log_file_checkpoint">>, Json, ?LOG_FILE_CHECKPOINT),
-						 cat_host_alias				= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
-						 cat_host_search			= maps:get(<<"cat_host_search">>, Json, <<>>),							
-						 cat_node_search			= maps:get(<<"cat_node_search">>, Json, <<>>),
-						 ems_hostname 				= Hostname2,
-						 ems_host	 				= list_to_atom(Hostname),
-						 ems_file_dest				= NomeArqConfig,
-						 ems_debug					= maps:get(<<"ems_debug">>, Json, false)
-					}
+				parse_config(Json, NomeArqConfig)
 			catch 
 				_Exception:Reason ->
-					io:format("Não foi possível processar o arquivo de configuração. Motivo: ~p.\n", [Reason]),
-					io:format("Executando o barramento com configurações padrão...\n"),
+					io:format("Unable to process the configuration file. Reason: ~p.\n", [Reason]),
+					io:format("Running the bus with default settings...\n"),
 					get_default_config()
 			end;
 		{error, enojsonformat} -> 
-			io:format("Layout do arquivo de configuração não é um JSON válido!\n"),
-			io:format("Executando o barramento com configurações padrão...\n"),
+			io:format("Configuration file layout is not a valid JSON, running the bus with default settings...\n"),
 			get_default_config();
 		{error, _Reason} -> 
-			io:format("Arquivo de configuração inexistente ou inacessível!\n"),
-			io:format("Executando o barramento com configurações padrão...\n"),
+			io:format("Missing or inaccessible configuration filel, running the bus with default settings...\n"),
 			get_default_config()
 	end.
 
-% Gera uma configuração default se não existir o arquivo de configuração
+parse_config(Json, NomeArqConfig) ->
+	{ok, Hostname} = inet:gethostname(),
+	Hostname2 = list_to_binary(Hostname),
+	Listen_address = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Json, [<<"127.0.0.1">>])),
+	Listen_address_t = parse_tcp_listen_address(Listen_address),
+	Allowed_address = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Json, [])),
+	Allowed_address_t = parse_allowed_address(Allowed_address),
+	#config{tcp_listen_address 		= Listen_address,
+			 tcp_listen_address_t 		= Listen_address_t,
+			 tcp_port        			= parse_tcp_port(maps:get(<<"tcp_port">>, Json, 2301)),
+			 tcp_keepalive   			= parse_keepalive(maps:get(<<"tcp_keepalive">>, Json, true)),
+			 tcp_nodelay     			= ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Json, true)),
+			 tcp_max_http_worker 		= parse_max_http_worker(maps:get(<<"tcp_max_http_worker">>, Json, ?MAX_HTTP_WORKER)),
+			 tcp_allowed_address		= Allowed_address,
+			 tcp_allowed_address_t 		= Allowed_address_t,
+			 log_file_dest 				= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
+			 log_file_checkpoint		= maps:get(<<"log_file_checkpoint">>, Json, ?LOG_FILE_CHECKPOINT),
+			 cat_host_alias				= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
+			 cat_host_search			= maps:get(<<"cat_host_search">>, Json, <<>>),							
+			 cat_node_search			= maps:get(<<"cat_node_search">>, Json, <<>>),
+			 ems_hostname 				= Hostname2,
+			 ems_host	 				= list_to_atom(Hostname),
+			 ems_file_dest				= NomeArqConfig,
+			 ems_debug					= maps:get(<<"ems_debug">>, Json, false),
+			 ldap_tcp_port 				= parse_tcp_port(maps:get(<<"ldap_tcp_port">>, Json, 2389)),
+			 ldap_datasource 			= binary_to_list(maps:get(<<"ldap_datasource">>, Json, <<>>)),
+			 ldap_sql_find_user 		= binary_to_list(maps:get(<<"ldap_sql_find_user">>, Json, <<>>)),
+			 ldap_admin 				= maps:get(<<"ldap_admin">>, Json, <<>>),
+			 ldap_password_admin 		= maps:get(<<"ldap_password_admin">>, Json, <<>>)
+
+		}.
+
+% It generates a default configuration if there is no configuration file
 get_default_config() ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),

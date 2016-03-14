@@ -36,7 +36,6 @@ start(_StartType, StartArgs) ->
 					IpPortal = hd(Config#config.tcp_listen_address), 
 
 					%% show config parameters 
-					ems_logger:info("Reading config parameters from ~s...", [Config#config.ems_file_dest]),
 					ems_logger:info("cat_host_alias: ~p", [Config#config.cat_host_alias]),
 					ems_logger:info("cat_host_search: ~s", [ems_util:join_binlist(Config#config.cat_host_search, ", ")]),
 					ems_logger:info("cat_node_search: ~s", [ems_util:join_binlist(Config#config.cat_node_search, ", ")]),
@@ -48,16 +47,17 @@ start(_StartType, StartArgs) ->
 					ems_logger:info("tcp_keepalive: ~p", [Config#config.tcp_keepalive]),
 					ems_logger:info("tcp_nodelay: ~p", [Config#config.tcp_nodelay]),
 					ems_logger:info("tcp_max_http_worker: ~p", [Config#config.tcp_max_http_worker]),
-
+					ems_logger:info("ldap_tcp_port: ~p", [Config#config.ldap_tcp_port]),
+					ems_logger:info("ldap_datasource: ~s", [Config#config.ldap_datasource]),
+					ems_logger:info("ldap_admin: ~s", [Config#config.ldap_admin]),
 					ems_logger:debug("In debug mode: ~p~", [Config#config.ems_debug]),
-
 					ems_logger:info("Portal Api Management: http://~s:~p/portal/index.html", [IpPortal, Config#config.tcp_port]),
 					ems_logger:info("Node ~s started in ~pms.", [node(), ems_util:get_milliseconds() - T1]),
 					ems_logger:sync(),
 
 					%% Start servers...
 					ems_http_server:start_listeners(Config#config.tcp_port, Config#config.tcp_listen_address_t),
-					ems_ldap_server:start_listeners(2389, Config#config.tcp_listen_address_t),
+					ems_ldap_server:start_listeners(Config#config.ldap_tcp_port, Config#config.tcp_listen_address_t),
 
 					%% Facilitates depuration on initialization
 					ems_util:sleep(2500), 

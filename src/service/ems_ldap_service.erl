@@ -24,16 +24,16 @@
 -export([execute/2, find_user_by_login/1]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, criptografia/1]).
 
 -define(SERVER, ?MODULE).
 
 %  Stores the state of the service.
 -record(state, {connection,			 	%% connection to ldap database
-				data_source,		 	%% odbc datasource
+				datasource,		 		%% odbc datasource
 				sql_find_user,		 	%% sql to find user
-				dn_admin_ldap,		 	%% DN of admin ldap
-				password_admin_ldap}).  %% Password of admin ldap
+				admin,		 			%% admin ldap
+				password_admin}).  %% Password of admin ldap
 
 
 %%====================================================================
@@ -67,11 +67,12 @@ find_user_by_login(UsuLogin) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
+    Config = ems_config:getConfig(),
     State = #state{connection = close_connection,
-				   data_source = "DSN=pessoa;UID=usupessoa;PWD=usupessoa",
-				   sql_find_user = "select  top 1 p.PesCodigoPessoa, p.PesNome, p.PesCpf, p.PesEmail, u.UsuSenha from BDPessoa.dbo.TB_Pessoa p left join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa where u.UsuLogin = ?",
-				   dn_admin_ldap = <<"admin">>,
-				   password_admin_ldap = <<"123456">>
+				   datasource = Config#config.ldap_datasource,
+				   sql_find_user = Config#config.ldap_sql_find_user,
+				   admin = Config#config.ldap_admin,
+				   password_admin = Config#config.ldap_password_admin
 			   },
     {ok, State}. 
     
@@ -108,26 +109,28 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
-autentica("cn", DnAdmin, Password, State = #state{dn_admin_ldap = DnAdminLdap, 
-												  password_admin_ldap = PasswordAdminLdap}) -> 
-	autentica(list_to_binary(DnAdmin), Password, DnAdminLdap, PasswordAdminLdap, State);
+autentica("cn", DnAdmin, Password, State = #state{admin = AdminLdap, 
+												  password_admin = PasswordAdminLdap}) -> 
+	autentica(list_to_binary(DnAdmin), Password, AdminLdap, PasswordAdminLdap, State);
 
-autentica("uid", DnUser, _Password, State) -> 
+autentica("uid", DnUser, PasswordUser, State) -> 
 	case find_user_by_login(DnUser, State) of
-		{error, unavailable} -> 
-			{unavailable, State};
+		{error, unavailable, State2} -> 
+			{unavailable, State2};
 		{{}, State2} -> 
 			{invalidCredentials, State2};
-		{{_, _, _, _, _PasswordLdap}, State2} -> 
-			%autentica(DnUser, Password, DnUser, PasswordLdap)
-			{success, State2}
+		{{_, _, _, _, PasswordLdap}, State2} -> 
+			PasswordUser2 = criptografia(PasswordUser),
+			autentica(DnUser, PasswordUser2, DnUser, PasswordLdap, State2)
 	end.
 
 autentica(Dn, Password, DnLdap, PasswordLdap, State) when Dn =:= DnLdap, Password =:= PasswordLdap -> {success, State};
 
 autentica(_, _, _, _, State) -> {invalidCredentials, State}.
 
-	
+criptografia(Password) -> 
+	Password2 = binary_to_list(Password),
+	base64:encode(sha1:binstring(Password2)).
     
 handle_request({bindRequest, #'BindRequest'{version = _Version, 
 											name = Name, 
@@ -159,14 +162,14 @@ handle_request({searchRequest, #'SearchRequest'{baseObject = _BaseObject,
 	UsuLogin = binary_to_list(UsuLoginBin),
 	%BaseObject2 = parse_base_object(BaseObject),
 	case find_user_by_login(UsuLogin, State) of
-		{error, unavailable} ->
+		{error, unavailable, State2} ->
 			ResultDone = make_result_done(unavailable),
-			{{ok, [ResultDone]}, State};
+			{{ok, [ResultDone]}, State2};
 		{{}, State2} -> 
 			ResultDone = make_result_done(invalidCredentials),
 			{{ok, [ResultDone]}, State2};
-		{DadosUser, State2} ->
-			ResultEntry = make_result_entry(UsuLoginBin, DadosUser, State2),
+		{UserRecord, State2} ->
+			ResultEntry = make_result_entry(UsuLoginBin, UserRecord, State2),
 			ResultDone = make_result_done(success),
 			{{ok, [ResultEntry, ResultDone]}, State2}
 	end;
@@ -205,11 +208,11 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
 
-make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}, #state{dn_admin_ldap = DnAdminLdap}) ->
+make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}, #state{admin = AdminLdap}) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
-														#'PartialAttribute'{type = <<"cn">>, vals = [DnAdminLdap]},
+														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
 														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
 														#'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf]},
 														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
@@ -232,21 +235,35 @@ make_result_done(ResultCode) ->
 find_user_by_login(UserLogin, State = #state{sql_find_user = Sql}) ->
 	case get_database_connection(State) of
 		close_connection -> 
-			{error, unavailable};
+			State2 = State#state{connection = close_connection},
+			{error, unavailable, State2};
 		Conn -> 
-			State2 = State#state{connection = Conn},
 			Params = [{{sql_varchar, 100}, [UserLogin]}],
-			 {_, _, DadosUser} = odbc:param_query(Conn, Sql, Params),
-			case DadosUser of
-				[{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}] ->
-					DadosUser2 = {format_user_field(UsuId),
-								  format_user_field(UsuNome),
-								  format_user_field(UsuCpf),
-								  format_user_field(UsuEmail),
-								  format_user_field(UsuSenha)}, 
-					{DadosUser2, State2};
-				_->
-					{{}, State2}
+			try
+				case odbc:param_query(Conn, Sql, Params, 3500) of
+					{_, _, UserRecord} -> 
+						State2 = State#state{connection = Conn},
+						case UserRecord of
+							[{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}] ->
+								UserRecord2 = {format_user_field(UsuId),
+											   format_user_field(UsuNome),
+											   format_user_field(UsuCpf),
+											   format_user_field(UsuEmail),
+											   format_user_field(UsuSenha)}, 
+								{UserRecord2, State2};
+							_->
+								{{}, State2}
+						end;
+					{error, Reason} ->
+						State2 = State#state{connection = close_connection},
+						ems_logger:error("Query ldap database error. Reason: ~p", [Reason]),
+						{error, unavailable, State2}
+				end
+			catch
+				_Exception:Reason3 -> 
+					State3 = State#state{connection = close_connection},
+					ems_logger:error("Connection or query ldap database error. Reason: ~p", [Reason3]),
+					{error, unavailable, State3}
 			end
 	end.
 
@@ -258,7 +275,7 @@ format_user_field(Text) -> list_to_binary(string:strip(Text)).
 	
 
 get_database_connection(#state{connection = close_connection, 
-							   data_source = DataSource}) ->
+							   datasource = DataSource}) ->
 	try
 		case odbc:connect(DataSource, [{scrollable_cursors, off},
 									   {timeout, 3500},
@@ -278,9 +295,3 @@ get_database_connection(#state{connection = close_connection,
 
 	
 get_database_connection(#state{connection = Conn}) -> Conn.
-	
-			
-
-
-
-

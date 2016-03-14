@@ -94,8 +94,8 @@ handle_cast({_StatusCode, Request, Result}, State) ->
 	case Result of
 		{ok, unbindRequest} ->
 			ems_tcp_util:send_data(Socket, [<<>>]),
-			finaliza_request(Request);
-			%gen_tcp:close(Socket),
+			finaliza_request(Request),
+			gen_tcp:close(Socket);
 		{ok, Msg} -> 
 			Response = lists:map(fun(M) -> ems_ldap_util:encode_response(MessageID, M) end, Msg),
 			ems_tcp_util:send_data(Socket, Response)
@@ -148,13 +148,9 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 			ems_logger:info("Check pending connections to the ldap server socket ~p.", [State#state.worker_id]),
 			%close_timeout_connections(State),
 			{noreply, State#state{open_requests = []}, 0};
-		{error, system_limit} ->
-			ems_logger:error("No available ports in the Erlang emulator for ldap worker ~p. System_limit: ~p.", [State#state.worker_id, system_limit]),
-			ems_util:sleep(3000),
-			{noreply, State, 0};
 		{error, PosixError} ->
-			ems_logger:error("Erro POSIX ~p in ldap worker ~p.", [PosixError, State#state.worker_id]),
-			ems_util:sleep(3000),
+			PosixErrorDescription = ems_tcp:posix_error_description(PosixError),
+			ems_logger:error("~p in ldap worker ~p.", [PosixErrorDescription, State#state.worker_id]),
 			{noreply, State, 0}
 	end;
 

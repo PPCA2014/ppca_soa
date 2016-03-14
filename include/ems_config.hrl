@@ -36,7 +36,7 @@
 -define(CONF_FILE_PATH, ?CONF_PATH ++ "/emsbus.conf").
 
 % Caminho inicial para os arquivos estáticos
--define(STATIC_FILE_PATH, code:priv_dir(emsbus) ++ "/www").
+-define(STATIC_FILE_PATH, ?PRIV_PATH ++ "/www").
 
 % Propriedade TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 30000).
@@ -63,6 +63,7 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 *60 * 30). % 30 minutos
 
 
+
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
 				 tcp_listen_address_t,			%% Quais IPs das interfaces de rede que o barramento vai ouvir (formato de tupla para inet)
@@ -80,7 +81,12 @@
 				 ems_hostname,					%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,						%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,					%% Nome do arquivo de configuração (útil para saber o local do arquivo)
-				 ems_debug						%% Modo debug (true/false)
+				 ems_debug,						%% Modo debug (true/false)
+				 ldap_tcp_port, 				%% ldap tcp port
+				 ldap_datasource = "",			%% ldap datasource
+				 ldap_sql_find_user = "",		%% sql to find user
+				 ldap_admin = "",				%% admin of ldap
+				 ldap_password_admin = ""		%% password of admin ldap
 		 }). 	
 
 
