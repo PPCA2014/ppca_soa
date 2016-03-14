@@ -109,41 +109,41 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Dispatches the request to the service registered in the catalog
 do_dispatch_request(Request) ->
 	case ems_catalog:lookup(Request) of
-		{Contract, ParamsMap, QuerystringMap} -> 
-			case ems_auth_user:autentica(Contract, Request) of
+		{Service, ParamsMap, QuerystringMap} -> 
+			case ems_auth_user:autentica(Service, Request) of
 				{ok, User} ->
-					case get_work_node(Contract#servico.host, 
-									   Contract#servico.host,	
-									   Contract#servico.host_name, 
-									   Contract#servico.module_name, 1) of
+					case get_work_node(Service#service.host, 
+									   Service#service.host,	
+									   Service#service.host_name, 
+									   Service#service.module_name, 1) of
 						{ok, Node} ->
 							Request2 = Request#request{user = User, 
 													   node_exec = Node,
-													   servico = Contract,
+													   service = Service,
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
 							ems_request:registra_request(Request2),
 							ems_eventmgr:notifica_evento(new_request, Request2),
-							case executa_servico(Node, Request2) of
+							case executa_service(Node, Request2) of
 								ok -> ok;
-								Error -> ems_eventmgr:notifica_evento(erro_request, {servico, Request2, Error})
+								Error -> ems_eventmgr:notifica_evento(erro_request, {service, Request2, Error})
 							end;
 						Error -> 
-							ems_eventmgr:notifica_evento(erro_request, {servico, Request, Error})
+							ems_eventmgr:notifica_evento(erro_request, {service, Request, Error})
 					end;
 				{error, no_authorization} -> 
-					ems_eventmgr:notifica_evento(erro_request, {servico, Request, {error, no_authorization}})
+					ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, no_authorization}})
 			end;
 		notfound -> 
 			ems_request:registra_request(Request),
-			ems_eventmgr:notifica_evento(erro_request, {servico, Request, {error, notfound}});
+			ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, notfound}});
 		Erro ->
 			io:format("ERRO -> ~p\n", [Erro])
 	end,
 	ok.
 
 %% @doc Executa o serviço local (Serviço escrito em Erlang)
-executa_servico(_Node, Request=#request{servico=#servico{host='', 
+executa_service(_Node, Request=#request{service=#service{host='', 
 														 host_name = HostName,	
 														 module=Module, 
 														 module_name = ModuleName, 
@@ -166,11 +166,11 @@ executa_servico(_Node, Request=#request{servico=#servico{host='',
 																   Request#request.uri]),
 		ok
 	catch
-		_Exception:ErroInterno ->  {error, servico_falhou, ErroInterno}
+		_Exception:ErroInterno ->  {error, service_falhou, ErroInterno}
 	end;
 
 %% @doc Executa um serviço remotamente
-executa_servico(Node, Request=#request{servico=#servico{host = _HostList, 
+executa_service(Node, Request=#request{service=#service{host = _HostList, 
 														host_name = _HostNames,	
 														module_name = ModuleName, 
 														function_name = FunctionName, 
@@ -213,7 +213,7 @@ get_work_node([], HostList, HostNames, ModuleName, 1) ->
 
 get_work_node([], _HostList, HostNames, _ModuleName, 2) -> 
 	Motivo = lists:flatten(string:join(HostNames, ", ")),
-	{error, servico_fora, Motivo};
+	{error, service_fora, Motivo};
 
 get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) -> 
 	%% Localiza a entrada do módulo na tabela hash

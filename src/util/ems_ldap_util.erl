@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module with useful functions for the LDAP server.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_ldap_util).
@@ -26,7 +26,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 			{ok, #request{
 				rid = RID,
 				rowid = Rowid,
-				versao_http = "LDAPv3",
+				version = "LDAPv3",
 				type = "GET",
 				uri = "/ldap",
 				url = "/ldap",
@@ -36,7 +36,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 				timestamp = Timestamp,
 				authorization = "",
 				worker_send = WorkerSend,
-				protocolo = ldap
+				protocol = ldap
 			}}
 	end.
 

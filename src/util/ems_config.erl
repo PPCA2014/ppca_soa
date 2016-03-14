@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module for configuration management
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_config).
@@ -78,9 +78,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-% Retorna o nome do arquivo de configuração
+% Retorna o name do arquivo de configuração
 % Locais do arquivo: home do user (.erlangms/node@hostname.conf) ou na pasta priv/conf do barramento
-get_nome_arq_config() ->
+get_name_arq_config() ->
 	case init:get_argument(home) of
 		{ok, [[Home]]} -> 
 			NomeArqConfig = lists:concat([Home, "/.erlangms/", node(), ".conf"]),
@@ -95,7 +95,7 @@ get_nome_arq_config() ->
 
 % Lê as configurações do arquivo de configuração
 le_config() ->
-	NomeArqConfig = get_nome_arq_config(),
+	NomeArqConfig = get_name_arq_config(),
 	case ems_util:read_file_as_map(NomeArqConfig) of
 		{ok, Json} -> 
 			try
@@ -174,7 +174,7 @@ parse_tcp_port(Port) when is_list(Port) ->
 parse_tcp_port(Port) when is_integer(Port) -> 
 	case ems_consist:is_range_valido(Port, 1024, 5000) of
 		true -> Port;
-		false -> erlang:error("Parâmetro tcp_port inválido. Informe um valor entre 1024 e 5000.")
+		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
 	end.
 
 parse_max_http_worker(<<Value/binary>>) -> 
@@ -183,7 +183,7 @@ parse_max_http_worker(<<Value/binary>>) ->
 parse_max_http_worker(Value) -> 
 	case ems_consist:is_range_valido(Value, 1, ?MAX_HTTP_WORKER_RANGE) of
 		true -> Value;
-		false -> erlang:error("Parâmetro tcp_max_http_worker inválido.")
+		false -> erlang:error("Parameter tcp_max_http_worker invalid.")
 	end.
 
 parse_tcp_listen_address(ListenAddress) ->

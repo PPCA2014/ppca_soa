@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module that provides interface with the database.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_db).

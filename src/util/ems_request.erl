@@ -192,7 +192,7 @@ get_property_request(<<"type">>, Request) ->
 
 %% @doc Retorna a URL do request
 get_property_request(<<"http_version">>, Request) ->
-	Request#request.versao_http;
+	Request#request.version;
 
 %% @doc Retorna o payload/body do request
 get_property_request(<<"payload">>, Request) ->

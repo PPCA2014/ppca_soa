@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc It provides information about the bus in runtime.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_info_service).
@@ -25,7 +25,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 
 
@@ -64,8 +64,8 @@ handle_cast(shutdown, State) ->
 
 handle_cast({info, Request, _From}, State) ->
 	{Result, NewState} = do_info(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, Result}),
-	%gen_server:cast(From, {servico, Request, Result}), 
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
+	%gen_server:cast(From, {service, Request, Result}), 
 	{noreply, NewState}.
     
 handle_call({info, Request}, _From, State) ->

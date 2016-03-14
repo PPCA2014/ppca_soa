@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Arquivo com configurações gerais de funcionamento de ErlangMS.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 %-ifndef(PRINT).
@@ -74,11 +74,11 @@
 				 tcp_allowed_address_t,			%% Faixa de ips que são permitidos acessar os serviços do barramento (formato de tupla para inet)
 				 log_file_dest,					%% Caminho para a pasta dos logs do barramento
 				 log_file_checkpoint,			%% De quanto em quanto tempo será descarregado os buffers do módulo msbus_logger (DEFAULT 6 segundos)
-				 cat_host_alias, 				%% Lista (Chave-Valor) com os nomes alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
+				 cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,				%% Lista de hosts para pesquisar os serviços
 				 cat_node_search,				%% Lista de nodes para pesquisar os serviços
 				 ems_hostname,					%% Nome da maquina onde o barramento está sendo executado
-				 ems_host,						%% Atom do nome da maquina onde o barramento está sendo executado
+				 ems_host,						%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,					%% Nome do arquivo de configuração (útil para saber o local do arquivo)
 				 ems_debug						%% Modo debug (true/false)
 		 }). 	

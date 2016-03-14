@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Módulo responsável pelo favicon do erlangMS.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_favicon_service).
@@ -24,7 +24,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {arquivo}). 
 
 
@@ -67,8 +67,8 @@ handle_cast(shutdown, State) ->
 
 handle_cast({favicon, Request, _From}, State) ->
 	Reply = do_get_favicon(State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
-	%gen_server:cast(From, {servico, Request, Reply}), 
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Reply}),
+	%gen_server:cast(From, {service, Request, Reply}), 
 	{noreply, State}.
     
 handle_call({favicon, _Request}, _From, State) ->

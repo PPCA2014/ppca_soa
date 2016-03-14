@@ -262,7 +262,7 @@ envia_response(Request, {async, true}, _State) ->
 	envia_response(200, ok, Request, Response);
 
 envia_response(Request, {ok, Result}, _State) -> 
-	case Request#request.servico#servico.async of
+	case Request#request.service#service.async of
 		true -> io:format("Ticket já foi entregue.\n");
 		_ -> 
 			Response = ems_http_util:encode_response(<<"200">>, Result),
@@ -293,9 +293,9 @@ envia_response(Request, {error, Reason}, _State) ->
 	Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
 	envia_response(400, Reason, Request, Response);
 
-envia_response(Request, {error, servico_fora, ErroInterno}, _State) ->
+envia_response(Request, {error, service_fora, ErroInterno}, _State) ->
 	Response = ems_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
-	Reason2 = io_lib:format("~p ~p", [servico_fora, ErroInterno]),
+	Reason2 = io_lib:format("~p ~p", [service_fora, ErroInterno]),
 	envia_response(503, Reason2, Request, Response);
 
 envia_response(Request, {error, Reason, ErroInterno}, State) ->
@@ -310,10 +310,10 @@ envia_response(Code, Reason, Request, Response) ->
 	Latencia = T2 - Request#request.t1,
 	StatusSend = ems_http_util:send_request(Request#request.socket, Response),
 	case  StatusSend of
-		ok -> Status = req_entregue;
-		_  -> Status = req_concluido
+		ok -> Status = req_send;
+		_  -> Status = req_done
 	end,
-	Request2 = Request#request{latencia = Latencia, code = Code, reason = Reason, status_send = StatusSend, status = Status},
+	Request2 = Request#request{latency = Latencia, code = Code, reason = Reason, status_send = StatusSend, status = Status},
 	ems_request:finaliza_request(Request2),
 	case StatusSend of
 		ok -> ems_eventmgr:notifica_evento(close_request, Request2);

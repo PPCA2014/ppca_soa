@@ -28,7 +28,7 @@ start(_StartType, StartArgs) ->
 			ems_logger:info("~n~s", [?SERVER_NAME]),
 			odbc:start(),
 
-			case ems_catalog:init_catalogo() of
+			case ems_catalog:init_catalog() of
 				ok ->
 					Ret = ems_bus_sup:start_link(StartArgs),
 

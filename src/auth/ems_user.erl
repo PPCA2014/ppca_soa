@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Manages information about users
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_user).
@@ -27,7 +27,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 
 
@@ -158,14 +158,14 @@ do_delete(Id) ->
 	end.
 
 valida(User, insert) ->
-	case ems_consist:mensagens([ems_consist:msg_campo_obrigatorio("nome", User#user.nome),
+	case ems_consist:mensagens([ems_consist:msg_campo_obrigatorio("name", User#user.name),
 								   ems_consist:msg_campo_obrigatorio("email", User#user.email),
-								   ems_consist:msg_campo_obrigatorio("senha", User#user.senha)]) of
+								   ems_consist:msg_campo_obrigatorio("password", User#user.password)]) of
 		[] -> 
 			case ems_consist:msg_email_invalido("email", User#user.email) of
 				[] ->
-					case ems_consist:msg_registro_ja_existe({user, '_', User#user.nome, '_', '_'}, 
-																<<"O nome do usuário já está cadastrado."/utf8>>) of
+					case ems_consist:msg_registro_ja_existe({user, '_', User#user.name, '_', '_'}, 
+																<<"O name do usuário já está cadastrado."/utf8>>) of
 						[] -> 
 							case ems_consist:msg_registro_ja_existe({user, '_', '_', User#user.email, '_'}, 
 																	    <<"O email do usuário já está cadastrado."/utf8>>) of
@@ -187,8 +187,8 @@ find_by_username_and_password(Username, Password) ->
 	Query = fun() ->
 		  qlc:e(
 			 qlc:q([R || R <- mnesia:table(user), 
-						 R#user.nome == Username,
-						 R#user.senha == Password])
+						 R#user.name == Username,
+						 R#user.password == Password])
 		  )
 	   end,
 	case mnesia:transaction(Query) of

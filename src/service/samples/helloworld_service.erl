@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Módulo de serviço para o famoso hello world!!!
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 -module(helloworld_service).
 
@@ -22,7 +22,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 
 
@@ -57,7 +57,7 @@ handle_cast(shutdown, State) ->
 
 handle_cast({hello_world, Request, _From}, State) ->
 	Reply = do_hello_world(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Reply}),
 	{noreply, State}.
     
 handle_call({hello_world, Request}, _From, State) ->

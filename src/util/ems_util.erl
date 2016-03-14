@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Contém funções de propósito gerais.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_util).
@@ -223,14 +223,14 @@ profile() ->
 	fprof:profile(),
 	fprof:analyse([totals, {dest, "fprof.txt"}]).
 
-new_rowid_servico(<<Url/binary>>, <<Type/binary>>) ->	
+new_rowid_service(<<Url/binary>>, <<Type/binary>>) ->	
 	[PrefixUrl|Url2] = binary_to_list(Url),
 	case PrefixUrl of
 		$^ -> iolist_to_binary([Type, <<"#">>, list_to_binary(Url2)]);
 		_  -> iolist_to_binary([Type, <<"#">>, Url])
 	end;
 
-new_rowid_servico(Url, Type) ->	
+new_rowid_service(Url, Type) ->	
 	[PrefixUrl|Url2] = Url,
 	case PrefixUrl of
 		$^ -> iolist_to_binary([Type, <<"#">>, Url2]);
@@ -308,5 +308,5 @@ node_is_live(Node) ->
 		_ -> 0
 	end.
 
-% Retorna somente a parte do nome do node sem a parte do hostname após @
+% Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).

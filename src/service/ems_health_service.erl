@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Disponibiliza informações da saúde do servidor
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_health_service).
@@ -26,7 +26,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 
 
@@ -70,20 +70,20 @@ handle_cast(shutdown, State) ->
 
 handle_cast({top_services, Request, _From}, State) ->
 	Reply = get_top_services(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
-	%gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	%gen_server:cast(From, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({top_services_by_type, Request, _From}, State) ->
 	Reply = get_top_services_by_type(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
-	%gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	%gen_server:cast(From, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({qtd_requests_by_date, Request, _From}, State) ->
 	Reply = get_qtd_requests_by_date(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
-	%gen_server:cast(From, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	%gen_server:cast(From, {service, Request, {ok, Reply}}),
 	{noreply, State}.
 
 handle_call(_Params, _From, State) ->

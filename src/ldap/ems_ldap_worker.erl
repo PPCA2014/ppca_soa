@@ -216,6 +216,6 @@ trata_request(Socket, RequestBin, State) ->
 finaliza_request(Request) ->
 	T2 = ems_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	Request2 = Request#request{latencia = Latencia, code = 200, reason = ok, status_send = ok, status = req_concluido},
+	Request2 = Request#request{latency = Latencia, code = 200, reason = ok, status_send = ok, status = req_done},
 	ems_request:finaliza_request(Request2),
 	ems_eventmgr:notifica_evento(close_request, Request2).

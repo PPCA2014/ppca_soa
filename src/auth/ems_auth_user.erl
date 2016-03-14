@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module responsible for authenticating users.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_auth_user).
@@ -13,9 +13,9 @@
     
 -export([autentica/2]).
 
-autentica(Contract, Request) ->
+autentica(Service, Request) ->
 	try
-		case Contract#servico.authentication of
+		case Service#service.authentication of
 			<<"Basic">> -> do_basic_authorization(Request);
 			<<>> -> {ok, anonimo}
 		end

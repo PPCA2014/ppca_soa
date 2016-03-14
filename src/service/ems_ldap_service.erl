@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc It provides ldap service.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_ldap_service).
@@ -80,7 +80,7 @@ handle_cast(shutdown, State) ->
 
 handle_cast({search, Request, _From}, State) ->
 	{Result, NewState} = handle_request(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, Result}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, NewState}.
 
 handle_call({search, Request}, _From, State) ->

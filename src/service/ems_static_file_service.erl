@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Módulo para gerenciamento de arquivos estáticos.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_static_file_service).
@@ -26,7 +26,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {cache}). 
 
 
@@ -92,7 +92,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_get_file(Request, _State) ->
 	FilePath = ?STATIC_FILE_PATH ++ Request#request.url,
-	ems_cache:get(static_file_cache, Request#request.servico#servico.result_cache, FilePath, 
+	ems_cache:get(static_file_cache, Request#request.service#service.result_cache, FilePath, 
 		fun() -> 
 			case file:read_file(FilePath) of
 				{ok, Arquivo} -> 
@@ -101,7 +101,7 @@ do_get_file(Request, _State) ->
 				{error, enoent} -> 
 					{error, file_not_found};
 				{error, Reason} -> 
-					{error, servico_falhou, Reason}
+					{error, service_falhou, Reason}
 			end
 		end).
 

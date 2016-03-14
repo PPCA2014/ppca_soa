@@ -4,7 +4,7 @@
 %% @doc Module for cache management.
 %%      Based on solution http://inaka.net/blog/2013/03/05/ETS-simple-cache.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_cache).
@@ -19,7 +19,7 @@
 
 -export([new/1, get/4, flush/1, flush/2]).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 -type state():: #state{}.
 

@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module with useful functions for the TCP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_tcp_util).

@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module responsible for catalog management services
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_catalog).
@@ -20,9 +20,9 @@
 -export([start/0, start_link/1, stop/0]).
 
 %% Client
--export([init_catalogo/0,
-		 lista_catalogo/0, 
-		 update_catalogo/0,
+-export([init_catalog/0,
+		 list_catalog/0, 
+		 update_catalog/0,
 		 lookup/1,
 		 get_querystring/2, 
 		 get_ult_lookup/0,
@@ -35,11 +35,11 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do catálogo. 
--record(state, {cat1, 			%% Catalogo JSON
+-record(state, {cat1, 			%% Catalog JSON
 				cat2, 			%% Parsed catalog 
 				cat3, 			%% Regular expression parsed catalog
-				ult_lookup, 	%% Último lookup realizado
-				ult_rowid,		%% Rowid da última requisição
+				ult_lookup, 	%% Last lookup performed
+				ult_rowid,		%% Rowid of the last request
 				tbl_cache_lookup = [],
 				tbl_cache_index = 0
 		}). 
@@ -63,11 +63,11 @@ stop() ->
 %% Client API
 %%====================================================================
  
-lista_catalogo() ->
-	ems_pool:call(ems_catalog_pool, lista_catalogo).
+list_catalog() ->
+	ems_pool:call(ems_catalog_pool, list_catalog).
 
-update_catalogo() ->
-	ems_pool:cast(ems_catalog_pool, update_catalogo).
+update_catalog() ->
+	ems_pool:cast(ems_catalog_pool, update_catalog).
 
 lookup(Request) ->	
 	ems_pool:call(ems_catalog_pool, {lookup, Request}).
@@ -97,12 +97,12 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(update_catalogo, _State) ->
-	NewState = get_catalogo(),
+handle_cast(update_catalog, _State) ->
+	NewState = get_catalog(),
 	{noreply, NewState}.
 
-handle_call(lista_catalogo, _From, State) ->
-	Reply = do_lista_catalogo(State),
+handle_call(list_catalog, _From, State) ->
+	Reply = do_list_catalog(State),
 	{reply, Reply, State};
     
 handle_call({lookup, Request}, _From, State) ->
@@ -136,9 +136,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-init_catalogo() ->
+init_catalog() ->
 	ets:new(ets_ems_catalog, [set, named_table, public]),
-	case get_catalogo() of
+	case get_catalog() of
 		{ok, Cat1, Cat2, Cat3} -> 
 			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3}}),
 			ok;
@@ -151,7 +151,7 @@ init_catalogo() ->
 		{error, enoent} ->
 			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Catálogo de serviços não encontrado.", [self()]),
 			{error, invalidcatalog};
-		{error, enomem} ->
+		{error, enamem} ->
 			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Não há memória suficiente para ler o catálogo de serviços.", [self()]),
 			{error, invalidcatalog};
 		{error, Reason} ->
@@ -184,11 +184,11 @@ lookup_cache_tail([{Ult_rowid, Ult_lookup}|T], Rowid) ->
 
 
 %% @doc Serviço que lista o catálogo
-do_lista_catalogo(State) -> State#state.cat1.
+do_list_catalog(State) -> State#state.cat1.
 
 %% @doc Obtém o catálogo
-get_catalogo() -> 
-	case get_catalogo_mestre() of
+get_catalog() -> 
+	case get_main_catalog() of
 		{ok, CatMestre} ->
 			CatalogoDefsPath = ?CONF_PATH ++ "/catalog/",
 			%% Obtém a lista do conteúdo de todos os catálogos
@@ -216,7 +216,7 @@ get_catalogo() ->
 			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
 			%% Faz o parser do catálogo
 			Conf = ems_config:getConfig(),
-			{Cat2, Cat3, Cat4} = parse_catalogo(Cat1, [], [], [], 1, Conf),
+			{Cat2, Cat3, Cat4} = parse_catalog(Cat1, [], [], [], 1, Conf),
 			{ok, Cat4, Cat2, Cat3};
 		Error -> Error
 	end.
@@ -224,28 +224,28 @@ get_catalogo() ->
 
 %% @doc O catálogo mestre possui os includes para os catálogos
 
-get_catalogo_mestre() ->
+get_main_catalog() ->
 	case file:read_file(?CATALOGO_PATH) of
 		{ok, Arq} -> ems_util:json_decode_as_map(Arq);
 		Error -> Error
 	end.
 
-%% @doc Indica se o nome da querystring é valido
+%% @doc Indica se o name da querystring é valido
 is_name_querystring_valido(Name) ->
 	case re:run(Name, "^[_a-zA-Z][_a-zA-Z0-9]{0,29}$") of
 		nomatch -> false;
 		_ -> true
 	end.
 
-%% @doc Indica se o nome do pseudo param é valido
+%% @doc Indica se o name do pseudo param é valido
 is_pseudo_name_param_valido(Name) ->
 	case re:run(Name, "^[a-z0-9]{0,29}$") of
 		nomatch -> false;
 		_ -> true
 	end.
 
-%% @doc Indica se o nome da querystring é valido
-is_name_servico_valido(Name) ->
+%% @doc Indica se o name da querystring é valido
+is_name_service_valido(Name) ->
 	case re:run(Name, "^[/_a-zA-Z][.:/_a-zA-Z0-9]{0,300}$") of
 		nomatch -> false;
 		_ -> true
@@ -271,21 +271,21 @@ is_url_com_re([H|T]) ->
 		false -> is_url_com_re(T)
 	end.
 
-%% @doc Valida o nome do serviço
-valida_name_contract(Name) ->
-	case is_name_servico_valido(Name) of
+%% @doc Valida o name do serviço
+valida_name_service(Name) ->
+	case is_name_service_valido(Name) of
 		true -> ok;
-		false -> erlang:error(invalid_name_servico)
+		false -> erlang:error(invalid_name_service)
 	end.
 
-%% @doc Valida o nome da querystring
+%% @doc Valida o name da querystring
 valida_name_querystring(Name) ->
 	case is_name_querystring_valido(Name) of
 		true -> ok;
 		false -> erlang:error(invalid_name_querystring)
 	end.
 
-%% @doc Valida o nome do pseudo param
+%% @doc Valida o name do pseudo param
 valida_pseudo_name_param(Name) ->
 	case is_pseudo_name_param_valido(Name) of
 		true -> ok;
@@ -300,17 +300,17 @@ valida_type_querystring(Type) ->
 	end.
 
 %% @doc Valida o método do serviço 
-valida_type_contract(Type) ->
+valida_type_service(Type) ->
 	case ems_http_util:is_metodo_suportado(Type) of
 		true -> ok;
-		false -> erlang:error(invalid_type_servico)
+		false -> erlang:error(invalid_type_service)
 	end.
 
-valida_url_contract(<<"/">>) -> ok;
-valida_url_contract(Url) ->
+valida_url_service(<<"/">>) -> ok;
+valida_url_service(Url) ->
 	case ems_http_util:is_url_valido(Url) andalso is_valid_length(Url, 300) of
 		true -> ok;
-		false -> erlang:error(invalid_url_servico)
+		false -> erlang:error(invalid_url_service)
 	end.
 	
 valida_bool(<<"true">>) -> ok;
@@ -368,41 +368,41 @@ pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]
 pseudoparam_to_re(_, _)  -> erlang:error(invalid_pseudo_param).
 
 %% @doc Faz o parser da URL convertendo os pseudo parâmetros em expressão regular
-parse_url_servico(<<Url/binary>>) ->
+parse_url_service(<<Url/binary>>) ->
 	Url1 = string:tokens(binary_to_list(Url), "/"),
-	parse_url_servico(Url1, []).
+	parse_url_service(Url1, []).
 
-parse_url_servico([], []) -> <<"/">>;
-parse_url_servico([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
-parse_url_servico([H|T], Url) when hd(H) /= $: -> parse_url_servico(T, [H | Url]);
-parse_url_servico([H|T], Url) ->
+parse_url_service([], []) -> <<"/">>;
+parse_url_service([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
+parse_url_service([H|T], Url) when hd(H) /= $: -> parse_url_service(T, [H | Url]);
+parse_url_service([H|T], Url) ->
 	case string:chr(H, $_) > 0 of
 		true ->
 			[Pseudo, Nome] = string:tokens(H, "_"),
 			valida_pseudo_name_param(Nome),
 			P = pseudoparam_to_re(Pseudo, Nome),
-			parse_url_servico(T, [P | Url]);
+			parse_url_service(T, [P | Url]);
 		false ->
 			Pseudo = H,
 			P = pseudoparam_to_re(Pseudo),
-			parse_url_servico(T, [P | Url])
+			parse_url_service(T, [P | Url])
 	end.
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
-parse_catalogo([], Cat2, Cat3, Cat4, _Id, _Conf) ->
+parse_catalog([], Cat2, Cat3, Cat4, _Id, _Conf) ->
 	EtsCat2 = ems_util:list_to_ets(Cat2, ets_cat2, [set, 
 													  public, 
 													  {read_concurrency, true}]),
 	{EtsCat2, Cat3, Cat4};
 	
-parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
+parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Name = maps:get(<<"name">>, H),
 	Url = maps:get(<<"url">>, H),
 	Url2 = Url,
 	Type = maps:get(<<"type">>, H, <<"GET">>),
-	valida_url_contract(Url2),
-	Service = maps:get(<<"service">>, H),
-	{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_contract(Service),
+	valida_url_service(Url2),
+	ServiceImpl = maps:get(<<"service">>, H),
+	{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
 	Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
 	Comment = maps:get(<<"comment">>, H, <<>>),
 	Version = maps:get(<<"version">>, H, <<>>),
@@ -416,13 +416,13 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 			Host = '',
 			HostName = Conf#config.ems_hostname;
 		_ ->	
-			Node = parse_node_contract(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-			{Host, HostName} = parse_host_contract(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+			Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
+			{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
 	end,
 	Result_Cache = maps:get(<<"result_cache">>, H, 0),
 	Authentication = maps:get(<<"authentication">>, H, <<>>),
-	valida_name_contract(Name),
-	valida_type_contract(Type),
+	valida_name_service(Name),
+	valida_type_service(Type),
 	valida_bool(Apikey),
 	valida_bool(Async),
 	valida_length(Comment, 1000),
@@ -431,13 +431,13 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	valida_authentication(Authentication),
 	{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
 	IdBin = list_to_binary(integer_to_list(Id)),
-	ContractView = new_contract_view(IdBin, Name, Url, ModuleName, FunctionName, 
+	ServiceView = new_service_view(IdBin, Name, Url, ModuleName, FunctionName, 
 							         Type, Apikey, Comment, Version, Owner, 
 								     Async, Host, Result_Cache, Authentication, Node, Lang),
 	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
 		true -> 
-			Contract = new_contract_re(Rowid, IdBin, Name, Url2, 
-									   Service,
+			Service = new_service_re(Rowid, IdBin, Name, Url2, 
+									   ServiceImpl,
 									   ModuleName, 
 									   ModuleNameCanonical,
 									   FunctionName, Type, Apikey, Comment, 
@@ -445,10 +445,10 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 									   Querystring, QtdQuerystringRequired,
 									   Host, HostName, Result_Cache,
 									   Authentication, Node, Lang),
-			parse_catalogo(T, Cat2, [Contract|Cat3], [ContractView|Cat4], Id+1, Conf);
+			parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
 		false -> 
-			Contract = new_contract(Rowid, IdBin, Name, Url2, 
-									Service,
+			Service = new_service(Rowid, IdBin, Name, Url2, 
+									ServiceImpl,
 									ModuleName,
 									ModuleNameCanonical,
 									FunctionName, Type, Apikey, Comment,
@@ -456,10 +456,10 @@ parse_catalogo([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 									Querystring, QtdQuerystringRequired,
 									Host, HostName, Result_Cache,
 									Authentication, Node, Lang),
-			parse_catalogo(T, [{Rowid, Contract}|Cat2], Cat3, [ContractView|Cat4], Id+1, Conf)
+			parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
 	end.	
 
-parse_service_contract(Service) ->
+parse_service_service(Service) ->
 	try
 		[ModuleName, FunctionName] = binary:split(Service, <<":">>),
 		ModuleName2 = binary_to_list(ModuleName),
@@ -467,16 +467,16 @@ parse_service_contract(Service) ->
 		ModuleNameCanonical = lists:last(string:tokens(ModuleName2, ".")),
 		{ModuleName2, ModuleNameCanonical, FunctionName2}
 	catch
-		_Exception:_Reason ->  erlang:error(invalid_service_contract)
+		_Exception:_Reason ->  erlang:error(invalid_service_service)
 	end.
 	
-parse_node_contract(<<>>) -> <<>>;
-parse_node_contract(List) -> List.
+parse_node_service(<<>>) -> <<>>;
+parse_node_service(List) -> List.
 
 	
 %% @doc O host pode ser um alias definido no arquivo de configuração
-parse_host_contract(<<>>, _,_,_) -> {'', atom_to_list(node())};
-parse_host_contract(Host, ModuleNameCanonical, Node, Conf) ->
+parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
+parse_host_service(Host, ModuleNameCanonical, Node, Conf) ->
 	HostAlias = Conf#config.cat_host_alias,
 	case erlang:is_list(Host) of
 		true  -> ListHost = Host;
@@ -497,18 +497,18 @@ parse_host_contract(Host, ModuleNameCanonical, Node, Conf) ->
 	
 
 get_querystring(<<QueryName/binary>>, Servico) ->	
-	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#servico.comment == QueryName],
+	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#service.comment == QueryName],
 	Query.
 
 
-processa_querystring(Contract, Request) ->
+processa_querystring(Service, Request) ->
 	%% Querystrings do módulo ems_static_file_service e ems_options_service não são processados.
 	QuerystringUser = Request#request.querystring_map,
-	case Contract#servico.module of
+	case Service#service.module of
 		ems_static_file_service -> QuerystringUser;
 		ems_options_service -> QuerystringUser;
 		_ ->
-			QuerystringServico = Contract#servico.querystring,
+			QuerystringServico = Service#service.querystring,
 			case QuerystringUser =:= #{} of
 				true -> 
 					case QuerystringServico =:= <<>> of
@@ -552,14 +552,14 @@ lookup(Request, State) ->
 	case ets:lookup(State#state.cat2, Rowid) of
 		[] -> 
 			case lookup_re(Request, State#state.cat3) of
-				{Contract, ParamsMap} -> 
-					Querystring = processa_querystring(Contract, Request),
-					{Contract, ParamsMap, Querystring};
+				{Service, ParamsMap} -> 
+					Querystring = processa_querystring(Service, Request),
+					{Service, ParamsMap, Querystring};
 				notfound -> notfound
 			end;
-		[{_Rowid, Contract}] -> 
-			Querystring = processa_querystring(Contract, Request),
-			{Contract, Request#request.params_url, Querystring}
+		[{_Rowid, Service}] -> 
+			Querystring = processa_querystring(Service, Request),
+			{Service, Request#request.params_url, Querystring}
 	end.
 
 
@@ -567,7 +567,7 @@ lookup_re(_Request, []) ->
 	notfound;
 
 lookup_re(Request, [H|T]) ->
-	RE = H#servico.id_re_compiled,
+	RE = H#service.id_re_compiled,
 	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
 		match -> {H, #{}};
 		{match, Params} -> 
@@ -578,12 +578,12 @@ lookup_re(Request, [H|T]) ->
 		{error, _ErrType} -> notfound 
 	end.
 
-new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
+new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
-	#servico{
+	#service{
 				rowid = Rowid,
 				id = Id,
 				name = Name,
@@ -611,11 +611,11 @@ new_contract_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, 
 			    lang = Lang
 			}.
 
-new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
+new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang) ->
-	#servico{
+	#service{
 				rowid = Rowid,
 				id = Id,
 				name = Name,
@@ -642,10 +642,10 @@ new_contract(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Fun
 			    lang = Lang
 			}.
 
-new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
+new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang) ->
-	Contract = #{<<"id">> => Id,
+	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
 				<<"type">> => Type,
@@ -661,6 +661,6 @@ new_contract_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"authentication">> => Authentication,
 			    <<"node">> => Node,
 			    <<"lang">> => Lang},
-	Contract.
+	Service.
 
 

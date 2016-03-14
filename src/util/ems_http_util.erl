@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Module with useful functions for the HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_http_util).
@@ -40,7 +40,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 				type = Method,
 				uri = Uri,
 				url = Url2,
-				versao_http = Http_Version,
+				version = Http_Version,
 				querystring = Querystring,
 				querystring_map = QuerystringMap,
 				params_url = Params_url,
@@ -58,7 +58,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 				timestamp = Timestamp,
 				authorization = Authorization,
 				worker_send = WorkerSend,
-				protocolo = http
+				protocol = http
 				
 			}};
 		Error -> Error
@@ -177,7 +177,7 @@ get_http_header_adicionais(Header) ->
 	Header1 = lists:map(fun(H) -> get_param_header(H, []) end, Header),
 	maps:from_list(Header1).
 
-%% @doc Retorna uma tupla com o nome do cabecalho e o seu valor
+%% @doc Retorna uma tupla com o name do cabecalho e o seu valor
 %% Ex.: get_param_header("Host: localhost:2301", [])  =>  {"host","localhost:2301"}
 get_param_header([], Key) -> {string:to_lower(lists:reverse(Key)), []};
 get_param_header([H|T], Key) ->

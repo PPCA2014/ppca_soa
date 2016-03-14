@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Módulo de serviço ems_user_service
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_user_service).
@@ -27,7 +27,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 
 
@@ -78,27 +78,27 @@ handle_cast(shutdown, State) ->
 
 handle_cast({get, Request, _From}, State) ->
 	Reply = do_get(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({insert, Request, _From}, State) ->
 	Reply = do_insert(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({update, Request, _From}, State) ->
 	Reply = do_update(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({delete, Request, _From}, State) ->
 	Reply = do_delete(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, {ok, Reply}}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({all, Request, _From}, State) ->
 	Reply = do_all(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {servico, Request, Reply}),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Reply}),
 	{noreply, State}.
     
 handle_call({get, Request}, _From, State) ->
@@ -132,9 +132,9 @@ do_get(Request, _State) ->
 
 do_insert(Request, _State) ->
 	UserJson = ems_request:get_property_request(<<"payload">>, Request),
-	User = #user{nome  = maps:get(<<"nome">>, UserJson, ""),
+	User = #user{name  = maps:get(<<"name">>, UserJson, ""),
 				 email = maps:get(<<"email">>, UserJson, ""),
-				 senha = maps:get(<<"senha">>, UserJson, "")},
+				 password = maps:get(<<"password">>, UserJson, "")},
 	ems_user:call({insert, User}).
 
 do_update(Request, _State) ->
@@ -142,9 +142,9 @@ do_update(Request, _State) ->
 	UserJson = ems_request:get_property_request(<<"payload">>, Request),
 	case ems_user:call({get, Id}) of
 		{ok, User} -> 
-			User2 = User#user{nome  = maps:get(<<"nome">>, UserJson, User#user.nome),
+			User2 = User#user{name  = maps:get(<<"name">>, UserJson, User#user.name),
 							  email = maps:get(<<"email">>, UserJson, User#user.email),
-							  senha = maps:get(<<"senha">>, UserJson, User#user.senha)},
+							  password = maps:get(<<"password">>, UserJson, User#user.password)},
 			ems_user:call({update, User2});
 		Error -> Error
 	end.

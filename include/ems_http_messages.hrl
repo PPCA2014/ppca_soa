@@ -3,7 +3,7 @@
 %% @version 1.0.0
 %% @doc Contém definições de mensagens HTTP.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 %% Mensagens de erro 

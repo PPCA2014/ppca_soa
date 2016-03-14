@@ -5,7 +5,7 @@
 %%	    com os métodos suportados.
 %% @end	    
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright erlangMS Team
+%% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_options_service).
@@ -25,7 +25,7 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do servico. 
+%  Armazena o estado do service. 
 -record(state, {}). 
 
 
@@ -64,7 +64,7 @@ handle_cast(shutdown, State) ->
 
 handle_cast({option, Request, _From}, State) ->
 	ems_eventmgr:notifica_evento(ok_request, {200, Request, <<>>}),
-	%gen_server:cast(From, {servico, Request, <<>>}), 
+	%gen_server:cast(From, {service, Request, <<>>}), 
 	{noreply, State}.
     
 handle_call(Msg, _From, State) ->

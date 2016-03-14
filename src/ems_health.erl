@@ -132,9 +132,9 @@ get_requests_periodo_by_group(Periodo, FieldsGroup, State) ->
 
 %% @doc Retorna os serviços mais acessados de um período
 do_get_top_services(Top, Periodo, Sort, State) ->
-    Fields = fun(X) -> case X#request.servico of
+    Fields = fun(X) -> case X#request.service of
 						  undefined -> {<<"não encontrado"/utf8>>};
-						  _ -> {X#request.servico#servico.name} 
+						  _ -> {X#request.service#service.name} 
 					   end
 			 end,
 	Requests = get_requests_periodo(Periodo, State), 
@@ -148,10 +148,10 @@ do_get_top_services(Top, Periodo, Sort, State) ->
 	
 %% @doc Retorna os serviços mais acessados por tipo de verbo de um período
 do_get_top_services_by_type(Top, Periodo, Sort, State) ->
-    Fields = fun(X) -> case X#request.servico of
+    Fields = fun(X) -> case X#request.service of
 							undefined -> {"?", <<"não encontrado"/utf8>>};
-							_ -> {X#request.servico#servico.type, 
-								  X#request.servico#servico.name} 
+							_ -> {X#request.service#service.type, 
+								  X#request.service#service.name} 
 					   end
 			 end,
 	Requests = get_requests_periodo(Periodo, State), 
