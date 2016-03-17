@@ -8,8 +8,6 @@
 
 -module(ems_catalog).
 
--compile(export_all).
-
 -behavior(gen_server). 
 -behaviour(poolboy_worker).
 
@@ -161,26 +159,26 @@ init_catalog() ->
 	
 
 
-add_lookup_cache(Ult_rowid, Ult_lookup, State=#state{tbl_cache_lookup=Tbl,
-													 tbl_cache_index=Index}) when Index < 10 ->
-	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}|Tbl],
-	            tbl_cache_index = Index+1};
+%add_lookup_cache(Ult_rowid, Ult_lookup, State=#state{tbl_cache_lookup=Tbl,
+%													 tbl_cache_index=Index}) when Index < 10 ->
+%	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}|Tbl],
+%	            tbl_cache_index = Index+1};
+%
+%add_lookup_cache(Ult_rowid, Ult_lookup, State) ->
+%	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}], 
+%				tbl_cache_index = 1}.
 
-add_lookup_cache(Ult_rowid, Ult_lookup, State) ->
-	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}], 
-				tbl_cache_index = 1}.
 
+%lookup_cache(Rowid, State) ->
+%	lookup_cache_tail(State#state.tbl_cache_lookup, Rowid).
 
-lookup_cache(Rowid, State) ->
-	lookup_cache_tail(State#state.tbl_cache_lookup, Rowid).
+%lookup_cache_tail([], _Rowid) -> [];
 
-lookup_cache_tail([], _Rowid) -> [];
-
-lookup_cache_tail([{Ult_rowid, Ult_lookup}|T], Rowid) ->
-	case Rowid == Ult_rowid of
-		true -> Ult_lookup;
-		false -> lookup_cache_tail(T, Rowid)
-	end.
+%lookup_cache_tail([{Ult_rowid, Ult_lookup}|T], Rowid) ->
+%	case Rowid == Ult_rowid of
+%		true -> Ult_lookup;
+%		false -> lookup_cache_tail(T, Rowid)
+%	end.
 
 
 %% @doc Serviço que lista o catálogo
@@ -238,11 +236,11 @@ is_name_querystring_valido(Name) ->
 	end.
 
 %% @doc Indica se o name do pseudo param é valido
-is_pseudo_name_param_valido(Name) ->
-	case re:run(Name, "^[a-z0-9]{0,29}$") of
-		nomatch -> false;
-		_ -> true
-	end.
+%is_pseudo_name_param_valido(Name) ->
+%	case re:run(Name, "^[a-z0-9]{0,29}$") of
+%		nomatch -> false;
+%		_ -> true
+%	end.
 
 %% @doc Indica se o name da querystring é valido
 is_name_service_valido(Name) ->
@@ -286,11 +284,11 @@ valida_name_querystring(Name) ->
 	end.
 
 %% @doc Valida o name do pseudo param
-valida_pseudo_name_param(Name) ->
-	case is_pseudo_name_param_valido(Name) of
-		true -> ok;
-		false -> erlang:error(invalid_pseudo_name_param)
-	end.
+%valida_pseudo_name_param(Name) ->
+%	case is_pseudo_name_param_valido(Name) of
+%		true -> ok;
+%		false -> erlang:error(invalid_pseudo_name_param)
+%	end.
 
 %% @doc Valida o tipo de dado da querystring
 valida_type_querystring(Type) ->
@@ -360,33 +358,33 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 
 
 %% @doc Converte um pseudo parâmetro para sua expressão regular
-pseudoparam_to_re(":id")   -> "(?<id>[0-9]{1,9})";
-pseudoparam_to_re(":top")  -> "(?<top>[0-9]{1,4})";
-pseudoparam_to_re(_)  -> erlang:error(invalid_pseudo_param).
-pseudoparam_to_re(":id", Nome)  -> io_lib:format("(?<id_~s>[0-9]{1,9})", [Nome]);
-pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]);
-pseudoparam_to_re(_, _)  -> erlang:error(invalid_pseudo_param).
+%pseudoparam_to_re(":id")   -> "(?<id>[0-9]{1,9})";
+%pseudoparam_to_re(":top")  -> "(?<top>[0-9]{1,4})";
+%pseudoparam_to_re(_)  -> erlang:error(invalid_pseudo_param).
+%pseudoparam_to_re(":id", Nome)  -> io_lib:format("(?<id_~s>[0-9]{1,9})", [Nome]);
+%pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]);
+%pseudoparam_to_re(_, _)  -> erlang:error(invalid_pseudo_param).
 
 %% @doc Faz o parser da URL convertendo os pseudo parâmetros em expressão regular
-parse_url_service(<<Url/binary>>) ->
-	Url1 = string:tokens(binary_to_list(Url), "/"),
-	parse_url_service(Url1, []).
+%parse_url_service(<<Url/binary>>) ->
+%	Url1 = string:tokens(binary_to_list(Url), "/"),
+%	parse_url_service(Url1, []).
 
-parse_url_service([], []) -> <<"/">>;
-parse_url_service([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
-parse_url_service([H|T], Url) when hd(H) /= $: -> parse_url_service(T, [H | Url]);
-parse_url_service([H|T], Url) ->
-	case string:chr(H, $_) > 0 of
-		true ->
-			[Pseudo, Nome] = string:tokens(H, "_"),
-			valida_pseudo_name_param(Nome),
-			P = pseudoparam_to_re(Pseudo, Nome),
-			parse_url_service(T, [P | Url]);
-		false ->
-			Pseudo = H,
-			P = pseudoparam_to_re(Pseudo),
-			parse_url_service(T, [P | Url])
-	end.
+%parse_url_service([], []) -> <<"/">>;
+%parse_url_service([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
+%parse_url_service([H|T], Url) when hd(H) /= $: -> parse_url_service(T, [H | Url]);
+%parse_url_service([H|T], Url) ->
+%	case string:chr(H, $_) > 0 of
+%		true ->
+%			[Pseudo, Nome] = string:tokens(H, "_"),
+%			valida_pseudo_name_param(Nome),
+%			P = pseudoparam_to_re(Pseudo, Nome),
+%			parse_url_service(T, [P | Url]);
+%		false ->
+%			Pseudo = H,
+%			P = pseudoparam_to_re(Pseudo),
+%			parse_url_service(T, [P | Url])
+%	end.
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalog([], Cat2, Cat3, Cat4, _Id, _Conf) ->

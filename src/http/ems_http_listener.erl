@@ -21,7 +21,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
--record(state, {lsocket = undefined}).
+-record(state, {lsocket = undefined, 
+				allowed_address = undefined}).
 
 -define(SERVER, ?MODULE).
 
@@ -57,17 +58,24 @@ init({Port, IpAddress}) ->
 			{delay_send, false}],
 	case gen_tcp:listen(Port, Opts) of
 		{ok, LSocket} ->
-				ems_logger:debug("Start http workers for listener ~p, IP ~p.", [self(), IpAddress]),    
-				start_server_workers(Conf#config.tcp_max_http_worker, 
-									 LSocket,
-									 Conf#config.tcp_allowed_address_t),
-				ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
-				{ok, #state{lsocket = LSocket}, 0};
+			NewState = #state{lsocket = LSocket,
+							  allowed_address = Conf#config.tcp_allowed_address_t},
+			start_server_workers(Conf#config.tcp_max_http_worker, 
+								 LSocket,
+								 Conf#config.tcp_allowed_address_t),
+			ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
+			{ok, NewState};
 		{error,eaddrnotavail} ->
 			ems_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
 			{ok, #state{}};    
 		Error -> Error
      end.	
+
+handle_cast(new_worker, State = #state{lsocket = LSocket,
+									   allowed_address = Allowed_Address}) ->
+    ems_http_worker:start_link({self(), LSocket, Allowed_Address}),
+    io:format("new http worker created...\n"),
+    {noreply, State};
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
     {stop, normal, State};
@@ -104,5 +112,5 @@ start_server_workers(0,_,_) ->
     ok;
 
 start_server_workers(Num, LSocket, Allowed_Address) ->
-    ems_http_worker:start_link({Num, LSocket, Allowed_Address}),
+    ems_http_worker:start_link({self(), LSocket, Allowed_Address}),
     start_server_workers(Num-1, LSocket, Allowed_Address).

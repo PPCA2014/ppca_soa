@@ -38,10 +38,6 @@
                 {size, 1},
                 {max_overflow, 0}
             ], []},
-            {ems_http_worker_pool, [
-                {size, 3},
-                {max_overflow, 0}
-            ], []},
             {ems_ldap_worker_pool, [
                 {size, 3},
                 {max_overflow, 0}

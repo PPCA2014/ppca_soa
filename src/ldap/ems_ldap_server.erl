@@ -12,7 +12,6 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -54,7 +53,16 @@ stop_listener(Port, IpAddress) ->
 %% gen_server callbacks
 %%====================================================================
  
-init(_Args) -> {ok, #state{}}.
+init(_Args) -> 
+	Config = ems_config:getConfig(),
+	case start_listeners(Config#config.tcp_listen_address_t,
+						 Config#config.ldap_tcp_port, 
+						 #state{}) of
+		{ok, State} ->
+			{ok, State};
+		{error, _Reason, State} -> 
+			{stop, State}
+	end.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -96,11 +104,10 @@ do_start_listener(Port, IpAddress, State) ->
 	case ems_ldap_listener:start(Port, IpAddress) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
-			Reply = {ok, NewState};
+			{ok, NewState};
 		{error, Reason} ->
-			Reply = {{error, Reason}, State}
-	end,
-	Reply.
+			{{error, Reason}, State}
+	end.
 
 do_stop_listener(Port, IpAddress, State) ->
 	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
@@ -108,8 +115,7 @@ do_stop_listener(Port, IpAddress, State) ->
 			gen_server:call(PidListener, shutdown),
 			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
 			ems_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
-			Reply = {ok, NewState};
+			{ok, NewState};
 		_ -> 
-			Reply = {{error, enolisten}, State}
-	end,
-	Reply.
+			{{error, enolisten}, State}
+	end.

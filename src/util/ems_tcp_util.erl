@@ -16,14 +16,14 @@
 send_data(Socket, Data) ->
 	case gen_tcp:send(Socket, Data) of
 		{error, timeout} ->
-			gen_tcp:close(Socket, Data),
-			ems_logger:error("Error sending response:: timeout."),
+			gen_tcp:close(Socket),
+			ems_logger:error("Error sending response: timeout."),
 			timeout;
         {error, closed} ->
 			ok;
 		{error, PosixError} ->
 			gen_tcp:close(Socket),
-			PosixErrorDescription = ems_tcp:posix_error_description(PosixError),
+			PosixErrorDescription = posix_error_description(PosixError),
 			ems_logger:error("Error sending response: ~p.", [PosixErrorDescription]),
 			PosixError;
 		ok -> ok

@@ -25,9 +25,9 @@
 -export([cast/1]).
 
 % estado do servidor
--record(state, {worker_id = undefined,  	 %% identifier worker
-				lsocket   = undefined,		 %% socket oo listener
-				socket	  = undefined,		 %% socket oo request
+-record(state, {owner 	  = undefined,	 	 %% http listener
+				lsocket   = undefined,		 %% socket of listener
+				socket	  = undefined,		 %% socket of request
 				allowed_address = undefined, %% range of IP addresses that can access the server
 				open_requests = []
 			}).
@@ -60,28 +60,149 @@ cast(Msg) -> ems_pool:cast(ems_http_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-init({Worker_Id, LSocket, Allowed_Address}) ->
-    State = #state{worker_id = Worker_Id, 
+init({Owner, LSocket, Allowed_Address}) ->
+	process_flag(trap_exit, true),	
+    State = #state{owner = Owner,
 				   lsocket = LSocket, 
-				   allowed_address = Allowed_Address,
-				   open_requests=[]},
+				   allowed_address = Allowed_Address},
     {ok, State, 0};
 
+
+
 %% init for processes that will process the queue of outgoing requests
-init(_Args) ->
+init(_) ->
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
 
 handle_cast(shutdown, State) ->
-    ems_logger:debug("HTTP worker ~p shutdown in state ~p.", [self(), State]),
+    io:format("Shutdown http worker.\n"),
     {stop, normal, State};
 
-%% It is not being used
-handle_cast({Socket, RequestBin}, State) ->
-	NewState = trata_request(Socket, RequestBin, State),
-	{noreply, NewState, 0};
+handle_cast(Msg, State) ->
+	io:format("send response\n"),  
+	send_response(Msg),
+	{stop, normal, State}.
+
+handle_call(_Msg, _From, State) ->
+	{reply, _Msg, State}.
+
+handle_info(timeout, State=#state{lsocket = undefined}) ->
+	io:format("time out\n"),  
+	{noreply, State};
+
+handle_info(timeout, State) ->
+	accept_request(timeout, State);
+
+handle_info({tcp, Socket, RequestBin}, State) ->
+	io:format("process request\n"),  
+	process_request(Socket, RequestBin),
+	{noreply, State};
+
+handle_info({tcp_closed, _Socket}, State) ->
+	io:format("close socket\n"),  
+	{noreply, State#state{socket = undefined}};
+
+handle_info({'EXIT', _Pid, Reason}, State) ->
+    io:format("Exit http worker. Reason: ~p\n", [Reason]),
+    {noreply, State};
+
+handle_info(_Msg, State) ->
+   {noreply, State}.
+
+handle_info(State) ->
+   {noreply, State}.
+
+terminate(Reason, #state{socket = undefined}) ->
+	io:format("Terminate http worker. Reason: ~p\n", [Reason]),
+    ok;
+
+terminate(Reason, #state{socket = Socket}) ->
+	gen_tcp:close(Socket),
+	io:format("Terminate http worker. Reason: ~p\n", [Reason]),
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
 	
-handle_cast({HttpCode, Request, Result}, State) ->
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+%%close_timeout_connections(#state{open_requests = Open_requests}) ->
+%%	lists:foreach(fun(R) -> 
+%%						case gen_tcp:controlling_process(R#request.socket, self()) of
+%%							ok -> gen_tcp:close(R#request.socket);
+%%							_ -> ok
+%%						end
+%%				  end, Open_requests).
+	
+
+
+accept_request(timeout, State=#state{owner = Owner, 
+									 lsocket = LSocket, 
+									 allowed_address = Allowed_Address}) ->
+	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
+		{ok, Socket} -> 
+			% back to listen to the door as quickly as possible
+			gen_server:cast(Owner, new_worker),
+			io:format("novo\n"),
+			
+			%% It is in the range of IP addresses authorized to access the bus?
+			case inet:peername(Socket) of
+				{ok, {Ip,_Port}} -> 
+					case Ip of
+						{127, 0, _,_} -> 
+							{noreply, State#state{socket = Socket}};
+						_ -> 
+							case ems_http_util:match_ip_address(Allowed_Address, Ip) of
+								true -> 
+									{noreply, State#state{socket = Socket}};
+								false -> 
+									gen_tcp:close(Socket),
+									ems_logger:warn("Host ~s not authorized!", [inet:ntoa(Ip)]),
+									{stop, normal, State}
+							end
+					end;
+				_ -> 
+					gen_tcp:close(Socket),
+					{stop, normal, State}
+			end;
+		{error, closed} -> 
+			% ListenSocket is closed
+			ems_logger:info("Listener socket was closed."),
+			{noreply, State#state{lsocket = undefined}}; %% stop accept
+		{error, timeout} ->
+			% no connection is established within the specified time
+			%close_timeout_connections(State),
+			{noreply, State#state{open_requests = []}};
+		{error, PosixError} ->
+			PosixErrorDescription = ems_tcp_util:posix_error_description(PosixError),
+			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
+			{noreply, State}
+	end.
+
+
+process_request(Socket, RequestBin) ->
+	case ems_http_util:encode_request(Socket, RequestBin, self()) of
+		 {ok, Request} -> 
+			inet:setopts(Socket,[{active,once}]),
+			% TCP_LINGER2 for Linux
+			inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
+			% TCP_DEFER_ACCEPT for Linux
+			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+			ems_logger:info("Dispatch new request: ~p.", [Request]),
+			ems_dispatcher:dispatch_request(Request);
+		 {error, Request, Reason} -> 
+			envia_response(Request, {error, Reason});
+		 {error, invalid_http_header} -> 
+			gen_tcp:close(Socket),
+			ems_logger:error("Invalid HTTP request, close socket.")
+	end.
+
+
+send_response({HttpCode, Request, Result}) ->
+	io:format("aqui3\n"),  
 	Worker = self(),
 	Socket = Request#request.socket,
 	ems_logger:debug("Init send response in ~p.", [Worker]),
@@ -120,148 +241,24 @@ handle_cast({HttpCode, Request, Result}, State) ->
 			Response = ems_http_util:encode_response(CodeBin, Content, MimeType),
 			envia_response(Code, Status, Request, Response);
 		{error, _Reason} -> 
-			envia_response(Request, Result, State);
+			envia_response(Request, Result);
 		{error, _Reason, _Motivo} -> 
-			envia_response(Request, Result, State);
+			envia_response(Request, Result);
 		_ ->
-			envia_response(Request, Result, State)
-	end,
-	ems_logger:debug("Finish send response in ~p.", [Worker]),
-	{noreply, State#state{socket=undefined}}.
+			envia_response(Request, Result)
+	end.
 
-handle_call(_Msg, _From, State) ->
-	{reply, _Msg, State}.
 
-handle_info(timeout, State=#state{lsocket = undefined}) ->
-	{noreply, State};
-
-handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Address}) ->
-	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
-		{ok, Socket} -> 
-			case inet:peername(Socket) of
-				{ok, {Ip,_Port}} -> 
-					case Ip of
-						{127, 0, _,_} -> 
-							{noreply, State#state{socket = Socket}};
-						_ -> 
-							%% It is in the range of IP addresses authorized to access the bus?
-							case ems_http_util:match_ip_address(Allowed_Address, Ip) of
-								true -> 
-									{noreply, State#state{socket = Socket}};
-								false -> 
-									ems_logger:warn("Host ~s not authorized!", [inet:ntoa(Ip)]),
-									gen_tcp:close(Socket),
-									{noreply, State, 0}
-							end
-					end;
-				_ -> 
-					gen_tcp:close(Socket),
-					{noreply, State, 0}
-			end;
-		{error, closed} -> 
-			% ListenSocket is closed
-			ems_logger:info("Listener socket was closed."),
-			{noreply, State#state{lsocket = undefined}}; %% para de fazer accept
-		{error, timeout} ->
-			% no connection is established within the specified time
-			ems_logger:info("Check pending connections to the server socket ~p.", [State#state.worker_id]),
-			%close_timeout_connections(State),
-			{noreply, State#state{open_requests = []}, 0};
-		{error, system_limit} ->
-			ems_logger:error("No available ports in the Erlang emulator for worker ~p. System_limit: ~p.", [State#state.worker_id, system_limit]),
-			ems_util:sleep(3000),
-			{noreply, State, 0};
-		{error, PosixError} ->
-			ems_logger:error("Erro POSIX ~p in http worker ~p.", [PosixError, State#state.worker_id]),
-			ems_util:sleep(3000),
-			{noreply, State, 0}
-	end;
-
-handle_info({tcp, Socket, RequestBin}, State) ->
-	NewState = trata_request(Socket, RequestBin, State),
-	{noreply, NewState, 0};
-
-handle_info({tcp_closed, _Socket}, State) ->
-	{noreply, State#state{socket = undefined}};
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-terminate(_Reason, #state{socket = undefined}) ->
-    ok;
-
-terminate(Reason, #state{worker_id = Worker_id, socket = Socket}) ->
-	ems_logger:debug("Terminate server worker ~p. Reason: ~p.", [Worker_id, Reason]),
-	gen_tcp:close(Socket),
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-	
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-%%close_timeout_connections(#state{open_requests = Open_requests}) ->
-%%	lists:foreach(fun(R) -> 
-%%						case gen_tcp:controlling_process(R#request.socket, self()) of
-%%							ok -> gen_tcp:close(R#request.socket);
-%%							_ -> ok
-%%						end
-%%				  end, Open_requests).
-	
-
-%% @doc Trata o request
-trata_request(Socket, RequestBin, State) -> 
-	Worker = ems_pool:checkout(ems_http_worker_pool),
-	case ems_http_util:encode_request(Socket, RequestBin, Worker) of
-		 {ok, Request} -> 
-			case gen_tcp:controlling_process(Socket, Worker) of
-				ok -> 
-					inet:setopts(Socket,[{active,once}]),
-					% TCP_LINGER2 for Linux
-					inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
-					% TCP_DEFER_ACCEPT for Linux
-					inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-					ems_logger:debug("Dispatch new request: ~p.", [Request]),
-					ems_dispatcher:dispatch_request(Request),
-					NewState = State#state{socket = undefined, 
-										   open_requests = [Request | State#state.open_requests]};
-				{error, closed} -> 
-					NewState = State#state{socket=undefined};
-				{error, not_owner} -> 
-					ems_logger:error("Server worker ~p is not owner of socket.", [Worker]),
-					NewState = State#state{socket=undefined};
-				{error, PosixError} ->
-					gen_tcp:close(Socket),
-					ems_logger:error("Erro POSIX ~p in http worker ~p.", [PosixError, State#state.worker_id]),
-					NewState = State#state{socket=undefined}
-			end;
-		 {error, Request, Reason} -> 
-			envia_response(Request, {error, Reason}, State),
-			NewState = State#state{socket = undefined};
-		 {error, invalid_http_header} -> 
-			gen_tcp:close(Socket),
-			ems_logger:error("Invalid HTTP request, close socket."),
-			NewState = State#state{socket = undefined}
-	end,
-	ems_pool:checkin(ems_http_worker_pool, Worker),
-	NewState.
-
-envia_response(_Request, {async, false}, _State) -> 
+envia_response(_Request, {async, false}) -> 
 	em_andamento;
 
-envia_response(Request, {async, true}, _State) ->
+envia_response(Request, {async, true}) ->
 	RID = ems_http_util:rid_to_string(Request#request.rid),
 	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
 	Response = ems_http_util:encode_response(<<"200">>, Ticket),
 	envia_response(200, ok, Request, Response);
 
-envia_response(Request, {ok, Result}, _State) -> 
+envia_response(Request, {ok, Result}) -> 
 	case Request#request.service#service.async of
 		true -> io:format("Ticket já foi entregue.\n");
 		_ -> 
@@ -269,46 +266,47 @@ envia_response(Request, {ok, Result}, _State) ->
 			envia_response(200, ok, Request, Response)
 	end;
 
-envia_response(Request, {ok, Result, MimeType}, _State) ->
+envia_response(Request, {ok, Result, MimeType}) ->
 	Response = ems_http_util:encode_response(<<"200">>, Result, MimeType),
 	envia_response(200, ok, Request, Response);
 
-envia_response(Request, {error, notfound}, _State) ->
+envia_response(Request, {error, notfound}) ->
 	Response = ems_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
 	envia_response(404, notfound, Request, Response);
 
-envia_response(Request, {error, no_authorization}, _State) ->
+envia_response(Request, {error, no_authorization}) ->
 	Response = ems_http_util:encode_response(<<"401">>, ?HTTP_ERROR_401),
 	envia_response(401, no_authorization, Request, Response);
 
-envia_response(Request, {error, invalid_payload}, _State) ->
+envia_response(Request, {error, invalid_payload}) ->
 	Response = ems_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
 	envia_response(415, invalid_payload, Request, Response);
 
-envia_response(Request, {error, file_not_found}, _State) ->
+envia_response(Request, {error, file_not_found}) ->
 	Response = ems_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
 	envia_response(404, file_not_found, Request, Response);
 
-envia_response(Request, {error, Reason}, _State) ->
+envia_response(Request, {error, Reason}) ->
 	Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
 	envia_response(400, Reason, Request, Response);
 
-envia_response(Request, {error, service_fora, ErroInterno}, _State) ->
+envia_response(Request, {error, service_fora, ErroInterno}) ->
 	Response = ems_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
 	Reason2 = io_lib:format("~p ~p", [service_fora, ErroInterno]),
 	envia_response(503, Reason2, Request, Response);
 
-envia_response(Request, {error, Reason, ErroInterno}, State) ->
+envia_response(Request, {error, Reason, ErroInterno}) ->
 	Reason2 = io_lib:format("~p ~p", [Reason, ErroInterno]),
-	envia_response(Request, {error, Reason2}, State);
+	envia_response(Request, {error, Reason2});
 
-envia_response(Request, Result, State) ->
-	envia_response(Request, {ok, Result}, State).
+envia_response(Request, Result) ->
+	envia_response(Request, {ok, Result}).
 
 envia_response(Code, Reason, Request, Response) ->
 	T2 = ems_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	StatusSend = ems_http_util:send_request(Request#request.socket, Response),
+	StatusSend = ems_tcp_util:send_data(Request#request.socket, Response),
+	gen_tcp:close(Request#request.socket),
 	case  StatusSend of
 		ok -> Status = req_send;
 		_  -> Status = req_done

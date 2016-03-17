@@ -149,7 +149,7 @@ handle_info(timeout, State=#state{lsocket = LSocket, allowed_address=Allowed_Add
 			%close_timeout_connections(State),
 			{noreply, State#state{open_requests = []}, 0};
 		{error, PosixError} ->
-			PosixErrorDescription = ems_tcp:posix_error_description(PosixError),
+			PosixErrorDescription = ems_tcp_util:posix_error_description(PosixError),
 			ems_logger:error("~p in ldap worker ~p.", [PosixErrorDescription, State#state.worker_id]),
 			{noreply, State, 0}
 	end;

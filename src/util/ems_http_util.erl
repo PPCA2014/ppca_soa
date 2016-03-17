@@ -225,26 +225,6 @@ is_url_valido(Url) ->
 		_ -> true
 	end.
 
-%% @doc Envia os dados para o cliente. Método com tratamento de timeout
-send_request(Socket, Response) ->
-	case gen_tcp:send(Socket, [Response]) of
-		{error, timeout} ->
-			gen_tcp:close(Socket),
-			ems_logger:error("Timeout para enviar response ao cliente."),
-			timeout;
-        {error, closed} ->
-			gen_tcp:close(Socket),
-			ems_logger:error("Não conseguiu enviar response para socket fechado."),
-			ok;
-        {error, OtherSendError} ->
-			gen_tcp:close(Socket),
-			ems_logger:error("Erro ~p ao enviar response.", [OtherSendError]),
-			OtherSendError;
-		ok -> 
-			gen_tcp:close(Socket),
-			ok
-	end.
-
 mask_ipaddress_to_tuple(<<IpAddress/binary>>) ->
 	mask_ipaddress_to_tuple(binary_to_list(IpAddress));
 	

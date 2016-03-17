@@ -57,7 +57,6 @@ init({Port, IpAddress}) ->
 			{delay_send, false}],
 	case gen_tcp:listen(Port, Opts) of
 		{ok, LSocket} ->
-				ems_logger:debug("Start ldap workers for listener ~p, IP ~p.", [self(), IpAddress]),    
 				start_server_workers(Conf#config.tcp_max_http_worker, 
 									 LSocket,
 									 Conf#config.tcp_allowed_address_t),
