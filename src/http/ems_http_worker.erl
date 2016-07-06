@@ -75,11 +75,9 @@ init(_) ->
     {ok, #state{}}.
 
 handle_cast(shutdown, State) ->
-    io:format("Shutdown http worker.\n"),
     {stop, normal, State};
 
 handle_cast(Msg, State) ->
-	io:format("send response\n"),  
 	send_response(Msg),
 	{stop, normal, State}.
 
@@ -87,23 +85,19 @@ handle_call(_Msg, _From, State) ->
 	{reply, _Msg, State}.
 
 handle_info(timeout, State=#state{lsocket = undefined}) ->
-	io:format("time out\n"),  
 	{noreply, State};
 
 handle_info(timeout, State) ->
 	accept_request(timeout, State);
 
 handle_info({tcp, Socket, RequestBin}, State) ->
-	io:format("process request\n"),  
 	process_request(Socket, RequestBin),
 	{noreply, State};
 
 handle_info({tcp_closed, _Socket}, State) ->
-	io:format("close socket\n"),  
 	{noreply, State#state{socket = undefined}};
 
-handle_info({'EXIT', _Pid, Reason}, State) ->
-    io:format("Exit http worker. Reason: ~p\n", [Reason]),
+handle_info({'EXIT', _Pid, _Reason}, State) ->
     {noreply, State};
 
 handle_info(_Msg, State) ->
@@ -112,13 +106,11 @@ handle_info(_Msg, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-terminate(Reason, #state{socket = undefined}) ->
-	io:format("Terminate http worker. Reason: ~p\n", [Reason]),
+terminate(_Reason, #state{socket = undefined}) ->
     ok;
 
-terminate(Reason, #state{socket = Socket}) ->
+terminate(_Reason, #state{socket = Socket}) ->
 	gen_tcp:close(Socket),
-	io:format("Terminate http worker. Reason: ~p\n", [Reason]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -146,7 +138,6 @@ accept_request(timeout, State=#state{owner = Owner,
 		{ok, Socket} -> 
 			% back to listen to the door as quickly as possible
 			gen_server:cast(Owner, new_worker),
-			io:format("novo\n"),
 			
 			%% It is in the range of IP addresses authorized to access the bus?
 			case inet:peername(Socket) of
@@ -202,10 +193,7 @@ process_request(Socket, RequestBin) ->
 
 
 send_response({HttpCode, Request, Result}) ->
-	io:format("aqui3\n"),  
-	Worker = self(),
 	Socket = Request#request.socket,
-	ems_logger:debug("Init send response in ~p.", [Worker]),
 	inet:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),

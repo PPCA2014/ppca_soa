@@ -74,7 +74,6 @@ init({Port, IpAddress}) ->
 handle_cast(new_worker, State = #state{lsocket = LSocket,
 									   allowed_address = Allowed_Address}) ->
     ems_http_worker:start_link({self(), LSocket, Allowed_Address}),
-    io:format("new http worker created...\n"),
     {noreply, State};
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
