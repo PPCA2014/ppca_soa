@@ -11,6 +11,9 @@
 -export([start/0]).
 -export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
 -export([sequence/1, init_sequence/2]).
+-export([get_odbc_connection/1, release_odbc_connection/1]).
+
+
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
@@ -129,3 +132,27 @@ sequence(Name) ->
 %% Incrementa a sequence com Inc
 sequence(Name, Inc) ->
      mnesia:dirty_update_counter(sequence, Name, Inc).
+
+
+get_odbc_connection(Datasource) ->
+	try
+		case odbc:connect(Datasource, [{scrollable_cursors, off},
+									   {timeout, 3500},
+									   {trace_driver, off}]) of
+			{ok, Conn}	->																	  
+				ems_logger:info("Create connection to dynamic_view datasource ~p.", [Datasource]),
+				{ok, Conn};
+			{error, Reason} -> 
+				ems_logger:error("Connection dynamic_view database error. Reason: ~p", [Reason]),
+				{error, Reason}
+		end
+	catch
+		_Exception:Reason2 -> 
+			ems_logger:error("Connection dynamic_view database error. Reason: ~p", [Reason2]),
+			{error, Reason2}
+	end.
+
+release_odbc_connection(Conn) ->
+	odbc:disconnect(Conn).
+	
+	

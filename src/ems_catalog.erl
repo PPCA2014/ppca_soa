@@ -407,7 +407,10 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	Owner = maps:get(<<"owner">>, H, <<>>),
 	Async = maps:get(<<"async">>, H, <<"false">>),
 	Rowid = ems_util:make_rowid_from_url(Url2, Type),
-	Lang = maps:get(<<"lang">>, H, <<>>),
+	Lang = maps:get(<<"lang">>, H, <<"erlang">>),
+	Datasource = maps:get(<<"datasource">>, H, <<>>),
+	TableName = maps:get(<<"table_name">>, H, <<>>),
+	PrimaryKey = maps:get(<<"primary_key">>, H, <<>>),
 	case Lang of
 		<<"erlang">> -> 
 			Node = <<>>,
@@ -431,7 +434,9 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	IdBin = list_to_binary(integer_to_list(Id)),
 	ServiceView = new_service_view(IdBin, Name, Url, ModuleName, FunctionName, 
 							         Type, Apikey, Comment, Version, Owner, 
-								     Async, Host, Result_Cache, Authentication, Node, Lang),
+								     Async, Host, Result_Cache, 
+								     Authentication, Node, Lang,
+								     Datasource, TableName, PrimaryKey),
 	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
 		true -> 
 			Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -442,7 +447,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 									   Version, Owner, Async, 
 									   Querystring, QtdQuerystringRequired,
 									   Host, HostName, Result_Cache,
-									   Authentication, Node, Lang),
+									   Authentication, Node, Lang,
+									   Datasource, TableName, PrimaryKey),
 			parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
 		false -> 
 			Service = new_service(Rowid, IdBin, Name, Url2, 
@@ -453,7 +459,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 									Version, Owner, Async, 
 									Querystring, QtdQuerystringRequired,
 									Host, HostName, Result_Cache,
-									Authentication, Node, Lang),
+									Authentication, Node, Lang,
+									Datasource, TableName, PrimaryKey),
 			parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
 	end.	
 
@@ -579,7 +586,8 @@ lookup_re(Request, [H|T]) ->
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
-			   Authentication, Node, Lang) ->
+			   Authentication, Node, Lang, 
+			   Datasource, TableName, Primary_key) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#service{
 				rowid = Rowid,
@@ -606,13 +614,16 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
 			    node = Node,
+			    datasource = binary_to_list(Datasource),
+			    table_name = binary_to_list(TableName),
+			    primary_key = binary_to_list(Primary_key),
 			    lang = Lang
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
-			Authentication, Node, Lang) ->
+			Authentication, Node, Lang, Datasource, TableName, Primary_key) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -637,12 +648,16 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
 			    node = Node,
+			    datasource = binary_to_list(Datasource),
+			    table_name = binary_to_list(TableName),
+			    primary_key = binary_to_list(Primary_key),
 			    lang = Lang
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
-				  Authentication, Node, Lang) ->
+				  Authentication, Node, Lang, 
+				  Datasource, TableName, Primary_key) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -658,6 +673,9 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"result_cache">> => Result_Cache,
 			    <<"authentication">> => Authentication,
 			    <<"node">> => Node,
+			    <<"datasource">> => Datasource,
+			    <<"table_name">> => TableName,
+			    <<"primary_key">> => Primary_key,
 			    <<"lang">> => Lang},
 	Service.
 

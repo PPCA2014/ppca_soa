@@ -78,6 +78,10 @@
                 {size, 2},
                 {max_overflow, 6}
             ], []},
+            {ems_dynamic_view_service_pool, [
+                {size, 2},
+                {max_overflow, 6}
+            ], []},
             {ems_health_service_pool, [
                 {size, 12},
                 {max_overflow, 24}

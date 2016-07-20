@@ -86,6 +86,10 @@ item_to_binary(L) when is_list(L) ->
 item_to_binary(I) when is_integer(I) -> 
 	I;
 
+item_to_binary(I) when is_float(I) -> 
+	I;
+
+
 item_to_binary(I) when is_atom(I) -> 
 	[I2] = io_lib:format("~p", [I]),
 	iolist_to_binary(I2);
