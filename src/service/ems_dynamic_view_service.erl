@@ -11,6 +11,7 @@
 -behavior(gen_server). 
 -behaviour(poolboy_worker).
 
+-compile(export_all).
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
@@ -100,14 +101,50 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
+parse_filter(<<>>) -> [];   
 
-do_find(#request{service = #service{datasource = Datasource, 
-								 table_name = TableName}}, _State) ->
+parse_filter(Filter) ->    
+    case ems_util:json_decode(Filter) of
+		{ok, Filter2} ->  
+			parse_filter(Filter2, []);
+		_ -> erlang:error(einvalid_filter)
+	end.
+
+parse_filter([], []) -> "";
+	
+parse_filter([], Where) -> " where " ++ lists:flatten(lists:reverse(Where));
+	
+parse_filter([H|T], Where) ->
+	{Key, Value} = parse_condition(H),
+	case T of
+		[] -> Result = Key ++ "=" ++ Value;
+		_  -> Result = Key ++ "=" ++ Value ++ " and "
+	end,
+	parse_filter(T, [Result | Where]).
+		
+	
+parse_condition({<<Key/binary>>, Value}) when is_integer(Value) -> 
+	{binary_to_list(Key), integer_to_list(Value)};
+
+parse_condition({<<Key/binary>>, Value}) -> 
+	{binary_to_list(Key), ems_util:quote(binary_to_list(Value))}.
+
+
+do_find(#request{querystring_map = QuerystringMap, 
+				 service = #service{datasource = Datasource, 
+									table_name = TableName}}, _State) ->
 	case ems_db:get_odbc_connection(Datasource) of
 		{ok, Conn} -> 
 			try
+				io:format("aqui 1 ->  ~p\n\n", [QuerystringMap]),
+				FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
+				Filter = parse_filter(FilterJson),
+				io:format("aqui 2  ~p\n\n", [Filter]),
 				Params = [],
-				Sql = "select * from " ++ TableName,
+
+				Sql = "select * from " ++ TableName ++ Filter,
+				io:format("\n\nSQL-> ~p\n", [Sql]),
+				
 				case odbc:param_query(Conn, Sql, Params, 3500) of
 					{_, _, Record} -> 
 						{ok, Record};

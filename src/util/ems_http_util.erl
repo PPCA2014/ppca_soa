@@ -18,7 +18,8 @@
 %%-spec get_http_header(Header::list()) -> tuple.
 encode_request(Socket, RequestBin, WorkerSend) ->
 	case decode_http_request(RequestBin) of
-		{Method, Uri, HttpParams, Http_Version, Payload} -> 
+		{Method, UriRaw, HttpParams, Http_Version, Payload} -> 
+			Uri = http_uri:decode(UriRaw),
 			RID = erlang:system_time(),
 			Timestamp = calendar:local_time(),
 			T1 = ems_util:get_milliseconds(),
@@ -31,7 +32,9 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 			User_Agent = maps:get('User-Agent', HttpParams, ""),
 			Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
 			Host = maps:get('Host', HttpParams, ""),
+			io:format("parse querystring ~p\n", [Querystring]),
 			QuerystringMap = parse_querystring(Querystring),
+			io:format("parse querystring map is ~p\n", [QuerystringMap]),
 			Authorization = maps:get('Authorization', HttpParams, ""),
 			{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
 			{ok, #request{
@@ -81,8 +84,15 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 	Response2 = iolist_to_binary(Response),
 	Response2.
 
+
 encode_response(Codigo, []) ->
-	encode_response(Codigo, <<>>);
+	encode_response(Codigo, <<"[]">>, <<"application/json; charset=utf-8"/utf8>>);
+
+encode_response(<<Codigo/binary>>, []) ->
+	encode_response(Codigo, <<"[]">>, <<"application/json; charset=utf-8"/utf8>>);
+
+encode_response(<<Codigo/binary>>, <<>>) ->
+	encode_response(Codigo, <<"[]">>, <<"application/json; charset=utf-8"/utf8>>);
 	
 %% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->

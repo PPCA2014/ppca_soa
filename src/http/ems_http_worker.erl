@@ -215,6 +215,7 @@ send_response({HttpCode, Request, Result}) ->
 			end
 	end,
 	CodeBin = integer_to_binary(Code), 
+	
 	case Result of
 		<<>> -> 
 			Response = ems_http_util:encode_response(<<"200">>, <<>>),

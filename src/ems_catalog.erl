@@ -534,6 +534,8 @@ valida_querystring(QuerystringServico, QuerystringUser) ->
 		notfound -> notfound
 	end.
 
+valida_querystring([], _QuerystringUser, notfound) -> notfound;
+
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};
 
@@ -553,7 +555,7 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 
 lookup(Request, State) ->
 	Rowid = Request#request.rowid,
-	ems_logger:info("REQUEST ROWID ~p.", [Request#request.rowid]),
+	%ems_logger:info("REQUEST ROWID ~p.", [Request#request.rowid]),
 	case ets:lookup(State#state.cat2, Rowid) of
 		[] -> 
 			case lookup_re(Request, State#state.cat3) of
@@ -563,8 +565,12 @@ lookup(Request, State) ->
 				notfound -> notfound
 			end;
 		[{_Rowid, Service}] -> 
-			Querystring = processa_querystring(Service, Request),
-			{Service, Request#request.params_url, Querystring}
+			case processa_querystring(Service, Request) of
+			   notfound -> notfound;
+			   Querystring ->
+					io:format("lookup is ~p\n\n", [Querystring]),
+					{Service, Request#request.params_url, Querystring}
+			end
 	end.
 
 

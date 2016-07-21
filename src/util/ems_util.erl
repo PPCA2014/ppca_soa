@@ -142,7 +142,7 @@ hd_or_empty(List) when length(List) > 0 ->
 hd_or_empty(_) -> [].
 
 %% @doc Retorna a string com aspas
-% quote(Str) -> [$", Str, $"].
+quote(Str) -> lists:flatten([$", Str, $"]).
 
 
 %% @doc Boolean indicando se DateTime ocorreu no período (min, hour, day, week, year)

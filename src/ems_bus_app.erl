@@ -81,6 +81,10 @@ register_events() ->
 														gen_server:cast(Worker, R)
 												  end),
 
+    ems_eventmgr:registra_interesse(erro_request, fun(_Q, {_, #request{worker_send=Worker}, _} = R) -> 
+														gen_server:cast(Worker, R)
+												  end),
+
 	ems_eventmgr:registra_interesse(close_request, fun(_Q, R) -> 
 														ems_logger:log_request(R) 
 													 end).

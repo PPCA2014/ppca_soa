@@ -150,7 +150,7 @@ executa_service(_Node, Request=#request{service=#service{host='',
 														 function_name = FunctionName, 
 														 function=Function}}) ->
 	try
-		ems_logger:debug("Msg enviada para ~p: ~p.", [Module, Request]),
+		io:format("Msg enviada para ~p: ~p.", [Module, Request]),
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
