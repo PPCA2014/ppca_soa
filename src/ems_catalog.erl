@@ -141,20 +141,19 @@ init_catalog() ->
 			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3}}),
 			ok;
 		{error, emfile} ->
-			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Muitos arquivos abertos no sistema operacional.", [self()]),
-			{error, invalidcatalog};
+			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Muitos arquivos abertos no sistema operacional.", [self()]),
+			{error, emfile};
 		{error, eacces} ->
-			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Não tem permissão para ler o catálogo de serviços.", [self()]),
-			{error, invalidcatalog};
+			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Não tem permissão para ler o catálogo de serviços.", [self()]),
+			{error, eacces};
 		{error, enoent} ->
-			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Catálogo de serviços não encontrado.", [self()]),
-			{error, invalidcatalog};
+			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Catálogo de serviços não encontrado.", [self()]),
+			{error, enoent};
 		{error, enamem} ->
-			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Não há memória suficiente para ler o catálogo de serviços.", [self()]),
-			{error, invalidcatalog};
+			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Não há memória suficiente para ler o catálogo de serviços.", [self()]),
+			{error, enamem};
 		{error, Reason} ->
-			ems_logger:error("Falha ao carregar o catálogo de serviços para o processo ~p. Erro interno: ~p.", [self(), Reason]),
-			{stop, invalidcatalog}
+			{stop, Reason}
 	end.
 	
 
@@ -196,7 +195,7 @@ get_catalog() ->
 									case file:read_file(NomeArq) of
 										{ok, Arq} -> Arq;
 										{error, enoent} -> 
-											ems_logger:error("Catalog ~s not found. Filename: ~s.", [NomeCatalogo, NomeArq]),
+											io:format("Catalog ~s not found. Filename: ~s.", [NomeCatalogo, NomeArq]),
 											<<>>
 									end
 								end, CatMestre),
@@ -214,8 +213,10 @@ get_catalog() ->
 			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
 			%% Faz o parser do catálogo
 			Conf = ems_config:getConfig(),
-			{Cat2, Cat3, Cat4} = parse_catalog(Cat1, [], [], [], 1, Conf),
-			{ok, Cat4, Cat2, Cat3};
+			case parse_catalog(Cat1, [], [], [], 1, Conf) of
+				{Cat2, Cat3, Cat4} -> {ok, Cat4, Cat2, Cat3};
+				Error -> Error
+			end;
 		Error -> Error
 	end.
 			
@@ -315,6 +316,10 @@ valida_bool(<<"true">>) -> ok;
 valida_bool(<<"false">>) -> ok;
 valida_bool(_) -> erlang:error(invalid_bool).
 
+valida_lang(<<"java">>) -> ok;
+valida_lang(<<"erlang">>) -> ok;
+valida_lang(_) -> erlang:error(invalid_lang_service).
+
 valida_authentication(<<"Basic">>) -> ok;
 valida_authentication(<<>>) -> ok;
 valida_authentication(_) -> erlang:error(invalid_authentication).
@@ -394,76 +399,82 @@ parse_catalog([], Cat2, Cat3, Cat4, _Id, _Conf) ->
 	{EtsCat2, Cat3, Cat4};
 	
 parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
-	Name = maps:get(<<"name">>, H),
-	Url = maps:get(<<"url">>, H),
-	Url2 = Url,
-	Type = maps:get(<<"type">>, H, <<"GET">>),
-	valida_url_service(Url2),
-	ServiceImpl = maps:get(<<"service">>, H),
-	{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
-	Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
-	Comment = maps:get(<<"comment">>, H, <<>>),
-	Version = maps:get(<<"version">>, H, <<>>),
-	Owner = maps:get(<<"owner">>, H, <<>>),
-	Async = maps:get(<<"async">>, H, <<"false">>),
-	Rowid = ems_util:make_rowid_from_url(Url2, Type),
-	Lang = maps:get(<<"lang">>, H, <<"erlang">>),
-	Datasource = maps:get(<<"datasource">>, H, <<>>),
-	TableName = maps:get(<<"table_name">>, H, <<>>),
-	PrimaryKey = maps:get(<<"primary_key">>, H, <<>>),
-	case Lang of
-		<<"erlang">> -> 
-			Node = <<>>,
-			Host = '',
-			HostName = Conf#config.ems_hostname;
-		_ ->	
-			Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-			{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
-	end,
-	Result_Cache = maps:get(<<"result_cache">>, H, 0),
-	Authentication = maps:get(<<"authentication">>, H, <<>>),
-	valida_name_service(Name),
-	valida_type_service(Type),
-	valida_bool(Apikey),
-	valida_bool(Async),
-	valida_length(Comment, 1000),
-	valida_length(Version, 10),
-	valida_length(Owner, 30),
-	valida_authentication(Authentication),
-	{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
-	IdBin = list_to_binary(integer_to_list(Id)),
-	ServiceView = new_service_view(IdBin, Name, Url, ModuleName, FunctionName, 
-							         Type, Apikey, Comment, Version, Owner, 
-								     Async, Host, Result_Cache, 
-								     Authentication, Node, Lang,
-								     Datasource, TableName, PrimaryKey),
-	case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
-		true -> 
-			Service = new_service_re(Rowid, IdBin, Name, Url2, 
-									   ServiceImpl,
-									   ModuleName, 
-									   ModuleNameCanonical,
-									   FunctionName, Type, Apikey, Comment, 
-									   Version, Owner, Async, 
-									   Querystring, QtdQuerystringRequired,
-									   Host, HostName, Result_Cache,
-									   Authentication, Node, Lang,
-									   Datasource, TableName, PrimaryKey),
-			parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
-		false -> 
-			Service = new_service(Rowid, IdBin, Name, Url2, 
-									ServiceImpl,
-									ModuleName,
-									ModuleNameCanonical,
-									FunctionName, Type, Apikey, Comment,
-									Version, Owner, Async, 
-									Querystring, QtdQuerystringRequired,
-									Host, HostName, Result_Cache,
-									Authentication, Node, Lang,
-									Datasource, TableName, PrimaryKey),
-			parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
-	end.	
-
+	try
+		Name = maps:get(<<"name">>, H),
+		Url = maps:get(<<"url">>, H),
+		Url2 = Url,
+		Type = maps:get(<<"type">>, H, <<"GET">>),
+		valida_url_service(Url2),
+		ServiceImpl = maps:get(<<"service">>, H),
+		{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
+		Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
+		Comment = maps:get(<<"comment">>, H, <<>>),
+		Version = maps:get(<<"version">>, H, <<>>),
+		Owner = maps:get(<<"owner">>, H, <<>>),
+		Async = maps:get(<<"async">>, H, <<"false">>),
+		Rowid = ems_util:make_rowid_from_url(Url2, Type),
+		Lang = maps:get(<<"lang">>, H, <<>>),
+		Datasource = maps:get(<<"datasource">>, H, <<>>),
+		TableName = maps:get(<<"table_name">>, H, <<>>),
+		PrimaryKey = maps:get(<<"primary_key">>, H, <<>>),
+		Result_Cache = maps:get(<<"result_cache">>, H, 0),
+		Authentication = maps:get(<<"authentication">>, H, <<>>),
+		valida_lang(Lang),
+		valida_name_service(Name),
+		valida_type_service(Type),
+		valida_bool(Apikey),
+		valida_bool(Async),
+		valida_length(Comment, 1000),
+		valida_length(Version, 10),
+		valida_length(Owner, 30),
+		valida_authentication(Authentication),
+		case Lang of
+			<<"erlang">> -> 
+				Node = <<>>,
+				Host = '',
+				HostName = Conf#config.ems_hostname;
+			_ ->	
+				Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
+				{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+		end,
+		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
+		IdBin = list_to_binary(integer_to_list(Id)),
+		ServiceView = new_service_view(IdBin, Name, Url, ModuleName, FunctionName, 
+										 Type, Apikey, Comment, Version, Owner, 
+										 Async, Host, Result_Cache, 
+										 Authentication, Node, Lang,
+										 Datasource, TableName, PrimaryKey),
+		case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
+			true -> 
+				Service = new_service_re(Rowid, IdBin, Name, Url2, 
+										   ServiceImpl,
+										   ModuleName, 
+										   ModuleNameCanonical,
+										   FunctionName, Type, Apikey, Comment, 
+										   Version, Owner, Async, 
+										   Querystring, QtdQuerystringRequired,
+										   Host, HostName, Result_Cache,
+										   Authentication, Node, Lang,
+										   Datasource, TableName, PrimaryKey),
+				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
+			false -> 
+				Service = new_service(Rowid, IdBin, Name, Url2, 
+										ServiceImpl,
+										ModuleName,
+										ModuleNameCanonical,
+										FunctionName, Type, Apikey, Comment,
+										Version, Owner, Async, 
+										Querystring, QtdQuerystringRequired,
+										Host, HostName, Result_Cache,
+										Authentication, Node, Lang,
+										Datasource, TableName, PrimaryKey),
+				parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
+		end
+	catch
+		_Exception:Reason -> 
+			{error, Reason}
+	end.
+	
 parse_service_service(Service) ->
 	try
 		[ModuleName, FunctionName] = binary:split(Service, <<":">>),
@@ -534,7 +545,9 @@ valida_querystring(QuerystringServico, QuerystringUser) ->
 		notfound -> notfound
 	end.
 
-valida_querystring([], _QuerystringUser, notfound) -> notfound;
+valida_querystring([], _QuerystringUser, notfound) -> 
+	io:format("valida_querystring not found...\n\n\n"),
+	notfound;
 
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};
@@ -568,7 +581,7 @@ lookup(Request, State) ->
 			case processa_querystring(Service, Request) of
 			   notfound -> notfound;
 			   Querystring ->
-					io:format("lookup is ~p\n\n", [Querystring]),
+					io:format("lookup querystrng is ~p\n\n", [Querystring]),
 					{Service, Request#request.params_url, Querystring}
 			end
 	end.

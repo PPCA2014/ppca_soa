@@ -24,15 +24,12 @@ start(_StartType, StartArgs) ->
 		{ok, _Pid} ->
 			T1 = ems_util:get_milliseconds(),
 			Config = ems_config:getConfig(),
-			ems_logger:start(),
-			ems_logger:info("~n~s", [?SERVER_NAME]),
-			odbc:start(),
-
 			case ems_catalog:init_catalog() of
 				ok ->
+					odbc:start(),
+					ems_logger:start(),
+					ems_logger:info("~n~s", [?SERVER_NAME]),
 					Ret = ems_bus_sup:start_link(StartArgs),
-
-					%% show config parameters 
 					ems_logger:info("cat_host_alias: ~p", [Config#config.cat_host_alias]),
 					ems_logger:info("cat_host_search: ~s", [ems_util:join_binlist(Config#config.cat_host_search, ", ")]),
 					ems_logger:info("cat_node_search: ~s", [ems_util:join_binlist(Config#config.cat_node_search, ", ")]),
@@ -48,16 +45,13 @@ start(_StartType, StartArgs) ->
 					ems_logger:info("ldap_datasource: ~s", [Config#config.ldap_datasource]),
 					ems_logger:info("ldap_admin: ~s", [Config#config.ldap_admin]),
 					ems_logger:debug("In debug mode: ~p~", [Config#config.ems_debug]),
-
 					ems_logger:info("Server ~s started in ~pms.", [node(), ems_util:get_milliseconds() - T1]),
 					ems_logger:sync(),
-
 					register_events(),
-
 					Ret;
-				{error, Reason} -> 
-					ems_logger:sync(),
-					{error, Reason}
+				Error-> 
+					io:format("Error processing catalogs: ~p.", [Error]),
+					{error, finish}
 			end;
 		{error, Reason} ->
 			io:format("Error processing configuration file: ~p.", [Reason]),

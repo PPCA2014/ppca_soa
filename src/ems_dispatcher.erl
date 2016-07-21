@@ -117,6 +117,8 @@ do_dispatch_request(Request) ->
 									   Service#service.host_name, 
 									   Service#service.module_name, 1) of
 						{ok, Node} ->
+							io:format("aqui1\n\n"),
+
 							Request2 = Request#request{user = User, 
 													   node_exec = Node,
 													   service = Service,
@@ -150,7 +152,8 @@ executa_service(_Node, Request=#request{service=#service{host='',
 														 function_name = FunctionName, 
 														 function=Function}}) ->
 	try
-		io:format("Msg enviada para ~p: ~p.", [Module, Request]),
+		io:format("executa_service hostname=~p\n", [HostName]),
+		io:format("Msg local enviada para ~p: ~p.", [Module, Request]),
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
@@ -175,6 +178,9 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 														module_name = ModuleName, 
 														function_name = FunctionName, 
 														module = Module}}) ->
+	io:format("send do java!!!\n\n"),
+
+
 	% Envia uma mensagem assíncrona para o serviço
 	Msg = {{Request#request.rid, 
 					   Request#request.uri, 
