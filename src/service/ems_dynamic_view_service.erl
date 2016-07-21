@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_dynamic_view_service
 %% @version 1.0.0
-%% @doc It provides dynamic_view service.
+%% @doc It provides dynamic_view service for relational databases.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -130,63 +130,61 @@ parse_condition({<<Key/binary>>, Value}) ->
 	{binary_to_list(Key), ems_util:quote(binary_to_list(Value))}.
 
 
+generate_dynamic_sql(QuerystringMap, TableName) ->
+	io:format("aqui 1 ->  ~p\n\n", [QuerystringMap]),
+	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
+	Filter = parse_filter(FilterJson),
+	io:format("aqui 2  ~p\n\n", [Filter]),
+	Params = [],
+
+	Sql = "select * from " ++ TableName ++ Filter,
+	io:format("\n\nSQL-> ~p\n", [Sql]),
+	{ok, {Sql, Params}}.
+
+
+generate_dynamic_sql(Id, TableName, Primary_key) ->
+	Params = [{sql_integer, [Id]}],
+	Sql = "select * from " ++ TableName ++ " where " ++ Primary_key ++ "= ?",
+	{ok, {Sql, Params}}.
+
+
+execute_dynamic_sql(Sql, Params, Datasource) ->
+	case ems_db:get_odbc_connection(Datasource) of
+		{ok, Conn} -> fetch_records_dynamic_sql(Sql, Params, Conn);
+		{error, Reason} ->	{error, Reason}
+	end.
+
+
+fetch_records_dynamic_sql(Sql, Params, Conn) ->
+	try
+		case odbc:param_query(Conn, Sql, Params, 3500) of
+			{_, _, Records} -> {ok, Records};
+			{error, Reason} -> {error, Reason}
+		end
+	catch
+		_Exception:Reason2 -> 
+			ems_logger:error("Execute dynamic_view query database error. Reason: ~p", [Reason2]),
+			{error, Reason2}
+	after 
+		ems_db:release_odbc_connection(Conn)
+	end.
+
+
 do_find(#request{querystring_map = QuerystringMap, 
 				 service = #service{datasource = Datasource, 
 									table_name = TableName}}, _State) ->
-	case ems_db:get_odbc_connection(Datasource) of
-		{ok, Conn} -> 
-			try
-				io:format("aqui 1 ->  ~p\n\n", [QuerystringMap]),
-				FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
-				Filter = parse_filter(FilterJson),
-				io:format("aqui 2  ~p\n\n", [Filter]),
-				Params = [],
-
-				Sql = "select * from " ++ TableName ++ Filter,
-				io:format("\n\nSQL-> ~p\n", [Sql]),
-				
-				case odbc:param_query(Conn, Sql, Params, 3500) of
-					{_, _, Record} -> 
-						{ok, Record};
-					{error, Reason} ->
-						{error, Reason}
-				end
-			catch
-				_Exception:Reason2 -> 
-					ems_logger:error("Connection or query dynamic_view database error. Reason: ~p", [Reason2]),
-					{error, Reason2}
-			after 
-				ems_db:release_odbc_connection(Conn)
-			end;
-		{error, Reason3} ->
-			{error, Reason3}
+	case generate_dynamic_sql(QuerystringMap, TableName) of
+		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Datasource);
+		{error, Reason} -> {error, Reason}
 	end.
+
 
 do_find_by_id(Request = #request{service = #service{datasource = Datasource, 
 													table_name = TableName,
 													primary_key = Primary_key}}, _State) ->
 	Id = list_to_integer(ems_request:get_param_url(<<"id">>, "0", Request)),
-	case ems_db:get_odbc_connection(Datasource) of
-		{ok, Conn} -> 
-			try
-				Params = [{sql_integer, [Id]}],
-				Sql = "select * from " ++ TableName ++ " where " ++ Primary_key ++ "= ?",
-				case odbc:param_query(Conn, Sql, Params, 3500) of
-					{selected, _Columns, Records} -> 
-						{ok, Records};
-					{error, Reason} ->
-						{error, Reason}
-				end
-			catch
-				_Exception:Reason2 -> 
-					ems_logger:error("Connection or query dynamic_view database error. Reason: ~p", [Reason2]),
-					{error, Reason2}
-			after 
-				ems_db:release_odbc_connection(Conn)
-			end;
-		{error, Reason3} ->
-			{error, Reason3}
+	case generate_dynamic_sql(Id, TableName, Primary_key) of
+		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Datasource);
+		{error, Reason} -> {error, Reason}
 	end.
-
-
 
