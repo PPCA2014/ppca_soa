@@ -32,9 +32,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 			User_Agent = maps:get('User-Agent', HttpParams, ""),
 			Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
 			Host = maps:get('Host', HttpParams, ""),
-			io:format("parse querystring ~p\n", [Querystring]),
 			QuerystringMap = parse_querystring(Querystring),
-			io:format("parse querystring map is ~p\n", [QuerystringMap]),
 			Authorization = maps:get('Authorization', HttpParams, ""),
 			{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
 			{ok, #request{

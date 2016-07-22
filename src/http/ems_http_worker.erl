@@ -24,7 +24,7 @@
 %% Client API
 -export([cast/1]).
 
-% estado do servidor
+% State of server
 -record(state, {owner 	  = undefined,	 	 %% http listener
 				lsocket   = undefined,		 %% socket of listener
 				socket	  = undefined,		 %% socket of request
@@ -182,7 +182,7 @@ process_request(Socket, RequestBin) ->
 			inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 			% TCP_DEFER_ACCEPT for Linux
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-			ems_logger:info("Dispatch new request: ~p.", [Request]),
+			%ems_logger:info("Dispatch new request: ~p.", [Request]),
 			ems_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> 
 			envia_response(Request, {error, Reason});

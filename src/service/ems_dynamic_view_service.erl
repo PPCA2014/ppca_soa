@@ -105,38 +105,70 @@ parse_filter(<<>>) -> [];
 
 parse_filter(Filter) ->    
     case ems_util:json_decode(Filter) of
-		{ok, Filter2} ->  
-			parse_filter(Filter2, []);
+		{ok, Filter2} -> parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
 
-parse_filter([], []) -> "";
+parse_filter([], [], []) -> {"", ""};
 	
-parse_filter([], Where) -> " where " ++ lists:flatten(lists:reverse(Where));
+parse_filter([], Filter, Params) -> 
+	Filter2 = lists:flatten(lists:reverse(Filter)),
+	Params2 = lists:flatten(lists:reverse(Params)),
+	{" where " ++ Filter2, Params2};
 	
-parse_filter([H|T], Where) ->
-	{Key, Value} = parse_condition(H),
+parse_filter([H|T], Filter, Params) ->
+	{Param, Value} = parse_condition(H),
 	case T of
-		[] -> Result = Key ++ "=" ++ Value;
-		_  -> Result = Key ++ "=" ++ Value ++ " and "
+		[] -> Result = Param ++ "=?";
+		_  -> Result = Param ++ "=? and "
 	end,
-	parse_filter(T, [Result | Where]).
+	parse_filter(T, [Result | Filter], [Value | Params]).
 		
 	
-parse_condition({<<Key/binary>>, Value}) when is_integer(Value) -> 
-	{binary_to_list(Key), integer_to_list(Value)};
+parse_condition({<<Param/binary>>, Value}) when is_integer(Value) -> 
+	Param2 = binary_to_list(Param), 
+	Value2 = integer_to_list(Value),
+	parse_condition(Param2, Value2, sql_integer);
 
-parse_condition({<<Key/binary>>, Value}) -> 
-	{binary_to_list(Key), ems_util:quote(binary_to_list(Value))}.
+parse_condition({<<Param/binary>>, Value}) -> 
+	Param2 = binary_to_list(Param), 
+	Value2 = ems_util:quote(binary_to_list(Value)),
+	parse_condition(Param2, Value2, {sql_varchar, 100}).
+
+parse_condition(Param, Value, SqlType) -> 
+	case parse_operator(Param) of
+		{ok, {Param2, Op}} -> 
+			Value2 = [{SqlType, [Value]}],
+			{Param2, Op, Value2};		
+		{error, Reason} -> {error, Reason}
+	end. 
 
 
-generate_dynamic_sql(QuerystringMap, TableName) ->
-	io:format("aqui 1 ->  ~p\n\n", [QuerystringMap]),
-	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
-	Filter = parse_filter(FilterJson),
-	io:format("aqui 2  ~p\n\n", [Filter]),
-	Params = [],
+parse_operator(Param) ->
+	case re:run(Param, "^([a-zA-Z]+)(__(contains|icontains|equal|gt|gte|lt|lte))?$") of
+		{match, [_, {PosNameIni, NameLen}]} -> 
+			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+1+NameLen),
+			{ok, {Name, "="}};
+		{match, [_, {PosNameIni, NameLen}, _, {PosOpIni, OpLen}]} ->
+			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+1+NameLen),
+			Op = string:sub_string(Param, PosOpIni+1, PosOpIni+1+OpLen),
+			Op2 = parse_sql_operator(Op),
+			{ok, {Name, Op2}};
+		nomatch -> {error, einvalid_condition}
+	end.
 
+
+parse_sql_operator("contains") -> "like";
+parse_sql_operator("icontains") -> "like";
+parse_sql_operator("equal") -> "=";
+parse_sql_operator("gt") -> ">";
+parse_sql_operator("gte") -> ">=";
+parse_sql_operator("lt") -> "<";
+parse_sql_operator("lte") -> "<=".
+
+
+generate_dynamic_sql(FilterJson, TableName) ->
+	{Filter, Params} = parse_filter(FilterJson),
 	Sql = "select * from " ++ TableName ++ Filter,
 	io:format("\n\nSQL-> ~p\n", [Sql]),
 	{ok, {Sql, Params}}.
@@ -173,7 +205,8 @@ fetch_records_dynamic_sql(Sql, Params, Conn) ->
 do_find(#request{querystring_map = QuerystringMap, 
 				 service = #service{datasource = Datasource, 
 									table_name = TableName}}, _State) ->
-	case generate_dynamic_sql(QuerystringMap, TableName) of
+	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
+	case generate_dynamic_sql(FilterJson, TableName) of
 		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Datasource);
 		{error, Reason} -> {error, Reason}
 	end.

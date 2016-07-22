@@ -117,8 +117,6 @@ do_dispatch_request(Request) ->
 									   Service#service.host_name, 
 									   Service#service.module_name, 1) of
 						{ok, Node} ->
-							io:format("aqui1\n\n"),
-
 							Request2 = Request#request{user = User, 
 													   node_exec = Node,
 													   service = Service,
@@ -152,21 +150,19 @@ executa_service(_Node, Request=#request{service=#service{host='',
 														 function_name = FunctionName, 
 														 function=Function}}) ->
 	try
-		io:format("executa_service hostname=~p\n", [HostName]),
-		io:format("Msg local enviada para ~p: ~p.", [Module, Request]),
 		case whereis(Module) of
 			undefined -> 
 				Module:start(),
-				ems_logger:debug("Serviço ~p não está ativo. Iniciando...", [Module]),
+				%ems_logger:debug("Serviço ~p não está ativo. Iniciando...", [Module]),
 				apply(Module, Function, [Request, self()]);
 			_Pid -> 
 				apply(Module, Function, [Request, self()])
 		end,
-		ems_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, 
-																   FunctionName, 
-																   HostName, 
-																   Request#request.rid, 
-																   Request#request.uri]),
+		ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
+																 FunctionName, 
+																 HostName, 
+																 Request#request.rid, 
+																 Request#request.uri]),
 		ok
 	catch
 		_Exception:ErroInterno ->  {error, service_falhou, ErroInterno}
@@ -178,9 +174,6 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 														module_name = ModuleName, 
 														function_name = FunctionName, 
 														module = Module}}) ->
-	io:format("send do java!!!\n\n"),
-
-
 	% Envia uma mensagem assíncrona para o serviço
 	Msg = {{Request#request.rid, 
 					   Request#request.uri, 
@@ -193,23 +186,13 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 					   FunctionName}, 
 					   self()
 					  },
-	ems_logger:debug("Msg enviada para ~p: ~p.", [Node, Msg]),
-	{Module, Node} ! {{Request#request.rid, 
-					   Request#request.uri, 
-					   Request#request.type, 
-					   Request#request.params_url, 
-					   Request#request.querystring_map,
-					   Request#request.payload,	
-					   Request#request.content_type,	
-					   ModuleName,
-					   FunctionName}, 
-					   self()
-					  },
-	ems_logger:info("CAST ~s:~s em ~s {RID: ~p, URI: ~s}.", [ModuleName, 
-															   FunctionName, 
-															   atom_to_list(Node), 
-															   Request#request.rid, 
-															   Request#request.uri]),
+	%ems_logger:debug("Msg enviada para ~p: ~p.", [Node, Msg]),
+	{Module, Node} ! Msg,
+	ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
+															 FunctionName, 
+															 atom_to_list(Node), 
+															 Request#request.rid, 
+															 Request#request.uri]),
 	ok.
 
 get_work_node('', _, _, _, _) -> {ok, node()};
