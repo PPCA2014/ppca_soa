@@ -72,12 +72,12 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({find, Request, _From}, State) ->
-	Result = do_find(Request, State),
+	Result = execute_query(find, Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State};
 
 handle_cast({find_by_id, Request, _From}, State) ->
-	Result = do_find_by_id(Request, State),
+	Result = execute_query(find_by_id, Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State}.
 
@@ -100,77 +100,177 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-    
+
+execute_query(Command, Request, State) ->
+	try
+		case Command of
+			find -> do_find(Request, State);
+			find_by_id -> do_find_by_id(Request, State)
+		end
+	catch
+		_Exception:Reason2 -> {error, Reason2}
+	end.
+	    
+	    
 parse_filter(<<>>) -> [];   
+
 
 parse_filter(Filter) ->    
     case ems_util:json_decode(Filter) of
 		{ok, Filter2} -> parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
-
 parse_filter([], [], []) -> {"", ""};
+
 	
 parse_filter([], Filter, Params) -> 
 	Filter2 = lists:flatten(lists:reverse(Filter)),
 	Params2 = lists:flatten(lists:reverse(Params)),
 	{" where " ++ Filter2, Params2};
-	
+
 parse_filter([H|T], Filter, Params) ->
-	{Param, Value} = parse_condition(H),
-	case T of
-		[] -> Result = Param ++ "=?";
-		_  -> Result = Param ++ "=? and "
-	end,
-	parse_filter(T, [Result | Filter], [Value | Params]).
-		
+	{Param, Op, Value} = parse_condition(H),
+	And = filter_conjuntion(T),
+	{Cond, Params2} = generate_condition(Param, Op, Value, And, Params),
+	parse_filter(T, [Cond | Filter], Params2).
+
+	
+filter_conjuntion([]) -> "";
+filter_conjuntion(_) -> "and".
+
+
+generate_condition(Param, "isnull", "true", And, Params) -> 
+	Cond = lists:flatten([Param, " is null ", And, " "]),
+	{Cond, Params};
+
+generate_condition(Param, "isnull", "false", And, Params) -> 
+	Cond = lists:flatten([Param, " is not null ", And, " "]),
+	{Cond, Params};
+
+generate_condition(_, "isnull", _, _, _) -> 
+	erlang:error(einvalid_filter);
+	
+generate_condition(Param, Op, Value, And, Params) ->
+	SqlOp = parse_sql_operator(Op),
+	Cond = lists:flatten([Param, " ", SqlOp, " ", "?", " ", And, " "]),
+	{Cond, [Value | Params]}.
+
 	
 parse_condition({<<Param/binary>>, Value}) when is_integer(Value) -> 
 	Param2 = binary_to_list(Param), 
-	Value2 = integer_to_list(Value),
-	parse_condition(Param2, Value2, sql_integer);
+	parse_condition(Param2, Value, sql_integer);
 
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
-	Value2 = ems_util:quote(binary_to_list(Value)),
-	parse_condition(Param2, Value2, {sql_varchar, 100}).
-
-parse_condition(Param, Value, SqlType) -> 
-	case parse_operator(Param) of
-		{ok, {Param2, Op}} -> 
-			Value2 = [{SqlType, [Value]}],
-			{Param2, Op, Value2};		
-		{error, Reason} -> {error, Reason}
-	end. 
+	Value2 = binary_to_list(Value),
+	parse_condition(Param2, Value2, sql_varchar).
 
 
-parse_operator(Param) ->
-	case re:run(Param, "^([a-zA-Z]+)(__(contains|icontains|equal|gt|gte|lt|lte))?$") of
+parse_condition(Param, Value, DataType) -> 
+	{Param2, Op} = parse_name_and_operator(Param),
+	{Param3, Value2} = parse_value(Param2, Value, Op, DataType),
+	{Param3, Op, Value2}.	
+
+
+parse_value(Param, Value, "=", DataType) -> 
+	OdbcDataType = parse_odbc_data_type(Value, DataType),
+	OdbcValue = [{OdbcDataType, [Value]}],
+	{Param, OdbcValue};
+
+parse_value(Param, Value, "like", sql_varchar) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_varchar),
+	Value2 = "%" ++ Value ++ "%",
+	OdbcValue = [{OdbcDataType, [Value2]}],
+	{Param, OdbcValue};
+	
+parse_value(Param, Value, "ilike", sql_varchar) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_varchar),
+	Param2 = "lower(" ++ Param ++ ")",
+	Value2 = string:to_lower(Value) ++ "%",
+	OdbcValue = [{OdbcDataType, [Value2]}],
+	{Param2, OdbcValue};
+
+parse_value(Param, Value, "contains", sql_varchar) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_varchar),
+	Value2 = "%" ++ Value ++ "%",
+	OdbcValue = [{OdbcDataType, [Value2]}],
+	{Param, OdbcValue};
+	
+parse_value(Param, Value, "icontains", sql_varchar) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_varchar),
+	Param2 = "lower(" ++ Param ++ ")",
+	Value2 = "%" ++ string:to_lower(Value) ++ "%",
+	OdbcValue = [{OdbcDataType, [Value2]}],
+	{Param2, OdbcValue};
+	
+parse_value(Param, Value, "isnull", sql_varchar) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_varchar),
+	OdbcValue = [{OdbcDataType, [Value]}],
+	{Param, OdbcValue};
+
+parse_value(Param, Value, "gt", sql_integer) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_integer),
+	OdbcValue = [{OdbcDataType, [Value]}],
+	{Param, OdbcValue};
+
+parse_value(Param, Value, "gte", sql_integer) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_integer),
+	OdbcValue = [{OdbcDataType, [Value]}],
+	{Param, OdbcValue};
+
+parse_value(Param, Value, "lt", sql_integer) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_integer),
+	OdbcValue = [{OdbcDataType, [Value]}],
+	{Param, OdbcValue};
+
+parse_value(Param, Value, "lte", sql_integer) -> 
+	OdbcDataType = parse_odbc_data_type(Value, sql_integer),
+	OdbcValue = [{OdbcDataType, [Value]}],
+	{Param, OdbcValue};
+
+parse_value(_, _, _, _) -> 
+	erlang:error(einvalid_filter).
+
+parse_odbc_data_type(_Value, sql_varchar) -> {sql_varchar, 100};
+parse_odbc_data_type(_Value, sql_integer) -> sql_integer.
+
+parse_name_and_operator(Param) ->
+	case re:run(Param, "^([a-zA-Z]+)(__(like|ilike|contains|icontains|equal|gt|gte|lt|lte|isnull))?$") of
 		{match, [_, {PosNameIni, NameLen}]} -> 
 			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+1+NameLen),
-			{ok, {Name, "="}};
+			{Name, "="};
 		{match, [_, {PosNameIni, NameLen}, _, {PosOpIni, OpLen}]} ->
-			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+1+NameLen),
+			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+NameLen),
 			Op = string:sub_string(Param, PosOpIni+1, PosOpIni+1+OpLen),
-			Op2 = parse_sql_operator(Op),
-			{ok, {Name, Op2}};
-		nomatch -> {error, einvalid_condition}
+			{Name, Op};
+		nomatch -> erlang:error(einvalid_filter)
 	end.
 
 
+parse_sql_operator("like") -> "like";
+parse_sql_operator("ilike") -> "like";
 parse_sql_operator("contains") -> "like";
 parse_sql_operator("icontains") -> "like";
 parse_sql_operator("equal") -> "=";
 parse_sql_operator("gt") -> ">";
 parse_sql_operator("gte") -> ">=";
-parse_sql_operator("lt") -> "<";
-parse_sql_operator("lte") -> "<=".
+parse_sql_operator("lt") -> "<" ;
+parse_sql_operator("lte") -> "<=";
+parse_sql_operator("isnull") -> "is null";
+parse_sql_operator(_) -> "=".
+
+
+generate_dynamic_sql(<<>>, TableName) ->
+	Sql = "select * from " ++ TableName,
+	Params = [],
+	io:format("\n\nSQL-> ~p  ~p\n", [Sql, Params]),
+	{ok, {Sql, Params}};
 
 
 generate_dynamic_sql(FilterJson, TableName) ->
 	{Filter, Params} = parse_filter(FilterJson),
 	Sql = "select * from " ++ TableName ++ Filter,
-	io:format("\n\nSQL-> ~p\n", [Sql]),
+	io:format("\n\nSQL-> ~p  ~p\n", [Sql, Params]),
 	{ok, {Sql, Params}}.
 
 
@@ -182,12 +282,12 @@ generate_dynamic_sql(Id, TableName, Primary_key) ->
 
 execute_dynamic_sql(Sql, Params, Datasource) ->
 	case ems_db:get_odbc_connection(Datasource) of
-		{ok, Conn} -> fetch_records_dynamic_sql(Sql, Params, Conn);
+		{ok, Conn} -> fetch_records_database(Sql, Params, Conn);
 		{error, Reason} ->	{error, Reason}
 	end.
 
 
-fetch_records_dynamic_sql(Sql, Params, Conn) ->
+fetch_records_database(Sql, Params, Conn) ->
 	try
 		case odbc:param_query(Conn, Sql, Params, 3500) of
 			{_, _, Records} -> {ok, Records};
