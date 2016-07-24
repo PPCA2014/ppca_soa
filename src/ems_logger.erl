@@ -232,61 +232,70 @@ sync_buffer(State) ->
 	file:write_file(FileName, lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
 	State#state{buffer = [], flag_checkpoint = false}.
 
-do_log_request(Request = #request{protocol = ldap}, _State) ->
-	RID = Request#request.rid,
-	Version = Request#request.version,
-	Metodo = Request#request.type,
-	Url = Request#request.url,
-	StatusSend = Request#request.status_send,
-	Payload = Request#request.payload,
-	Service = Request#request.service,
-	Code = Request#request.code, 
-	Reason = Request#request.reason, 
-	Latencia = Request#request.latency, 
-	StatusSend = Request#request.status_send,
-	Authorization = Request#request.authorization,
+do_log_request(#request{protocol = ldap, 
+						rid = RID,
+						type = Metodo,
+						url = Url,
+						version = Version,
+						payload = Payload,
+						service = Service,
+						code = Code,
+						reason = Reason,
+						latency = Latencia,
+						authorization = Authorization,
+						node_exec = Node}, _State) ->
 	case Service of
 		undefined -> ServiceImpl = "";
 		_ -> ServiceImpl = Service#service.service
 	end,
-	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, ServiceImpl, Authorization, Code, Reason, Latencia, StatusSend]),
+	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~s>> (~pms)\n}",
+	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latencia]),
 	case Code of
 		200 -> ems_logger:info(Texto1);
 		_ 	-> ems_logger:error(Texto1)
 	end;
 	
 	
-do_log_request(Request = #request{protocol = http}, _State) ->
-	RID = Request#request.rid,
-	Metodo = Request#request.type,
-	Url = Request#request.url,
-	Version = Request#request.version,
-	Accept = Request#request.accept,
-	User_Agent = Request#request.user_agent,
-	Payload = Request#request.payload,
-	StatusSend = Request#request.status_send,
-	Service = Request#request.service,
-	Query = Request#request.querystring,
-	Code = Request#request.code, 
-	Reason = Request#request.reason, 
-	Latencia = Request#request.latency, 
-	StatusSend = Request#request.status_send,
-	Authorization = Request#request.authorization,
-	case Service of
-		undefined -> ServiceImpl = "";
-		_ -> ServiceImpl = Service#service.service
-	end,
-	case Payload of
-		undefined ->
-			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, ServiceImpl, Query, Authorization, Code, Reason, Latencia, StatusSend]);
-		_ ->
-			Content_Type = Request#request.content_type,
-			Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tStatus: ~p <<~s>> (~pms)\n\tSend: ~s\n}",
-			Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, Content_Type, Payload, ServiceImpl, Query, Authorization, Code, Reason, Latencia, StatusSend])
-	end,
-	case Code of
-		200 -> ems_logger:info(Texto1);
-		_ 	-> ems_logger:error(Texto1)
+do_log_request(#request{protocol = http, 
+						rid = RID,
+						type = Metodo,
+						url = Url,
+						version = Version,
+						accept = Accept,
+						user_agent = User_Agent,
+						payload = Payload,
+						service = Service,
+						querystring_map = Query,
+						content_type = Content_Type,
+						code = Code,
+						reason = Reason,
+						latency = Latencia,
+						authorization = Authorization,
+						node_exec = Node}, _State) ->
+	try
+		case Service of
+			undefined -> ServiceImpl = "";
+			_ -> ServiceImpl = Service#service.service
+		end,
+		case Payload of
+			undefined ->
+				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~s>> (~pms)\n}",
+				Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, 
+											   ServiceImpl, Query, Authorization, 
+											   Node, Code, Reason, 
+											   Latencia]);
+			_ ->
+				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~s>> (~pms)\n}",
+				Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, 
+											   Content_Type, Payload, ServiceImpl, Query, 
+											   Authorization, Node, Code, Reason, 
+											   Latencia])
+		end,
+		case Code of
+			200 -> ems_logger:info(Texto1);
+			_ 	-> ems_logger:error(Texto1)
+		end
+	catch
+		_Exception:ReasonEx -> io:format("Error print log: ~p\n", [ReasonEx])
 	end.
+

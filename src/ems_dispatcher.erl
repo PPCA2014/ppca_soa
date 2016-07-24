@@ -144,10 +144,10 @@ do_dispatch_request(Request) ->
 
 %% @doc Executa o serviço local (Serviço escrito em Erlang)
 executa_service(_Node, Request=#request{service=#service{host='', 
-														 host_name = HostName,	
 														 module=Module, 
-														 module_name = ModuleName, 
-														 function_name = FunctionName, 
+														 %host_name = HostName,	
+														 %module_name = ModuleName, 
+														 %function_name = FunctionName, 
 														 function=Function}}) ->
 	try
 		case whereis(Module) of
@@ -158,11 +158,11 @@ executa_service(_Node, Request=#request{service=#service{host='',
 			_Pid -> 
 				apply(Module, Function, [Request, self()])
 		end,
-		ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
-																 FunctionName, 
-																 HostName, 
-																 Request#request.rid, 
-																 Request#request.uri]),
+		%ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
+		%														 FunctionName, 
+		%														 HostName, 
+		%														 Request#request.rid, 
+		%														 Request#request.uri]),
 		ok
 	catch
 		_Exception:ErroInterno ->  {error, service_falhou, ErroInterno}
@@ -188,11 +188,11 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 					  },
 	%ems_logger:debug("Msg enviada para ~p: ~p.", [Node, Msg]),
 	{Module, Node} ! Msg,
-	ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
-															 FunctionName, 
-															 atom_to_list(Node), 
-															 Request#request.rid, 
-															 Request#request.uri]),
+	%ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
+	%														 FunctionName, 
+	%														 atom_to_list(Node), 
+	%														 Request#request.rid, 
+	%														 Request#request.uri]),
 	ok.
 
 get_work_node('', _, _, _, _) -> {ok, node()};

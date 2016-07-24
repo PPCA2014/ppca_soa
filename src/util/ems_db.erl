@@ -139,17 +139,11 @@ get_odbc_connection(Datasource) ->
 		case odbc:connect(Datasource, [{scrollable_cursors, off},
 									   {timeout, 3500},
 									   {trace_driver, off}]) of
-			{ok, Conn}	->																	  
-				ems_logger:info("Create connection to dynamic_view datasource ~p.", [Datasource]),
-				{ok, Conn};
-			{error, Reason} -> 
-				ems_logger:error("Connection dynamic_view database error. Reason: ~p", [Reason]),
-				{error, Reason}
+			{ok, Conn}	-> {ok, Conn};
+			{error, Reason} -> {error, Reason}
 		end
 	catch
-		_Exception:Reason2 -> 
-			ems_logger:error("Connection dynamic_view database error. Reason: ~p", [Reason2]),
-			{error, Reason2}
+		_Exception:Reason2 -> {error, Reason2}
 	end.
 
 release_odbc_connection(Conn) ->

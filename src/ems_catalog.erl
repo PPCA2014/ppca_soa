@@ -314,10 +314,13 @@ valida_url_service(Url) ->
 	
 valida_bool(<<"true">>) -> ok;
 valida_bool(<<"false">>) -> ok;
+valida_bool(true) -> ok;
+valida_bool(false) -> ok;
 valida_bool(_) -> erlang:error(invalid_bool).
 
 valida_lang(<<"java">>) -> ok;
 valida_lang(<<"erlang">>) -> ok;
+valida_lang(<<"net">>) -> ok;
 valida_lang(_) -> erlang:error(invalid_lang_service).
 
 valida_authentication(<<"Basic">>) -> ok;
@@ -414,11 +417,18 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 		Async = maps:get(<<"async">>, H, <<"false">>),
 		Rowid = ems_util:make_rowid_from_url(Url2, Type),
 		Lang = maps:get(<<"lang">>, H, <<>>),
+
+		% ems_dynamic_view_service
 		Datasource = maps:get(<<"datasource">>, H, <<>>),
 		TableName = maps:get(<<"table_name">>, H, <<>>),
 		PrimaryKey = maps:get(<<"primary_key">>, H, <<>>),
+
+
 		Result_Cache = maps:get(<<"result_cache">>, H, 0),
 		Authentication = maps:get(<<"authentication">>, H, <<>>),
+		Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
+		UseRE = ems_util:binary_to_bool(maps:get(<<"use_re">>, H, <<"false">>)),
+
 		valida_lang(Lang),
 		valida_name_service(Name),
 		valida_type_service(Type),
@@ -428,6 +438,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 		valida_length(Version, 10),
 		valida_length(Owner, 30),
 		valida_authentication(Authentication),
+		valida_bool(Debug),
+		valida_bool(UseRE),
 		case Lang of
 			<<"erlang">> -> 
 				Node = <<>>,
@@ -443,7 +455,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										 Type, Apikey, Comment, Version, Owner, 
 										 Async, Host, Result_Cache, 
 										 Authentication, Node, Lang,
-										 Datasource, TableName, PrimaryKey),
+										 Datasource, TableName, PrimaryKey,
+										 Debug),
 		case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
 			true -> 
 				Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -455,7 +468,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										   Querystring, QtdQuerystringRequired,
 										   Host, HostName, Result_Cache,
 										   Authentication, Node, Lang,
-										   Datasource, TableName, PrimaryKey),
+										   Datasource, TableName, PrimaryKey,
+										   Debug),
 				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
 			false -> 
 				Service = new_service(Rowid, IdBin, Name, Url2, 
@@ -467,7 +481,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										Querystring, QtdQuerystringRequired,
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
-										Datasource, TableName, PrimaryKey),
+										Datasource, TableName, PrimaryKey,
+										Debug),
 				parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
 		end
 	catch
@@ -580,9 +595,7 @@ lookup(Request, State) ->
 		[{_Rowid, Service}] -> 
 			case processa_querystring(Service, Request) of
 			   notfound -> notfound;
-			   Querystring ->
-					io:format("lookup querystrng is ~p\n\n", [Querystring]),
-					{Service, Request#request.params_url, Querystring}
+			   Querystring -> {Service, Request#request.params_url, Querystring}
 			end
 	end.
 
@@ -606,7 +619,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, 
-			   Datasource, TableName, Primary_key) ->
+			   Datasource, TableName, Primary_key,
+			   Debug) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#service{
 				rowid = Rowid,
@@ -636,13 +650,15 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    datasource = binary_to_list(Datasource),
 			    table_name = binary_to_list(TableName),
 			    primary_key = binary_to_list(Primary_key),
+			    debug = Debug,
 			    lang = Lang
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
-			Authentication, Node, Lang, Datasource, TableName, Primary_key) ->
+			Authentication, Node, Lang, Datasource, TableName, Primary_key,
+			Debug) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -670,13 +686,15 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    datasource = binary_to_list(Datasource),
 			    table_name = binary_to_list(TableName),
 			    primary_key = binary_to_list(Primary_key),
+			    debug = Debug,
 			    lang = Lang
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, 
-				  Datasource, TableName, Primary_key) ->
+				  Datasource, TableName, Primary_key,
+				  Debug) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -695,6 +713,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"datasource">> => Datasource,
 			    <<"table_name">> => TableName,
 			    <<"primary_key">> => Primary_key,
+			    <<"debug">> => Debug,
 			    <<"lang">> => Lang},
 	Service.
 

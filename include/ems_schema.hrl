@@ -76,9 +76,10 @@
 					authentication :: string(),					%% Forma de autenticação (Por enquanto somente Basic)
 					node,										%% Node ou lista de node onde os serviços estão publicados
 					lang,										%% Linguagem que foi utilizada para implementar o serviço
-					datasource,
-					table_name,
-					primary_key
+					datasource,									%% Datasource para a fonte de dados
+					table_name,									%% Nome da tabela ou fonte de dados
+					primary_key,								%% Chave primária da fonte de dados
+					debug										%% Permite habilitar um modo debug (depende da implementação do serviço)
 				}).
 
 
