@@ -65,29 +65,20 @@ find_by_id(Request, From) ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
-	create_ets_dynamic_view(),
     State = #state{},
     {ok, State}. 
     
-create_ets_dynamic_view() ->
-    try
-		ets:new(ets_dynamic_view, [set, named_table, public]),
-		{ok, Re_Check_Param} = re:compile("^([a-zA-Z_]+)(__(like|ilike|contains|icontains|e|ne|gt|gte|lt|lte|isnull)?$)"),
-		ets:insert(ets_dynamic_view, {re_check_param, Re_Check_Param})
-	catch
-		_:_ -> ok
-	end.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({find, Request, _From}, State) ->
-	Result = execute_query(find, Request, State),
+	Result = execute_command(find, Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State};
 
 handle_cast({find_by_id, Request, _From}, State) ->
-	Result = execute_query(find_by_id, Request, State),
+	Result = execute_command(find_by_id, Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State}.
 
@@ -113,11 +104,20 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 
-execute_query(Command, Request, State) ->
+execute_command(Command, 
+				Request = #request{service = #service{datasource = Datasource,
+													  table_name = TableName,
+													  primary_key = PrimaryKey,
+													  debug = Debug}}, 
+													  State) ->
 	try
-		case Command of
-			find -> do_find(Request, State);
-			find_by_id -> do_find_by_id(Request, State)
+		case get_connection(Datasource, TableName, PrimaryKey, Debug) of
+			{ok, Conn} -> 
+				case Command of
+					find -> do_find(Request, Conn, State);
+					find_by_id -> do_find_by_id(Request, Conn, State)
+				end;
+			{error, Reason} ->	{error, Reason}
 		end
 	catch
 		_Exception:Reason2 -> {error, Reason2}
@@ -240,16 +240,14 @@ format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
 
 parse_name_and_operator(Param) ->
-	[{_, RE}] = ets:lookup(ets_dynamic_view, re_check_param),
-	case re:run(Param, RE) of
-		{match, [_, {PosNameIni, NameLen}]} -> 
-			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+1+NameLen),
-			{Name, "e"};
-		{match, [_, {PosNameIni, NameLen}, _, {PosOpIni, OpLen}]} ->
-			Name = string:sub_string(Param, PosNameIni+1, PosNameIni+NameLen),
-			Op = string:sub_string(Param, PosOpIni+1, PosOpIni+1+OpLen),
-			{Name, Op};
-		nomatch -> erlang:error(einvalid_filter)
+	case string:tokens(Param, "__") of
+		[Name, Op] ->
+			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
+				true -> {Name, Op};
+				_ -> erlang:error(einvalid_param_filter)
+			end;
+		[Name] -> {Name, "e"};
+		_ -> erlang:error(einvalid_param_filter)
 	end.
 
 
@@ -290,22 +288,19 @@ generate_dynamic_sql(FilterJson, TableName) ->
 	{ok, {Sql, Params}}.
 
 
-generate_dynamic_sql(Id, TableName, Primary_key) ->
+generate_dynamic_sql(Id, TableName, PrimaryKey) ->
 	Params = [{sql_integer, [Id]}],
-	Sql = "select * from " ++ TableName ++ " where " ++ Primary_key ++ " = ?",
+	Sql = "select * from " ++ TableName ++ " where " ++ PrimaryKey ++ " = ?",
 	{ok, {Sql, Params}}.
 
 
-execute_dynamic_sql(Sql, _, _, true) ->  {ok, Sql};
+execute_dynamic_sql(Sql, _, _, true) ->  
+	io:format("sql is ~p\n", [Sql]),
+{ok, Sql};
 
-execute_dynamic_sql(Sql, Params, Datasource, false) ->
-	case ems_db:get_odbc_connection(Datasource) of
-		{ok, Conn} -> fetch_records_database(Sql, Params, Conn);
-		{error, Reason} ->	{error, Reason}
-	end.
+execute_dynamic_sql(Sql, Params, Conn, false) ->
+	io:format("teste\n\n"),
 
-
-fetch_records_database(Sql, Params, Conn) ->
 	try
 		case odbc:param_query(Conn, Sql, Params, 3500) of
 			{_, _, Records} -> {ok, Records};
@@ -314,28 +309,51 @@ fetch_records_database(Sql, Params, Conn) ->
 	catch
 		_Exception:Reason2 -> {error, Reason2}
 	after 
-		ems_db:release_odbc_connection(Conn)
+		release_connection(Conn)
 	end.
 
 
+get_connection(_, _, _, true) -> {ok, null};
+
+get_connection(Datasource, TableName, PrimaryKey, false) ->
+	case get_datasource_type(Datasource) of
+		odbc_datasource -> ems_db:get_odbc_connection(Datasource);
+		csv_file -> ems_db:create_sqlite_database_from_csv_file(Datasource, TableName, PrimaryKey)
+	end.
+
+
+release_connection(Conn) -> ems_db:release_odbc_connection(Conn).
+
+
+get_datasource_type(Datasource) ->
+	io:format("get_datasource_type  ~p\n", [Datasource]),
+	case lists:suffix(".csv", string:to_lower(Datasource)) andalso filelib:is_file(Datasource) of
+		true -> csv_file;
+		_ -> odbc_datasource
+	end.
+
+
+	
+
+
 do_find(#request{querystring_map = QuerystringMap, 
-				 service = #service{datasource = Datasource, 
-									table_name = TableName,
-									debug = Debug}}, _State) ->
+				 service = #service{table_name = TableName,
+									debug = Debug}},
+									Conn, _State) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
 	case generate_dynamic_sql(FilterJson, TableName) of
-		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Datasource, Debug);
+		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
 
-do_find_by_id(Request = #request{service = #service{datasource = Datasource, 
-													table_name = TableName,
-													primary_key = Primary_key,
-													debug = Debug}}, _State) ->
+do_find_by_id(Request = #request{service = #service{table_name = TableName,
+													primary_key = PrimaryKey,
+													debug = Debug}}, 
+													Conn, _State) ->
 	Id = list_to_integer(ems_request:get_param_url(<<"id">>, "0", Request)),
-	case generate_dynamic_sql(Id, TableName, Primary_key) of
-		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Datasource, Debug);
+	case generate_dynamic_sql(Id, TableName, PrimaryKey) of
+		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 

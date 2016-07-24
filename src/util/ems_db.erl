@@ -12,7 +12,7 @@
 -export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
 -export([sequence/1, init_sequence/2]).
 -export([get_odbc_connection/1, release_odbc_connection/1]).
-
+-export([create_sqlite_database_from_csv_file/3]).
 
 
 -include("../../include/ems_config.hrl").
@@ -149,4 +149,22 @@ get_odbc_connection(Datasource) ->
 release_odbc_connection(Conn) ->
 	odbc:disconnect(Conn).
 	
+	
+create_sqlite_database_from_csv_file(FileName, TableName, PrimaryKey) -> 
+	io:format("aqui\n"),
+	Conn = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
+	case file:open(FileName, [read]) of
+		{ok, IoDevice} -> 
+			io:format("aqui1\n"),
+			LoadFun = fun(Line, LineNo) ->
+							case LineNo of
+								0 -> io:format("print colum names-> ~p\n", [Line]);
+									 %create_sqlite_table(
+								_ -> io:format("dados-> ~p\n", [Line])
+							end
+					  end,
+			io:format("aqui2n"),					  
+			{ok, _} = ecsv:process_csv_file_with(IoDevice, LoadFun, 0);
+		{error, _Reason} -> erlang:raise(eload_csv_file_failed)
+	end.
 	
