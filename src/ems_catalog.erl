@@ -210,6 +210,9 @@ get_catalog() ->
 
 			%% Adiciona abertura e fechamento de lista para o parser correto do JSON
 			CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
+
+			io:format("vou decodificar isto: ~p\n\n", [CatDefs2]),
+
 			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
 			%% Faz o parser do catálogo
 			Conf = ems_config:getConfig(),

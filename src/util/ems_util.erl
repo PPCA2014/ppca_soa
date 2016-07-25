@@ -119,10 +119,34 @@ json_encode(Value)->
 %% @doc Converte um JSON para dados Erlang usando map
 json_decode_as_map(JSON) ->
 	try
-		Result = jsx:decode(JSON, [return_maps]),
+		Dados0 = binary_to_list(JSON),
+		%io:format("dados0 is ~p\n\n", [Dados0]),
+		
+		JSON0 = lists:flatten(re:replace(Dados0, "\t", "", [global, {return,list}])),
+
+		%io:format("dados1 is ~p\n\n", [JSON0]),
+
+
+		JSON1 = lists:flatten(re:replace(JSON0, "\r", "", [global, {return,list}])),
+		
+		%io:format("dados2 is ~p\n\n", [JSON1]),
+		
+		JSON2 = lists:flatten(re:replace(JSON1, "\n", "", [global, {return,list}])),
+		
+		%io:format("dados3 is ~p\n\n\n", [JSON2]),
+		
+		JSON3 = list_to_binary(JSON2),
+		
+		%io:format("VOU DECODIFICAR ISTO ->  ~p\n\n\n", [JSON3]),
+		
+		Result = jsx:decode(JSON3, [return_maps]),
+
+
 		{ok, Result}
 	catch
-		_Exception:Reason -> {error, Reason}
+		_Exception:Reason -> 
+			io:format("erro ~p-----------------------------------------------------------------------------\n", [Reason]),
+			{error, Reason}
 	end.
 
 %% @doc Converte um JSON para dados Erlang

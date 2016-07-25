@@ -165,14 +165,22 @@ parse_condition({<<Param/binary>>, Value}) ->
 	parse_condition(Param2, Value2, sql_varchar).
 	
 parse_condition(Param, Value, DataType) -> 
+	io:format("parse condition ~p  ~p  ~p\n", [Param, Value, DataType]),
 	{Param2, Op} = parse_name_and_operator(Param),
 	{Param3, Value2} = parse_value(Param2, Value, Op, DataType),
 	{Param3, Op, Value2}.	
 
 
-parse_value(Param, Value, "e", DataType) -> 
+parse_value(Param, Value, "e", DataType) when is_integer(Value) -> 
 	OdbcDataType = format_odbc_data_type(Value, DataType),
-	OdbcValue = [{OdbcDataType, [Value]}],
+	OdbcValue = [{OdbcDataType, [ Value ]}],
+	{Param, OdbcValue};
+
+parse_value(Param, Value, "e", DataType) -> 
+	io:format("teste parva_value e ~p  ~p\n", [Param, Value]),
+	OdbcDataType = format_odbc_data_type(Value, DataType),
+	OdbcValue = [{OdbcDataType, [ Value ]}],
+	io:format("parva_value e2 ~p\n", [OdbcValue]),
 	{Param, OdbcValue};
 
 parse_value(Param, Value, "ne", DataType) -> 
@@ -182,7 +190,7 @@ parse_value(Param, Value, "ne", DataType) ->
 
 parse_value(Param, Value, "like", sql_varchar) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
-	Value2 = "%" ++ Value ++ "%",
+	Value2 = Value ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
 	{Param, OdbcValue};
 	
@@ -194,6 +202,7 @@ parse_value(Param, Value, "ilike", sql_varchar) ->
 	{Param2, OdbcValue};
 
 parse_value(Param, Value, "contains", sql_varchar) -> 
+	io:format("teste\n\n\n"),
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
 	Value2 = "%" ++ Value ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
@@ -234,7 +243,9 @@ parse_value(Param, Value, "lte", sql_integer) ->
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
-format_odbc_data_type(_Value, sql_varchar) -> {sql_varchar, 100};
+format_odbc_data_type(_Value, sql_varchar) ->
+	io:format("tipo\n"),
+	{sql_varchar, 100};
 format_odbc_data_type(_Value, sql_integer) -> sql_integer;
 format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
@@ -300,8 +311,14 @@ execute_dynamic_sql(Sql, _, _, true) ->  {ok, Sql};
 
 execute_dynamic_sql(Sql, Params, Conn, false) ->
 	try
+					io:format("Sql ~s\n", [Sql]),
+					io:format("Params ~p\n\n", [Params]),
+
 		case odbc:param_query(Conn, Sql, Params, 3500) of
-			{_, _, Records} -> {ok, Records};
+			{_, _, Records} -> 
+			
+			io:format("records is ~p\n\n\n", [Records]),
+			{ok, Records};
 			{error, Reason} -> {error, Reason}
 		end
 	catch
@@ -315,8 +332,9 @@ get_connection(_, _, _, true) -> {ok, null};
 
 get_connection(Datasource, TableName, PrimaryKey, false) ->
 	case get_datasource_type(Datasource) of
-		odbc_datasource -> ems_db:get_odbc_connection(Datasource);
-		csv_file -> ems_db:create_sqlite_database_from_csv_file(Datasource, TableName, PrimaryKey)
+		odbc_datasource ->
+		 ems_db:get_odbc_connection(Datasource);
+		csv_file -> ems_db:create_sqlite_table_from_csv_file(Datasource, TableName, PrimaryKey, ";")
 	end.
 
 
@@ -324,7 +342,6 @@ release_connection(Conn) -> ems_db:release_odbc_connection(Conn).
 
 
 get_datasource_type(Datasource) ->
-	io:format("get_datasource_type  ~p\n", [Datasource]),
 	case lists:suffix(".csv", string:to_lower(Datasource)) andalso filelib:is_file(Datasource) of
 		true -> csv_file;
 		_ -> odbc_datasource

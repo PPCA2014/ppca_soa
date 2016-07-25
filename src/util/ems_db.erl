@@ -12,7 +12,7 @@
 -export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
 -export([sequence/1, init_sequence/2]).
 -export([get_odbc_connection/1, release_odbc_connection/1]).
--export([create_sqlite_database_from_csv_file/3]).
+-export([create_sqlite_virtual_table_from_csv_file/3, create_sqlite_table_from_csv_file/4]).
 
 
 -include("../../include/ems_config.hrl").
@@ -136,6 +136,7 @@ sequence(Name, Inc) ->
 
 get_odbc_connection(Datasource) ->
 	try
+		io:format("datasource is ~p\n", [Datasource]),
 		case odbc:connect(Datasource, [{scrollable_cursors, off},
 									   {timeout, 3500},
 									   {trace_driver, off}]) of
@@ -149,19 +150,25 @@ get_odbc_connection(Datasource) ->
 release_odbc_connection(Conn) ->
 	odbc:disconnect(Conn).
 	
-	
-create_sqlite_database_from_csv_file(FileName, TableName, _PrimaryKey) -> 
-	io:format("aqui  ~p  ~p\n", [FileName, TableName]),
+
+create_sqlite_table_from_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
+	DatabaseName = ?PRIV_PATH ++ "/db/database.sqlite",	
+	io:format("database is ~p\n", [DatabaseName]),
+	Cmd = lists:flatten(io_lib:format("python3.5 csv2sqlite.py '~s\' '~s' '~s' '~s'", [DatabaseName, 
+																					   TableName, 
+																					   FileName, 
+																					   Delimiter])),
+	os:cmd(Cmd),
+	StringConn = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [DatabaseName])),
+	io:format("str conn is ~p\n", [StringConn]),
+	ems_db:get_odbc_connection(StringConn).
+
+create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 
 	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
-	io:format("conn  ~p  ~p\n", [FileName, TableName]),
-	ResultLoad = odbc:sql_query(Conn, "select load_extension(\"/usr/lib/x86_64-linux-gnu/libsqlite3_mod_csvtable.so\")"),
-	io:format("result ext is ~p\n", [ResultLoad]),
-	io:format("loaded extens  ~p  ~p\n", [FileName, TableName]),
+	odbc:sql_query(Conn, "select load_extension(\"/usr/lib/x86_64-linux-gnu/libsqlite3_mod_csvtable.so\")"),
 	CreateTableDDL = lists:flatten(io_lib:format("create virtual table ~s using csvtable(\"~s\")", [TableName, FileName])),
-	Result = odbc:sql_query(Conn, CreateTableDDL),
-	io:format("result is ~p\n", [Result]),
+	odbc:sql_query(Conn, CreateTableDDL),
 	odbc:commit(Conn, commit),
-	io:format("query  -> ~p\n", [CreateTableDDL]),
 	{ok, Conn}.
 	
 	
