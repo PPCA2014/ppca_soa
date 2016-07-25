@@ -240,13 +240,15 @@ format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
 
 parse_name_and_operator(Param) ->
-	case string:tokens(Param, "__") of
-		[Name, Op] ->
+	case string:str(Param, "__") of
+		Idx when Idx > 1 ->
+			Name = string:sub_string(Param, 1, Idx-1),
+			Op = string:sub_string(Param, Idx+2),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
 				_ -> erlang:error(einvalid_param_filter)
 			end;
-		[Name] -> {Name, "e"};
+		0 -> {Param, "e"};
 		_ -> erlang:error(einvalid_param_filter)
 	end.
 
@@ -294,13 +296,9 @@ generate_dynamic_sql(Id, TableName, PrimaryKey) ->
 	{ok, {Sql, Params}}.
 
 
-execute_dynamic_sql(Sql, _, _, true) ->  
-	io:format("sql is ~p\n", [Sql]),
-{ok, Sql};
+execute_dynamic_sql(Sql, _, _, true) ->  {ok, Sql};
 
 execute_dynamic_sql(Sql, Params, Conn, false) ->
-	io:format("teste\n\n"),
-
 	try
 		case odbc:param_query(Conn, Sql, Params, 3500) of
 			{_, _, Records} -> {ok, Records};

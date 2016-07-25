@@ -150,21 +150,18 @@ release_odbc_connection(Conn) ->
 	odbc:disconnect(Conn).
 	
 	
-create_sqlite_database_from_csv_file(FileName, TableName, PrimaryKey) -> 
-	io:format("aqui\n"),
-	Conn = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
-	case file:open(FileName, [read]) of
-		{ok, IoDevice} -> 
-			io:format("aqui1\n"),
-			LoadFun = fun(Line, LineNo) ->
-							case LineNo of
-								0 -> io:format("print colum names-> ~p\n", [Line]);
-									 %create_sqlite_table(
-								_ -> io:format("dados-> ~p\n", [Line])
-							end
-					  end,
-			io:format("aqui2n"),					  
-			{ok, _} = ecsv:process_csv_file_with(IoDevice, LoadFun, 0);
-		{error, _Reason} -> erlang:raise(eload_csv_file_failed)
-	end.
+create_sqlite_database_from_csv_file(FileName, TableName, _PrimaryKey) -> 
+	io:format("aqui  ~p  ~p\n", [FileName, TableName]),
+	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
+	io:format("conn  ~p  ~p\n", [FileName, TableName]),
+	ResultLoad = odbc:sql_query(Conn, "select load_extension(\"/usr/lib/x86_64-linux-gnu/libsqlite3_mod_csvtable.so\")"),
+	io:format("result ext is ~p\n", [ResultLoad]),
+	io:format("loaded extens  ~p  ~p\n", [FileName, TableName]),
+	CreateTableDDL = lists:flatten(io_lib:format("create virtual table ~s using csvtable(\"~s\")", [TableName, FileName])),
+	Result = odbc:sql_query(Conn, CreateTableDDL),
+	io:format("result is ~p\n", [Result]),
+	odbc:commit(Conn, commit),
+	io:format("query  -> ~p\n", [CreateTableDDL]),
+	{ok, Conn}.
+	
 	
