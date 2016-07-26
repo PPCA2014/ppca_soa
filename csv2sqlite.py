@@ -1,6 +1,46 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Author: Everton de Vargas Agilar
+# ErlangMS Team
+# Objective: Convert a csv to a sqlite table
+#
+#
+#
+# Requirements to run the service:
+#		* Software Python 2 ou 3
+#
+#
+#
+#
+#
+# How to use: 
+#
+#    $ ./csv2sqlite.py databasename table_name filename delimiter
+#
+#
+#
+#
+#
+## Histórico de modificações do software:
+#
+# Data       |  Quem           |  Mensagem  
+# -----------------------------------------------------------------------------------------------------
+# 25/07/2016  Everton Agilar     Release inicial    
+#
+#
+#
+#
+#
+#
+#
+########################################################################################################
+
+
 import csv
 import sqlite3
 import sys
+import codecs
 
 
 class Csv2SqliteGenerator(object):
@@ -8,21 +48,26 @@ class Csv2SqliteGenerator(object):
     Convert a csv to a sqlite table
     """
 
-    def __init__(self, database_name, table_name, file_name, delimiter=','):
-       	file_handler = open(file_name)
-        self.csv_data = csv.reader(file_handler, delimiter=delimiter)
-        self.conn = sqlite3.connect(database_name)
-        self.cursor = self.conn.cursor()
-        self.table_name = table_name
-        self._drop_table_if_exists()
-        for row in self.csv_data:
-            if self.csv_data.line_num == 1:
-                self._do_create_table(row)
-                continue
-            query = "INSERT INTO %s VALUES (%s)" % (self.table_name, ','.join(['?' for x in row]))
-            self.cursor.execute(query, row)
-        self.conn.commit()
-        self.conn.close()
+    def __init__(self, database_name, table_name, file_name, delimiter = ';'):
+       	csv_handle = open(file_name, 'r')
+       	try:
+            self.csv_data = csv.reader(csv_handle, delimiter = delimiter)
+            self.conn = sqlite3.connect(database_name)
+            self.cursor = self.conn.cursor()
+            self.table_name = table_name
+            self._drop_table_if_exists()
+            for row in self.csv_data:
+                if self.csv_data.line_num == 1:
+                    print(row)
+                    self._do_create_table(row)
+                    continue
+                row_utf8 = [field.decode("utf-8").strip() for field in row]
+                query = "INSERT INTO %s VALUES (%s)" % (self.table_name, ','.join(['?' for x in row]))
+                self.cursor.execute(query, row_utf8)
+            self.conn.commit()
+            self.conn.close()
+        finally:
+		    csv_handle.close()
 
 
     def _drop_table_if_exists(self):
@@ -32,9 +77,15 @@ class Csv2SqliteGenerator(object):
             pass			
         
     
-    def _do_create_table(self, row):
-        createstatement = "CREATE TABLE %s" % self.table_name
-        query = '%s (%s)' % (createstatement, ','.join(['"%s" text' % field for field in row]))
+    def _do_create_table(self, field_names):
+        # Remove the BOM if necessary
+        FirstColumn = field_names[0]
+        if FirstColumn[0:3] == '\xef\xbb\xbf':
+			print("remove BOM\n")
+			field_names[0] = FirstColumn[3:]
+
+        sql = "CREATE TABLE %s" % self.table_name
+        query = '%s (%s)' % (sql, ','.join(['%s text' % field_name for field_name in field_names]))
         self.cursor.execute(query)
 
 
@@ -44,7 +95,7 @@ if __name__ == '__main__':
 
 	# The command should receive all the arguments
 	if len(sys.argv) != 5:
-		print("Mode de usar: python csvtosqlite.py databasename table_name filename delimiter")
+		print("How to use: csv2sqlite.py databasename table_name filename delimiter")
 		exit(1)
 
 	# Set all variables in parameters

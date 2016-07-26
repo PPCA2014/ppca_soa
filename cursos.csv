@@ -1,4 +1,4 @@
-﻿semestre;cod_curso;nome_curso;cod_professor; reg; nome_professor
+﻿cod_semestre;cod_curso;nome_curso;cod_professor; reg; nome_professor
 20162;10;ESTUDOS sócio econômico EM COMPUTAção MULTIMIDIA                                      ;600393;1056662;EDUARDO ADILIO PELINSON ALCHIERI
 20162;116661;ESTUDOS EM INTELIGENCIA ARTIFICIAL                                    ;605997;994235;JAN MENDONCA CORREA
 20162;116661;ESTUDOS EM INTELIGENCIA ARTIFICIAL                                    ;606000;149667;LI WEIGANG

@@ -152,12 +152,15 @@ release_odbc_connection(Conn) ->
 	
 
 create_sqlite_table_from_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
-	DatabaseName = ?PRIV_PATH ++ "/db/database.sqlite",	
+	DatabasePath = ?PRIV_PATH ++ "/db/",
+	filelib:ensure_dir(DatabasePath),
+	DatabaseName = DatabasePath ++ "database.sqlite",	
 	io:format("database is ~p\n", [DatabaseName]),
-	Cmd = lists:flatten(io_lib:format("python3.5 csv2sqlite.py '~s\' '~s' '~s' '~s'", [DatabaseName, 
-																					   TableName, 
-																					   FileName, 
-																					   Delimiter])),
+	Cmd = lists:flatten(io_lib:format("./csv2sqlite.py '~s\' '~s' '~s' '~s'", [DatabaseName, 
+										  								     TableName, 
+																			 FileName, 
+																			 Delimiter])),
+	io:format(Cmd),
 	os:cmd(Cmd),
 	StringConn = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [DatabaseName])),
 	io:format("str conn is ~p\n", [StringConn]),
