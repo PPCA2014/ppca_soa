@@ -32,12 +32,18 @@
 		 read_file_as_map/1,
 		 node_is_live/1,
 		 get_node_name/0,
-		 get_priv_dir/0]).
+		 get_priv_dir/0,
+		 get_working_dir/0,
+		 json_encode_table/2]).
 
 
 get_priv_dir() ->
 	{ok, Path} = file:get_cwd(),
 	Path ++ "/priv".
+
+get_working_dir() ->
+	{ok, Path} = file:get_cwd(),
+	Path.
 
 
 %% @doc Dorme por um determinado tempo
@@ -144,9 +150,7 @@ json_decode_as_map(JSON) ->
 
 		{ok, Result}
 	catch
-		_Exception:Reason -> 
-			io:format("erro ~p-----------------------------------------------------------------------------\n", [Reason]),
-			{error, Reason}
+		_Exception:Reason -> {error, Reason}
 	end.
 
 %% @doc Converte um JSON para dados Erlang
@@ -338,3 +342,23 @@ node_is_live(Node) ->
 
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
+
+json_encode_table(Fields, Records) ->
+	Objects = lists:map(fun(T) -> 
+							   lists:zipwith(fun(Fld, Value) -> 
+												lists:flatten(io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, Value])) 
+											 end,  Fields, tuple_to_list(T))
+					end, Records), 
+	io:format("R1 is ~p\n\n", [Objects]),
+	
+	Objects2 = lists:map(fun(Obj) -> 
+									lists:flatten(["{", string:join(Obj, ", "), "}"]) 
+						 end, Objects),
+	
+	io:format("R2 is ~p\n\n", [Objects2]),
+	
+	Objects3 = string:join(Objects2, ", "),
+
+	io:format("R3 is ~p\n\n", [Objects3]),
+	
+	unicode:characters_to_binary(["[", Objects3, "]"]).

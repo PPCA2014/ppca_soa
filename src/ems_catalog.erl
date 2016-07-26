@@ -140,18 +140,6 @@ init_catalog() ->
 		{ok, Cat1, Cat2, Cat3} -> 
 			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3}}),
 			ok;
-		{error, emfile} ->
-			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Muitos arquivos abertos no sistema operacional.", [self()]),
-			{error, emfile};
-		{error, eacces} ->
-			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Não tem permissão para ler o catálogo de serviços.", [self()]),
-			{error, eacces};
-		{error, enoent} ->
-			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Catálogo de serviços não encontrado.", [self()]),
-			{error, enoent};
-		{error, enamem} ->
-			io:format("Falha ao carregar o catálogo de serviços para o processo ~p. Não há memória suficiente para ler o catálogo de serviços.", [self()]),
-			{error, enamem};
 		{error, Reason} ->
 			{stop, Reason}
 	end.
@@ -210,8 +198,6 @@ get_catalog() ->
 
 			%% Adiciona abertura e fechamento de lista para o parser correto do JSON
 			CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
-
-			io:format("vou decodificar isto: ~p\n\n", [CatDefs2]),
 
 			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
 			%% Faz o parser do catálogo
@@ -563,9 +549,7 @@ valida_querystring(QuerystringServico, QuerystringUser) ->
 		notfound -> notfound
 	end.
 
-valida_querystring([], _QuerystringUser, notfound) -> 
-	io:format("valida_querystring not found...\n\n\n"),
-	notfound;
+valida_querystring([], _QuerystringUser, notfound) -> notfound;
 
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};

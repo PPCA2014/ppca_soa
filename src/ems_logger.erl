@@ -272,7 +272,6 @@ do_log_request(#request{protocol = http,
 						latency = Latencia,
 						authorization = Authorization,
 						node_exec = Node}, _State) ->
-	try
 		case Service of
 			undefined -> ServiceImpl = "";
 			_ -> ServiceImpl = Service#service.service
@@ -294,8 +293,5 @@ do_log_request(#request{protocol = http,
 		case Code of
 			200 -> ems_logger:info(Texto1);
 			_ 	-> ems_logger:error(Texto1)
-		end
-	catch
-		_Exception:ReasonEx -> io:format("Error print log: ~p\n", [ReasonEx])
-	end.
+		end.
 

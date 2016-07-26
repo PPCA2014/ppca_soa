@@ -23,6 +23,10 @@
 % Caminho do diretório privado
 -define(PRIV_PATH, ems_util:get_priv_dir()).
 
+% Caminho do diretório de trabalho
+-define(WORKING_PATH, ems_util:get_working_dir()).
+
+
 % Caminho do catálogo de serviços
 -define(CONF_PATH, ?PRIV_PATH ++ "/conf").
 
@@ -31,6 +35,9 @@
 
 % Caminho do catálogo de serviços
 -define(CATALOGO_PATH, ?CONF_PATH ++ "/catalog.conf").
+
+% Caminho da pasta de databases
+-define(DATABASE_PATH, ?PRIV_PATH ++ "/db").
 
 % Caminho do arquivo de configuração
 -define(CONF_FILE_PATH, ?CONF_PATH ++ "/emsbus.conf").

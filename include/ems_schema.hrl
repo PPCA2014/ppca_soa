@@ -83,3 +83,7 @@
 				}).
 
 
+-record(ctrl_sqlite_table, {file_name :: string(), 
+							last_modified :: file:date_time()}).
+					
+

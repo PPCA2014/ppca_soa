@@ -12,12 +12,18 @@
 -export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
 -export([sequence/1, init_sequence/2]).
 -export([get_odbc_connection/1, release_odbc_connection/1]).
--export([create_sqlite_virtual_table_from_csv_file/3, create_sqlite_table_from_csv_file/4]).
+-export([create_sqlite_virtual_table_from_csv_file/3, get_odbc_connection_csv_file/4]).
 
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
+
+
+-define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/csv2sqlite.py"). 
+-define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/database.sqlite").	
+-define(DATABASE_SQLITE_STRING_CONNECTION, lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [?DATABASE_SQLITE_PATH]))).	
+
 
 
 %% *********** Database schema creation ************
@@ -26,6 +32,8 @@ start() ->
 	create_database([node()]).
 	
 create_database(Nodes) ->
+	filelib:ensure_dir(?DATABASE_PATH ++ "/"),
+
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
 
@@ -41,6 +49,11 @@ create_database(Nodes) ->
 									 {ram_copies, Nodes},
 									 {attributes, record_info(fields, request)},
 									 {index, [#request.timestamp]}]),
+
+    mnesia:create_table(ctrl_sqlite_table, [{type, set},
+											{ram_copies, Nodes},
+											{attributes, record_info(fields, ctrl_sqlite_table)}]),
+
 
 	ok.
 
@@ -136,7 +149,6 @@ sequence(Name, Inc) ->
 
 get_odbc_connection(Datasource) ->
 	try
-		io:format("datasource is ~p\n", [Datasource]),
 		case odbc:connect(Datasource, [{scrollable_cursors, off},
 									   {timeout, 3500},
 									   {trace_driver, off}]) of
@@ -151,20 +163,28 @@ release_odbc_connection(Conn) ->
 	odbc:disconnect(Conn).
 	
 
-create_sqlite_table_from_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
-	DatabasePath = ?PRIV_PATH ++ "/db/",
-	filelib:ensure_dir(DatabasePath),
-	DatabaseName = DatabasePath ++ "database.sqlite",	
-	io:format("database is ~p\n", [DatabaseName]),
-	Cmd = lists:flatten(io_lib:format("./csv2sqlite.py '~s\' '~s' '~s' '~s'", [DatabaseName, 
-										  								     TableName, 
-																			 FileName, 
-																			 Delimiter])),
-	io:format(Cmd),
-	os:cmd(Cmd),
-	StringConn = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [DatabaseName])),
-	io:format("str conn is ~p\n", [StringConn]),
-	ems_db:get_odbc_connection(StringConn).
+
+get_odbc_connection_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
+	LastModified = filelib:last_modified(FileName),
+	F = fun() ->
+		Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
+		case Ctrl =:= [] orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
+			true ->
+				Csv2SqliteCmd = lists:flatten(io_lib:format("~s '~s\' '~s' '~s' '~s'",
+																			 [?CSV2SQLITE_PATH,
+																			  ?DATABASE_SQLITE_PATH, 
+																			  TableName, 
+																			  FileName, 
+																			  Delimiter])),
+				os:cmd(Csv2SqliteCmd),
+				mnesia:write(#ctrl_sqlite_table{file_name = FileName, last_modified = LastModified});
+			false -> ok
+		end
+	end,
+	mnesia:activity(transaction, F),
+	ems_db:get_odbc_connection(?DATABASE_SQLITE_STRING_CONNECTION).
+
+	
 
 create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 
 	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),

@@ -138,7 +138,6 @@ do_insert(User) ->
 	case valida(User, insert) of
 		ok -> ems_db:insert(User);
 		Error -> 
-			io:format("~p\n", [Error]),
 			Error
 	end.
 

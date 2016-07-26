@@ -315,10 +315,20 @@ execute_dynamic_sql(Sql, Params, Conn, false) ->
 					io:format("Params ~p\n\n", [Params]),
 
 		case odbc:param_query(Conn, Sql, Params, 3500) of
-			{_, _, Records} -> 
+			{_, Fields, Records} -> 
 			
 			io:format("records is ~p\n\n\n", [Records]),
-			{ok, Records};
+			io:format("fields is ~p\n\n", [Fields]),
+			
+			%bjects = hd(lists:map(fun(T) -> lists:zip(Fields, tuple_to_list(T)) end, Records)),
+			
+			Objects = ems_util:json_encode_table(Fields, Records),
+			
+
+			io:format("Objects is ~p\n\n\n", [Objects]),
+			
+			{ok, Objects};
+			
 			{error, Reason} -> {error, Reason}
 		end
 	catch
@@ -334,7 +344,7 @@ get_connection(Datasource, TableName, PrimaryKey, false) ->
 	case get_datasource_type(Datasource) of
 		odbc_datasource ->
 		 ems_db:get_odbc_connection(Datasource);
-		csv_file -> ems_db:create_sqlite_table_from_csv_file(Datasource, TableName, PrimaryKey, ";")
+		csv_file -> ems_db:get_odbc_connection_csv_file(Datasource, TableName, PrimaryKey, ";")
 	end.
 
 
