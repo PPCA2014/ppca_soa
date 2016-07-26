@@ -343,10 +343,19 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
+
+
+json_field_format_table(Value) when is_list(Value) ->
+	string:strip(Value);
+	
+json_field_format_table(Value) -> Value.
+	
+	
+
 json_encode_table(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
 							   lists:zipwith(fun(Fld, Value) -> 
-												lists:flatten(io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, Value])) 
+												lists:flatten(io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)])) 
 											 end,  Fields, tuple_to_list(T))
 					end, Records), 
 	io:format("R1 is ~p\n\n", [Objects]),
