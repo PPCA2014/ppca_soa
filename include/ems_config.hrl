@@ -14,9 +14,9 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, io_lib:format(<<"ErlangMS Development Version ~s">>, [case application:get_key(msbus, vsn) of 
+-define(SERVER_NAME, io_lib:format(<<"ErlangMS Development Version ~s">>, [case application:get_key(ems_bus, vsn) of 
 																					{ok, Version} -> Version;
-																					undefined -> "1"
+																					undefined -> "1.0"
 																			end])).
 
 
@@ -26,7 +26,6 @@
 % Caminho do diretório de trabalho
 -define(WORKING_PATH, ems_util:get_working_dir()).
 
-
 % Caminho do catálogo de serviços
 -define(CONF_PATH, ?PRIV_PATH ++ "/conf").
 
@@ -34,16 +33,19 @@
 -define(FAVICON_PATH, ?PRIV_PATH ++ "/favicon.ico").
 
 % Caminho do catálogo de serviços
--define(CATALOGO_PATH, ?CONF_PATH ++ "/catalog.conf").
+-define(CATALOGO_PATH, ?PRIV_PATH ++ "/catalog").
 
 % Caminho da pasta de databases
 -define(DATABASE_PATH, ?PRIV_PATH ++ "/db").
 
-% Caminho do arquivo de configuração
+% Caminho do arquivo de configuração padrão (Pode ser incluído também na pasta ~/.erlangms do usuário)
 -define(CONF_FILE_PATH, ?CONF_PATH ++ "/emsbus.conf").
 
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, ?PRIV_PATH ++ "/www").
+
+% Caminho inicial para os arquivos de carga de dados em formato CSV
+-define(CSV_FILE_PATH, ?PRIV_PATH ++ "/csv").
 
 % Propriedade TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 30000).

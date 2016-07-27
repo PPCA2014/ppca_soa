@@ -15,8 +15,8 @@
                 {max_overflow, 0}
             ], []},
             {ems_catalog_pool, [
-                {size, 2},
-                {max_overflow, 6}
+                {size, 1},
+                {max_overflow, 1}
             ], []},
             {ems_user_pool, [
                 {size, 2},

@@ -34,7 +34,8 @@
 		 get_node_name/0,
 		 get_priv_dir/0,
 		 get_working_dir/0,
-		 json_encode_table/2]).
+		 json_encode_table/2,
+		 json_decode_as_map_file/1]).
 
 
 get_priv_dir() ->
@@ -121,6 +122,14 @@ json_encode(L) when is_list(L) ->
 
 json_encode(Value)->
 	jsx:encode(Value).
+
+
+json_decode_as_map_file(FileName) ->
+	case file:read_file(FileName) of
+		{ok, JSON} -> json_decode_as_map(JSON);
+		{error, enoent} -> {error, einvalid_json_filename}
+	end.
+
 
 %% @doc Converte um JSON para dados Erlang usando map
 json_decode_as_map(JSON) ->

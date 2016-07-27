@@ -20,8 +20,8 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 
--define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/csv2sqlite.py"). 
--define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/database.sqlite").	
+-define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
+-define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/ems_dynamic_view.dat").	
 -define(DATABASE_SQLITE_STRING_CONNECTION, lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [?DATABASE_SQLITE_PATH]))).	
 
 
@@ -32,7 +32,9 @@ start() ->
 	create_database([node()]).
 	
 create_database(Nodes) ->
+	% Define a pasta de armazenamento dos databases
 	filelib:ensure_dir(?DATABASE_PATH ++ "/"),
+	application:set_env(mnesia, dir, ?DATABASE_PATH),
 
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
@@ -161,28 +163,34 @@ get_odbc_connection(Datasource) ->
 
 release_odbc_connection(Conn) ->
 	odbc:disconnect(Conn).
-	
-
 
 get_odbc_connection_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
-	LastModified = filelib:last_modified(FileName),
-	F = fun() ->
-		Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
-		case Ctrl =:= [] orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
-			true ->
-				Csv2SqliteCmd = lists:flatten(io_lib:format("~s '~s\' '~s' '~s' '~s'",
-																			 [?CSV2SQLITE_PATH,
-																			  ?DATABASE_SQLITE_PATH, 
-																			  TableName, 
-																			  FileName, 
-																			  Delimiter])),
-				os:cmd(Csv2SqliteCmd),
-				mnesia:write(#ctrl_sqlite_table{file_name = FileName, last_modified = LastModified});
-			false -> ok
-		end
-	end,
-	mnesia:activity(transaction, F),
-	ems_db:get_odbc_connection(?DATABASE_SQLITE_STRING_CONNECTION).
+	FileNamePath = ?CSV_FILE_PATH ++ "/" ++ FileName,
+	io:format("is ~s\n\n", [FileNamePath]),
+	case filelib:last_modified(FileNamePath) of
+		0 -> {error, ecsvfile_not_exist};
+		LastModified ->
+			DatabaseExist = filelib:is_file(?DATABASE_SQLITE_PATH), 
+			F = fun() ->
+				Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
+				case Ctrl =:= [] orelse not DatabaseExist orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
+					true ->
+						Csv2SqliteCmd = lists:flatten(io_lib:format("~s '~s\' '~s' '~s' '~s'",
+																	 [?CSV2SQLITE_PATH,
+																	  ?DATABASE_SQLITE_PATH, 
+																	  TableName, 
+																	  FileNamePath, 
+																	  Delimiter])),
+						os:cmd(Csv2SqliteCmd),
+						mnesia:write(#ctrl_sqlite_table{file_name = FileName, last_modified = LastModified});
+					false -> 
+						% não foi necessário fazer a carga dos dados do arquivo para o banco sqlite
+						ok
+				end
+			end,
+			mnesia:activity(transaction, F),
+			ems_db:get_odbc_connection(?DATABASE_SQLITE_STRING_CONNECTION)
+	end.
 
 	
 

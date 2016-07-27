@@ -108,6 +108,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Dispatches the request to the service registered in the catalog
 do_dispatch_request(Request) ->
+	io:format("request is ~p\n\n", [Request]),
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
 			case ems_auth_user:autentica(Service, Request) of

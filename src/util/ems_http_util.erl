@@ -15,53 +15,78 @@
 -include("../../include/ems_http_messages.hrl").
 
 
+encode_request(Uri) -> encode_request("GET", Uri).
+
+encode_request(Method, Uri) -> 
+	Method = Method,
+	UriRaw = http_uri:encode(Uri),
+	HttpParams = #{'Accept' => "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				   'Accept-Encoding' => "gzip, deflate, sdch",
+				   'Accept-Language' => "pt-BR,pt;q=0.8,en-US;q=0.6,en;q=0.4",
+				   'Cache-Control' => "max-age=0",
+				   'Connection' => "keep-alive",
+				   'Cookie' => "__utma=111872281.1848474434.1463598791.1464613625.1464618604.7; __utmz=111872281.1463598791.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); pin_nav=true",
+				   'Host' => "localhost:2301",
+				   'User-Agent' => "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.29 Safari/537.36",
+				   "Dnt" => "1",
+				   "Upgrade-Insecure-Requests" => "1"},
+	Http_Version = "HTTP/1.1",
+	Payload = <<>>,
+	encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, undefined, undefined).
+
+encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, WorkerSend) ->
+	Uri = http_uri:decode(UriRaw),
+	RID = erlang:system_time(),
+	Timestamp = calendar:local_time(),
+	T1 = ems_util:get_milliseconds(),
+	[Url|Querystring] = string:tokens(Uri, "?"),
+	Url2 = ems_util:remove_ult_backslash_url(Url),
+	Content_Length = maps:get('Content-Length', HttpParams, 0),
+	Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
+	Accept = maps:get('Accept', HttpParams, "*/*"),
+	Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
+	User_Agent = maps:get('User-Agent', HttpParams, ""),
+	Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
+	Host = maps:get('Host', HttpParams, ""),
+	QuerystringMap = parse_querystring(Querystring),
+	Authorization = maps:get('Authorization', HttpParams, ""),
+	{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
+	io:format("aqui1\n\n"),
+	{ok, #request{
+		rid = RID,
+		rowid = Rowid,
+		type = Method,
+		uri = Uri,
+		url = Url2,
+		version = Http_Version,
+		querystring = Querystring,
+		querystring_map = QuerystringMap,
+		params_url = Params_url,
+		content_length = Content_Length,
+		content_type = Content_Type,
+		accept = Accept,
+		user_agent = User_Agent,
+		accept_encoding = Accept_Encoding,
+		cache_control = Cache_Control,
+		host = Host,
+		socket = Socket, 
+		t1 = T1, 
+		payload = binary_to_list(Payload), 
+		payload_map = decode_payload(Payload),
+		timestamp = Timestamp,
+		authorization = Authorization,
+		worker_send = WorkerSend,
+		protocol = http
+	}}.
+
+
 %%-spec get_http_header(Header::list()) -> tuple.
 encode_request(Socket, RequestBin, WorkerSend) ->
 	case decode_http_request(RequestBin) of
 		{Method, UriRaw, HttpParams, Http_Version, Payload} -> 
-			Uri = http_uri:decode(UriRaw),
-			RID = erlang:system_time(),
-			Timestamp = calendar:local_time(),
-			T1 = ems_util:get_milliseconds(),
-			[Url|Querystring] = string:tokens(Uri, "?"),
-			Url2 = ems_util:remove_ult_backslash_url(Url),
-			Content_Length = maps:get('Content-Length', HttpParams, 0),
-			Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
-			Accept = maps:get('Accept', HttpParams, "*/*"),
-			Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
-			User_Agent = maps:get('User-Agent', HttpParams, ""),
-			Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
-			Host = maps:get('Host', HttpParams, ""),
-			QuerystringMap = parse_querystring(Querystring),
-			Authorization = maps:get('Authorization', HttpParams, ""),
-			{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
-			{ok, #request{
-				rid = RID,
-				rowid = Rowid,
-				type = Method,
-				uri = Uri,
-				url = Url2,
-				version = Http_Version,
-				querystring = Querystring,
-				querystring_map = QuerystringMap,
-				params_url = Params_url,
-				content_length = Content_Length,
-				content_type = Content_Type,
-				accept = Accept,
-				user_agent = User_Agent,
-				accept_encoding = Accept_Encoding,
-				cache_control = Cache_Control,
-				host = Host,
-				socket = Socket, 
-				t1 = T1, 
-				payload = binary_to_list(Payload), 
-				payload_map = decode_payload(Payload),
-				timestamp = Timestamp,
-				authorization = Authorization,
-				worker_send = WorkerSend,
-				protocol = http
-				
-			}};
+			encode_request(Method, UriRaw, HttpParams, 
+						   Http_Version, Payload, 
+						   Socket, WorkerSend);
 		Error -> Error
 	end.
 

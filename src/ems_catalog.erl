@@ -22,6 +22,7 @@
 		 list_catalog/0, 
 		 update_catalog/0,
 		 lookup/1,
+		 lookup_by_rowid/1,
 		 get_querystring/2, 
 		 get_ult_lookup/0,
 		 list_cat2/0, list_cat3/0]).
@@ -79,6 +80,9 @@ list_cat3() ->
 get_ult_lookup() ->
 	ems_pool:call(ems_catalog_pool, get_ult_lookup).
 
+lookup_by_rowid(Rowid) ->
+	ems_pool:call(ems_catalog_pool, {lookup_by_rowid, Rowid}).
+
 	
 %%====================================================================
 %% gen_server callbacks
@@ -106,6 +110,11 @@ handle_call(list_catalog, _From, State) ->
 handle_call({lookup, Request}, _From, State) ->
 	Ult_lookup = lookup(Request, State),
 	%NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State),
+	{reply, Ult_lookup, State, 60000};
+
+handle_call({lookup_by_rowid, Rowid}, _From, State) ->
+	Request = 0,
+	Ult_lookup = lookup(Request, State),
 	{reply, Ult_lookup, State, 60000};
 
 handle_call(list_cat2, _From, State) ->
@@ -175,7 +184,7 @@ do_list_catalog(State) -> State#state.cat1.
 get_catalog() -> 
 	case get_main_catalog() of
 		{ok, CatMestre} ->
-			CatalogoDefsPath = ?CONF_PATH ++ "/catalog/",
+			CatalogoDefsPath = ?CATALOGO_PATH ++ "/",
 			%% Obtém a lista do conteúdo de todos os catálogos
 			CatDefs = lists:map(fun(M) -> 
 									NomeArq = CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M)),
@@ -192,7 +201,7 @@ get_catalog() ->
 			CatDefs1 = lists:foldl(fun(X, Y) ->
 										case Y of
 											<<>> -> X;
-											Y2 -> iolist_to_binary([X, <<",">>, Y2])
+											Y2 -> iolist_to_binary([X, <<","/utf8>>, Y2])
 										end 
 									end, <<>>, CatDefs),
 
@@ -213,7 +222,7 @@ get_catalog() ->
 %% @doc O catálogo mestre possui os includes para os catálogos
 
 get_main_catalog() ->
-	case file:read_file(?CATALOGO_PATH) of
+	case file:read_file(?CATALOGO_PATH ++ "/catalog.conf") of
 		{ok, Arq} -> ems_util:json_decode_as_map(Arq);
 		Error -> Error
 	end.
@@ -570,7 +579,7 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 
 lookup(Request, State) ->
 	Rowid = Request#request.rowid,
-	%ems_logger:info("REQUEST ROWID ~p.", [Request#request.rowid]),
+	ems_logger:info("REQUEST ROWID ~p.", [Request#request.rowid]),
 	case ets:lookup(State#state.cat2, Rowid) of
 		[] -> 
 			case lookup_re(Request, State#state.cat3) of

@@ -352,12 +352,10 @@ release_connection(Conn) -> ems_db:release_odbc_connection(Conn).
 
 
 get_datasource_type(Datasource) ->
-	case lists:suffix(".csv", string:to_lower(Datasource)) andalso filelib:is_file(Datasource) of
+	case lists:suffix(".csv", string:to_lower(Datasource)) of
 		true -> csv_file;
 		_ -> odbc_datasource
 	end.
-
-
 	
 
 

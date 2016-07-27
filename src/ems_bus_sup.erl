@@ -25,7 +25,6 @@ init([]) ->
 	
 	%% Instantiate the process pool
 	{ok, Pools} = application:get_env(ems_bus, pools),
-	ems_logger:info("Initializing the pool of the main services..."),
     PoolSpecs = lists:map(
 		fun
 			({Name, [{size, SizePool}, _] = SizeArgs, WorkerArgs}) ->
