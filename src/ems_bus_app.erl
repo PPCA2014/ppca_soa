@@ -47,6 +47,7 @@ start(_StartType, StartArgs) ->
 					ems_logger:debug("In debug mode: ~p~", [Config#config.ems_debug]),
 					ems_logger:info("Server ~s started in ~pms.", [node(), ems_util:get_milliseconds() - T1]),
 					ems_logger:sync(),
+					ems_logger:set_level(error),
 					register_events(),
 					Ret;
 				Error-> 

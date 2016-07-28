@@ -23,7 +23,8 @@
 		 debug/1, debug/2,
 		 sync/0, 
 		 log_request/1,
-		 mode_debug/1]).
+		 mode_debug/1,
+		 set_level/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -38,7 +39,8 @@
 				log_file_dest,           		% path configuration where the logs will be written
 				log_file_checkpoint,      		% timeout configuration to unload file buffer
 				log_file_name,		      		% timeout configuration to unload file buffer
-				debug							% It indicates whether it is in debug mode
+				debug,							% It indicates whether it is in debug mode
+				level = info					% level of errors
  			   }). 
 
 
@@ -93,6 +95,9 @@ sync() ->
 log_request(Request) -> 
 	gen_server:cast(?SERVER, {log_request, Request}). 
 
+set_level(Level) -> 
+	gen_server:cast(?SERVER, {set_level, Level}). 
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -137,6 +142,9 @@ handle_cast({write_msg, Tipo, Msg, Params}, State) ->
 handle_cast({log_request, Request}, State) ->
 	do_log_request(Request, State),
 	{noreply, State};
+
+handle_cast({set_level, Level}, State) ->
+	{noreply, State#state{level = Level}};
 
 handle_cast({ems_debug, Flag}, State) ->
 	{noreply, State#state{debug = Flag}};
@@ -209,7 +217,11 @@ write_msg(Tipo, <<Msg/binary>>, State) ->
 	Msg1 = binary_to_list(Msg),
     write_msg(Tipo, Msg1, State);
     
-write_msg(Tipo, Msg, State) ->
+write_msg(info, Msg, State = #state{level = error}) ->
+	set_timeout_for_sync_tela(State),
+	State#state{buffer_tela = [Msg|State#state.buffer_tela], flag_checkpoint_tela = true};
+
+write_msg(Tipo, Msg, State)  ->
 	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", ems_util:timestamp_str(), "  ", Msg]),
 	set_timeout_for_sync_buffer(State),
 	set_timeout_for_sync_tela(State),
@@ -227,9 +239,11 @@ sync_buffer_tela(State) ->
 
 sync_buffer(State = #state{buffer = []}) -> State;
 
-sync_buffer(State) ->
-	FileName = State#state.log_file_name,
-	file:write_file(FileName, lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer)), [append]),
+sync_buffer(State = #state{log_file_name = FileName,
+						   buffer = Buffer}) ->
+	file:write_file(FileName, lists:map(fun(L) -> 
+											L ++ "\n" 
+										end, lists:reverse(Buffer)), [append]),
 	State#state{buffer = [], flag_checkpoint = false}.
 
 do_log_request(#request{protocol = ldap, 

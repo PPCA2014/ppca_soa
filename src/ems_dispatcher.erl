@@ -108,7 +108,6 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @doc Dispatches the request to the service registered in the catalog
 do_dispatch_request(Request) ->
-	io:format("request is ~p\n\n", [Request]),
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
 			case ems_auth_user:autentica(Service, Request) of
@@ -159,11 +158,6 @@ executa_service(_Node, Request=#request{service=#service{host='',
 			_Pid -> 
 				apply(Module, Function, [Request, self()])
 		end,
-		%ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
-		%														 FunctionName, 
-		%														 HostName, 
-		%														 Request#request.rid, 
-		%														 Request#request.uri]),
 		ok
 	catch
 		_Exception:ErroInterno ->  {error, service_falhou, ErroInterno}
@@ -189,11 +183,6 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 					  },
 	%ems_logger:debug("Msg enviada para ~p: ~p.", [Node, Msg]),
 	{Module, Node} ! Msg,
-	%ems_logger:info("CAST ~s:~s on ~s {RID: ~p, URI: ~s}.", [ModuleName, 
-	%														 FunctionName, 
-	%														 atom_to_list(Node), 
-	%														 Request#request.rid, 
-	%														 Request#request.uri]),
 	ok.
 
 get_work_node('', _, _, _, _) -> {ok, node()};

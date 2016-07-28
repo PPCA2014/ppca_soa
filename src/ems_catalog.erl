@@ -9,7 +9,6 @@
 -module(ems_catalog).
 
 -behavior(gen_server). 
--behaviour(poolboy_worker).
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
@@ -22,10 +21,11 @@
 		 list_catalog/0, 
 		 update_catalog/0,
 		 lookup/1,
-		 lookup_by_rowid/1,
+		 lookup/2,
 		 get_querystring/2, 
 		 get_ult_lookup/0,
-		 list_cat2/0, list_cat3/0]).
+		 list_cat2/0, 
+		 list_cat3/0]).
 
 
 %% gen_server callbacks
@@ -63,25 +63,26 @@ stop() ->
 %%====================================================================
  
 list_catalog() ->
-	ems_pool:call(ems_catalog_pool, list_catalog).
+	gen_server:call(?SERVER, list_catalog).
 
 update_catalog() ->
-	ems_pool:cast(ems_catalog_pool, update_catalog).
+	gen_server:cast(?SERVER, update_catalog).
 
 lookup(Request) ->	
-	ems_pool:call(ems_catalog_pool, {lookup, Request}).
+	gen_server:call(?SERVER, {lookup, Request}).
+
+lookup(Method, Uri) ->
+	gen_server:call(?SERVER, {lookup, Method, Uri}).
 
 list_cat2() ->
-	ems_pool:call(ems_catalog_pool, list_cat2).
+	gen_server:call(?SERVER, list_cat2).
 
 list_cat3() ->
-	ems_pool:call(ems_catalog_pool, list_cat3).
+	gen_server:call(?SERVER, list_cat3).
 
 get_ult_lookup() ->
-	ems_pool:call(ems_catalog_pool, get_ult_lookup).
+	gen_server:call(?SERVER, get_ult_lookup).
 
-lookup_by_rowid(Rowid) ->
-	ems_pool:call(ems_catalog_pool, {lookup_by_rowid, Rowid}).
 
 	
 %%====================================================================
@@ -108,13 +109,12 @@ handle_call(list_catalog, _From, State) ->
 	{reply, Reply, State};
     
 handle_call({lookup, Request}, _From, State) ->
-	Ult_lookup = lookup(Request, State),
+	Ult_lookup = do_lookup(Request, State),
 	%NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State),
 	{reply, Ult_lookup, State, 60000};
 
-handle_call({lookup_by_rowid, Rowid}, _From, State) ->
-	Request = 0,
-	Ult_lookup = lookup(Request, State),
+handle_call({lookup, Method, Uri}, _From, State) ->
+	Ult_lookup = do_lookup(Method, Uri, State),
 	{reply, Ult_lookup, State, 60000};
 
 handle_call(list_cat2, _From, State) ->
@@ -577,12 +577,18 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 	end.
 
 
-lookup(Request, State) ->
+do_lookup(Method, Uri, State) ->
+	case ems_http_util:encode_request(Method, Uri) of
+		{ok, Request} -> do_lookup(Request, State);
+		{error, Reason} -> {error, Reason}
+	end.
+
+
+do_lookup(Request, State) ->
 	Rowid = Request#request.rowid,
-	ems_logger:info("REQUEST ROWID ~p.", [Request#request.rowid]),
 	case ets:lookup(State#state.cat2, Rowid) of
 		[] -> 
-			case lookup_re(Request, State#state.cat3) of
+			case do_lookup_re(Request, State#state.cat3) of
 				{Service, ParamsMap} -> 
 					Querystring = processa_querystring(Service, Request),
 					{Service, ParamsMap, Querystring};
@@ -596,10 +602,10 @@ lookup(Request, State) ->
 	end.
 
 
-lookup_re(_Request, []) ->
+do_lookup_re(_Request, []) ->
 	notfound;
 
-lookup_re(Request, [H|T]) ->
+do_lookup_re(Request, [H|T]) ->
 	RE = H#service.id_re_compiled,
 	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
 		match -> {H, #{}};
@@ -607,7 +613,7 @@ lookup_re(Request, [H|T]) ->
 			{namelist, ParamNames} = re:inspect(RE, namelist),
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 			{H, ParamsMap};
-		nomatch -> lookup_re(Request, T);
+		nomatch -> do_lookup_re(Request, T);
 		{error, _ErrType} -> notfound 
 	end.
 
