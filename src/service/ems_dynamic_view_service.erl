@@ -109,7 +109,7 @@ execute_command(Command,
 													  table_name = TableName,
 													  primary_key = PrimaryKey,
 													  debug = Debug}}, 
-													  State) ->
+				State) ->
 	try
 		case get_connection(Datasource, TableName, PrimaryKey, Debug) of
 			{ok, Conn} -> 
@@ -122,16 +122,22 @@ execute_command(Command,
 	catch
 		_Exception:Reason2 -> {error, Reason2}
 	end.
-	    
-	    
-parse_filter(<<>>) -> [];   
 
+	    
+parse_fields([]) -> "*";
+
+parse_fields(Fields) -> 
+	Fields2 = string:tokens(Fields, ","),
+	string:join(Fields2, ",").	    
+	    
+parse_filter(<<>>) -> {"", ""};
 
 parse_filter(Filter) ->    
     case ems_util:json_decode(Filter) of
 		{ok, Filter2} -> parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
+
 parse_filter([], [], []) -> {"", ""};
 
 	
@@ -165,7 +171,6 @@ parse_condition({<<Param/binary>>, Value}) ->
 	parse_condition(Param2, Value2, sql_varchar).
 	
 parse_condition(Param, Value, DataType) -> 
-	io:format("parse condition ~p  ~p  ~p\n", [Param, Value, DataType]),
 	{Param2, Op} = parse_name_and_operator(Param),
 	{Param3, Value2} = parse_value(Param2, Value, Op, DataType),
 	{Param3, Op, Value2}.	
@@ -177,10 +182,8 @@ parse_value(Param, Value, "e", DataType) when is_integer(Value) ->
 	{Param, OdbcValue};
 
 parse_value(Param, Value, "e", DataType) -> 
-	io:format("teste parva_value e ~p  ~p\n", [Param, Value]),
 	OdbcDataType = format_odbc_data_type(Value, DataType),
 	OdbcValue = [{OdbcDataType, [ Value ]}],
-	io:format("parva_value e2 ~p\n", [OdbcValue]),
 	{Param, OdbcValue};
 
 parse_value(Param, Value, "ne", DataType) -> 
@@ -202,7 +205,6 @@ parse_value(Param, Value, "ilike", sql_varchar) ->
 	{Param2, OdbcValue};
 
 parse_value(Param, Value, "contains", sql_varchar) -> 
-	io:format("teste\n\n\n"),
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
 	Value2 = "%" ++ Value ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
@@ -243,9 +245,7 @@ parse_value(Param, Value, "lte", sql_integer) ->
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
-format_odbc_data_type(_Value, sql_varchar) ->
-	io:format("tipo\n"),
-	{sql_varchar, 100};
+format_odbc_data_type(_Value, sql_varchar) -> {sql_varchar, 100};
 format_odbc_data_type(_Value, sql_integer) -> sql_integer;
 format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
@@ -290,20 +290,17 @@ format_sql_operator("isnull") -> "is null";
 format_sql_operator(_) -> erlang:error(invalid_operator_filter).
 
 
-generate_dynamic_sql(<<>>, TableName) ->
-	Sql = "select * from " ++ TableName,
-	{ok, {Sql, []}};
-
-
-generate_dynamic_sql(FilterJson, TableName) ->
+generate_dynamic_sql(FilterJson, Fields, TableName) ->
 	{Filter, Params} = parse_filter(FilterJson),
-	Sql = "select * from " ++ TableName ++ Filter,
+	Fields2 = parse_fields(Fields),
+	Sql = lists:flatten(io_lib:format("select ~s from ~s ~s", [Fields2, TableName, Filter])),
 	{ok, {Sql, Params}}.
 
 
-generate_dynamic_sql(Id, TableName, PrimaryKey) ->
+generate_dynamic_sql(Id, Fields, TableName, PrimaryKey) ->
 	Params = [{sql_integer, [Id]}],
-	Sql = "select * from " ++ TableName ++ " where " ++ PrimaryKey ++ " = ?",
+	Fields2 = parse_fields(Fields),
+	Sql = lists:flatten(io_lib:format("select ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
 	{ok, {Sql, Params}}.
 
 
@@ -311,24 +308,10 @@ execute_dynamic_sql(Sql, _, _, true) ->  {ok, Sql};
 
 execute_dynamic_sql(Sql, Params, Conn, false) ->
 	try
-					io:format("Sql ~s\n", [Sql]),
-					io:format("Params ~p\n\n", [Params]),
-
 		case odbc:param_query(Conn, Sql, Params, 3500) of
 			{_, Fields, Records} -> 
-			
-			io:format("records is ~p\n\n\n", [Records]),
-			io:format("fields is ~p\n\n", [Fields]),
-			
-			%bjects = hd(lists:map(fun(T) -> lists:zip(Fields, tuple_to_list(T)) end, Records)),
-			
-			Objects = ems_util:json_encode_table(Fields, Records),
-			
-
-			io:format("Objects is ~p\n\n\n", [Objects]),
-			
-			{ok, Objects};
-			
+				Objects = ems_util:json_encode_table(Fields, Records),
+				{ok, Objects};
 			{error, Reason} -> {error, Reason}
 		end
 	catch
@@ -362,20 +345,23 @@ get_datasource_type(Datasource) ->
 do_find(#request{querystring_map = QuerystringMap, 
 				 service = #service{table_name = TableName,
 									debug = Debug}},
-									Conn, _State) ->
+				 Conn, _State) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
-	case generate_dynamic_sql(FilterJson, TableName) of
+	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
+	case generate_dynamic_sql(FilterJson, Fields, TableName) of
 		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
 
-do_find_by_id(Request = #request{service = #service{table_name = TableName,
+do_find_by_id(Request = #request{querystring_map = QuerystringMap, 
+								 service = #service{table_name = TableName,
 													primary_key = PrimaryKey,
 													debug = Debug}}, 
-													Conn, _State) ->
+			  Conn, _State) ->
 	Id = list_to_integer(ems_request:get_param_url(<<"id">>, "0", Request)),
-	case generate_dynamic_sql(Id, TableName, PrimaryKey) of
+	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
+	case generate_dynamic_sql(Id, Fields, TableName, PrimaryKey) of
 		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
 		{error, Reason} -> {error, Reason}
 	end.

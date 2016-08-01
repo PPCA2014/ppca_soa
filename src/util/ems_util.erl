@@ -135,28 +135,11 @@ json_decode_as_map_file(FileName) ->
 json_decode_as_map(JSON) ->
 	try
 		Dados0 = binary_to_list(JSON),
-		%io:format("dados0 is ~p\n\n", [Dados0]),
-		
 		JSON0 = lists:flatten(re:replace(Dados0, "\t", "", [global, {return,list}])),
-
-		%io:format("dados1 is ~p\n\n", [JSON0]),
-
-
 		JSON1 = lists:flatten(re:replace(JSON0, "\r", "", [global, {return,list}])),
-		
-		%io:format("dados2 is ~p\n\n", [JSON1]),
-		
 		JSON2 = lists:flatten(re:replace(JSON1, "\n", "", [global, {return,list}])),
-		
-		%io:format("dados3 is ~p\n\n\n", [JSON2]),
-		
 		JSON3 = list_to_binary(JSON2),
-		
-		%io:format("VOU DECODIFICAR ISTO ->  ~p\n\n\n", [JSON3]),
-		
 		Result = jsx:decode(JSON3, [return_maps]),
-
-
 		{ok, Result}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -352,31 +335,69 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
-
-
+json_field_format_table([]) -> "null";
+json_field_format_table("0.0") -> "0.0";
+json_field_format_table(Value) when is_float(Value) -> Value;
+json_field_format_table(Value) when is_integer(Value) -> Value;
+json_field_format_table(Value) when is_boolean(Value) -> Value;
+json_field_format_table(null) -> "null";
+json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) ->
-	string:strip(Value);
-	
-json_field_format_table(Value) -> Value.
-	
-	
+	string:strip(case utf8_list_to_string(Value) of
+		{error, _, _ } -> Value;
+		S -> S
+	end);
+json_field_format_table(Value) -> 
+	io:format("value is ~p\n", [Value]),
+	throw({error, {"Não foi possível serializar o valor ", [Value]}}).
+
 
 json_encode_table(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
 							   lists:zipwith(fun(Fld, Value) -> 
-												lists:flatten(io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)])) 
+												io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)]) 
 											 end,  Fields, tuple_to_list(T))
 					end, Records), 
-	io:format("R1 is ~p\n\n", [Objects]),
-	
 	Objects2 = lists:map(fun(Obj) -> 
 									lists:flatten(["{", string:join(Obj, ", "), "}"]) 
 						 end, Objects),
-	
-	io:format("R2 is ~p\n\n", [Objects2]),
-	
 	Objects3 = string:join(Objects2, ", "),
-
-	io:format("R3 is ~p\n\n", [Objects3]),
-	
 	unicode:characters_to_binary(["[", Objects3, "]"]).
+
+
+utf8_list_to_string(StrangeList) ->
+  unicode:characters_to_list(list_to_binary(StrangeList)).
+
+unescape_string(String) -> unescape_string(String, []).
+
+unescape_string([], Output) ->
+  lists:reverse(Output);
+unescape_string([$\\, Escaped | Rest], Output) ->
+  Char = case Escaped of
+    $\\ -> $\\;
+    $/  -> $/; 
+    $\" -> $\";
+    $\' -> $\';
+    $b  -> $\b;
+    $d  -> $\d;
+    $e  -> $\e;
+    $f  -> $\f;
+    $n  -> $\n;
+    $r  -> $\r;
+    $s  -> $\s;
+    $t  -> $\t;
+    $v  -> $\v;
+    _   -> throw({error, {"unrecognized escape sequence: ", [$\\, Escaped]}})
+  end,
+  unescape_string(Rest, [Char|Output]);
+unescape_string([Char|Rest], Output) ->
+  unescape_string(Rest, [Char|Output]).
+
+
+heuristic_encoding_bin(Bin) when is_binary(Bin) ->
+    case unicode:characters_to_binary(Bin,utf8,utf8) of
+	Bin ->
+	    utf8;
+	_ ->
+	    latin1
+    end.
