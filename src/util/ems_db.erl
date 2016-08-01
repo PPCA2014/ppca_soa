@@ -166,7 +166,6 @@ release_odbc_connection(Conn) ->
 
 get_odbc_connection_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
 	FileNamePath = ?CSV_FILE_PATH ++ "/" ++ FileName,
-	io:format("is ~s\n\n", [FileNamePath]),
 	case filelib:last_modified(FileNamePath) of
 		0 -> {error, ecsvfile_not_exist};
 		LastModified ->

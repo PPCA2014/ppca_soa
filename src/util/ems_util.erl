@@ -343,14 +343,18 @@ json_field_format_table(Value) when is_boolean(Value) -> Value;
 json_field_format_table(null) -> "null";
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) ->
-	string:strip(case utf8_list_to_string(Value) of
+	json_field_strip(case utf8_list_to_string(Value) of
 		{error, _, _ } -> Value;
 		S -> S
 	end);
-json_field_format_table(Value) -> 
-	io:format("value is ~p\n", [Value]),
-	throw({error, {"Não foi possível serializar o valor ", [Value]}}).
+json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
+json_field_strip([]) ->	"null";
+json_field_strip(Value) -> 
+	case string:strip(Value) of
+		[] -> "null";
+		V -> V
+	end.
 
 json_encode_table(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
@@ -368,33 +372,8 @@ json_encode_table(Fields, Records) ->
 utf8_list_to_string(StrangeList) ->
   unicode:characters_to_list(list_to_binary(StrangeList)).
 
-unescape_string(String) -> unescape_string(String, []).
 
-unescape_string([], Output) ->
-  lists:reverse(Output);
-unescape_string([$\\, Escaped | Rest], Output) ->
-  Char = case Escaped of
-    $\\ -> $\\;
-    $/  -> $/; 
-    $\" -> $\";
-    $\' -> $\';
-    $b  -> $\b;
-    $d  -> $\d;
-    $e  -> $\e;
-    $f  -> $\f;
-    $n  -> $\n;
-    $r  -> $\r;
-    $s  -> $\s;
-    $t  -> $\t;
-    $v  -> $\v;
-    _   -> throw({error, {"unrecognized escape sequence: ", [$\\, Escaped]}})
-  end,
-  unescape_string(Rest, [Char|Output]);
-unescape_string([Char|Rest], Output) ->
-  unescape_string(Rest, [Char|Output]).
-
-
-heuristic_encoding_bin(Bin) when is_binary(Bin) ->
+check_encoding_bin(Bin) when is_binary(Bin) ->
     case unicode:characters_to_binary(Bin,utf8,utf8) of
 	Bin ->
 	    utf8;
