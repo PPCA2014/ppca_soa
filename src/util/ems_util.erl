@@ -111,17 +111,17 @@ json_encode([]) -> <<>>;
 
 json_encode(T) when is_tuple(T) ->
 	L = tuple_to_binlist(T),
-	jsx:encode(L);
+	jiffy:encode(L);
 
 json_encode(L) when is_list(L) ->
 	case io_lib:printable_list(L) of
 		true -> L2 = iolist_to_binary(L);
 		false -> L2 = list_to_binlist(L)
 	end,
-	jsx:encode(L2);
+	jiffy:encode(L2);
 
 json_encode(Value)->
-	jsx:encode(Value).
+	jiffy:encode(Value).
 
 
 json_decode_as_map_file(FileName) ->
@@ -134,12 +134,10 @@ json_decode_as_map_file(FileName) ->
 %% @doc Converte um JSON para dados Erlang usando map
 json_decode_as_map(JSON) ->
 	try
-		Dados0 = binary_to_list(JSON),
-		JSON0 = lists:flatten(re:replace(Dados0, "\t", "", [global, {return,list}])),
-		JSON1 = lists:flatten(re:replace(JSON0, "\r", "", [global, {return,list}])),
-		JSON2 = lists:flatten(re:replace(JSON1, "\n", "", [global, {return,list}])),
-		JSON3 = list_to_binary(JSON2),
-		Result = jsx:decode(JSON3, [return_maps]),
+		Dados1 = binary_to_list(JSON),
+		Dados2 = lists:flatten(re:replace(Dados1, "[\t\r\n]", "", [global, {return,list}])),
+		Dados3 = list_to_binary(Dados2),
+		Result = jiffy:decode(Dados3, [return_maps]),
 		{ok, Result}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -148,8 +146,8 @@ json_decode_as_map(JSON) ->
 %% @doc Converte um JSON para dados Erlang
 json_decode(JSON) ->
 	try
-		Result = jsx:decode(JSON),
-		{ok, Result}
+		T = jiffy:decode(JSON),
+		{ok, element(1, T)}
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
@@ -343,10 +341,7 @@ json_field_format_table(Value) when is_boolean(Value) -> Value;
 json_field_format_table(null) -> "null";
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) ->
-	json_field_strip(case utf8_list_to_string(Value) of
-		{error, _, _ } -> Value;
-		S -> S
-	end);
+	json_field_strip(utf8_list_to_string(Value));
 json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
 json_field_strip([]) ->	"null";
@@ -369,8 +364,19 @@ json_encode_table(Fields, Records) ->
 	unicode:characters_to_binary(["[", Objects3, "]"]).
 
 
-utf8_list_to_string(StrangeList) ->
-  unicode:characters_to_list(list_to_binary(StrangeList)).
+utf8_list_to_string(Value) ->
+	case unicode:characters_to_list(list_to_binary(Value)) of
+		{error, _, _ } -> Value;
+		Value2 -> Value2
+	end.
+
+utf8_list_to_binary(Value) -> binary_to_list(utf8_list_to_string(Value)).
+
+utf8_binary_to_list(Value) ->
+	case unicode:characters_to_list(Value) of
+		{error, _, _ } -> Value;
+		Value2 -> Value2
+	end.
 
 
 check_encoding_bin(Bin) when is_binary(Bin) ->
@@ -380,3 +386,4 @@ check_encoding_bin(Bin) when is_binary(Bin) ->
 	_ ->
 	    latin1
     end.
+

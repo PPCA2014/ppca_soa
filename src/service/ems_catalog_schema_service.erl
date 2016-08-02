@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Módulo ems_catalog_service
+%% @title Módulo ems_catalog_schema_service
 %% @version 1.0.0
-%% @doc Módulo de serviço ems_catalog_service
+%% @doc Módulo de serviço ems_catalog_schema_service
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_catalog_service).
+-module(ems_catalog_schema_service).
 
 -behavior(gen_server). 
 -behaviour(poolboy_worker).
@@ -20,8 +20,7 @@
 -export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
--export([list_catalog/2]).
--export([get/2, insert/2, update/2, delete/2]).
+-export([all/2, get/2, insert/2, update/2, delete/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -51,20 +50,20 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-list_catalog(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {list_catalog, Request, From}).
+all(Request, From)	->
+	ems_pool:cast(ems_catalog_schema_pool, {all, Request, From}).
 
 get(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {get, Request, From}).
+	ems_pool:cast(ems_catalog_schema_pool, {get, Request, From}).
 	
 insert(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {insert, Request, From}).
+	ems_pool:cast(ems_catalog_schema_pool, {insert, Request, From}).
 
 update(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {update, Request, From}).
+	ems_pool:cast(ems_catalog_schema_pool, {update, Request, From}).
 
 delete(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {delete, Request, From}).
+	ems_pool:cast(ems_catalog_schema_pool, {delete, Request, From}).
 	
 
 %%====================================================================
@@ -78,7 +77,7 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({list_catalog, Request, _From}, State) ->
+handle_cast({all, Request, _From}, State) ->
 	Result = do_list_catalog(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	%gen_server:cast(From, {service, Request, Result}),
@@ -110,10 +109,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_list_catalog(_Request, _State) -> 
-	ems_catalog:list_catalog().
+	ems_catalog:all().
 	
 do_insert(Request = #request{payload = CatalogJson}, _State) ->
 	io:format("catalog is ~p\n", [CatalogJson]),
+	
 	1.
 	
 	

@@ -87,3 +87,8 @@
 							last_modified :: file:date_time()}).
 					
 
+-record(catalog_schema, {id :: non_neg_integer(), 
+						 name :: string(),
+						 schema :: string()
+						}).
+
