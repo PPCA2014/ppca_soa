@@ -27,7 +27,7 @@
 # Data       |  Quem           |  Mensagem  
 # -----------------------------------------------------------------------------------------------------
 # 25/07/2016  Everton Agilar     Release inicial    
-#
+# 02/08/2016  Everton Agilar     Importa um CSV mesmo que há linhas inválidas
 #
 #
 #
@@ -58,9 +58,11 @@ class Csv2SqliteGenerator(object):
             self._drop_table_if_exists()
             for row in self.csv_data:
                 if self.csv_data.line_num == 1:
-                    print(row)
                     self._do_create_table(row)
                     continue
+                if len(row) != self.field_count:
+					print("Linha inválida: " + str(self.csv_data.line_num))
+					continue
                 row_utf8 = [field.decode("utf-8").strip() for field in row]
                 query = "INSERT INTO %s VALUES (%s)" % (self.table_name, ','.join(['?' for x in row]))
                 self.cursor.execute(query, row_utf8)
@@ -81,9 +83,8 @@ class Csv2SqliteGenerator(object):
         # Remove the BOM if necessary
         FirstColumn = field_names[0]
         if FirstColumn[0:3] == '\xef\xbb\xbf':
-			print("remove BOM\n")
 			field_names[0] = FirstColumn[3:]
-
+        self.field_count = len(field_names)
         sql = "CREATE TABLE %s" % self.table_name
         query = '%s (%s)' % (sql, ','.join(['%s text' % field_name for field_name in field_names]))
         self.cursor.execute(query)
@@ -92,6 +93,7 @@ class Csv2SqliteGenerator(object):
 
 
 if __name__ == '__main__':
+	print("csv2sqlite - convert csv files to sqlite database")
 
 	# The command should receive all the arguments
 	if len(sys.argv) != 5:
@@ -106,7 +108,6 @@ if __name__ == '__main__':
 	delimiter = args[3]
 
 	# Print the variables that will be used
-	print("Creating Sqlite table with the following parameters:")
 	print("Database name->%s" % database_name)
 	print("Table name->%s" % table_name)
 	print("File name->%s" % file_name)
@@ -114,5 +115,5 @@ if __name__ == '__main__':
 	
 	table = Csv2SqliteGenerator(database_name, table_name, file_name, delimiter)
 	
-	print("ok")
+	print("pronto!")
 	
