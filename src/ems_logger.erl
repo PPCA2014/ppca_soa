@@ -39,6 +39,7 @@
 				log_file_dest,           		% path configuration where the logs will be written
 				log_file_checkpoint,      		% timeout configuration to unload file buffer
 				log_file_name,		      		% timeout configuration to unload file buffer
+				log_file_handle,				% IODevice of file
 				debug,							% It indicates whether it is in debug mode
 				level = info					% level of errors
  			   }). 
@@ -107,11 +108,12 @@ init(_Args) ->
 	Conf = ems_config:getConfig(),
 	LogFileDest = Conf#config.log_file_dest,
 	Checkpoint = Conf#config.log_file_checkpoint,
+	{NomeArqLog, IODevice} = get_filename_logger(LogFileDest),
 	set_timeout_for_get_filename_logger(),
-	%fprof:trace([start, {procs, [self()]}]),
     {ok, #state{log_file_dest = LogFileDest, 
                 log_file_checkpoint = Checkpoint,
-                log_file_name = get_filename_logger(LogFileDest),
+                log_file_name = NomeArqLog,
+                log_file_handle = IODevice,
                 debug = Conf#config.ems_debug}}. 
     
 handle_cast(shutdown, State) ->
@@ -175,10 +177,9 @@ handle_info(checkpoint, State) ->
    {noreply, NewState};
 
 handle_info(checkpoint_get_filename_logger, State) ->
-	io:format("ok"),
-	NewLogFileName = get_filename_logger(State#state.log_file_dest),
+	{NewLogFileName, IODevice} = get_filename_logger(State#state.log_file_dest),
 	set_timeout_for_get_filename_logger(),
-   {noreply, State#state{log_file_name = NewLogFileName}}.
+   {noreply, State#state{log_file_name = NewLogFileName, log_file_handle = IODevice}}.
 
 terminate(_Reason, _State) ->
     ok.
@@ -194,9 +195,10 @@ code_change(_OldVsn, State, _Extra) ->
 get_filename_logger(LogFileDest) -> 
 	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
 	NodeName = ems_util:get_node_name(),
-	NomeArqLog = lists:flatten(io_lib:format("~s/~p/~p/~s/~s_~2..0w.~2..0w.~4..0w_~2..0w:~2..0w.log", [LogFileDest, node(), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~2..0w~2..0w~4..0w_~2..0w:~2..0w.log", [LogFileDest, atom_to_list(node()), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
 	filelib:ensure_dir(NomeArqLog),
-	NomeArqLog.
+	{ok, IODevice} = file:open(NomeArqLog, [append]),
+	{NomeArqLog, IODevice}.
 
 set_timeout_for_sync_buffer(#state{flag_checkpoint = false, log_file_checkpoint=Timeout}) ->    
 	erlang:send_after(Timeout, self(), checkpoint);
@@ -239,11 +241,11 @@ sync_buffer_tela(State) ->
 
 sync_buffer(State = #state{buffer = []}) -> State;
 
-sync_buffer(State = #state{log_file_name = FileName,
+sync_buffer(State = #state{log_file_handle = IODevice, 
 						   buffer = Buffer}) ->
-	file:write_file(FileName, lists:map(fun(L) -> 
+	file:write(IODevice, lists:map(fun(L) -> 
 											L ++ "\n" 
-										end, lists:reverse(Buffer)), [append]),
+									end, lists:reverse(Buffer))),
 	State#state{buffer = [], flag_checkpoint = false}.
 
 do_log_request(#request{protocol = ldap, 
