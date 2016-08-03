@@ -276,7 +276,7 @@ get_rowid_and_params_from_url(Url, Type) ->
 	UrlParsed2 = lists:map(fun({U, _}) -> U end, UrlParsed),
 	UrlParsed3 = string:join(UrlParsed2, "/"),
 	Rowid = iolist_to_binary([Type, <<"#/">>, UrlParsed3]),
-	ParamsUrl = [{list_to_binary(U), list_to_binary(P)} || {[_|U], P} <- UrlParsed, P /= [] ],
+	ParamsUrl = [{list_to_binary(U), P} || {[_|U], P} <- UrlParsed, P /= [] ],
 	ParamsUrlMap = maps:from_list(ParamsUrl),
 	{Rowid, ParamsUrlMap}.
 	
@@ -301,7 +301,7 @@ parse_parte_url(UrlParte, SeqId) ->
 				1 -> SeqId_ = ":id";
 				_ -> SeqId_ = ":id_" ++ integer_to_list(SeqId)
 			end,
-			{SeqId_, UrlParte, SeqId+1};
+			{SeqId_, list_to_integer(UrlParte), SeqId+1};
 		false -> {UrlParte, [], SeqId}
 	end.
 

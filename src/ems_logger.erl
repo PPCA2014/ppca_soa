@@ -176,12 +176,19 @@ handle_info(checkpoint, State) ->
    NewState = sync_buffer(State),
    {noreply, NewState};
 
-handle_info(checkpoint_get_filename_logger, State) ->
-	{NewLogFileName, IODevice} = get_filename_logger(State#state.log_file_dest),
+handle_info(checkpoint_get_filename_logger, 
+			State = #state{log_file_dest = LogFileDest,
+						   log_file_handle = IODevice}) ->
+	file:close(IODevice),
+	{NewLogFileName, IODevice2} = get_filename_logger(LogFileDest),
 	set_timeout_for_get_filename_logger(),
-   {noreply, State#state{log_file_name = NewLogFileName, log_file_handle = IODevice}}.
+	{noreply, State#state{log_file_name = NewLogFileName, log_file_handle = IODevice2}}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{log_file_handle = undefined}) ->
+    ok;
+
+terminate(_Reason, #state{log_file_handle = IODevice}) ->
+    file:close(IODevice),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -195,7 +202,7 @@ code_change(_OldVsn, State, _Extra) ->
 get_filename_logger(LogFileDest) -> 
 	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
 	NodeName = ems_util:get_node_name(),
-	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~2..0w~2..0w~4..0w_~2..0w:~2..0w.log", [LogFileDest, atom_to_list(node()), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~2..0w~2..0w~4..0w_~2..0w~2..0w.log", [LogFileDest, atom_to_list(node()), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
 	filelib:ensure_dir(NomeArqLog),
 	{ok, IODevice} = file:open(NomeArqLog, [append]),
 	{NomeArqLog, IODevice}.

@@ -88,7 +88,8 @@
 					
 
 -record(catalog_schema, {id :: non_neg_integer(), 
-						 name :: string(),
-						 schema :: string()
+						 name :: string(),	
+						 description :: string(),
+						 json_schema
 						}).
 

@@ -9,8 +9,6 @@
 -module(ems_catalog_schema_service).
 
 -behavior(gen_server). 
--behaviour(poolboy_worker).
-
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
@@ -20,7 +18,7 @@
 -export([start/0, start_link/1, stop/0]).
 
 %% Cliente interno API
--export([all/2, get/2, insert/2, update/2, delete/2]).
+-export([all/2, find_by_id/2, insert/2, update/2, delete/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -50,20 +48,20 @@ stop() ->
 %% Cliente API
 %%====================================================================
  
-all(Request, From)	->
-	ems_pool:cast(ems_catalog_schema_pool, {all, Request, From}).
-
-get(Request, From)	->
-	ems_pool:cast(ems_catalog_schema_pool, {get, Request, From}).
+find_by_id(Request, From)	->
+	gen_server:cast(?SERVER, {find_by_id, Request, From}).
 	
 insert(Request, From)	->
-	ems_pool:cast(ems_catalog_schema_pool, {insert, Request, From}).
+	gen_server:cast(?SERVER, {insert, Request, From}).
 
 update(Request, From)	->
-	ems_pool:cast(ems_catalog_schema_pool, {update, Request, From}).
+	gen_server:cast(?SERVER, {update, Request, From}).
+
+all(Request, From)	->
+	gen_server:cast(?SERVER, {all, Request, From}).
 
 delete(Request, From)	->
-	ems_pool:cast(ems_catalog_schema_pool, {delete, Request, From}).
+	gen_server:cast(?SERVER, {delete, Request, From}).
 	
 
 %%====================================================================
@@ -77,14 +75,28 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({all, Request, _From}, State) ->
-	Result = do_list_catalog(Request, State),
+handle_cast({find_by_id, Request, _From}, State) ->
+	Result = do_find_by_id(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
-	%gen_server:cast(From, {service, Request, Result}),
 	{noreply, State};
 
 handle_cast({insert, Request, _From}, State) ->
 	Reply = do_insert(Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	{noreply, State};
+
+handle_cast({update, Request, _From}, State) ->
+	Reply = do_update(Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	{noreply, State};
+
+handle_cast({all, Request, _From}, State) ->
+	Result = do_all(Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
+	{noreply, State};
+
+handle_cast({delete, Request, _From}, State) ->
+	Reply = do_delete(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
 	{noreply, State}.
 
@@ -108,13 +120,22 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-do_list_catalog(_Request, _State) -> 
-	ems_catalog:all().
+do_find_by_id(Request, _State) -> 
+	Id = ems_request:get_param_url(<<"id">>, -1, Request),
+	ems_catalog_schema:find_by_id(Id).
 	
-do_insert(Request = #request{payload = CatalogJson}, _State) ->
-	io:format("catalog is ~p\n", [CatalogJson]),
+do_insert(#request{payload_map = CatalogSchemaMap}, _State) ->
+	ems_catalog_schema:insert(CatalogSchemaMap).
+
+do_update(Request = #request{payload_map = CatalogSchemaMap}, _State) ->
+	Id = ems_request:get_param_url(<<"id">>, -1, Request),
+	ems_catalog_schema:update(Id, CatalogSchemaMap).
+
+do_all(_Request, _State) -> 
+	ems_catalog_schema:all().
 	
-	1.
-	
+do_delete(Request, _State) -> 
+	Id = ems_request:get_param_url(<<"id">>, -1, Request),
+	ems_catalog_schema:delete(Id).
 	
 

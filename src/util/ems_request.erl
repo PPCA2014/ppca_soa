@@ -206,8 +206,7 @@ get_property_request(<<"body">>, Request) ->
 get_param_url(NomeParam, Default, Request) ->
 	ParamsUrl = Request#request.params_url,
 	NomeParam2 = iolist_to_binary(NomeParam),
-	Value = maps:get(NomeParam2, ParamsUrl, Default),
-	binary_to_list(Value).
+	maps:get(NomeParam2, ParamsUrl, Default).
 
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, Request) ->

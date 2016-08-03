@@ -44,13 +44,13 @@ create_database(Nodes) ->
 							   {attributes, record_info(fields, user)}]),
 
     mnesia:create_table(sequence, [{type, set},
-									{ram_copies, Nodes},
-									{attributes, record_info(fields, sequence)}]),
+								   {disc_copies, Nodes},
+								   {attributes, record_info(fields, sequence)}]),
 
     mnesia:create_table(request, [{type, set},
-									 {ram_copies, Nodes},
-									 {attributes, record_info(fields, request)},
-									 {index, [#request.timestamp]}]),
+								  {ram_copies, Nodes},
+								  {attributes, record_info(fields, request)},
+								  {index, [#request.timestamp]}]),
 
     mnesia:create_table(ctrl_sqlite_table, [{type, set},
 											{ram_copies, Nodes},
@@ -58,7 +58,7 @@ create_database(Nodes) ->
 
 
     mnesia:create_table(catalog_schema, [{type, set},
-										 {ram_copies, Nodes},
+										 {disc_copies, Nodes},
 										 {attributes, record_info(fields, catalog_schema)}]),
 
 
