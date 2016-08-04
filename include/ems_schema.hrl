@@ -6,6 +6,7 @@
 %% @copyright ErlangMS Team
 %%********************************************************************
 
+
 -record(sequence, {key :: atom(), 
 				   index :: non_neg_integer()}).
 
@@ -90,6 +91,11 @@
 -record(catalog_schema, {id :: non_neg_integer(), 
 						 name :: string(),	
 						 description :: string(),
-						 json_schema
+						 json_schema :: map()
 						}).
 
+-record(schema_type, {id :: non_neg_integer(), 
+					  name :: string(),	
+					  description :: string(),
+					  json_schema :: map()
+				}).

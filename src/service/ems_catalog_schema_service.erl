@@ -132,7 +132,8 @@ do_update(Request = #request{payload_map = CatalogSchemaMap}, _State) ->
 	ems_catalog_schema:update(Id, CatalogSchemaMap).
 
 do_all(_Request, _State) -> 
-	ems_catalog_schema:all().
+	%ems_catalog_schema:all().
+	ems_schema:to_json([#user{name = "jose"}, #user{name = "paulo"}]).
 	
 do_delete(Request, _State) -> 
 	Id = ems_request:get_param_url(<<"id">>, -1, Request),

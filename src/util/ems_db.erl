@@ -57,9 +57,6 @@ create_database(Nodes) ->
 											{attributes, record_info(fields, ctrl_sqlite_table)}]),
 
 
-    mnesia:create_table(catalog_schema, [{type, set},
-										 {disc_copies, Nodes},
-										 {attributes, record_info(fields, catalog_schema)}]),
 
 
 	ok.

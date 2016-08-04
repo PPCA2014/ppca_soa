@@ -8,7 +8,23 @@
 
 -module(ems_catalog_schema).
 
--export([find_by_id/1, insert_or_update/1, insert/1, update/2, all/0, delete/1]).
+-compile({parse_transform, exprecs}).
+
+-record(book, {
+      style      :: atom(),
+      count      :: integer(),
+      available  :: boolean(),
+      pages      :: integer(),
+      excerpt    :: string(),
+      author     :: string()
+     }). 
+
+
+-export_records([book, schema_type]).
+
+
+-export([new/0, new/1, find_by_id/1, insert_or_update/1, insert/1, update/2, all/0, delete/1, to_record/2]).
+
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
@@ -16,7 +32,52 @@
 -include_lib("stdlib/include/ms_transform.hrl").
 
 
+%% new records
+
+new() -> '#new-schema_type'().
+
+new(book) -> '#new-book'();
+new(schema_type) -> '#new-schema_type'();
+new(_) ->  undefined.
+
+
+%% Convertions
+
+to_record(Json, Type) when is_binary(Json), is_atom(Type) ->
+	{ok, JsonMap} = ems_util:json_decode(Json),
+	JsonStruct = {struct, JsonMap},
+	NewRecord = new(Type),
+		io:format("struct is ~p\n", [JsonStruct]),
+	json_rec:to_rec(JsonStruct, ?MODULE, NewRecord);
+
+to_record(Json, Record) when is_binary(Json), is_tuple(Record)->
+	{ok, JsonMap} = ems_util:json_decode(Json),
+	JsonStruct = {struct, JsonMap},
+	io:format("struct is ~p\n", [JsonStruct]),
+		json_rec:to_rec(JsonStruct, ?MODULE, Record);
+
+to_record(Map, Type) when is_map(Map), is_atom(Type) ->
+	List = maps:to_list(Map),
+	JsonStruct = {struct, List},
+	NewRecord = new(Type),
+	json_rec:to_rec(JsonStruct, ?MODULE, NewRecord);
+
+to_record(Map, Record) when is_map(Map), is_tuple(Record)->
+	List = maps:to_list(Map),
+	JsonStruct = {struct, List},
+	io:format("struct is ~p\n", [JsonStruct]),
+	json_rec:to_rec(JsonStruct, ?MODULE, Record);
+
+to_record(_, _) -> erlang:error(einvalid_to_record).
+
+%% Finds
+
 find_by_id(Id) -> ems_db:get(catalog_schema, Id).
+
+all() -> ems_db:all(catalog_schema).
+
+
+%% CRUDs
 
 insert_or_update(CatalogSchemaMap) when is_map(CatalogSchemaMap) -> 
 	Name = maps:get(<<"name">>, CatalogSchemaMap),
@@ -79,8 +140,6 @@ update(Id, CatalogSchemaMap) when is_map(CatalogSchemaMap) ->
 	end,
 	mnesia:activity(transaction, F).
 	
-
-all() -> ems_db:all(catalog_schema).
 
 delete(Id) -> ems_db:delete(catalog_schema, Id).
 

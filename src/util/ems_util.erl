@@ -35,7 +35,8 @@
 		 get_priv_dir/0,
 		 get_working_dir/0,
 		 json_encode_table/2,
-		 json_decode_as_map_file/1]).
+		 json_decode_as_map_file/1,
+		 json_to_record/3]).
 
 
 get_priv_dir() ->
@@ -386,4 +387,29 @@ check_encoding_bin(Bin) when is_binary(Bin) ->
 	_ ->
 	    latin1
     end.
+
+json_to_record(Module, Json, Type) when is_binary(Json), is_atom(Type) ->
+	{ok, JsonMap} = ems_util:json_decode(Json),
+	JsonStruct = {struct, JsonMap},
+	NewRecord = apply(Module, new, [Type]),
+	json_rec:to_rec(JsonStruct, Module, NewRecord);
+
+json_to_record(Module, Json, Record) when is_binary(Json), is_tuple(Record)->
+	{ok, JsonMap} = ems_util:json_decode(Json),
+	JsonStruct = {struct, JsonMap},
+	json_rec:to_rec(JsonStruct, Module, Record);
+
+json_to_record(Module, Map, Type) when is_map(Map), is_atom(Type) ->
+	List = maps:to_list(Map),
+	JsonStruct = {struct, List},
+	NewRecord = apply(Module, new, [Type]),
+	json_rec:to_rec(JsonStruct, Module, NewRecord);
+
+json_to_record(Module, Map, Record) when is_map(Map), is_tuple(Record)->
+	List = maps:to_list(Map),
+	JsonStruct = {struct, List},
+	json_rec:to_rec(JsonStruct, Module, Record);
+
+json_to_record(_, _, _) -> erlang:error(einvalid_to_record).
+
 
