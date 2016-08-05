@@ -122,7 +122,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_find_by_id(Request, _State) -> 
 	Id = ems_request:get_param_url(<<"id">>, -1, Request),
-	ems_catalog_schema:find_by_id(Id).
+	{ok, Record} = ems_catalog_schema:find_by_id(Id),
+	ems_schema:to_json(Record).
 	
 do_insert(#request{payload_map = CatalogSchemaMap}, _State) ->
 	ems_catalog_schema:insert(CatalogSchemaMap).
@@ -132,8 +133,8 @@ do_update(Request = #request{payload_map = CatalogSchemaMap}, _State) ->
 	ems_catalog_schema:update(Id, CatalogSchemaMap).
 
 do_all(_Request, _State) -> 
-	%ems_catalog_schema:all().
-	ems_schema:to_json([#user{name = "jose"}, #user{name = "paulo"}]).
+	{ok, Records} = ems_catalog_schema:all(),
+	ems_schema:to_json(Records).
 	
 do_delete(Request, _State) -> 
 	Id = ems_request:get_param_url(<<"id">>, -1, Request),
