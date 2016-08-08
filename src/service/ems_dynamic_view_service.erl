@@ -24,7 +24,7 @@
 -export([find/2, find_by_id/2]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, parse_sort/1]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -113,244 +113,21 @@ execute_command(Command,
 	try
 		case get_connection(Datasource, TableName, PrimaryKey, Debug) of
 			{ok, Conn} -> 
-				case Command of
+				Result = case Command of
 					find -> do_find(Request, Conn, State);
 					find_by_id -> do_find_by_id(Request, Conn, State)
-				end;
+				end,
+				release_connection(Conn),
+				Result;
 			{error, Reason} ->	{error, Reason}
 		end
 	catch
 		_Exception:Reason2 -> {error, Reason2}
 	end.
 
-	    
-parse_fields([]) -> "*";
-
-parse_fields(Fields) -> 
-	Fields2 = string:tokens(Fields, ","),
-	string:join(Fields2, ",").	    
-	    
-parse_filter(<<>>) -> {"", ""};
-
-parse_filter(Filter) ->    
-    case ems_util:json_decode(Filter) of
-		{ok, Filter2} -> parse_filter(Filter2, [], []);
-		_ -> erlang:error(einvalid_filter)
-	end.
-
-parse_filter([], [], []) -> {"", ""};
-
-	
-parse_filter([], Filter, Params) -> 
-	Filter2 = lists:flatten(lists:reverse(Filter)),
-	Params2 = lists:flatten(lists:reverse(Params)),
-	{" where " ++ Filter2, Params2};
-
-parse_filter([H|T], Filter, Params) ->
-	{Param, Op, Value} = parse_condition(H),
-	And = filter_conjuntion(T),
-	{Cond, Params2} = format_sql_condition(Param, Op, Value, And, Params),
-	parse_filter(T, [Cond | Filter], Params2).
-
-	
-filter_conjuntion([]) -> "";
-filter_conjuntion(_) -> " and ".
-
-	
-parse_condition({<<Param/binary>>, Value}) when is_integer(Value) -> 
-	Param2 = binary_to_list(Param), 
-	parse_condition(Param2, Value, sql_integer);
-
-parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) -> 
-	Param2 = binary_to_list(Param), 
-	parse_condition(Param2, Value, sql_boolean);
-
-parse_condition({<<Param/binary>>, Value}) -> 
-	Param2 = binary_to_list(Param), 
-	Value2 = binary_to_list(Value),
-	parse_condition(Param2, Value2, sql_varchar).
-	
-parse_condition(Param, Value, DataType) -> 
-	{Param2, Op} = parse_name_and_operator(Param),
-	{Param3, Value2} = parse_value(Param2, Value, Op, DataType),
-	{Param3, Op, Value2}.	
-
-
-parse_value(Param, Value, "e", DataType) when is_integer(Value) -> 
-	OdbcDataType = format_odbc_data_type(Value, DataType),
-	OdbcValue = [{OdbcDataType, [ Value ]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "e", DataType) -> 
-	OdbcDataType = format_odbc_data_type(Value, DataType),
-	OdbcValue = [{OdbcDataType, [ Value ]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "ne", DataType) -> 
-	OdbcDataType = format_odbc_data_type(Value, DataType),
-	OdbcValue = [{OdbcDataType, [Value]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "like", sql_varchar) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
-	Value2 = Value ++ "%",
-	OdbcValue = [{OdbcDataType, [Value2]}],
-	{Param, OdbcValue};
-	
-parse_value(Param, Value, "ilike", sql_varchar) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
-	Param2 = "lower(" ++ Param ++ ")",
-	Value2 = string:to_lower(Value) ++ "%",
-	OdbcValue = [{OdbcDataType, [Value2]}],
-	{Param2, OdbcValue};
-
-parse_value(Param, Value, "contains", sql_varchar) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
-	Value2 = "%" ++ Value ++ "%",
-	OdbcValue = [{OdbcDataType, [Value2]}],
-	{Param, OdbcValue};
-	
-parse_value(Param, Value, "icontains", sql_varchar) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
-	Param2 = "lower(" ++ Param ++ ")",
-	Value2 = "%" ++ string:to_lower(Value) ++ "%",
-	OdbcValue = [{OdbcDataType, [Value2]}],
-	{Param2, OdbcValue};
-	
-parse_value(Param, Value, "isnull", sql_boolean) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_boolean),
-	OdbcValue = [{OdbcDataType, [Value]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "gt", sql_integer) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_integer),
-	OdbcValue = [{OdbcDataType, [Value]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "gte", sql_integer) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_integer),
-	OdbcValue = [{OdbcDataType, [Value]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "lt", sql_integer) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_integer),
-	OdbcValue = [{OdbcDataType, [Value]}],
-	{Param, OdbcValue};
-
-parse_value(Param, Value, "lte", sql_integer) -> 
-	OdbcDataType = format_odbc_data_type(Value, sql_integer),
-	OdbcValue = [{OdbcDataType, [Value]}],
-	{Param, OdbcValue};
-
-parse_value(_, _, _, _) -> 
-	erlang:error(einvalid_operator_filter).
-
-format_odbc_data_type(_Value, sql_varchar) -> {sql_varchar, 100};
-format_odbc_data_type(_Value, sql_integer) -> sql_integer;
-format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
-format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
-
-parse_name_and_operator(Param) ->
-	case string:str(Param, "__") of
-		Idx when Idx > 1 ->
-			Name = string:sub_string(Param, 1, Idx-1),
-			Op = string:sub_string(Param, Idx+2),
-			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
-				true -> {Name, Op};
-				_ -> erlang:error(einvalid_param_filter)
-			end;
-		0 -> {Param, "e"};
-		_ -> erlang:error(einvalid_param_filter)
-	end.
-
-
-format_sql_condition(Param, "isnull", Value, And, Params) -> 
-	case Value of
-		[{sql_boolean,[true]}] -> Cond = lists:flatten([Param, " is null", And]);
-		_ -> Cond = lists:flatten([Param, " is not null", And])
-	end,
-	{Cond, Params};
-
-format_sql_condition(Param, Op, Value, And, Params) ->
-	SqlOp = format_sql_operator(Op),
-	Cond = lists:flatten([Param, " ", SqlOp, " ", "?", And]),
-	{Cond, [Value | Params]}.
-
-format_sql_operator("e") -> "=";
-format_sql_operator("ne") -> "!=";
-format_sql_operator("like") -> "like";
-format_sql_operator("ilike") -> "like";
-format_sql_operator("contains") -> "like";
-format_sql_operator("icontains") -> "like";
-format_sql_operator("gt") -> ">";
-format_sql_operator("gte") -> ">=";
-format_sql_operator("lt") -> "<" ;
-format_sql_operator("lte") -> "<=";
-format_sql_operator("isnull") -> "is null";
-format_sql_operator(_) -> erlang:error(invalid_operator_filter).
-
-
-parse_sort([]) -> "";
-parse_sort(SortFields) -> 
-	SortFields2 = string:tokens(SortFields, ","),
-	"order by " ++ parse_sort(SortFields2, []).
-
-parse_sort([], L) -> string:join(L, ",");		
-parse_sort([F|Fs], L) -> 
-	F2 = string:tokens(string:to_lower(F), " "),
-	case length(F2) of
-		2 -> 
-			F3 = parse_sort_asc_desc(F, tl(F2)),
-			parse_sort(Fs, [F3 | L]);
-		_ -> parse_sort(Fs, [F | L])
-	end.
-		
-
-parse_sort_asc_desc(F, ["asc"]) -> F;
-parse_sort_asc_desc(F, ["desc"]) -> F;
-parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
-	
-
-
-parse_limit(Limit, Offset) when Limit > 0, Offset > 0, Limit < 9999, Offset < 9999 ->
-	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
-parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
-
-
-generate_dynamic_sql(FilterJson, Fields, TableName, Limit, Offset, Sort) ->
-	{FilterSmnt, Params} = parse_filter(FilterJson),
-	FieldsSmnt = parse_fields(Fields),
-	SortSmnt = parse_sort(Sort),
-	LimitSmnt = parse_limit(Limit, Offset),
-	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
-	{ok, {SqlSmnt, Params}}.
-
-
-generate_dynamic_sql(Id, Fields, TableName, PrimaryKey) ->
-	Params = [{sql_integer, [Id]}],
-	Fields2 = parse_fields(Fields),
-	Sql = lists:flatten(io_lib:format("select ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
-	{ok, {Sql, Params}}.
-
-
-execute_dynamic_sql(Sql, _, _, true) ->  {ok, Sql};
-
-execute_dynamic_sql(Sql, Params, Conn, false) ->
-	try
-		case odbc:param_query(Conn, Sql, Params, 3500) of
-			{_, Fields, Records} -> 
-				Objects = ems_util:json_encode_table(Fields, Records),
-				{ok, Objects};
-			{error, Reason} -> {error, Reason}
-		end
-	catch
-		_Exception:Reason2 -> {error, Reason2}
-	after 
-		release_connection(Conn)
-	end.
-
 
 get_connection(_, _, _, true) -> {ok, null};
+
 
 get_connection(Datasource, TableName, PrimaryKey, false) ->
 	case get_datasource_type(Datasource) of
@@ -370,7 +147,6 @@ get_datasource_type(Datasource) ->
 	end.
 	
 
-
 do_find(#request{querystring_map = QuerystringMap, 
 				 service = #service{table_name = TableName,
 									debug = Debug}},
@@ -380,10 +156,7 @@ do_find(#request{querystring_map = QuerystringMap,
 	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
 	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
 	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
-	case generate_dynamic_sql(FilterJson, Fields, TableName, Limit, Offset, Sort) of
-		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
-		{error, Reason} -> {error, Reason}
-	end.
+	ems_api_query:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug).
 
 
 do_find_by_id(Request = #request{querystring_map = QuerystringMap, 
@@ -391,10 +164,7 @@ do_find_by_id(Request = #request{querystring_map = QuerystringMap,
 													primary_key = PrimaryKey,
 													debug = Debug}}, 
 			  Conn, _State) ->
-	Id = list_to_integer(ems_request:get_param_url(<<"id">>, "0", Request)),
+	Id = ems_request:get_param_url(<<"id">>, 0, Request),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
-	case generate_dynamic_sql(Id, Fields, TableName, PrimaryKey) of
-		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
-		{error, Reason} -> {error, Reason}
-	end.
+	ems_api_query:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug).
 

@@ -9,7 +9,7 @@
 -module(ems_db).
 
 -export([start/0]).
--export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1]).
+-export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, field_index/3, filter/2]).
 -export([sequence/1, init_sequence/2]).
 -export([get_odbc_connection/1, release_odbc_connection/1]).
 -export([create_sqlite_virtual_table_from_csv_file/3, get_odbc_connection_csv_file/4]).
@@ -202,5 +202,70 @@ create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) ->
 	odbc:sql_query(Conn, CreateTableDDL),
 	odbc:commit(Conn, commit),
 	{ok, Conn}.
+
+
+field_index(_, [], _) -> erlang:error(einvalid_field_filter);
+field_index(Field, [F|Fs], Idx) ->
+	case Field == F of
+		true -> Idx;
+		_ -> field_index(Field, Fs, Idx+1)
+	end.
+
+
+filter(Tab, [{F1, "==", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == V1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, [{F1, ">", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) > V1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, [{F1, ">=", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) >= V1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, [{F1, "<", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) < V1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, [{F1, "<=", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 	
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) =< V1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, [{F1, "=/=", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) =/= V1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, FilterList) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+    FilterFun = fun () ->
+					Cond = lists:map(fun({F, Op, V}) ->
+									Fld = field_index(F, Fields, 2),
+									io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  V])
+								  end, FilterList),
+					string:join(Cond, ",")
+				end,
+    Q = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, FilterFun()])),
+    io:format("query is ~p\n", [Q]),
+    ActivityFun = fun () -> qlc:eval(qlc:string_to_handle(Q)) end,
+    mnesia:activity(transaction, ActivityFun).
 	
-	
+

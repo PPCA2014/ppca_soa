@@ -129,7 +129,7 @@ json_value_strip(Value) ->
 new(catalog_schema) -> #catalog_schema{};
 new(user) -> #user{};
 new(schema_type) -> #schema_type{};
-new(_) -> erlang:raise(einvalid_type).
+new(_) -> erlang:error(einvalid_type).
   
 	
     
