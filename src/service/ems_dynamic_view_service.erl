@@ -24,7 +24,7 @@
 -export([find/2, find_by_id/2]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, parse_sort/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -290,11 +290,40 @@ format_sql_operator("isnull") -> "is null";
 format_sql_operator(_) -> erlang:error(invalid_operator_filter).
 
 
-generate_dynamic_sql(FilterJson, Fields, TableName) ->
-	{Filter, Params} = parse_filter(FilterJson),
-	Fields2 = parse_fields(Fields),
-	Sql = lists:flatten(io_lib:format("select ~s from ~s ~s", [Fields2, TableName, Filter])),
-	{ok, {Sql, Params}}.
+parse_sort([]) -> "";
+parse_sort(SortFields) -> 
+	SortFields2 = string:tokens(SortFields, ","),
+	"order by " ++ parse_sort(SortFields2, []).
+
+parse_sort([], L) -> string:join(L, ",");		
+parse_sort([F|Fs], L) -> 
+	F2 = string:tokens(string:to_lower(F), " "),
+	case length(F2) of
+		2 -> 
+			F3 = parse_sort_asc_desc(F, tl(F2)),
+			parse_sort(Fs, [F3 | L]);
+		_ -> parse_sort(Fs, [F | L])
+	end.
+		
+
+parse_sort_asc_desc(F, ["asc"]) -> F;
+parse_sort_asc_desc(F, ["desc"]) -> F;
+parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
+	
+
+
+parse_limit(Limit, Offset) when Limit > 0, Offset > 0, Limit < 9999, Offset < 9999 ->
+	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
+parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
+
+
+generate_dynamic_sql(FilterJson, Fields, TableName, Limit, Offset, Sort) ->
+	{FilterSmnt, Params} = parse_filter(FilterJson),
+	FieldsSmnt = parse_fields(Fields),
+	SortSmnt = parse_sort(Sort),
+	LimitSmnt = parse_limit(Limit, Offset),
+	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	{ok, {SqlSmnt, Params}}.
 
 
 generate_dynamic_sql(Id, Fields, TableName, PrimaryKey) ->
@@ -348,7 +377,10 @@ do_find(#request{querystring_map = QuerystringMap,
 				 Conn, _State) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
-	case generate_dynamic_sql(FilterJson, Fields, TableName) of
+	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
+	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
+	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
+	case generate_dynamic_sql(FilterJson, Fields, TableName, Limit, Offset, Sort) of
 		{ok, {Sql, Params}} -> execute_dynamic_sql(Sql, Params, Conn, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
