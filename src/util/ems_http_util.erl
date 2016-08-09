@@ -132,16 +132,13 @@ encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
 
 %% @doc Gera o response para dados list (representação JSON em Erlang)
 encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
+io:format("json!\n"),
     Payload = ems_util:json_encode(PayloadList),
     encode_response(Codigo, Payload);
 
-encode_response(Codigo, PayloadTuple) when is_tuple(PayloadTuple) ->
-    Payload = ems_util:json_encode(PayloadTuple),
-    encode_response(Codigo, Payload);
-
-%% @doc Gera o response para dados texto
+%% @doc Gera o response
 encode_response(Codigo, Payload) ->
-    Payload2 = ems_util:json_encode(Payload),
+    Payload2 = ems_schema:to_json(Payload),
     encode_response(Codigo, Payload2).
 
 header_cache_control(<<"image/x-icon">>) ->

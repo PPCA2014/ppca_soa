@@ -111,11 +111,12 @@ execute_command(Command,
 													  debug = Debug}}, 
 				State) ->
 	try
-		case get_connection(Datasource, TableName, PrimaryKey, Debug) of
+		ConnType = get_datasource_type(Datasource),
+		case get_connection(ConnType, Datasource, TableName, PrimaryKey, Debug) of
 			{ok, Conn} -> 
 				Result = case Command of
-					find -> do_find(Request, Conn, State);
-					find_by_id -> do_find_by_id(Request, Conn, State)
+					find -> do_find(Request, Conn, ConnType, State);
+					find_by_id -> do_find_by_id(Request, Conn, ConnType, State)
 				end,
 				release_connection(Conn),
 				Result;
@@ -126,45 +127,54 @@ execute_command(Command,
 	end.
 
 
-get_connection(_, _, _, true) -> {ok, null};
+get_connection(_, _, _, _, true) -> {ok, null};
 
 
-get_connection(Datasource, TableName, PrimaryKey, false) ->
-	case get_datasource_type(Datasource) of
-		odbc_datasource ->
-		 ems_db:get_odbc_connection(Datasource);
-		csv_file -> ems_db:get_odbc_connection_csv_file(Datasource, TableName, PrimaryKey, ";")
+get_connection(ConnType, Datasource, TableName, PrimaryKey, false) ->
+	case ConnType of
+		odbc_datasource -> ems_db:get_odbc_connection(Datasource);
+		csv_file -> ems_db:get_odbc_connection_csv_file(Datasource, TableName, PrimaryKey, ";");
+		mnesia_db -> {ok, null}
 	end.
 
-
+release_connection(null) -> ok;
 release_connection(Conn) -> ems_db:release_odbc_connection(Conn).
 
 
 get_datasource_type(Datasource) ->
-	case lists:suffix(".csv", string:to_lower(Datasource)) of
+	Datasource2 = string:to_lower(Datasource),
+	case lists:suffix(".csv", Datasource2) of
 		true -> csv_file;
-		_ -> odbc_datasource
+		_ -> 
+			case lists:suffix(".erl", Datasource2) of
+				true -> mnesia_db;
+				_ -> odbc_datasource
+			end
 	end.
 	
 
 do_find(#request{querystring_map = QuerystringMap, 
 				 service = #service{table_name = TableName,
 									debug = Debug}},
-				 Conn, _State) ->
+				 Conn,
+				 ConnType, 
+				 _State) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
 	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
 	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
 	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
-	ems_api_query:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug).
+	ems_api_query:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug, ConnType).
 
 
 do_find_by_id(Request = #request{querystring_map = QuerystringMap, 
 								 service = #service{table_name = TableName,
 													primary_key = PrimaryKey,
 													debug = Debug}}, 
-			  Conn, _State) ->
+			  Conn, 
+			  ConnType,
+			  _State) ->
 	Id = ems_request:get_param_url(<<"id">>, 0, Request),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
-	ems_api_query:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug).
+	ems_api_query:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug, ConnType).
 

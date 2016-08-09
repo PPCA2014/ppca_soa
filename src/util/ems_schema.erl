@@ -12,7 +12,7 @@
 
 -include("../include/ems_schema.hrl").
 
--export([to_record/2, to_list/1, to_json/1, new/1]).
+-export([to_record/2, to_list/1, to_list/2, to_json/1, new/1]).
 
 -export_records([user, catalog_schema, schema_type]).
 
@@ -43,7 +43,7 @@ to_record(Map, Record) when is_map(Map), is_tuple(Record)->
 to_record(_, _) -> erlang:error(einvalid_to_record).
 
 
-% to_list
+% to_list (all fields)
 to_list(Record) when is_tuple(Record)-> 
 	try
 		{struct, Result} = json_rec:to_json(Record, ?MODULE),
@@ -74,6 +74,21 @@ to_list_tuple(Tuple) ->
 to_list_tuple([], L) ->	L;	
 to_list_tuple([F|[V|T]], L) ->	
 	to_list_tuple(T, [{F, V} | L]).
+
+
+% to_list (selective fields)
+to_list(Record, FieldList) when is_tuple(Record) -> 
+	Record2 = to_list(Record),
+	[X || X <- Record2, lists:member(element(1, X), FieldList)];
+to_list(ListRecord, FieldList) -> 
+	to_list(ListRecord, FieldList, []).
+
+to_list([], _, Result) -> Result;
+to_list([H|T], FieldList, Result) ->
+	List = to_list(H, FieldList),
+	to_list(T, FieldList, [List | Result]).
+
+
 
 % to_json
 to_json(Record) when is_tuple(Record)-> 

@@ -236,7 +236,6 @@ generate_dynamic_query(Id, Fields, TableName, PrimaryKey) ->
 
 
 execute_dynamic_query(Sql, _, _, true) ->  {ok, Sql};
-
 execute_dynamic_query(Sql, Params, Conn, false) ->
 	try
 		case odbc:param_query(Conn, Sql, Params, 3500) of

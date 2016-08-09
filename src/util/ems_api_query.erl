@@ -8,13 +8,23 @@
 
 -module(ems_api_query).
 
--export([find/8, find_by_id/6]).
+-export([find/9, find_by_id/7]).
 
 
-find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug) ->
-	ems_api_query_odbc:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug).
+find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug, ConnType) ->
+	case ConnType of
+		odbc_datasource -> ems_api_query_odbc:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug);
+		csv_file -> ems_api_query_odbc:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug);
+		mnesia_db -> ems_api_query_mnesia:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug)
+	end.
 
 
-find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug) ->
-	ems_api_query_odbc:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug).
+find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug, ConnType) ->
+	case ConnType of
+		odbc_datasource -> ems_api_query_odbc:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug);
+		csv_file -> ems_api_query_odbc:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug);
+		mnesia_db -> ems_api_query_mnesia:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug)
+	end.
+		
+		
 
