@@ -8,10 +8,10 @@
 
 -module(ems_api_query).
 
--export([find/9, find_by_id/7]).
+-export([find/8, find_by_id/6]).
 
 
-find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug, ConnType) ->
+find(FilterJson, Fields, TableName, Limit, Offset, Sort, Debug, {ConnType, _, Conn, _}) ->
 	case ConnType of
 		odbc_datasource -> ems_api_query_odbc:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug);
 		csv_file -> ems_api_query_odbc:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug);
@@ -19,7 +19,7 @@ find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug, ConnType) 
 	end.
 
 
-find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug, ConnType) ->
+find_by_id(Id, Fields, TableName, PrimaryKey, Debug, {ConnType, _, Conn, _}) ->
 	case ConnType of
 		odbc_datasource -> ems_api_query_odbc:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug);
 		csv_file -> ems_api_query_odbc:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug);

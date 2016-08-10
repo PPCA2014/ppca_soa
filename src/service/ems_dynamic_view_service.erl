@@ -111,14 +111,13 @@ execute_command(Command,
 													  debug = Debug}}, 
 				State) ->
 	try
-		ConnType = get_datasource_type(Datasource),
-		case get_connection(ConnType, Datasource, TableName, PrimaryKey, Debug) of
-			{ok, Conn} -> 
+		case get_connection(Datasource, TableName, PrimaryKey, Debug) of
+			{ok, ConnRef} -> 
 				Result = case Command of
-					find -> do_find(Request, Conn, ConnType, State);
-					find_by_id -> do_find_by_id(Request, Conn, ConnType, State)
+					find -> do_find(Request, ConnRef, State);
+					find_by_id -> do_find_by_id(Request, ConnRef, State)
 				end,
-				release_connection(Conn),
+				release_connection(ConnRef),
 				Result;
 			{error, Reason} ->	{error, Reason}
 		end
@@ -127,18 +126,23 @@ execute_command(Command,
 	end.
 
 
-get_connection(_, _, _, _, true) -> {ok, null};
-
-
-get_connection(ConnType, Datasource, TableName, PrimaryKey, false) ->
+get_connection(_, _, _, true) -> {ok, null};
+get_connection(Datasource, TableName, PrimaryKey, false) ->
+	ConnType = get_datasource_type(Datasource),
+	PidModule = erlang:pid_to_list(self()),
 	case ConnType of
-		odbc_datasource -> ems_db:get_odbc_connection(Datasource);
-		csv_file -> ems_db:get_odbc_connection_csv_file(Datasource, TableName, PrimaryKey, ";");
-		mnesia_db -> {ok, null}
+		odbc_datasource -> 
+			{ok, Conn} = ems_db:get_odbc_connection(PidModule, Datasource),
+			{ok, {ConnType, Datasource, Conn, PidModule}};
+		csv_file -> 
+			{ok, Conn} = ems_db:get_odbc_connection_csv_file(PidModule, Datasource, TableName, PrimaryKey, ";"),
+			{ok, {odbc_datasource, ?DATABASE_SQLITE_STRING_CONNECTION, Conn, PidModule}};
+		mnesia_db -> {ok, {ConnType, null, null}}
 	end.
 
-release_connection(null) -> ok;
-release_connection(Conn) -> ems_db:release_odbc_connection(Conn).
+
+release_connection({mnesia_db, _, _, _}) -> ok;
+release_connection({odbc_datasource, Datasource, Conn, PidModule}) -> ems_db:release_odbc_connection(PidModule, Datasource, Conn).
 
 
 get_datasource_type(Datasource) ->
@@ -156,25 +160,23 @@ get_datasource_type(Datasource) ->
 do_find(#request{querystring_map = QuerystringMap, 
 				 service = #service{table_name = TableName,
 									debug = Debug}},
-				 Conn,
-				 ConnType, 
+				 ConnRef,
 				 _State) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
 	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
 	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
 	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
-	ems_api_query:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug, ConnType).
+	ems_api_query:find(FilterJson, Fields, TableName, Limit, Offset, Sort, Debug, ConnRef).
 
 
 do_find_by_id(Request = #request{querystring_map = QuerystringMap, 
 								 service = #service{table_name = TableName,
 													primary_key = PrimaryKey,
 													debug = Debug}}, 
-			  Conn, 
-			  ConnType,
-			  _State) ->
+			 ConnRef,
+			 _State) ->
 	Id = ems_request:get_param_url(<<"id">>, 0, Request),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
-	ems_api_query:find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug, ConnType).
+	ems_api_query:find_by_id(Id, Fields, TableName, PrimaryKey, Debug, ConnRef).
 

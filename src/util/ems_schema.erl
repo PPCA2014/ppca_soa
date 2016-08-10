@@ -12,7 +12,7 @@
 
 -include("../include/ems_schema.hrl").
 
--export([to_record/2, to_list/1, to_list/2, to_json/1, new/1]).
+-export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1]).
 
 -export_records([user, catalog_schema, schema_type]).
 
@@ -145,6 +145,11 @@ new(catalog_schema) -> #catalog_schema{};
 new(user) -> #user{};
 new(schema_type) -> #schema_type{};
 new(_) -> erlang:error(einvalid_type).
+
+
+new_(catalog_schema) -> #catalog_schema{_ = '_'};
+new_(user) -> #catalog_schema{_ = '_'};
+new_(_) -> erlang:error(einvalid_type).
   
 	
     

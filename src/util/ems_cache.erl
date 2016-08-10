@@ -17,7 +17,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([new/1, get/4, flush/1, flush/2]).
+-export([new/1, get/4, get/5, flush/1, flush/2, flush_future/3, flush_future/4]).
 
 %  Armazena o estado do service. 
 -record(state, {}). 
@@ -56,9 +56,18 @@ handle_call(_Msg, _From, State) ->
 
 -spec handle_info(any(), state()) -> {noreply, state()}.
 handle_info({expire, CacheName, Key}, State) ->
-  flush(CacheName, Key),
-  {noreply, State};
+	flush(CacheName, Key),
+	{noreply, State};
   
+handle_info({expire, CacheName, Key, FunAfterFlush}, State) ->
+	case ets:lookup(CacheName, Key) of
+		[] -> ok;
+		_ -> 
+			flush(CacheName, Key),
+			FunAfterFlush()
+	end,
+	{noreply, State};
+
 handle_info(_Msg, State) ->
    {noreply, State}.
 
@@ -79,35 +88,60 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Initializes a cache.
 -spec init(string()) -> ok.
 new(CacheName) ->
-  ets:new(CacheName, [named_table, 
-					  {read_concurrency, true}, 
-					  public, 
-					  {write_concurrency, true}]),
-  ok.
+	ets:new(CacheName, [named_table, 
+						{read_concurrency, true}, 
+						 public, 
+						{write_concurrency, true}]),
+	ok.
 
 %% @doc Deletes the keys that match the given ets:matchspec() from the cache.
 -spec flush(string(), term()) -> true.
 flush(CacheName, Key) ->
-  ets:delete(CacheName, Key).
+	ets:delete(CacheName, Key).
+
+%% @doc Deletes the keys that match the given ets:matchspec() from the cache.
+-spec flush_future(string(), pos_integer(), term()) -> true.
+flush_future(_, infinity, _) -> 
+	ok;
+flush_future(CacheName, LifeTime, Key) ->
+	erlang:send_after(LifeTime, ems_cache, {expire, CacheName, Key}),
+	ok.
+
+flush_future(_, infinity, _, _) -> ok;
+flush_future(CacheName, LifeTime, Key, FunAfterFlush) ->
+	erlang:send_after(LifeTime, ems_cache, {expire, CacheName, Key, FunAfterFlush}),
+	ok.
+
 
 %% @doc Deletes all keys in the given cache.
 -spec flush(string()) -> true.
 flush(CacheName) ->
-  true = ets:delete_all_objects(CacheName).
+	true = ets:delete_all_objects(CacheName).
 
 %% @doc Tries to lookup Key in the cache, and execute the given FunResult
 %% on a miss.
 -spec get(string(), infinity|pos_integer(), term(), function()) -> term().
 get(_CacheName, 0, _Key, FunResult) ->
 	FunResult();
-	
+
 get(CacheName, LifeTime, Key, FunResult) ->
-  case ets:lookup(CacheName, Key) of
-    [] ->
-      % Not found, create it.
-      V = FunResult(),
-      ets:insert(CacheName, {Key, V}),
-      erlang:send_after(LifeTime, ems_cache, {expire, CacheName, Key}),
-      V;
-    [{Key, R}] -> R % Found, return the value.
-  end.
+	case ets:lookup(CacheName, Key) of
+		[] ->
+		  % Not found, create it.
+		  V = FunResult(),
+		  ets:insert(CacheName, {Key, V}),
+		  flush_future(CacheName, LifeTime, Key),
+		  V;
+		[{Key, R}] -> R
+	end.
+
+get(CacheName, LifeTime, Key, FunResult, FunAfterFlush) ->
+	case ets:lookup(CacheName, Key) of
+		[] ->
+		  % Not found, create it.
+		  V = FunResult(),
+		  ets:insert(CacheName, {Key, V}),
+		  flush_future(CacheName, LifeTime, Key, FunAfterFlush),
+		  V;
+		[{Key, R}] -> R
+	end.

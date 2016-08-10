@@ -9,10 +9,10 @@
 -module(ems_db).
 
 -export([start/0]).
--export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, field_index/3, find/2, find/3]).
+-export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, match/2, find/3, filter/2, select_fields/2]).
 -export([sequence/1, init_sequence/2]).
--export([get_odbc_connection/1, release_odbc_connection/1]).
--export([create_sqlite_virtual_table_from_csv_file/3, get_odbc_connection_csv_file/4]).
+-export([get_odbc_connection/2, release_odbc_connection/3]).
+-export([create_sqlite_virtual_table_from_csv_file/3, get_odbc_connection_csv_file/5]).
 
 
 -include("../../include/ems_config.hrl").
@@ -20,16 +20,13 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 
--define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
--define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/ems_dynamic_view.dat").	
--define(DATABASE_SQLITE_STRING_CONNECTION, lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [?DATABASE_SQLITE_PATH]))).	
-
-
 
 %% *********** Database schema creation ************
 
 start() ->
-	create_database([node()]).
+	create_database([node()]),
+	ems_cache:new(ems_db_odbc_connection_cache),
+	ems_cache:new(ems_db_parsed_query_cache).
 	
 create_database(Nodes) ->
 	% Define a pasta de armazenamento dos databases
@@ -46,6 +43,10 @@ create_database(Nodes) ->
     mnesia:create_table(sequence, [{type, set},
 								   {disc_copies, Nodes},
 								   {attributes, record_info(fields, sequence)}]),
+
+    mnesia:create_table(sequence_transient, [{type, set},
+											 {ram_copies, Nodes},
+											 {attributes, record_info(fields, sequence)}]),
 
     mnesia:create_table(request, [{type, set},
 								  {ram_copies, Nodes},
@@ -127,6 +128,9 @@ match_object(Pattern) ->
 	Records.
 
 
+    
+
+
 %% @doc Verifica se um registro existe
 existe(Pattern) ->	
 	case match_object(Pattern) of
@@ -154,22 +158,22 @@ sequence(Name, Inc) ->
      mnesia:dirty_update_counter(sequence, Name, Inc).
 
 
-get_odbc_connection(Datasource) ->
-	try
+get_odbc_connection(Module, Datasource) ->
+	F = fun() ->
 		case odbc:connect(Datasource, [{scrollable_cursors, off},
 									   {timeout, 3500},
 									   {trace_driver, off}]) of
 			{ok, Conn}	-> {ok, Conn};
 			{error, Reason} -> {error, Reason}
 		end
-	catch
-		_Exception:Reason2 -> {error, Reason2}
-	end.
+	end,
+	ems_cache:get(ems_db_odbc_connection_cache, infinity, {Module, Datasource}, F).
 
-release_odbc_connection(Conn) ->
-	odbc:disconnect(Conn).
+release_odbc_connection(Module, Datasource, Conn) ->
+	F = fun() -> odbc:disconnect(Conn) end,
+	ems_cache:flush_future(ems_db_odbc_connection_cache, ?LIFE_TIME_ODBC_CONNECTION, {Module, Datasource}, F).
 
-get_odbc_connection_csv_file(FileName, TableName, _PrimaryKey, Delimiter) -> 
+get_odbc_connection_csv_file(Module, FileName, TableName, _PrimaryKey, Delimiter) -> 
 	FileNamePath = ?CSV_FILE_PATH ++ "/" ++ FileName,
 	case filelib:last_modified(FileNamePath) of
 		0 -> {error, ecsvfile_not_exist};
@@ -193,7 +197,7 @@ get_odbc_connection_csv_file(FileName, TableName, _PrimaryKey, Delimiter) ->
 				end
 			end,
 			mnesia:activity(transaction, F),
-			ems_db:get_odbc_connection(?DATABASE_SQLITE_STRING_CONNECTION)
+			get_odbc_connection(Module, ?DATABASE_SQLITE_STRING_CONNECTION)
 	end.
 
 	
@@ -205,6 +209,87 @@ create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) ->
 	odbc:sql_query(Conn, CreateTableDDL),
 	odbc:commit(Conn, commit),
 	{ok, Conn}.
+
+
+
+%
+% Find objects
+% Ex.: ems_db:find(catalog_schema, [id, name], [{id, "==", 1}]).
+% Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
+%
+find(Tab, FieldList, FilterList) ->
+    Records = filter(Tab, FilterList),
+    select_fields(Records, FieldList).
+
+%	
+% Filter objects
+% Ex.: ems_db:filter(catalog_schema, [{id, "==", 1}]). 
+% Sample result is 
+%[{catalog_schema,1,<<"exemplo">>,<<"schema de exemplo">>,
+%                 #{<<"properties">> => #{<<"age">> => #{<<"description">> => <<"Age in years">>,
+%                       <<"minimum">> => 0,
+%                       <<"type">> => <<"integer">>},
+%                     <<"firstName">> => #{<<"type">> => <<"string">>},
+%                     <<"lastName">> => #{<<"type">> => <<"string">>}},
+%                   <<"required">> => [<<"firstName">>,<<"lastName">>],
+%                   <<"title">> => <<"Example Schema">>,
+%                   <<"type">> => <<"object">>}}]
+%
+filter(Tab, []) -> 
+	F = fun() ->
+		  qlc:e(
+			 qlc:q([X || X <- mnesia:table(Tab)])
+		  )
+	   end,
+	mnesia:activity(transaction, F);
+filter(Tab, [{F1, "==", V1}]) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter(Tab, FilterList) -> 
+	F = fun() ->
+			FieldsTable =  mnesia:table_info(Tab, attributes),
+			Where = string:join(lists:map(fun({F, Op, V}) ->
+												Fld = field_index(F, FieldsTable, 2),
+												io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
+										  end, FilterList), ","),
+			ExprQuery = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, Where])),
+			ParsedQuery = qlc:string_to_handle(ExprQuery),
+			mnesia:activity(transaction, fun () -> qlc:eval(ParsedQuery) end)
+		end,
+	ems_cache:get(ems_db_parsed_query_cache, ?LIFE_TIME_PARSED_QUERY, {Tab, FilterList}, F).
+
+
+% match objects and faster than filter
+% Ex.: ems_db:match(catalog_schema, [{id, 1}]).
+% Sample result is like filter function
+match(Tab, FilterList) -> 
+	FieldsTable =  mnesia:table_info(Tab, attributes),
+	Record = ems_schema:new_(Tab),
+	Match = match(Tab, FilterList, FieldsTable, Record),
+	mnesia:activity(transaction, fun() -> mnesia:match_object(Match) end).
+		
+match(_, [], _, Record) -> Record;
+match(Tab, [{F, _, V}|T], FieldsTable, Record) -> 
+	Fld = field_index(F, FieldsTable, 2),
+	Record2 = setelement(Fld, Record, field_value(V)),
+    match(Tab, T, FieldsTable, Record2);
+match(Tab, [{F, V}|T], FieldsTable, Record) -> 
+	Fld = field_index(F, FieldsTable, 2),
+	Record2 = setelement(Fld, Record, field_value(V)),
+    match(Tab, T, FieldsTable, Record2).
+
+
+% select fields of object or list objects
+% Ex.: ems_db:select_fields(#user{id = 1, name = "agilar", email = "evertonagilar@gmail.com"}, [name]).
+% Sample result is [{<<"name">>,"agilar"}]
+select_fields(ListRecord, []) -> ListRecord;
+select_fields(ListRecord, FieldList) -> 
+    FieldList2 = ems_util:list_to_binlist(FieldList),
+	ems_schema:to_list(ListRecord, FieldList2).
 
 
 field_index(_, [], _) -> erlang:error(einvalid_field_filter);
@@ -219,73 +304,5 @@ field_index(Field, [F|Fs], Idx) ->
 
 field_value(V) when is_list(V) -> list_to_binary(V);
 field_value(V) -> V.
-
-
-find(Tab, [{F1, "==", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
-find(Tab, [{F1, ">", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) > field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
-find(Tab, [{F1, ">=", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) >= field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
-find(Tab, [{F1, "<", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) < field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
-find(Tab, [{F1, "<=", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 	
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) =< field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
-find(Tab, [{F1, "=/=", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) =/= field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
-find(Tab, FilterList) -> find(Tab, [], FilterList).
-
-
-find(Tab, FieldList, FilterList) ->
-	FieldsTable =  mnesia:table_info(catalog_schema, attributes),
-    FilterFun = fun () ->
-					Cond = lists:map(fun({F, Op, V}) ->
-									Fld = field_index(F, FieldsTable, 2),
-									io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
-								  end, FilterList),
-					string:join(Cond, ",")
-				end,
-    Q = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, FilterFun()])),
-    io:format("query is ~p\n", [Q]),
-    ActivityFun = fun () -> qlc:eval(qlc:string_to_handle(Q)) end,
-    Result = mnesia:activity(transaction, ActivityFun),
-    field_select(Result, FieldList).
-	
-
-field_select(ListRecord, []) -> ListRecord;
-field_select(ListRecord, FieldList) -> 
-    FieldList2 = ems_util:list_to_binlist(FieldList),
-	ems_schema:to_list(ListRecord, FieldList2).
-
 
 

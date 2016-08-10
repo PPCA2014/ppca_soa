@@ -69,8 +69,22 @@
 -define(MAX_HTTP_WORKER_RANGE, 1000).  % a cada 4 horas
 
 % Quanto tempo o listener vai aguardar uma conexão antes de ocorrer um timeout
--define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 *60 * 30). % 30 minutos
+-define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 * 60 * 30). % 30 minutos
 
+% Caminho do utilitário que importa dados csv para um banco sqlite
+-define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
+
+% Caminho do banco de dados sqlite
+-define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/ems_dynamic_view.dat").	
+
+% String de conexão do banco de dados sqlite 
+-define(DATABASE_SQLITE_STRING_CONNECTION, lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [?DATABASE_SQLITE_PATH]))).	
+
+% Quanto tempo uma parsed query mnesia fica em cache para reutilização (módulo ems_db)
+-define(LIFE_TIME_PARSED_QUERY, 60000 * 15). % 15 minutos
+
+% Quanto tempo uma parsed query mnesia fica em cache para reutilização (módulo ems_db)
+-define(LIFE_TIME_ODBC_CONNECTION, 60000). % 1 minuto
 
 
 %  Definição para o arquivo de configuração
