@@ -10,6 +10,8 @@
 
 -export([find/8, find_by_id/6]).
 
+-include("../../include/ems_config.hrl").
+
 
 find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug) ->
 	case generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) of
@@ -26,27 +28,22 @@ find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug) ->
 
 	    
 parse_fields([]) -> "*";
-
 parse_fields(Fields) -> 
 	Fields2 = string:tokens(Fields, ","),
 	string:join(Fields2, ",").	    
+
 	    
 parse_filter(<<>>) -> {"", ""};
-
 parse_filter(Filter) ->    
     case ems_util:json_decode(Filter) of
 		{ok, Filter2} -> parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
-
 parse_filter([], [], []) -> {"", ""};
-
-
 parse_filter([], Filter, Params) -> 
 	Filter2 = lists:flatten(lists:reverse(Filter)),
 	Params2 = lists:flatten(lists:reverse(Params)),
-	{" where " ++ Filter2, Params2};
-
+	{"where " ++ Filter2, Params2};
 parse_filter([H|T], Filter, Params) ->
 	{Param, Op, Value} = parse_condition(H),
 	And = filter_conjuntion(T),
@@ -61,16 +58,13 @@ filter_conjuntion(_) -> " and ".
 parse_condition({<<Param/binary>>, Value}) when is_integer(Value) -> 
 	Param2 = binary_to_list(Param), 
 	parse_condition(Param2, Value, sql_integer);
-
 parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) -> 
 	Param2 = binary_to_list(Param), 
 	parse_condition(Param2, Value, sql_boolean);
-
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
 	Value2 = binary_to_list(Value),
 	parse_condition(Param2, Value2, sql_varchar).
-	
 parse_condition(Param, Value, DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
 	{Param3, Value2} = parse_value(Param2, Value, Op, DataType),
@@ -81,68 +75,56 @@ parse_value(Param, Value, "e", DataType) when is_integer(Value) ->
 	OdbcDataType = format_odbc_data_type(Value, DataType),
 	OdbcValue = [{OdbcDataType, [ Value ]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "e", DataType) -> 
 	OdbcDataType = format_odbc_data_type(Value, DataType),
 	OdbcValue = [{OdbcDataType, [ Value ]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "ne", DataType) -> 
 	OdbcDataType = format_odbc_data_type(Value, DataType),
 	OdbcValue = [{OdbcDataType, [Value]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "like", sql_varchar) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
 	Value2 = Value ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
 	{Param, OdbcValue};
-	
 parse_value(Param, Value, "ilike", sql_varchar) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
 	Param2 = "lower(" ++ Param ++ ")",
 	Value2 = string:to_lower(Value) ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
 	{Param2, OdbcValue};
-
 parse_value(Param, Value, "contains", sql_varchar) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
 	Value2 = "%" ++ Value ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
 	{Param, OdbcValue};
-	
 parse_value(Param, Value, "icontains", sql_varchar) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_varchar),
 	Param2 = "lower(" ++ Param ++ ")",
 	Value2 = "%" ++ string:to_lower(Value) ++ "%",
 	OdbcValue = [{OdbcDataType, [Value2]}],
 	{Param2, OdbcValue};
-	
 parse_value(Param, Value, "isnull", sql_boolean) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_boolean),
 	OdbcValue = [{OdbcDataType, [Value]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "gt", sql_integer) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_integer),
 	OdbcValue = [{OdbcDataType, [Value]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "gte", sql_integer) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_integer),
 	OdbcValue = [{OdbcDataType, [Value]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "lt", sql_integer) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_integer),
 	OdbcValue = [{OdbcDataType, [Value]}],
 	{Param, OdbcValue};
-
 parse_value(Param, Value, "lte", sql_integer) -> 
 	OdbcDataType = format_odbc_data_type(Value, sql_integer),
 	OdbcValue = [{OdbcDataType, [Value]}],
 	{Param, OdbcValue};
-
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
@@ -171,7 +153,6 @@ format_sql_condition(Param, "isnull", Value, And, Params) ->
 		_ -> Cond = lists:flatten([Param, " is not null", And])
 	end,
 	{Cond, Params};
-
 format_sql_condition(Param, Op, Value, And, Params) ->
 	SqlOp = format_sql_operator(Op),
 	Cond = lists:flatten([Param, " ", SqlOp, " ", "?", And]),
@@ -214,7 +195,7 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
 
-parse_limit(Limit, Offset) when Limit > 0, Offset > 0, Limit < 9999, Offset < 9999 ->
+parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
 	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
@@ -235,7 +216,9 @@ generate_dynamic_query(Id, Fields, TableName, PrimaryKey) ->
 	{ok, {Sql, Params}}.
 
 
-execute_dynamic_query(Sql, _, _, true) ->  {ok, Sql};
+execute_dynamic_query(Sql, _, _, true) -> 
+	Result = list_to_binary(io_lib:format("{\"sql\" : ~p}", [Sql])), 
+	{ok, Result};
 execute_dynamic_query(Sql, Params, Conn, false) ->
 	try
 		case odbc:param_query(Conn, Sql, Params, 3500) of
@@ -247,7 +230,4 @@ execute_dynamic_query(Sql, Params, Conn, false) ->
 	catch
 		_Exception:Reason2 -> {error, Reason2}
 	end.
-
-
-	
 

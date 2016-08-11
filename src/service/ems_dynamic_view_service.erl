@@ -107,11 +107,10 @@ code_change(_OldVsn, State, _Extra) ->
 execute_command(Command, 
 				Request = #request{service = #service{datasource = Datasource,
 													  table_name = TableName,
-													  primary_key = PrimaryKey,
-													  debug = Debug}}, 
+													  primary_key = PrimaryKey}}, 
 				State) ->
 	try
-		case get_connection(Datasource, TableName, PrimaryKey, Debug) of
+		case get_connection(Datasource, TableName, PrimaryKey) of
 			{ok, ConnRef} -> 
 				Result = case Command of
 					find -> do_find(Request, ConnRef, State);
@@ -126,18 +125,18 @@ execute_command(Command,
 	end.
 
 
-get_connection(_, _, _, true) -> {ok, null};
-get_connection(Datasource, TableName, PrimaryKey, false) ->
+get_connection(Datasource, TableName, PrimaryKey) ->
 	ConnType = get_datasource_type(Datasource),
-	PidModule = erlang:pid_to_list(self()),
 	case ConnType of
 		odbc_datasource -> 
+			PidModule = erlang:pid_to_list(self()),
 			{ok, Conn} = ems_db:get_odbc_connection(PidModule, Datasource),
 			{ok, {ConnType, Datasource, Conn, PidModule}};
 		csv_file -> 
+			PidModule = erlang:pid_to_list(self()),
 			{ok, Conn} = ems_db:get_odbc_connection_csv_file(PidModule, Datasource, TableName, PrimaryKey, ";"),
 			{ok, {odbc_datasource, ?DATABASE_SQLITE_STRING_CONNECTION, Conn, PidModule}};
-		mnesia_db -> {ok, {ConnType, null, null}}
+		mnesia_db -> {ok, {ConnType, null, null, null}}
 	end.
 
 

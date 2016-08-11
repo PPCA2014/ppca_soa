@@ -132,12 +132,12 @@ encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
 
 %% @doc Gera o response para dados list (representação JSON em Erlang)
 encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
-io:format("json!\n"),
     Payload = ems_util:json_encode(PayloadList),
     encode_response(Codigo, Payload);
 
 %% @doc Gera o response
 encode_response(Codigo, Payload) ->
+	ems_logger:error("convert json ~p\n", [Payload]),
     Payload2 = ems_schema:to_json(Payload),
     encode_response(Codigo, Payload2).
 
