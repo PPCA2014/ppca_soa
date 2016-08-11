@@ -11,8 +11,7 @@
 -export([start/0]).
 -export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, match/2, find/3, filter/2, select_fields/2]).
 -export([sequence/1, init_sequence/2]).
--export([get_odbc_connection/2, release_odbc_connection/3]).
--export([create_sqlite_virtual_table_from_csv_file/3, get_odbc_connection_csv_file/5]).
+-export([get_connection/1, release_connection/1]).
 
 
 -include("../../include/ems_config.hrl").
@@ -158,22 +157,36 @@ sequence(Name, Inc) ->
      mnesia:dirty_update_counter(sequence, Name, Inc).
 
 
-get_odbc_connection(Module, Datasource) ->
+% Get the connection from a datasource (sqlserver, sqlite, ou mnesia)
+get_connection(Datasource = #service_datasource{type = sqlserver}) ->
+	get_odbc_connection(Datasource);
+get_connection(Datasource = #service_datasource{type = csvfile}) ->
+	get_odbc_connection_csv_file(Datasource);
+get_connection(Datasource = #service_datasource{type = mnesia}) ->
+	{ok, Datasource}.
+
+% Release a conection from a datasource
+release_connection(#service_datasource{type = mnesia}) -> ok;
+release_connection(Datasource) -> release_odbc_connection(Datasource).
+
+
+get_odbc_connection(Datasource = #service_datasource{connection = Connection}) ->
+	PidModule = erlang:pid_to_list(self()),
 	F = fun() ->
-		case odbc:connect(Datasource, [{scrollable_cursors, off},
+		case odbc:connect(Connection, [{scrollable_cursors, off},
 									   {timeout, 3500},
 									   {trace_driver, off}]) of
-			{ok, Conn}	-> {ok, Conn};
+			{ok, Conn}	-> {ok, Datasource#service_datasource{conn_ref = Conn, 
+															  pid_module = PidModule}};
 			{error, Reason} -> {error, Reason}
 		end
 	end,
-	ems_cache:get(ems_db_odbc_connection_cache, infinity, {Module, Datasource}, F).
+	ems_cache:get(ems_db_odbc_connection_cache, infinity, {PidModule, Connection}, F).
 
-release_odbc_connection(Module, Datasource, Conn) ->
-	F = fun() -> odbc:disconnect(Conn) end,
-	ems_cache:flush_future(ems_db_odbc_connection_cache, ?LIFE_TIME_ODBC_CONNECTION, {Module, Datasource}, F).
 
-get_odbc_connection_csv_file(Module, FileName, TableName, _PrimaryKey, Delimiter) -> 
+get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileName,
+															  table_name = TableName,
+															  csv_delimiter = Delimiter}) -> 
 	FileNamePath = ?CSV_FILE_PATH ++ "/" ++ FileName,
 	case filelib:last_modified(FileNamePath) of
 		0 -> {error, ecsvfile_not_exist};
@@ -197,18 +210,23 @@ get_odbc_connection_csv_file(Module, FileName, TableName, _PrimaryKey, Delimiter
 				end
 			end,
 			mnesia:activity(transaction, F),
-			get_odbc_connection(Module, ?DATABASE_SQLITE_STRING_CONNECTION)
+			get_odbc_connection(Datasource#service_datasource{type = sqlite, connection = ?DATABASE_SQLITE_STRING_CONNECTION})
 	end.
 
+release_odbc_connection(#service_datasource{pid_module = PidModule, 
+											connection = Connection, 
+											conn_ref = Conn}) ->
+	F = fun() -> odbc:disconnect(Conn) end,
+	ems_cache:flush_future(ems_db_odbc_connection_cache, ?LIFE_TIME_ODBC_CONNECTION, {PidModule, Connection}, F).
 	
 
-create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 
-	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
-	odbc:sql_query(Conn, "select load_extension(\"/usr/lib/x86_64-linux-gnu/libsqlite3_mod_csvtable.so\")"),
-	CreateTableDDL = lists:flatten(io_lib:format("create virtual table ~s using csvtable(\"~s\")", [TableName, FileName])),
-	odbc:sql_query(Conn, CreateTableDDL),
-	odbc:commit(Conn, commit),
-	{ok, Conn}.
+%create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 
+%	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
+%	odbc:sql_query(Conn, "select load_extension(\"/usr/lib/x86_64-linux-gnu/libsqlite3_mod_csvtable.so\")"),
+%	CreateTableDDL = lists:flatten(io_lib:format("create virtual table ~s using csvtable(\"~s\")", [TableName, FileName])),
+%	odbc:sql_query(Conn, CreateTableDDL),
+%	odbc:commit(Conn, commit),
+%	{ok, Conn}.
 
 
 

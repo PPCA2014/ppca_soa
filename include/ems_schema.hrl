@@ -51,6 +51,16 @@
 					  protocol = http							%% Protocol (http, ldap)
 				  }).
 
+
+-record(service_datasource, {type :: string(),
+							 connection :: string(),
+							 table_name :: string(),
+							 primary_key :: string(),
+							 conn_ref,
+							 pid_module :: string(),
+							 csv_delimiter :: string()
+							}).
+
 -record(service, {
 					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
 					id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
@@ -78,8 +88,6 @@
 					node,										%% Node ou lista de node onde os serviços estão publicados
 					lang,										%% Linguagem que foi utilizada para implementar o serviço
 					datasource,									%% Datasource para a fonte de dados
-					table_name,									%% Nome da tabela ou fonte de dados
-					primary_key,								%% Chave primária da fonte de dados
 					debug										%% Permite habilitar um modo debug (depende da implementação do serviço)
 				}).
 

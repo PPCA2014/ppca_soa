@@ -8,21 +8,22 @@
 
 -module(ems_api_query_odbc).
 
--export([find/8, find_by_id/6]).
+-export([find/7, find_by_id/4]).
 
--include("../../include/ems_config.hrl").
+-include("../../../include/ems_config.hrl").
+-include("../../../include/ems_schema.hrl").
 
 
-find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug) ->
-	case generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Conn, Debug);
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->
+	case generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
+		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
 
-find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug) ->
-	case generate_dynamic_query(Id, Fields, TableName, PrimaryKey) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Conn, Debug);
+find_by_id(Id, Fields, Datasource, Debug) ->
+	case generate_dynamic_query(Id, Fields, Datasource) of
+		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
@@ -200,7 +201,7 @@ parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_Q
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
-generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) ->
+generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = TableName}, Limit, Offset, Sort) ->
 	{FilterSmnt, Params} = parse_filter(FilterJson),
 	FieldsSmnt = parse_fields(Fields),
 	SortSmnt = parse_sort(Sort),
@@ -209,7 +210,7 @@ generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) ->
 	{ok, {SqlSmnt, Params}}.
 
 
-generate_dynamic_query(Id, Fields, TableName, PrimaryKey) ->
+generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, primary_key = PrimaryKey}) ->
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
 	Sql = lists:flatten(io_lib:format("select ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
@@ -219,7 +220,7 @@ generate_dynamic_query(Id, Fields, TableName, PrimaryKey) ->
 execute_dynamic_query(Sql, _, _, true) -> 
 	Result = list_to_binary(io_lib:format("{\"sql\" : ~p}", [Sql])), 
 	{ok, Result};
-execute_dynamic_query(Sql, Params, Conn, false) ->
+execute_dynamic_query(Sql, Params, #service_datasource{conn_ref = Conn}, false) ->
 	try
 		case odbc:param_query(Conn, Sql, Params, 3500) of
 			{_, Fields, Records} -> 

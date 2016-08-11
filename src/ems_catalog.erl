@@ -415,18 +415,11 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 		Async = maps:get(<<"async">>, H, <<"false">>),
 		Rowid = ems_util:make_rowid_from_url(Url2, Type),
 		Lang = maps:get(<<"lang">>, H, <<>>),
-
-		% ems_dynamic_view_service
-		Datasource = maps:get(<<"datasource">>, H, <<>>),
-		TableName = maps:get(<<"table_name">>, H, <<>>),
-		PrimaryKey = maps:get(<<"primary_key">>, H, <<>>),
-
-
+		Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined)),
 		Result_Cache = maps:get(<<"result_cache">>, H, 0),
 		Authentication = maps:get(<<"authentication">>, H, <<>>),
 		Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
 		UseRE = ems_util:binary_to_bool(maps:get(<<"use_re">>, H, <<"false">>)),
-
 		valida_lang(Lang),
 		valida_name_service(Name),
 		valida_type_service(Type),
@@ -453,7 +446,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										 Type, Apikey, Comment, Version, Owner, 
 										 Async, Host, Result_Cache, 
 										 Authentication, Node, Lang,
-										 Datasource, TableName, PrimaryKey,
+										 Datasource,
 										 Debug),
 		case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
 			true -> 
@@ -466,7 +459,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										   Querystring, QtdQuerystringRequired,
 										   Host, HostName, Result_Cache,
 										   Authentication, Node, Lang,
-										   Datasource, TableName, PrimaryKey,
+										   Datasource, 
 										   Debug),
 				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
 			false -> 
@@ -479,14 +472,23 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										Querystring, QtdQuerystringRequired,
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
-										Datasource, TableName, PrimaryKey,
+										Datasource, 
 										Debug),
 				parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
 		end
 	catch
-		_Exception:Reason -> 
-			{error, Reason}
+		_Exception:Reason -> {error, Reason}
 	end.
+	
+parse_datasource(undefined) -> undefined;
+parse_datasource(M) -> 
+	#service_datasource{type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
+						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
+						table_name = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
+						primary_key = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
+						csv_delimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))}.
+	
+	
 	
 parse_service_service(Service) ->
 	try
@@ -621,7 +623,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, 
-			   Datasource, TableName, Primary_key,
+			   Datasource,
 			   Debug) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#service{
@@ -649,9 +651,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
 			    node = Node,
-			    datasource = binary_to_list(Datasource),
-			    table_name = binary_to_list(TableName),
-			    primary_key = binary_to_list(Primary_key),
+			    datasource = Datasource,
 			    debug = Debug,
 			    lang = Lang
 			}.
@@ -659,7 +659,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
-			Authentication, Node, Lang, Datasource, TableName, Primary_key,
+			Authentication, Node, Lang, Datasource, 
 			Debug) ->
 	#service{
 				rowid = Rowid,
@@ -685,9 +685,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
 			    node = Node,
-			    datasource = binary_to_list(Datasource),
-			    table_name = binary_to_list(TableName),
-			    primary_key = binary_to_list(Primary_key),
+			    datasource = Datasource,
 			    debug = Debug,
 			    lang = Lang
 			}.
@@ -695,7 +693,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, 
-				  Datasource, TableName, Primary_key,
+				  Datasource, 
 				  Debug) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
@@ -713,8 +711,6 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"authentication">> => Authentication,
 			    <<"node">> => Node,
 			    <<"datasource">> => Datasource,
-			    <<"table_name">> => TableName,
-			    <<"primary_key">> => Primary_key,
 			    <<"debug">> => Debug,
 			    <<"lang">> => Lang},
 	Service.

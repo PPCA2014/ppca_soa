@@ -137,7 +137,6 @@ encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
 
 %% @doc Gera o response
 encode_response(Codigo, Payload) ->
-	ems_logger:error("convert json ~p\n", [Payload]),
     Payload2 = ems_schema:to_json(Payload),
     encode_response(Codigo, Payload2).
 

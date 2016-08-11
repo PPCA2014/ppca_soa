@@ -8,19 +8,21 @@
 
 -module(ems_api_query_mnesia).
 
--export([find/8, find_by_id/6]).
+-export([find/7, find_by_id/4]).
+
+-include("../../../include/ems_schema.hrl").
 
 
-find(FilterJson, Fields, TableName, Limit, Offset, Sort, Conn, Debug) ->
-	case generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) of
-		{ok, {FieldList, FilterList}} -> execute_dynamic_query(catalog_schema, FieldList, FilterList, Conn, Debug);
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->
+	case generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
+		{ok, {FieldList, FilterList}} -> execute_dynamic_query(FieldList, FilterList, Datasource, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
 
-find_by_id(Id, Fields, TableName, PrimaryKey, Conn, Debug) ->
-	case generate_dynamic_query(Id, Fields, TableName, PrimaryKey) of
-		{ok, {FieldList, FilterList}} -> execute_dynamic_query(catalog_schema, FieldList, FilterList, Conn, Debug);
+find_by_id(Id, Fields, Datasource, Debug) ->
+	case generate_dynamic_query(Id, Fields, Datasource) of
+		{ok, {FieldList, FilterList}} -> execute_dynamic_query(FieldList, FilterList, Datasource, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
@@ -116,7 +118,7 @@ parse_limit(Limit, Offset) when Limit > 0, Offset > 0, Limit < 9999, Offset < 99
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
-generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) ->
+generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) ->
 	FieldList = parse_fields(Fields),
 	FilterList = parse_filter(FilterJson),
 	SortSmnt = parse_sort(Sort),
@@ -124,17 +126,15 @@ generate_dynamic_query(FilterJson, Fields, TableName, Limit, Offset, Sort) ->
 	{ok, {FieldList, FilterList}}.
 
 
-generate_dynamic_query(Id, Fields, TableName, PrimaryKey) ->
-	Params = [{sql_integer, [Id]}],
-	Fields2 = parse_fields(Fields),
-	Sql = lists:flatten(io_lib:format("select ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
-	{ok, {Sql, Params}}.
+generate_dynamic_query(Id, Fields, Datasource) ->
+	{ok, ok}.
 
 
 
-execute_dynamic_query(Tab, FieldList, FilterList, Conn, Debug) ->
+execute_dynamic_query(FieldList, FilterList, #service_datasource{table_name = TableName}, Debug) ->
 	try
-		ems_db:find(Tab, FieldList, FilterList)
+		TableName2 = list_to_atom(TableName),
+		ems_db:find(TableName2, FieldList, FilterList)
 	catch
 		_Exception:Reason2 -> {error, Reason2}
 	end.
