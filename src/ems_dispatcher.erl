@@ -123,7 +123,7 @@ do_dispatch_request(Request) ->
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
 							ems_request:registra_request(Request2),
-							ems_eventmgr:notifica_evento(new_request, Request2),
+							%ems_eventmgr:notifica_evento(new_request, Request2),
 							case executa_service(Node, Request2) of
 								ok -> ok;
 								Error -> ems_eventmgr:notifica_evento(erro_request, {service, Request2, Error})

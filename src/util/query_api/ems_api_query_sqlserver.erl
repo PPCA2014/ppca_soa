@@ -36,6 +36,7 @@ parse_fields(Fields) ->
 	    
 parse_filter(<<>>) -> {"", ""};
 parse_filter(Filter) ->    
+	io:format("aqui ~p\n", [Filter]),
     case ems_util:json_decode(Filter) of
 		{ok, Filter2} -> parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
@@ -223,7 +224,7 @@ execute_dynamic_query(Sql, _, _, true) ->
 	{ok, Result};
 execute_dynamic_query(Sql, Params, #service_datasource{conn_ref = Conn}, false) ->
 	try
-		case odbc:param_query(Conn, Sql, Params, 3500) of
+		case odbc:param_query(Conn, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
 				io:format("records is ~p\n", [Records]),
 				Objects = ems_util:json_encode_table(Fields, Records),

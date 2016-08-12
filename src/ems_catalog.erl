@@ -693,7 +693,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, 
-				  Datasource, 
+				  _Datasource, 
 				  Debug) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
@@ -710,7 +710,6 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"result_cache">> => Result_Cache,
 			    <<"authentication">> => Authentication,
 			    <<"node">> => Node,
-			    <<"datasource">> => Datasource,
 			    <<"debug">> => Debug,
 			    <<"lang">> => Lang},
 	Service.

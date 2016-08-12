@@ -36,7 +36,7 @@ encode_request(Method, Uri) ->
 
 encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, WorkerSend) ->
 	try
-		Uri = http_uri:decode(UriRaw),
+		Uri = ems_util:utf8_list_to_string(http_uri:decode(UriRaw)),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
@@ -147,23 +147,15 @@ header_cache_control(<<_MimeType/binary>>) ->
 	<<"Cache-Control: no-cache"/utf8>>.
 
 parse_querystring([]) -> #{};
-parse_querystring([Querystring]) ->
-	Q1 = string:tokens(Querystring, "&"),
-	Q2 = lists:map(fun(P) -> string:tokens(P, "=") end, Q1),
-	Q3 = lists:map(fun([P|V]) -> 
-						{iolist_to_binary(P), parse_querystring_value(ems_util:hd_or_empty(V))} 
-				   end, Q2),
-	maps:from_list(Q3).
+parse_querystring([Q]) ->
+	Q1 = httpd:parse_query(Q),
+	Q2 = [{iolist_to_binary(P), 
+		   iolist_to_binary(case hd(V) of
+										34 -> string:substr(V, 2, length(V)-2);
+										_  -> V
+						    end)}  || {P,V} <- Q1],
+	maps:from_list(Q2).
 
-parse_querystring_value([]) -> <<>>;
-parse_querystring_value(Value) ->
-	Value1 = http_uri:decode(Value),
-    case hd(Value1) of
-		34 -> Value2 = string:substr(Value1, 2, length(Value1)-2);
-		_  -> Value2 = Value1
-	end,
-	iolist_to_binary(Value2).
-	
 
 rid_to_string(RID) -> integer_to_list(RID).
 

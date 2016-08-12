@@ -10,6 +10,8 @@
 
 -behavior(gen_server).
 
+-include("../include/ems_schema.hrl").
+
 %% Server API
 -export([start/0, stop/0]).
 
@@ -27,7 +29,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {lista_evento = [], 
+-record(state, {lista_evento = [new_request, ok_request, erro_request, close_request, send_error_request], 
 			    lista_interesse = []}).
 
 
@@ -55,8 +57,17 @@ registra_interesse(Evento, Fun) ->
 	gen_server:call(?SERVER, {registra_interesse, Evento, Fun}). 
 desregistra_interesse(Evento, Fun) -> 
 	gen_server:call(?SERVER, {desregistra_interesse, Evento, Fun}). 
-notifica_evento(QualEvento, Motivo) -> 
-	gen_server:cast(?SERVER, {notifica_evento, QualEvento, Motivo}). 
+notifica_evento(ok_request, Msg = {_, #request{worker_send = Worker}, _}) -> 
+	gen_server:cast(Worker, Msg),  %% envia a mensagem para quem solicitou antes para obter certa prioridade
+	gen_server:cast(?SERVER, {notifica_evento, new_request, Msg});  %% notifica os demais serviços que estão interessados (Ex. ems_logger)
+notifica_evento(erro_request, Msg = {_, #request{worker_send = Worker}, _}) -> 
+	gen_server:cast(Worker, Msg),  %% envia a mensagem para quem solicitou antes para obter certa prioridade
+	gen_server:cast(?SERVER, {notifica_evento, erro_request, Msg});  %% notifica os demais serviços que estão interessados (Ex. ems_logger)
+notifica_evento(close_request, Msg) -> 
+	ems_logger:log_request(Msg),
+	gen_server:cast(?SERVER, {notifica_evento, close_request, Msg});  %% notifica os demais serviços que estão interessados (Ex. ems_logger)
+notifica_evento(QualEvento, Msg) -> 
+	gen_server:cast(?SERVER, {notifica_evento, QualEvento, Msg}).
 lista_evento() -> 
 	gen_server:call(?SERVER, msg_lista_evento). 
 lista_interesse() -> 
@@ -149,17 +160,17 @@ remove_interesse(Evento, Fun, State) ->
 		false -> {einteressenaocadastrado, State}
 	end.
 		
-notifica_evento([], _QualEvento, _Motivo) -> ok;
-notifica_evento([{Evento, Fun} = _H|T], QualEvento, Motivo) ->
+notifica_evento([], _QualEvento, _) -> ok;
+notifica_evento([{Evento, Fun} = _H|T], QualEvento, Msg) ->
 	case Evento == QualEvento of
 		true ->
 			try
-				Fun(QualEvento, Motivo)
+				Fun(QualEvento, Msg)
 			after
-				notifica_evento(T, QualEvento, Motivo)		
+				notifica_evento(T, QualEvento, Msg)		
 			end;
 		false ->
-			notifica_evento(T, QualEvento, Motivo)
+			notifica_evento(T, QualEvento, Msg)
 	end.
 	
 lista_evento(State) -> State#state.lista_evento.	

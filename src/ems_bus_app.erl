@@ -48,7 +48,6 @@ start(_StartType, StartArgs) ->
 					ems_logger:info("Server ~s started in ~pms.", [node(), ems_util:get_milliseconds() - T1]),
 					ems_logger:sync(),
 					ems_logger:set_level(error),
-					register_events(),
 					Ret;
 				Error-> 
 					io:format("Error processing catalogs: ~p.", [Error]),
@@ -65,24 +64,6 @@ stop(_State) ->
 	ems_config:stop(),
     ok.
     
-register_events() ->
-   	ems_eventmgr:adiciona_evento(new_request),
-	ems_eventmgr:adiciona_evento(ok_request),
-	ems_eventmgr:adiciona_evento(erro_request),
-	ems_eventmgr:adiciona_evento(close_request),
-	ems_eventmgr:adiciona_evento(send_error_request),
-
-    ems_eventmgr:registra_interesse(ok_request, fun(_Q, {_, #request{worker_send=Worker}, _} = R) -> 
-														gen_server:cast(Worker, R)
-												  end),
-
-    ems_eventmgr:registra_interesse(erro_request, fun(_Q, {_, #request{worker_send=Worker}, _} = R) -> 
-														gen_server:cast(Worker, R)
-												  end),
-
-	ems_eventmgr:registra_interesse(close_request, fun(_Q, R) -> 
-														ems_logger:log_request(R) 
-													 end).
     
 													 
     

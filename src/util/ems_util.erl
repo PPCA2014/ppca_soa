@@ -108,20 +108,16 @@ item_to_binary(I) -> iolist_to_binary(I).
 
 %% @doc Converte dados Erlang para JSON
 json_encode([]) -> <<>>;
-
 json_encode(T) when is_tuple(T) ->
 	L = tuple_to_binlist(T),
 	jiffy:encode(L);
-
 json_encode(L) when is_list(L) ->
 	case io_lib:printable_list(L) of
 		true -> L2 = iolist_to_binary(L);
 		false -> L2 = list_to_binlist(L)
 	end,
 	jiffy:encode(L2);
-
-json_encode(Value)->
-	jiffy:encode(Value).
+json_encode(Value)-> jiffy:encode(Value).
 
 
 json_decode_as_map_file(FileName) ->
@@ -341,7 +337,7 @@ json_field_format_table(Value) when is_boolean(Value) -> Value;
 json_field_format_table(null) -> "null";
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) ->
-	json_field_strip(utf8_list_to_string(Value));
+	utf8_list_to_string(Value);
 json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
 json_field_strip([]) ->	"null";
@@ -354,14 +350,20 @@ json_field_strip(Value) ->
 json_encode_table(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
 							   lists:zipwith(fun(Fld, Value) -> 
-												io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)]) 
+												try
+													io_lib:format(<<"\"~s\":~p">>, [Fld, json_field_format_table(Value)]) 
+												catch
+													Exception:ReasonX -> io:format("erro fld is ~p and value is ~p\n", [Fld, Value]), <<>>
+												end
 											 end,  Fields, tuple_to_list(T))
 					end, Records), 
 	Objects2 = lists:map(fun(Obj) -> 
 									lists:flatten(["{", string:join(Obj, ", "), "}"]) 
 						 end, Objects),
 	Objects3 = string:join(Objects2, ", "),
-	unicode:characters_to_binary(["[", Objects3, "]"]).
+	Result = unicode:characters_to_binary(["[", Objects3, "]"]),
+	%io:format("result is ~p\n", [binary_to_list(Result)]),
+	Result.
 
 
 utf8_list_to_string(Value) ->

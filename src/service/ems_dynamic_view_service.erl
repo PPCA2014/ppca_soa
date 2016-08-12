@@ -29,9 +29,7 @@
 -define(SERVER, ?MODULE).
 
 %  Stores the state of the service.
--record(state, {connection,			 	%% connection to dynamic_view database
-				datasource		 		%% odbc datasource
-		}).  
+-record(state, {}).  
 
 
 %%====================================================================

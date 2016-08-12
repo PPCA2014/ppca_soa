@@ -89,7 +89,7 @@
 % Limits of API query
 -define(MAX_LIMIT_API_QUERY, 10000).
 -define(MAX_OFFSET_API_QUERY, 99999999).
-
+-define(MAX_TIME_ODBC_QUERY, 8000).
 
 
 %  Definição para o arquivo de configuração
