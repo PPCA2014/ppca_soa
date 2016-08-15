@@ -197,7 +197,7 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 
 
 parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
-	io_lib:format("_t._RowNumber BETWEEN ~p AND ~p", [Offset, Offset+Limit-1]);
+	io_lib:format("_t._RowNumber between ~p and ~p", [Offset, Offset+Limit-1]);
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
@@ -209,7 +209,7 @@ generate_dynamic_query(FilterJson, Fields,
 	FieldsSmnt = parse_fields(Fields),
 	SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
-	SqlSmnt = lists:flatten(io_lib:format("select * from (select ~s, ROW_NUMBER() OVER (ORDER BY ~s) AS _RowNumber from ~s ~s ~s) _t where ~s", [FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	SqlSmnt = lists:flatten(io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from ~s ~s ~s) _t where ~s", [FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
 	io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 

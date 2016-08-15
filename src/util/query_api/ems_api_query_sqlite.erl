@@ -208,6 +208,7 @@ generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = Tabl
 	SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
 	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 
