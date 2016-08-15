@@ -142,7 +142,7 @@ json_decode_as_map(JSON) ->
 %% @doc Converte um JSON para dados Erlang
 json_decode(JSON) ->
 	try
-		T = jiffy:decode(JSON),
+		T = jiffy:decode(mochiutf8:valid_utf8_bytes(JSON)),
 		{ok, element(1, T)}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -367,7 +367,7 @@ json_encode_table(Fields, Records) ->
 
 
 utf8_list_to_string(Value) ->
-	case unicode:characters_to_list(list_to_binary(Value)) of
+	case unicode:characters_to_list(list_to_binary(Value), utf8) of
 		{error, _, _ } -> Value;
 		Value2 -> Value2
 	end.

@@ -36,7 +36,6 @@ parse_fields(Fields) ->
 	    
 parse_filter(<<>>) -> {"", ""};
 parse_filter(Filter) ->    
-	io:format("aqui ~p\n", [Filter]),
     case ems_util:json_decode(Filter) of
 		{ok, Filter2} -> parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
@@ -65,6 +64,7 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 	parse_condition(Param2, Value, sql_boolean);
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
+	%Value2 = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(Value), utf8),
 	Value2 = binary_to_list(Value),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
@@ -226,7 +226,6 @@ execute_dynamic_query(Sql, Params, #service_datasource{conn_ref = Conn}, false) 
 	try
 		case odbc:param_query(Conn, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
-				io:format("records is ~p\n", [Records]),
 				Objects = ems_util:json_encode_table(Fields, Records),
 				{ok, Objects};
 			{error, Reason} -> {error, Reason}

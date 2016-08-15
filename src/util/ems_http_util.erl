@@ -36,7 +36,7 @@ encode_request(Method, Uri) ->
 
 encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, WorkerSend) ->
 	try
-		Uri = ems_util:utf8_list_to_string(http_uri:decode(UriRaw)),
+		Uri = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(mochiweb_util:unquote(UriRaw))), utf8),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
