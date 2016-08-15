@@ -362,7 +362,6 @@ json_encode_table(Fields, Records) ->
 						 end, Objects),
 	Objects3 = string:join(Objects2, ", "),
 	Result = unicode:characters_to_binary(["[", Objects3, "]"]),
-	%io:format("result is ~p\n", [binary_to_list(Result)]),
 	Result.
 
 

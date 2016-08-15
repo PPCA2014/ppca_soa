@@ -36,8 +36,9 @@ parse_fields(Fields) ->
 	    
 parse_filter(<<>>) -> {"", ""};
 parse_filter(Filter) ->    
-    case ems_util:json_decode(Filter) of
-		{ok, Filter2} -> parse_filter(Filter2, [], []);
+    case ems_util:json_decode(unicode:characters_to_binary(binary_to_list(Filter))) of
+		{ok, Filter2} -> 
+			parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
 parse_filter([], [], []) -> {"", ""};
@@ -65,6 +66,7 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
 	Value2 = binary_to_list(Value),
+	%Value2 = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(Value), utf8),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
@@ -129,7 +131,7 @@ parse_value(Param, Value, "lte", sql_integer) ->
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
-format_odbc_data_type(_Value, sql_varchar) -> {sql_varchar, 100};
+format_odbc_data_type(Value, sql_varchar) -> {sql_varchar, length(Value)};
 format_odbc_data_type(_Value, sql_integer) -> sql_integer;
 format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
