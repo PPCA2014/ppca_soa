@@ -66,7 +66,6 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
 	Value2 = binary_to_list(Value),
-	%Value2 = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(Value), utf8),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
@@ -140,7 +139,7 @@ parse_name_and_operator(Param) ->
 	case string:str(Param, "__") of
 		Idx when Idx > 1 ->
 			Name = string:sub_string(Param, 1, Idx-1),
-			Op = string:sub_string(Param, Idx+2),
+			Op = string:to_lower(string:sub_string(Param, Idx+2)),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
 				_ -> erlang:error(einvalid_param_filter)

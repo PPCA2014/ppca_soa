@@ -64,7 +64,6 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 	parse_condition(Param2, Value, sql_boolean);
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
-	%Value2 = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(Value), utf8),
 	Value2 = binary_to_list(Value),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
@@ -139,7 +138,7 @@ parse_name_and_operator(Param) ->
 	case string:str(Param, "__") of
 		Idx when Idx > 1 ->
 			Name = string:sub_string(Param, 1, Idx-1),
-			Op = string:sub_string(Param, Idx+2),
+			Op = string:to_lower(string:sub_string(Param, Idx+2)),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
 				_ -> erlang:error(einvalid_param_filter)
@@ -198,17 +197,20 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 
 
 parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
-	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
+	io_lib:format("_t._RowNumber BETWEEN ~p AND ~p", [Offset, Offset+Limit-1]);
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
-generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = TableName}, Limit, Offset, Sort) ->
+generate_dynamic_query(FilterJson, Fields, 
+					   #service_datasource{table_name = TableName, 
+										   primary_key = PrimaryKey}, 
+					   Limit, Offset, Sort) ->
 	{FilterSmnt, Params} = parse_filter(FilterJson),
 	FieldsSmnt = parse_fields(Fields),
 	SortSmnt = parse_sort(Sort),
-	%LimitSmnt = parse_limit(Limit, Offset),
-	LimitSmnt = "",
-	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	LimitSmnt = parse_limit(Limit, Offset),
+	SqlSmnt = lists:flatten(io_lib:format("select * from (select ~s, ROW_NUMBER() OVER (ORDER BY ~s) AS _RowNumber from ~s ~s ~s) _t where ~s", [FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 

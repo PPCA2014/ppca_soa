@@ -336,8 +336,7 @@ json_field_format_table(Value) when is_integer(Value) -> Value;
 json_field_format_table(Value) when is_boolean(Value) -> Value;
 json_field_format_table(null) -> "null";
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
-json_field_format_table(Value) when is_list(Value) ->
-	utf8_list_to_string(Value);
+json_field_format_table(Value) when is_list(Value) -> utf8_list_to_string(Value);
 json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
 json_field_strip([]) ->	"null";
@@ -350,11 +349,7 @@ json_field_strip(Value) ->
 json_encode_table(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
 							   lists:zipwith(fun(Fld, Value) -> 
-												try
-													io_lib:format(<<"\"~s\":~p">>, [Fld, json_field_format_table(Value)]) 
-												catch
-													Exception:ReasonX -> io:format("erro fld is ~p and value is ~p\n", [Fld, Value]), <<>>
-												end
+													io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)]) 
 											 end,  Fields, tuple_to_list(T))
 					end, Records), 
 	Objects2 = lists:map(fun(Obj) -> 
@@ -366,10 +361,15 @@ json_encode_table(Fields, Records) ->
 
 
 utf8_list_to_string(Value) ->
-	case unicode:characters_to_list(list_to_binary(Value), utf8) of
-		{error, _, _ } -> Value;
-		Value2 -> Value2
+	try
+		case check_encoding_bin(list_to_binary(Value)) of
+			utf8 -> unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(Value)));
+			latin1 -> unicode:characters_to_list(Value, utf8)
+		end
+	catch
+		Exception:ReasonX -> io:format("erro!! value is ~p\n", [Value]), <<>>
 	end.
+	
 
 utf8_list_to_binary(Value) -> binary_to_list(utf8_list_to_string(Value)).
 
