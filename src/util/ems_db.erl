@@ -181,7 +181,7 @@ get_odbc_connection(Datasource = #service_datasource{connection = Connection}) -
 			{error, Reason} -> {error, Reason}
 		end
 	end,
-	ems_cache:get(ems_db_odbc_connection_cache, infinity, {PidModule, Connection}, F).
+	ems_cache:get(ems_db_odbc_connection_cache, infinity, {PidModule, Datasource}, F).
 
 
 get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileName,

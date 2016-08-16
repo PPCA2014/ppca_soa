@@ -13,11 +13,12 @@
 
 
 %% Mensagens de erro HTTP no formato JSON
--define(HTTP_ERROR_400, <<"{\"error\":\"HTTP 400\",\"message\":\"Requisição inválida.\"}"/utf8>>).
--define(HTTP_ERROR_401, <<"{\"error\":\"HTTP 401\",\"message\":\"Acesso não autorizado.\"}"/utf8>>).
--define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"Serviço não encontrado.\"}"/utf8>>).
--define(HTTP_ERROR_404_FILE_NOT_FOUND, <<"{\"error\":\"HTTP 404\",\"message\":\"Arquivo não encontrado.\"}"/utf8>>).
--define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"O servidor aceita somente JSON.\"}"/utf8>>).
--define(HTTP_ERROR_502(Motivo), io_lib:format(<<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação. Motivo: ~p.\"}"/utf8>>, [Motivo])).
--define(HTTP_ERROR_502, <<"{\"error\":\"HTTP 502\",\"message\":\"Serviço falhou ao atender solicitação.\"}"/utf8>>).
--define(HTTP_ERROR_503, <<"{\"error\":\"HTTP 503\",\"message\":\"Serviço encontrado no catálogo de serviços mas está indisponível.\"}"/utf8>>).
+-define(HTTP_ERROR_400, <<"{\"error\":\"400\",\"message\":\"einvalid_request\"}"/utf8>>).
+-define(HTTP_ERROR_400(Reason), iolist_to_binary(io_lib:format(<<"{\"error\":\"HTTP 400\",\"message\":~p}"/utf8>>, [Reason]))).
+-define(HTTP_ERROR_401, <<"{\"error\":\"HTTP 401\",\"message\":\"enauthorized_access\"}"/utf8>>).
+-define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"eservice_not_found\"}"/utf8>>).
+-define(HTTP_ERROR_404_FILE_NOT_FOUND, <<"{\"error\":\"HTTP 404\",\"message\":\"efile_not_found\"}"/utf8>>).
+-define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"epayload_not_json\"}"/utf8>>).
+-define(HTTP_ERROR_502(Motivo), io_lib:format(<<"{\"error\":\"HTTP 502\",\"message\":\"~p\"}"/utf8>>, [Motivo])).
+-define(HTTP_ERROR_502, <<"{\"error\":\"HTTP 502\",\"message\":\"eservice_failed\"}"/utf8>>).
+-define(HTTP_ERROR_503, <<"{\"error\":\"HTTP 503\",\"message\":\"eunavailable_service\"}"/utf8>>).

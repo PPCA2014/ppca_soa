@@ -142,7 +142,12 @@ json_decode_as_map(JSON) ->
 %% @doc Converte um JSON para dados Erlang
 json_decode(JSON) ->
 	try
-		T = jiffy:decode(mochiutf8:valid_utf8_bytes(JSON)),
+		JSON2 = case check_encoding_bin(JSON) of
+			latin1 -> unicode:characters_to_binary(binary_to_list(JSON), latin1, utf8);
+			utf8 -> JSON;
+			_ -> erlang:raise(einvalid_json_encoding)
+		end,
+		T = jiffy:decode(JSON2),
 		{ok, element(1, T)}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -282,23 +287,29 @@ get_params_from_url(Url) -> [X || {_, P} = X <- parse_url(Url), P /= [] ].
 
 parse_url(Url) ->	
 	Url2 = string:tokens(Url, "/"),
-	parse_url_tail(Url2, 1).
+	try
+		parse_url_tail(Url2, 1, [])
+	catch error:badarg ->
+		erlang:error(einvalid_param_id)
+	end.
 
-parse_url_tail([], _SeqId) -> [];
+parse_url_tail([], _, L) -> lists:reverse(L);
 	
-parse_url_tail([H|T], SeqId) ->	
+parse_url_tail([H|T], SeqId, L) ->	
     {UrlParte, Param, SeqId2} = parse_parte_url(H, SeqId),
-	[{UrlParte, Param} | parse_url_tail(T, SeqId2)].
+	parse_url_tail(T, SeqId2, [{UrlParte, Param} | L]).
 	
-parse_parte_url(UrlParte, SeqId) ->
-	case string_is_integer(UrlParte) of
-		true  -> 
-			case SeqId of
-				1 -> SeqId_ = ":id";
-				_ -> SeqId_ = ":id_" ++ integer_to_list(SeqId)
+parse_parte_url([H|_] = UrlParte, SeqId) ->
+	if
+		H >= 49 andalso H =< 57 ->
+			SeqId_ = case SeqId of
+				1 -> ":id";
+				_ -> ":id_" ++ integer_to_list(SeqId)
 			end,
 			{SeqId_, list_to_integer(UrlParte), SeqId+1};
-		false -> {UrlParte, [], SeqId}
+		H =:= 45 ->
+			erlang:error(einvalid_negative_id);
+		true -> {UrlParte, [], SeqId}
 	end.
 
 
@@ -329,22 +340,23 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
-json_field_format_table([]) -> "null";
+json_field_format_table([]) -> null;
 json_field_format_table("0.0") -> "0.0";
 json_field_format_table(Value) when is_float(Value) -> Value;
 json_field_format_table(Value) when is_integer(Value) -> Value;
 json_field_format_table(Value) when is_boolean(Value) -> Value;
-json_field_format_table(null) -> "null";
+json_field_format_table(null) -> null;
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) -> utf8_list_to_string(Value);
 json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
-json_field_strip([]) ->	"null";
+json_field_strip([]) ->	null;
 json_field_strip(Value) -> 
 	case string:strip(Value) of
-		[] -> "null";
+		[] -> null;
 		V -> V
 	end.
+
 
 json_encode_table(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 

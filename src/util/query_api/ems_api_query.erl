@@ -21,7 +21,6 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 		_ -> erlang:raise(einvalid_datasource)
 	end.
 
-
 find_by_id(Id, Fields, Datasource =  #service_datasource{type = ConnType}, Debug) ->
 	case ConnType of
 		sqlserver -> ems_api_query_sqlserver:find_by_id(Id, Fields, Datasource, Debug);

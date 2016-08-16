@@ -186,9 +186,8 @@ process_request(Socket, RequestBin) ->
 			ems_dispatcher:dispatch_request(Request);
 		 {error, Request, Reason} -> 
 			envia_response(Request, {error, Reason});
-		 {error, invalid_http_header} -> 
-			gen_tcp:close(Socket),
-			ems_logger:error("Invalid HTTP request, close socket.")
+		 {error, Reason} -> 
+			envia_error(Socket, Reason)
 	end.
 
 
@@ -306,4 +305,12 @@ envia_response(Code, Reason, Request, Response) ->
 		ok -> ems_eventmgr:notifica_evento(close_request, Request2);
 		_  -> ems_eventmgr:notifica_evento(send_error_request, Request2)
 	end.
+
+envia_error(Socket, Reason) when is_atom(Reason) ->	
+	envia_error(Socket, atom_to_list(Reason));
+envia_error(Socket, Reason) ->
+	Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(Reason), <<"application/json; charset=utf-8"/utf8>>),
+	ems_tcp_util:send_data(Socket, Response),
+	gen_tcp:close(Socket),
+	ems_logger:error("Error: ~p.", [Reason]).
 	

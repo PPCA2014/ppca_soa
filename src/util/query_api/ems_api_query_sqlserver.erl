@@ -35,9 +35,10 @@ parse_fields(Fields) ->
 
 	    
 parse_filter(<<>>) -> {"", ""};
-parse_filter(Filter) ->    
+parse_filter(<<Filter/binary>>) ->    
     case ems_util:json_decode(Filter) of
-		{ok, Filter2} -> parse_filter(Filter2, [], []);
+		{ok, Filter2} -> 
+			parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
 parse_filter([], [], []) -> {"", ""};
@@ -64,7 +65,7 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 	parse_condition(Param2, Value, sql_boolean);
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
-	Value2 = binary_to_list(Value),
+	Value2 = unicode:characters_to_list(Value, utf8),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
@@ -217,8 +218,9 @@ generate_dynamic_query(FilterJson, Fields,
 generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, primary_key = PrimaryKey}) ->
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
-	Sql = lists:flatten(io_lib:format("select ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
-	{ok, {Sql, Params}}.
+	SqlSmnt = lists:flatten(io_lib:format("select top 1 ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
+	io:format("sql is ~p\n", [SqlSmnt]),
+	{ok, {SqlSmnt, Params}}.
 
 
 execute_dynamic_query(Sql, _, _, true) -> 
