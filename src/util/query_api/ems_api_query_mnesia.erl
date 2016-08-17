@@ -15,14 +15,14 @@
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->
 	case generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
-		{ok, {FieldList, FilterList}} -> execute_dynamic_query(FieldList, FilterList, Datasource, Debug);
+		{ok, {FieldList, FilterList, LimitSmnt}} -> execute_dynamic_query_filter(FieldList, FilterList, LimitSmnt, Datasource, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
 
 find_by_id(Id, Fields, Datasource, Debug) ->
 	case generate_dynamic_query(Id, Fields, Datasource) of
-		{ok, {FieldList, FilterList}} -> execute_dynamic_query(FieldList, FilterList, Datasource, Debug);
+		{ok, FieldList} -> execute_dynamic_query_by_id(Id, FieldList, Datasource, Debug);
 		{error, Reason} -> {error, Reason}
 	end.
 
@@ -113,8 +113,7 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
 
-parse_limit(Limit, Offset) when Limit > 0, Offset > 0, Limit < 9999, Offset < 9999 ->
-	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
+parse_limit(Limit, Offset) when Limit > 0, Offset > 0, Limit < 9999, Offset < 9999 -> {Limit, Offset};
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
@@ -123,18 +122,26 @@ generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) ->
 	FilterList = parse_filter(FilterJson),
 	SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
-	{ok, {FieldList, FilterList}}.
-
+	{ok, {FieldList, FilterList, LimitSmnt}}.
 
 generate_dynamic_query(Id, Fields, Datasource) ->
-	{ok, ok}.
+	FieldList = parse_fields(Fields),
+	{ok, FieldList}.
 
 
-
-execute_dynamic_query(FieldList, FilterList, #service_datasource{table_name = TableName}, Debug) ->
+execute_dynamic_query_by_id(Id, FieldList, #service_datasource{table_name = TableName}, Debug) ->
 	try
 		TableName2 = list_to_atom(TableName),
-		ems_db:find(TableName2, FieldList, FilterList)
+		ems_db:find_by_id(TableName2, Id, FieldList)
+	catch
+		_Exception:Reason2 -> {error, Reason2}
+	end.
+
+
+execute_dynamic_query_filter(FieldList, FilterList, {Limit, Offset}, #service_datasource{table_name = TableName}, Debug) ->
+	try
+		TableName2 = list_to_atom(TableName),
+		ems_db:find(TableName2, FieldList, FilterList, Limit, Offset)
 	catch
 		_Exception:Reason2 -> {error, Reason2}
 	end.

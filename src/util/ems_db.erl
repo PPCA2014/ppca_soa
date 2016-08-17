@@ -9,7 +9,7 @@
 -module(ems_db).
 
 -export([start/0]).
--export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, match/2, find/3, filter/2, select_fields/2]).
+-export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, match/2, find/3, find/5, find_by_id/3, filter/2, filter_with_limit/4, select_fields/2]).
 -export([sequence/1, init_sequence/2]).
 -export([get_connection/1, release_connection/1]).
 
@@ -229,6 +229,16 @@ release_odbc_connection(#service_datasource{pid_module = PidModule,
 %	{ok, Conn}.
 
 
+%
+% Find object by id
+% Ex.: ems_db:find_by_id(catalog_schema, 1, [id, name]).
+% Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
+%
+find_by_id(Tab, Id, FieldList) ->
+	case get(Tab, Id) of
+		{ok, Record} -> select_fields(Record, FieldList);
+		Error -> Error
+	end.
 
 %
 % Find objects
@@ -238,6 +248,17 @@ release_odbc_connection(#service_datasource{pid_module = PidModule,
 find(Tab, FieldList, FilterList) ->
     Records = filter(Tab, FilterList),
     select_fields(Records, FieldList).
+
+
+%
+% Find objects with limits
+% Ex.: ems_db:find(catalog_schema, [id, name], [{id, "==", 1}], 1, 1).
+% Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
+%
+find(Tab, FieldList, FilterList, Limit, Offset) ->
+    Records = filter_with_limit(Tab, FilterList, Limit, Offset),
+    select_fields(Records, FieldList).
+
 
 %	
 % Filter objects
@@ -256,7 +277,7 @@ find(Tab, FieldList, FilterList) ->
 filter(Tab, []) -> 
 	F = fun() ->
 		  qlc:e(
-			 qlc:q([X || X <- mnesia:table(Tab)])
+			 qlc:q([R || R <- mnesia:table(Tab)])
 		  )
 	   end,
 	mnesia:activity(transaction, F);
@@ -279,6 +300,49 @@ filter(Tab, FilterList) ->
 			mnesia:activity(transaction, fun () -> qlc:eval(ParsedQuery) end)
 		end,
 	ems_cache:get(ems_db_parsed_query_cache, ?LIFE_TIME_PARSED_QUERY, {Tab, FilterList}, F).
+
+
+%	
+% Filter objects with limit
+% Ex.: ems_db:filter_with_limit(catalog_schema, [{id, "==", 1}], 1, 1). 
+% Sample result is 
+%[{catalog_schema,1,<<"exemplo">>,<<"schema de exemplo">>,
+%                 #{<<"properties">> => #{<<"age">> => #{<<"description">> => <<"Age in years">>,
+%                       <<"minimum">> => 0,
+%                       <<"type">> => <<"integer">>},
+%                     <<"firstName">> => #{<<"type">> => <<"string">>},
+%                     <<"lastName">> => #{<<"type">> => <<"string">>}},
+%                   <<"required">> => [<<"firstName">>,<<"lastName">>],
+%                   <<"title">> => <<"Example Schema">>,
+%                   <<"type">> => <<"object">>}}]
+%
+filter_with_limit(Tab, [], Limit, Offset) -> 
+	F = fun() ->
+		  qlc:e(
+			 qlc:q([R || R <- mnesia:table(Tab), element(2, R) >= Offset, element(2, R) =< Limit + Offset - 1])
+		  )
+	   end,
+	mnesia:activity(transaction, F);
+filter_with_limit(Tab, [{F1, "==", V1}], Limit, Offset) ->
+	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fld1 = field_index(F1, Fields, 2),
+	Fun = fun() -> 
+				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1), element(2, R) >= Offset, element(2, R) =< Limit + Offset - 1])) 
+		  end,
+	mnesia:activity(transaction, Fun);
+filter_with_limit(Tab, FilterList, Limit, Offset) -> 
+	F = fun() ->
+			FieldsTable =  mnesia:table_info(Tab, attributes),
+			Where = string:join(lists:map(fun({F, Op, V}) ->
+												Fld = field_index(F, FieldsTable, 2),
+												io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
+										  end, FilterList), ","),
+			ExprQuery = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s, element(2, R) >= ~p, element(2, R) =< ~p + ~p - 1].", [Tab, Where, Offset, Limit, Offset])),
+			ParsedQuery = qlc:string_to_handle(ExprQuery),
+			mnesia:activity(transaction, fun () -> qlc:eval(ParsedQuery) end)
+		end,
+	ems_cache:get(ems_db_parsed_query_cache, ?LIFE_TIME_PARSED_QUERY, {Tab, FilterList, Limit, Offset}, F).
+
 
 
 % match objects and faster than filter
