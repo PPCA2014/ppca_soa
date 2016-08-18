@@ -78,7 +78,7 @@
                 {size, 2},
                 {max_overflow, 6}
             ], []},
-            {ems_dynamic_view_service_pool, [
+            {ems_api_query_service_pool, [
                 {size, 2},
                 {max_overflow, 6}
             ], []},

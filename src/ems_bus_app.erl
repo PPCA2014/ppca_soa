@@ -24,6 +24,7 @@ start(_StartType, StartArgs) ->
 		{ok, _Pid} ->
 			T1 = ems_util:get_milliseconds(),
 			Config = ems_config:getConfig(),
+			ems_db:start(),
 			case ems_catalog:init_catalog() of
 				ok ->
 					odbc:start(),

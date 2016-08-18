@@ -88,7 +88,9 @@
 					node,										%% Node ou lista de node onde os serviços estão publicados
 					lang,										%% Linguagem que foi utilizada para implementar o serviço
 					datasource,									%% Datasource para a fonte de dados
-					debug										%% Permite habilitar um modo debug (depende da implementação do serviço)
+					debug,										%% Permite habilitar um modo debug (depende da implementação do serviço)
+					schema_in :: non_neg_integer(),
+					schema_out :: non_neg_integer()
 				}).
 
 

@@ -415,11 +415,13 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 		Async = maps:get(<<"async">>, H, <<"false">>),
 		Rowid = ems_util:make_rowid_from_url(Url2, Type),
 		Lang = maps:get(<<"lang">>, H, <<>>),
-		Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined)),
+		Datasource = parse_datasource(maps:get(<<"datasource">>, H, null)),
 		Result_Cache = maps:get(<<"result_cache">>, H, 0),
 		Authentication = maps:get(<<"authentication">>, H, <<>>),
 		Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
 		UseRE = ems_util:binary_to_bool(maps:get(<<"use_re">>, H, <<"false">>)),
+		SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
+		SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
 		valida_lang(Lang),
 		valida_name_service(Name),
 		valida_type_service(Type),
@@ -447,7 +449,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										 Async, Host, Result_Cache, 
 										 Authentication, Node, Lang,
 										 Datasource,
-										 Debug),
+										 Debug, SchemaIn, SchemaOut),
 		case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
 			true -> 
 				Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -460,7 +462,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										   Host, HostName, Result_Cache,
 										   Authentication, Node, Lang,
 										   Datasource, 
-										   Debug),
+										   Debug, SchemaIn, SchemaOut),
 				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
 			false -> 
 				Service = new_service(Rowid, IdBin, Name, Url2, 
@@ -473,14 +475,19 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
 										Datasource, 
-										Debug),
+										Debug, SchemaIn, SchemaOut),
 				parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
 		end
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
 	
-parse_datasource(undefined) -> undefined;
+	
+parse_schema(null) -> null;
+parse_schema(Name) -> ems_catalog_schema:find_id_by_name(Name).
+
+	
+parse_datasource(null) -> null;
 parse_datasource(M) -> 
 	#service_datasource{type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
 						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
@@ -625,7 +632,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, 
 			   Datasource,
-			   Debug) ->
+			   Debug, SchemaIn, SchemaOut) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#service{
 				rowid = Rowid,
@@ -654,14 +661,16 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    node = Node,
 			    datasource = Datasource,
 			    debug = Debug,
-			    lang = Lang
+			    lang = Lang,
+			    schema_in = SchemaIn,
+			    schema_out = SchemaOut
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang, Datasource, 
-			Debug) ->
+			Debug, SchemaIn, SchemaOut) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -688,14 +697,16 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    node = Node,
 			    datasource = Datasource,
 			    debug = Debug,
-			    lang = Lang
+			    lang = Lang,
+			    schema_in = SchemaIn,
+			    schema_out = SchemaOut
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, 
 				  _Datasource, 
-				  Debug) ->
+				  Debug, SchemaIn, SchemaOut) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -712,6 +723,8 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"authentication">> => Authentication,
 			    <<"node">> => Node,
 			    <<"debug">> => Debug,
+			    <<"schema_in">> => SchemaIn,
+			    <<"schema_out">> => SchemaOut,
 			    <<"lang">> => Lang},
 	Service.
 

@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Module ems_dynamic_view_service
+%% @title Module ems_api_query_service
 %% @version 1.0.0
 %% @doc It provides dynamic_view service for relational databases.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_dynamic_view_service).
+-module(ems_api_query_service).
 
 -behavior(gen_server). 
 -behaviour(poolboy_worker).
@@ -51,10 +51,10 @@ stop() ->
 %%====================================================================
  
 find(Request, From) ->
-	ems_pool:cast(ems_dynamic_view_service_pool, {find, Request, From}).
+	ems_pool:cast(ems_api_query_service_pool, {find, Request, From}).
 
 find_by_id(Request, From) ->
-	ems_pool:cast(ems_dynamic_view_service_pool, {find_by_id, Request, From}).
+	ems_pool:cast(ems_api_query_service_pool, {find_by_id, Request, From}).
 
 
 %%====================================================================

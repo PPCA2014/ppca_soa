@@ -21,8 +21,7 @@ start_link(Args) ->
 %% ===================================================================
 
 init([]) ->
-	ems_db:start(),
-	
+
 	%% Instantiate the process pool
 	{ok, Pools} = application:get_env(ems_bus, pools),
     PoolSpecs = lists:map(

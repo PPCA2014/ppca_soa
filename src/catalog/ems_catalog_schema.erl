@@ -23,7 +23,9 @@
 -export_records([book, schema_type]).
 
 
--export([new/0, new/1, find_by_id/1, insert_or_update/1, insert/1, update/2, all/0, delete/1, to_record/2]).
+-export([new/0, new/1, find_by_id/1, insert_or_update/1, insert/1, 
+		 update/2, all/0, delete/1, to_record/2, find_by_name/1,
+		 find_id_by_name/1]).
 
 
 -include("../include/ems_config.hrl").
@@ -73,6 +75,14 @@ to_record(_, _) -> erlang:error(einvalid_to_record).
 %% Finds
 
 find_by_id(Id) -> ems_db:get(catalog_schema, Id).
+
+find_by_name(Name) -> ems_db:find(catalog_schema, {name, "==", Name}).
+
+find_id_by_name(Name) -> 
+	case ems_db:find_first(catalog_schema, [id], {name, "==", Name}) of
+		[{_, Id}] -> Id;
+		_Error -> erlang:error(einvalid_catalog_schema_name)
+	end.
 
 all() -> ems_db:all(catalog_schema).
 
