@@ -58,7 +58,9 @@
 							 primary_key :: string(),
 							 conn_ref,
 							 pid_module :: string(),
-							 csv_delimiter :: string()
+							 csv_delimiter :: string(),
+							 sql :: string(),
+							 timeout :: non_neg_integer()
 							}).
 
 -record(service, {

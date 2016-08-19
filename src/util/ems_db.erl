@@ -59,7 +59,6 @@ create_database(Nodes) ->
 											{ram_copies, Nodes},
 											{attributes, record_info(fields, ctrl_sqlite_table)}]),
 
-	io:format("init banco\n"),
     mnesia:create_table(catalog_schema, [{type, set},
 										 {disc_copies, Nodes},
 										 {attributes, record_info(fields, catalog_schema)}]),
@@ -173,11 +172,12 @@ release_connection(#service_datasource{type = mnesia}) -> ok;
 release_connection(Datasource) -> release_odbc_connection(Datasource).
 
 
-get_odbc_connection(Datasource = #service_datasource{connection = Connection}) ->
+get_odbc_connection(Datasource = #service_datasource{connection = Connection, timeout = Timeout}) ->
 	PidModule = erlang:pid_to_list(self()),
 	F = fun() ->
+		io:format("timeout is  ~p\n", [Timeout]),
 		case odbc:connect(Connection, [{scrollable_cursors, off},
-									   {timeout, 3500},
+									   {timeout, Timeout},
 									   {trace_driver, off}]) of
 			{ok, Conn}	-> {ok, Datasource#service_datasource{conn_ref = Conn, 
 															  pid_module = PidModule}};

@@ -493,7 +493,10 @@ parse_datasource(M) ->
 						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
 						table_name = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
 						primary_key = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
-						csv_delimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))}.
+						csv_delimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>)),
+						sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
+						timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY)
+						}.
 	
 	
 	

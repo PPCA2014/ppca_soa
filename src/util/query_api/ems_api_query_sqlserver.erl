@@ -197,23 +197,51 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
 
-parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
-	io_lib:format("_t._RowNumber between ~p and ~p", [Offset, Offset+Limit-1]);
+parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> ok;
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
 generate_dynamic_query(FilterJson, Fields, 
 					   #service_datasource{table_name = TableName, 
+										   sql = "",	
 										   primary_key = PrimaryKey}, 
 					   Limit, Offset, Sort) ->
 	{FilterSmnt, Params} = parse_filter(FilterJson),
 	FieldsSmnt = parse_fields(Fields),
 	SortSmnt = parse_sort(Sort),
-	LimitSmnt = parse_limit(Limit, Offset),
-	SqlSmnt = lists:flatten(io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from ~s ~s ~s) _t where ~s", [FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	parse_limit(Limit, Offset),
+	SqlSmnt = lists:flatten(case Offset == 1 of
+								 true -> 
+										io_lib:format("select top ~p ~s from ~s ~s ~s", 
+											[Limit, FieldsSmnt, TableName, FilterSmnt, SortSmnt]);
+
+								 _ ->   %% bastante lento se não existir índice na chave
+										io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from ~s ~s ~s) _t where _t._RowNumber between ~p and ~p", 
+											[FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
+							end),
+	io:format("sql is ~p\n", [SqlSmnt]),
+	{ok, {SqlSmnt, Params}};
+
+generate_dynamic_query(FilterJson, Fields, 
+					   #service_datasource{table_name = "", 
+										   sql = Sql,	
+										   primary_key = PrimaryKey}, 
+					   Limit, Offset, Sort) ->
+	{FilterSmnt, Params} = parse_filter(FilterJson),
+	FieldsSmnt = parse_fields(Fields),
+	SortSmnt = parse_sort(Sort),
+	parse_limit(Limit, Offset),
+	SqlSmnt = lists:flatten(case Offset == 1 of
+								 true -> 
+										io_lib:format("select top ~p ~s from (~s) _t ~s ~s", 
+											[Limit, FieldsSmnt, Sql, FilterSmnt, SortSmnt]);
+
+								 _ ->   %% bastante lento se não existir índice na chave
+										io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from (~s) _t_sql ~s ~s) _t where _t._RowNumber between ~p and ~p", 
+											[FieldsSmnt, PrimaryKey, Sql, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
+							end),
 	io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
-
 
 generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, primary_key = PrimaryKey}) ->
 	Params = [{sql_integer, [Id]}],

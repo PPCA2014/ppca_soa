@@ -85,19 +85,24 @@ handle_call(_Msg, _From, State) ->
 	{reply, _Msg, State}.
 
 handle_info(timeout, State=#state{lsocket = undefined}) ->
+	io:format("ola timeout\n"),
 	{noreply, State};
 
 handle_info(timeout, State) ->
 	accept_request(timeout, State);
 
 handle_info({tcp, Socket, RequestBin}, State) ->
+	io:format("process request init\n"),
 	process_request(Socket, RequestBin),
+	io:format("process request end\n"),
 	{noreply, State};
 
 handle_info({tcp_closed, _Socket}, State) ->
+	io:format("process tcp closed end\n"),
 	{noreply, State#state{socket = undefined}};
 
 handle_info({'EXIT', _Pid, _Reason}, State) ->
+    io:format("process exit end\n"),
     {noreply, State};
 
 handle_info(_Msg, State) ->
