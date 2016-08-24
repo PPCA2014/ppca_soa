@@ -35,7 +35,6 @@ create_database(Nodes) ->
 	filelib:ensure_dir(?DATABASE_PATH ++ "/"),
 	application:set_env(mnesia, dir, ?DATABASE_PATH),
 
-	mnesia:create_schema(Nodes),
 	mnesia:start(),
 
     mnesia:create_table(user, [{type, set},
@@ -63,6 +62,9 @@ create_database(Nodes) ->
 										 {disc_copies, Nodes},
 										 {attributes, record_info(fields, catalog_schema)}]),
 
+    mnesia:create_table(produto, [{type, set},
+	 							  {disc_copies, Nodes},
+								  {attributes, record_info(fields, produto)}]),
 
 	ok.
 
@@ -98,13 +100,9 @@ all(RecordType) ->
 
 insert(Record) ->
 	RecordType = element(1, Record),
-	case element(2, Record) of
-		undefined -> Id = sequence(RecordType),
-					 Record1 = setelement(2, Record, Id);
-		_ -> Record1 = Record
-	end,
-	Write = fun() -> mnesia:write(Record1) end,
-	mnesia:transaction(Write),
+	Id = sequence(RecordType),
+	Record1 = setelement(2, Record, Id),
+	mnesia:transaction(fun() -> mnesia:write(Record1) end),
 	{ok, Record1}.
 
 update(Record) ->
@@ -175,7 +173,6 @@ release_connection(Datasource) -> release_odbc_connection(Datasource).
 get_odbc_connection(Datasource = #service_datasource{connection = Connection, timeout = Timeout}) ->
 	PidModule = erlang:pid_to_list(self()),
 	F = fun() ->
-		io:format("timeout is  ~p\n", [Timeout]),
 		case odbc:connect(Connection, [{scrollable_cursors, off},
 									   {timeout, Timeout},
 									   {trace_driver, off}]) of

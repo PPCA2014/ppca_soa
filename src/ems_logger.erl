@@ -267,11 +267,11 @@ do_log_request(#request{protocol = ldap,
 						latency = Latencia,
 						authorization = Authorization,
 						node_exec = Node}, _State) ->
-	case Service of
-		undefined -> ServiceImpl = "";
-		_ -> ServiceImpl = Service#service.service
+	ServiceImpl = case Service of
+		undefined -> "";
+		_ -> Service#service.service
 	end,
-	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~s>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latencia]),
 	case Code of
 		200 -> ems_logger:info(Texto1);
@@ -295,19 +295,19 @@ do_log_request(#request{protocol = http,
 						latency = Latencia,
 						authorization = Authorization,
 						node_exec = Node}, _State) ->
-		case Service of
-			undefined -> ServiceImpl = "";
-			_ -> ServiceImpl = Service#service.service
+		ServiceImpl = case Service of
+			undefined -> "";
+			_ -> Service#service.service
 		end,
 		case Payload of
 			undefined ->
-				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~s>> (~pms)\n}",
+				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
 				Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, 
 											   ServiceImpl, Query, Authorization, 
 											   Node, Code, Reason, 
 											   Latencia]);
 			_ ->
-				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~s>> (~pms)\n}",
+				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
 				Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, 
 											   Content_Type, Payload, ServiceImpl, Query, 
 											   Authorization, Node, Code, Reason, 

@@ -78,23 +78,21 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast(Msg, State) ->
-	send_response(Msg),
+	process_response(Msg),
 	{stop, normal, State}.
 
 handle_call(_Msg, _From, State) ->
 	{reply, _Msg, State}.
 
 handle_info(timeout, State=#state{lsocket = undefined}) ->
-	io:format("ola timeout\n"),
+	io:format("Timeout http\n"),
 	{noreply, State};
 
 handle_info(timeout, State) ->
 	accept_request(timeout, State);
 
 handle_info({tcp, Socket, RequestBin}, State) ->
-	io:format("process request init\n"),
 	process_request(Socket, RequestBin),
-	io:format("process request end\n"),
 	{noreply, State};
 
 handle_info({tcp_closed, _Socket}, State) ->
@@ -189,113 +187,33 @@ process_request(Socket, RequestBin) ->
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
 			ems_dispatcher:dispatch_request(Request);
-		 {error, Request, Reason} -> 
-			envia_response(Request, {error, Reason});
-		 {error, Reason} -> 
-			envia_error(Socket, Reason)
+		 Error -> send_error(Socket, Error)
 	end.
 
 
-send_response({HttpCode, Request, Result}) ->
+process_response({_MsgType, Request, Result}) ->
 	Socket = Request#request.socket,
 	inet:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 	% TCP_DEFER_ACCEPT for Linux
 	inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-	case is_integer(HttpCode) of
-		true -> Code = HttpCode;
-		false -> Code = 200
-	end,
-	case Code of 
-		200 -> Status = ok;
-		201 -> Status = ok;
-		400 -> Status = error;
-		404 -> Status = error;
-		_ ->
-			case Code >= 400 of
-				true -> Status = error;
-				false -> Status = ok
-			end
-	end,
-	CodeBin = integer_to_binary(Code), 
-	
 	case Result of
-		<<>> -> 
-			Response = ems_http_util:encode_response(<<"200">>, <<>>),
-			envia_response(Code, ok, Request, Response);
-		{ok, Content} -> 
-			Response = ems_http_util:encode_response(CodeBin, Content),
-			case Status of
-				error -> envia_response(Code, Content, Request, Response);
-				_-> envia_response(Code, ok, Request, Response)
-			end;
-		{ok, Content, MimeType} -> 
-			Response = ems_http_util:encode_response(CodeBin, Content, MimeType),
-			envia_response(Code, Status, Request, Response);
-		{error, _Reason} -> 
-			envia_response(Request, Result);
-		{error, _Reason, _Motivo} -> 
-			envia_response(Request, Result);
-		_ ->
-			envia_response(Request, Result)
+		<<Content/binary>> -> 
+			Response = ems_http_util:encode_response(<<"200">>, Content),
+			send_response(200, ok, Request, Response);
+		{ok, <<Content/binary>>} -> 
+			Response = ems_http_util:encode_response(<<"200">>, Content),
+			send_response(200, ok, Request, Response);
+		{ok, <<Content/binary>>, <<MimeType/binary>>} ->
+			Response = ems_http_util:encode_response(<<"200">>, Content, MimeType),
+			send_response(200, ok, Request, Response);
+		Error ->
+			Response = ems_http_util:encode_response(<<"400">>, Error),
+			send_response(400, Error, Request, Response)
 	end.
 
-
-envia_response(_Request, {async, false}) -> 
-	em_andamento;
-
-envia_response(Request, {async, true}) ->
-	RID = ems_http_util:rid_to_string(Request#request.rid),
-	Ticket = iolist_to_binary([<<"{\"ticket\":\"">>, RID, "\"}"]),
-	Response = ems_http_util:encode_response(<<"200">>, Ticket),
-	envia_response(200, ok, Request, Response);
-
-envia_response(Request, {ok, Result}) -> 
-	case Request#request.service#service.async of
-		true -> io:format("Ticket já foi entregue.\n");
-		_ -> 
-			Response = ems_http_util:encode_response(<<"200">>, Result),
-			envia_response(200, ok, Request, Response)
-	end;
-
-envia_response(Request, {ok, Result, MimeType}) ->
-	Response = ems_http_util:encode_response(<<"200">>, Result, MimeType),
-	envia_response(200, ok, Request, Response);
-
-envia_response(Request, {error, notfound}) ->
-	Response = ems_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404),
-	envia_response(404, notfound, Request, Response);
-
-envia_response(Request, {error, no_authorization}) ->
-	Response = ems_http_util:encode_response(<<"401">>, ?HTTP_ERROR_401),
-	envia_response(401, no_authorization, Request, Response);
-
-envia_response(Request, {error, invalid_payload}) ->
-	Response = ems_http_util:encode_response(<<"415">>, ?HTTP_ERROR_415),
-	envia_response(415, invalid_payload, Request, Response);
-
-envia_response(Request, {error, file_not_found}) ->
-	Response = ems_http_util:encode_response(<<"404">>, ?HTTP_ERROR_404_FILE_NOT_FOUND),
-	envia_response(404, file_not_found, Request, Response);
-
-envia_response(Request, {error, Reason}) ->
-	Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400),
-	envia_response(400, Reason, Request, Response);
-
-envia_response(Request, {error, service_fora, ErroInterno}) ->
-	Response = ems_http_util:encode_response(<<"503">>, ?HTTP_ERROR_503),
-	Reason2 = io_lib:format("~p ~p", [service_fora, ErroInterno]),
-	envia_response(503, Reason2, Request, Response);
-
-envia_response(Request, {error, Reason, ErroInterno}) ->
-	Reason2 = io_lib:format("~p ~p", [Reason, ErroInterno]),
-	envia_response(Request, {error, Reason2});
-
-envia_response(Request, Result) ->
-	envia_response(Request, {ok, Result}).
-
-envia_response(Code, Reason, Request, Response) ->
+send_response(Code, Reason, Request, Response) ->
 	T2 = ems_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
 	StatusSend = ems_tcp_util:send_data(Request#request.socket, Response),
@@ -311,9 +229,9 @@ envia_response(Code, Reason, Request, Response) ->
 		_  -> ems_eventmgr:notifica_evento(send_error_request, Request2)
 	end.
 
-envia_error(Socket, Reason) when is_atom(Reason) ->	
-	envia_error(Socket, atom_to_list(Reason));
-envia_error(Socket, Reason) ->
+send_error(Socket, Reason) when is_atom(Reason) ->	
+	send_error(Socket, atom_to_list(Reason));
+send_error(Socket, Reason) ->
 	Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(Reason), <<"application/json; charset=utf-8"/utf8>>),
 	ems_tcp_util:send_data(Socket, Response),
 	gen_tcp:close(Socket),

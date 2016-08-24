@@ -56,6 +56,9 @@ find(Request, From) ->
 find_by_id(Request, From) ->
 	ems_pool:cast(ems_api_query_service_pool, {find_by_id, Request, From}).
 
+insert(Request, From) ->
+	ems_pool:cast(ems_api_query_service_pool, {insert, Request, From}).
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -77,6 +80,11 @@ handle_cast({find, Request, _From}, State) ->
 
 handle_cast({find_by_id, Request, _From}, State) ->
 	Result = execute_command(find_by_id, Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
+	{noreply, State};
+
+handle_cast({insert, Request, _From}, State) ->
+	Result = execute_command(insert, Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State}.
 
@@ -108,7 +116,8 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 			{ok, Datasource2} -> 
 				Result = case Command of
 					find -> do_find(Request, Datasource2, State);
-					find_by_id -> do_find_by_id(Request, Datasource2, State)
+					find_by_id -> do_find_by_id(Request, Datasource2, State);
+					insert -> do_insert(Request, Datasource2, State)
 				end,
 				ems_db:release_connection(Datasource2),
 				Result;
@@ -136,4 +145,9 @@ do_find_by_id(Request = #request{querystring_map = QuerystringMap,
 	Id = ems_request:get_param_url(<<"id">>, 0, Request),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
 	ems_api_query:find_by_id(Id, Fields, Datasource, Debug).
+
+
+do_insert(Request = #request{payload_map = Payload, service = Service}, Datasource, _State) ->
+	ems_api_query:insert(Payload, Service, Datasource).
+
 

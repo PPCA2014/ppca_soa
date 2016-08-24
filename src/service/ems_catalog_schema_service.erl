@@ -81,13 +81,13 @@ handle_cast({find_by_id, Request, _From}, State) ->
 	{noreply, State};
 
 handle_cast({insert, Request, _From}, State) ->
-	Reply = do_insert(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	Result = do_insert(Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State};
 
 handle_cast({update, Request, _From}, State) ->
-	Reply = do_update(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	Result = do_update(Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State};
 
 handle_cast({all, Request, _From}, State) ->
@@ -96,8 +96,8 @@ handle_cast({all, Request, _From}, State) ->
 	{noreply, State};
 
 handle_cast({delete, Request, _From}, State) ->
-	Reply = do_delete(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
+	Result = do_delete(Request, State),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, State}.
 
 handle_call(_Param, _From, State) ->

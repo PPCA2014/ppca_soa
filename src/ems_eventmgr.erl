@@ -29,7 +29,9 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {lista_evento = [new_request, ok_request, erro_request, close_request, send_error_request], 
+-record(state, {lista_evento = [new_request, ok_request,              %% predefined events
+								erro_request, close_request, 
+								send_error_request], 
 			    lista_interesse = []}).
 
 

@@ -78,31 +78,22 @@ join_binlist([], _) -> "";
 join_binlist(BinList, Str) -> string:join(binlist_to_list(BinList), Str).
 
 item_to_binary([]) -> <<>>;
-
 item_to_binary(<<I/binary>>) -> I;
-
 item_to_binary(T) when is_tuple(T) -> 
 	tuple_to_binlist(T);
-
 item_to_binary(L) when is_list(L) -> 
 	case io_lib:printable_list(L) of
 		true -> iolist_to_binary(L);
 		false -> list_to_binlist(L)
 	end;
-	
 item_to_binary(I) when is_integer(I) -> 
 	I;
-
 item_to_binary(I) when is_float(I) -> 
 	I;
-
-
 item_to_binary(I) when is_atom(I) -> 
 	[I2] = io_lib:format("~p", [I]),
 	iolist_to_binary(I2);
-
 item_to_binary(I) when is_map(I) -> I;
-
 item_to_binary(I) -> iolist_to_binary(I).
 
 

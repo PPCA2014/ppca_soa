@@ -600,7 +600,6 @@ do_lookup(Request, State) ->
 	Rowid = Request#request.rowid,
 	case ets:lookup(State#state.cat2, Rowid) of
 		[] -> 
-			io:format("aqui1 ~p\n", [Request]),
 			case do_lookup_re(Request, State#state.cat3) of
 				{Service, ParamsMap} -> 
 					Querystring = processa_querystring(Service, Request),

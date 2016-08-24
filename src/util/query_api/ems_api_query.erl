@@ -8,7 +8,7 @@
 
 -module(ems_api_query).
 
--export([find/7, find_by_id/4]).
+-export([find/7, find_by_id/4, insert/3]).
 
 -include("../../../include/ems_schema.hrl").
 
@@ -21,6 +21,7 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 		_ -> erlang:raise(einvalid_datasource)
 	end.
 
+
 find_by_id(Id, Fields, Datasource =  #service_datasource{type = ConnType}, Debug) ->
 	case ConnType of
 		sqlserver -> ems_api_query_sqlserver:find_by_id(Id, Fields, Datasource, Debug);
@@ -29,5 +30,13 @@ find_by_id(Id, Fields, Datasource =  #service_datasource{type = ConnType}, Debug
 		_ -> erlang:raise(einvalid_datasource)
 	end.
 		
+		
+insert(Payload, Service, Datasource = #service_datasource{type = ConnType}) ->
+	case ConnType of
+		sqlserver -> ok;
+		sqlite -> ok;
+		mnesia -> ems_api_query_mnesia:insert(Payload, Service, Datasource);
+		_ -> erlang:raise(einvalid_datasource)
+	end.
 		
 

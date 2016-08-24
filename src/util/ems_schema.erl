@@ -8,13 +8,14 @@
 
 -module(ems_schema).
 
+-compile(export_all).
 -compile({parse_transform, exprecs}).
 
 -include("../include/ems_schema.hrl").
 
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1]).
 
--export_records([user, catalog_schema, schema_type]).
+-export_records([user, catalog_schema, schema_type, produto]).
 
 
 % to_record
@@ -127,13 +128,19 @@ to_value(true) -> <<"true"/utf8>>;
 to_value(false) -> <<"false"/utf8>>;
 to_value(Data = {{_,_,_},{_,_,_}}) -> 
 	ems_util:date_to_string(Data);
+to_value([<<Key/binary>>, <<Value/binary>>]) -> 
+	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
-	json_value_strip(ems_util:utf8_list_to_string(Value));
+	case io_lib:printable_list(Value) of 
+		true ->	json_value_strip(ems_util:utf8_list_to_string(Value));
+		_ -> to_json(list_to_tuple(Value))
+	end;
 to_value(Value) when is_map(Value) ->
 	ems_util:json_encode(Value);
 to_value(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
-json_value_strip([]) ->	"null";
+json_value_strip([]) ->	<<"null"/utf8>>;
+json_value_strip(<<>>) -> <<"null"/utf8>>;
 json_value_strip(Value) -> 
 	case string:strip(Value) of
 		[] -> <<"null"/utf8>>;
@@ -144,6 +151,7 @@ json_value_strip(Value) ->
 new(catalog_schema) -> #catalog_schema{};
 new(user) -> #user{};
 new(schema_type) -> #schema_type{};
+new(produto) -> #produto{};
 new(_) -> erlang:error(einvalid_type).
 
 

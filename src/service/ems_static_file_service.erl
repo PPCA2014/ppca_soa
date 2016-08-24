@@ -98,10 +98,7 @@ do_get_file(Request, _State) ->
 				{ok, Arquivo} -> 
 					ContentType = ems_http_util:mime_type(filename:extension(FilePath)),
 					{ok, Arquivo, ContentType};
-				{error, enoent} -> 
-					{error, file_not_found};
-				{error, Reason} -> 
-					{error, service_falhou, Reason}
+				{error, Reason} -> {error, Reason}
 			end
 		end).
 

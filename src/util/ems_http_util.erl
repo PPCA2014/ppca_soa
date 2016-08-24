@@ -114,35 +114,18 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 
 encode_response(Codigo, []) ->
 	encode_response(Codigo, <<"[]">>, <<"application/json; charset=utf-8"/utf8>>);
-
 encode_response(<<Codigo/binary>>, []) ->
 	encode_response(Codigo, <<"[]">>, <<"application/json; charset=utf-8"/utf8>>);
-
 encode_response(<<Codigo/binary>>, <<>>) ->
 	encode_response(Codigo, <<"[]">>, <<"application/json; charset=utf-8"/utf8>>);
-	
-%% @doc Gera o response para dados binário
 encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 	encode_response(Codigo, Payload, <<"application/json; charset=utf-8"/utf8>>);
-
-%% @doc Gera o response para dados Map (representação JSON em Erlang)
-encode_response(Codigo, PayloadMap) when is_map(PayloadMap) ->
-    Payload = ems_util:json_encode(PayloadMap),
-    encode_response(Codigo, Payload);
-
-%% @doc Gera o response para dados list (representação JSON em Erlang)
-encode_response(Codigo, [H|_] = PayloadList) when is_map(H) ->
-    Payload = ems_util:json_encode(PayloadList),
-    encode_response(Codigo, Payload);
-
-%% @doc Gera o response
-encode_response(Codigo, Payload) ->
+encode_response(Codigo, Payload) when is_tuple(Payload) ->
     Payload2 = ems_schema:to_json(Payload),
     encode_response(Codigo, Payload2).
 
 header_cache_control(<<"image/x-icon">>) ->
 	<<"Cache-Control: max-age=290304000, public"/utf8>>;
-
 header_cache_control(<<_MimeType/binary>>) ->
 	<<"Cache-Control: no-cache"/utf8>>.
 

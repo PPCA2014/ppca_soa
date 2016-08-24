@@ -16,8 +16,7 @@
 -define(HTTP_ERROR_400, <<"{\"error\":\"400\",\"message\":\"einvalid_request\"}"/utf8>>).
 -define(HTTP_ERROR_400(Reason), iolist_to_binary(io_lib:format(<<"{\"error\":\"HTTP 400\",\"message\":~p}"/utf8>>, [Reason]))).
 -define(HTTP_ERROR_401, <<"{\"error\":\"HTTP 401\",\"message\":\"enauthorized_access\"}"/utf8>>).
--define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"eservice_not_found\"}"/utf8>>).
--define(HTTP_ERROR_404_FILE_NOT_FOUND, <<"{\"error\":\"HTTP 404\",\"message\":\"efile_not_found\"}"/utf8>>).
+-define(HTTP_ERROR_404, <<"{\"error\":\"HTTP 404\",\"message\":\"enot_found\"}"/utf8>>).
 -define(HTTP_ERROR_415, <<"{\"error\":\"HTTP 415\",\"message\":\"epayload_not_json\"}"/utf8>>).
 -define(HTTP_ERROR_502(Motivo), io_lib:format(<<"{\"error\":\"HTTP 502\",\"message\":\"~p\"}"/utf8>>, [Motivo])).
 -define(HTTP_ERROR_502, <<"{\"error\":\"HTTP 502\",\"message\":\"eservice_failed\"}"/utf8>>).

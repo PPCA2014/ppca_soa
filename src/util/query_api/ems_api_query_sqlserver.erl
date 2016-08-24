@@ -142,10 +142,10 @@ parse_name_and_operator(Param) ->
 			Op = string:to_lower(string:sub_string(Param, Idx+2)),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
-				_ -> erlang:error(einvalid_param_filter)
+				_ -> throw({einvalid_param_filter, Param})
 			end;
 		0 -> {Param, "e"};
-		_ -> erlang:error(einvalid_param_filter)
+		_ -> io:format("aqui\n"),throw({einvalid_param_filter, Param})
 	end.
 
 
@@ -219,7 +219,7 @@ generate_dynamic_query(FilterJson, Fields,
 										io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from ~s ~s ~s) _t where _t._RowNumber between ~p and ~p", 
 											[FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
 							end),
-	io:format("sql is ~p\n", [SqlSmnt]),
+	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}};
 
 generate_dynamic_query(FilterJson, Fields, 
@@ -240,14 +240,14 @@ generate_dynamic_query(FilterJson, Fields,
 										io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from (~s) _t_sql ~s ~s) _t where _t._RowNumber between ~p and ~p", 
 											[FieldsSmnt, PrimaryKey, Sql, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
 							end),
-	io:format("sql is ~p\n", [SqlSmnt]),
+	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, primary_key = PrimaryKey}) ->
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
 	SqlSmnt = lists:flatten(io_lib:format("select top 1 ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
-	io:format("sql is ~p\n", [SqlSmnt]),
+	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 

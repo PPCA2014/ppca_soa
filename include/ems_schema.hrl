@@ -111,3 +111,9 @@
 					  description :: string(),
 					  json_schema :: map()
 				}).
+
+
+-record(produto, {id :: non_neg_integer(), 
+				  name :: string(), 
+				  price :: non_neg_integer()}).
+

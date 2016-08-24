@@ -124,7 +124,6 @@ do_dispatch_request(Request) ->
 													   querystring_map = QuerystringMap},
 							ems_request:registra_request(Request2),
 							%ems_eventmgr:notifica_evento(new_request, Request2),
-							io:format("execute ser...\n"),
 							case executa_service(Node, Request2) of
 								ok -> ok;
 								Error -> ems_eventmgr:notifica_evento(erro_request, {service, Request2, Error})

@@ -208,7 +208,7 @@ generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = Tabl
 	SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
 	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
-	io:format("sql is ~p\n", [SqlSmnt]),
+	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 
@@ -216,7 +216,7 @@ generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, p
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
 	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s where ~s = ? limit 1", [Fields2, TableName, PrimaryKey])),
-	io:format("sql is ~p\n", [SqlSmnt]),
+	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 
