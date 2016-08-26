@@ -147,7 +147,7 @@ do_find_by_id(Request = #request{querystring_map = QuerystringMap,
 	ems_api_query:find_by_id(Id, Fields, Datasource, Debug).
 
 
-do_insert(Request = #request{payload_map = Payload, service = Service}, Datasource, _State) ->
+do_insert(#request{payload_map = Payload, service = Service}, Datasource, _State) ->
 	ems_api_query:insert(Payload, Service, Datasource).
 
 

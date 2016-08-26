@@ -89,7 +89,7 @@ handle_info({Code, RID, Reply}, State) ->
 			ems_request:registra_request(Request),
 			ems_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
 			{noreply, State};
-		{erro, notfound} -> {noreply, State}
+		{erro, enoent} -> {noreply, State}
 	end;
 
 handle_info(_Msg, State) ->
@@ -134,9 +134,9 @@ do_dispatch_request(Request) ->
 				{error, no_authorization} -> 
 					ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, no_authorization}})
 			end;
-		notfound -> 
+		enoent -> 
 			ems_request:registra_request(Request),
-			ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, notfound}});
+			ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, enoent}});
 		Erro ->
 			io:format("ERRO -> ~p\n", [Erro])
 	end,
@@ -186,14 +186,9 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 	ok.
 
 get_work_node('', _, _, _, _) -> {ok, node()};
-
 get_work_node([], HostList, HostNames, ModuleName, 1) -> 
 	get_work_node(HostList, HostList, HostNames, ModuleName, 2);
-
-get_work_node([], _HostList, HostNames, _ModuleName, 2) -> 
-	Motivo = lists:flatten(string:join(HostNames, ", ")),
-	{error, service_fora, Motivo};
-
+get_work_node([], _, _, _, 2) -> {error, eunavailable_service};
 get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) -> 
 	%% Localiza a entrada do módulo na tabela hash
 	case ets:lookup(ctrl_node_dispatch, ModuleName) of

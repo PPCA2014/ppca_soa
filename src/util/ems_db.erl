@@ -81,12 +81,12 @@ get(RecordType, Id) when is_number(Id) ->
 		mnesia:read(RecordType, Id)
 	end,
 	case mnesia:transaction(Query) of
-		{atomic, []} -> {erro, notfound};
+		{atomic, []} -> {erro, enoent};
 		{atomic, [Record|_]} -> {ok, Record};
 		{aborted, _Reason} -> {erro, aborted}
 	end;
 
-get(_RecordType, _) -> {erro, notfound}.
+get(_RecordType, _) -> {erro, enoent}.
 
 
 all(RecordType) ->
@@ -282,7 +282,7 @@ find_first(Tab, FilterList) -> find_first(Tab, [], FilterList).
 %
 find_first(Tab, FieldList, FilterList) ->
     case filter_with_limit(Tab, FilterList, 1, 1) of
-		[] -> {error, notfound};
+		[] -> {error, enoent};
 		[FirstRecord|_] -> select_fields(FirstRecord, FieldList)
 	end.
 
@@ -294,7 +294,7 @@ find_first(Tab, FieldList, FilterList) ->
 %
 find_first(Tab, FieldList, FilterList, Offset) ->
     case filter_with_limit(Tab, FilterList, 1, Offset) of
-		[] -> {error, notfound};
+		[] -> {error, enoent};
 		[FirstRecord|_] -> select_fields(FirstRecord, FieldList)
 	end.
 	

@@ -145,7 +145,7 @@ update(Id, CatalogSchemaMap) when is_map(CatalogSchemaMap) ->
 													json_schema = JsonSchema},
 				mnesia:write(CatalogSchemaMap3),
 				CatalogSchemaMap3;
-            _ -> {error, notfound}
+            _ -> {error, enoent}
 		end
 	end,
 	mnesia:activity(transaction, F).

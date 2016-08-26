@@ -558,7 +558,7 @@ processa_querystring(Service, Request) ->
 					end;
 				false -> 
 					case QuerystringServico =:= <<>> of
-						true -> notfound;
+						true -> enoent;
 						false -> valida_querystring(QuerystringServico, QuerystringUser)
 					end
 			end
@@ -567,10 +567,10 @@ processa_querystring(Service, Request) ->
 valida_querystring(QuerystringServico, QuerystringUser) ->
 	case valida_querystring(QuerystringServico, QuerystringUser, []) of
 		{ok, Querystring} -> Querystring;
-		notfound -> notfound
+		enoent -> enoent
 	end.
 
-valida_querystring([], _QuerystringUser, notfound) -> notfound;
+valida_querystring([], _QuerystringUser, enoent) -> enoent;
 
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};
@@ -582,8 +582,8 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 		{ok, Value} -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
 		error ->
 			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
-			case maps:get(<<"default">>, H, notfound) of
-				notfound -> notfound;
+			case maps:get(<<"default">>, H, enoent) of
+				enoent -> enoent;
 				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
 			end
 	end.
@@ -604,18 +604,18 @@ do_lookup(Request, State) ->
 				{Service, ParamsMap} -> 
 					Querystring = processa_querystring(Service, Request),
 					{Service, ParamsMap, Querystring};
-				notfound -> notfound
+				enoent -> enoent
 			end;
 		[{_Rowid, Service}] -> 
 			case processa_querystring(Service, Request) of
-			   notfound -> notfound;
+			   enoent -> enoent;
 			   Querystring -> {Service, Request#request.params_url, Querystring}
 			end
 	end.
 
 
 do_lookup_re(_Request, []) ->
-	notfound;
+	enoent;
 
 do_lookup_re(Request, [H|T]) ->
 	RE = H#service.id_re_compiled,
@@ -626,7 +626,7 @@ do_lookup_re(Request, [H|T]) ->
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 			{H, ParamsMap};
 		nomatch -> do_lookup_re(Request, T);
-		{error, _ErrType} -> notfound 
+		{error, _ErrType} -> enoent 
 	end.
 
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 

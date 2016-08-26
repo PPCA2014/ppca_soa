@@ -281,7 +281,7 @@ parse_url(Url) ->
 	try
 		parse_url_tail(Url2, 1, [])
 	catch error:badarg ->
-		erlang:error(einvalid_param_id)
+		erlang:error(einvalid_id_object)
 	end.
 
 parse_url_tail([], _, L) -> lists:reverse(L);
@@ -299,7 +299,7 @@ parse_parte_url([H|_] = UrlParte, SeqId) ->
 			end,
 			{SeqId_, list_to_integer(UrlParte), SeqId+1};
 		H =:= 45 ->
-			erlang:error(einvalid_negative_id);
+			erlang:error(einvalid_id_object);
 		true -> {UrlParte, [], SeqId}
 	end.
 
@@ -338,14 +338,17 @@ json_field_format_table(Value) when is_integer(Value) -> Value;
 json_field_format_table(Value) when is_boolean(Value) -> Value;
 json_field_format_table(null) -> null;
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
-json_field_format_table(Value) when is_list(Value) -> utf8_list_to_string(Value);
+json_field_format_table(Value) when is_list(Value) -> json_field_strip_and_escape(utf8_list_to_string(Value));
 json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
-json_field_strip([]) ->	null;
-json_field_strip(Value) -> 
+json_field_strip_and_escape([]) ->	null;
+json_field_strip_and_escape(Value) -> 
 	case string:strip(Value) of
 		[] -> null;
-		V -> V
+		V -> [case Ch of 
+					34 -> "\\\""; 
+					_ -> Ch 
+			  end || Ch <- V]
 	end.
 
 
@@ -370,7 +373,9 @@ utf8_list_to_string(Value) ->
 			latin1 -> unicode:characters_to_list(Value, utf8)
 		end
 	catch
-		Exception:ReasonX -> io:format("erro!! value is ~p\n", [Value]), <<>>
+		_Exception:Reason -> 
+			io:format("utf8_list_to_string error ~p with value ~p\n", [Reason, Value]), 
+			<<>>
 	end.
 	
 

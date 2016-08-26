@@ -67,10 +67,43 @@ to_list(_) -> erlang:error(einvalid_to_list).
 to_list_tuple(Tuple) ->
 	case size(Tuple) rem 2 == 0 of
 		true ->  
-			T2 = ems_util:tuple_to_binlist(Tuple),
+			T2 = tuple_to_binlist(Tuple),
 			to_list_tuple(T2, []);
 		_ -> erlang:error(einvalid_to_list)
 	end.
+
+
+tuple_to_binlist(T) ->
+	L = tuple_to_list(T),
+	list_to_binlist(L).
+
+list_to_binlist([]) -> [];
+list_to_binlist(<<>>) -> [];
+list_to_binlist(<<V/binary>>) -> [V];
+list_to_binlist([H|T]) -> [item_to_binary(H)|list_to_binlist(T)].
+
+item_to_binary([]) -> <<>>;
+item_to_binary(<<I/binary>>) -> I;
+item_to_binary(T) when is_tuple(T) -> 
+	tuple_to_binlist(T);
+item_to_binary(L) when is_list(L) -> 
+	case io_lib:printable_list(L) of
+		true -> 
+			L2 = [case Ch of 
+					34 -> "\\\""; 
+					_ -> Ch 
+				  end || Ch <- L],
+			iolist_to_binary(L2);
+		false -> list_to_binlist(L)
+	end;
+item_to_binary(I) when is_integer(I) -> I;
+item_to_binary(I) when is_float(I) -> I;
+item_to_binary(I) when is_atom(I) -> 
+	[I2] = io_lib:format("~p", [I]),
+	iolist_to_binary(I2);
+item_to_binary(I) when is_map(I) -> I;
+item_to_binary(I) -> iolist_to_binary(I).
+
 
 to_list_tuple([], L) ->	L;	
 to_list_tuple([F|[V|T]], L) ->	
@@ -132,19 +165,25 @@ to_value([<<Key/binary>>, <<Value/binary>>]) ->
 	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
 	case io_lib:printable_list(Value) of 
-		true ->	json_value_strip(ems_util:utf8_list_to_string(Value));
+		true ->	json_field_strip_and_escape(ems_util:utf8_list_to_string(Value));
 		_ -> to_json(list_to_tuple(Value))
 	end;
 to_value(Value) when is_map(Value) ->
 	ems_util:json_encode(Value);
 to_value(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
-json_value_strip([]) ->	<<"null"/utf8>>;
-json_value_strip(<<>>) -> <<"null"/utf8>>;
-json_value_strip(Value) -> 
+
+json_field_strip_and_escape([]) ->	<<"null"/utf8>>;
+json_field_strip_and_escape(<<>>) -> <<"null"/utf8>>;
+json_field_strip_and_escape(Value) -> 
 	case string:strip(Value) of
 		[] -> <<"null"/utf8>>;
-		V -> [<<"\""/utf8>>, V, <<"\""/utf8>>]
+		ValueStrip -> 
+			ValueEscaped = [case Ch of 
+									34 -> "\\\""; 
+									_ -> Ch 
+							end || Ch <- ValueStrip],
+			[<<"\""/utf8>>, ValueEscaped, <<"\""/utf8>>]
 	end.
 
 

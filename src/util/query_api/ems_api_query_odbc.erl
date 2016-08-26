@@ -141,10 +141,10 @@ parse_name_and_operator(Param) ->
 			Op = string:sub_string(Param, Idx+2),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
-				_ -> erlang:error(einvalid_param_filter)
+				_ -> erlang:error(einvalid_condition)
 			end;
 		0 -> {Param, "e"};
-		_ -> erlang:error(einvalid_param_filter)
+		_ -> erlang:error(einvalid_condition)
 	end.
 
 

@@ -187,31 +187,51 @@ process_request(Socket, RequestBin) ->
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
 			ems_dispatcher:dispatch_request(Request);
-		 Error -> send_error(Socket, Error)
+		 {error, Reason} -> 
+			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),
+			ems_tcp_util:send_data(Socket, Response),
+			gen_tcp:close(Socket),
+			ems_logger:error("Invalid request: ~p.", [Reason])
 	end.
 
 
-process_response({_MsgType, Request, Result}) ->
-	Socket = Request#request.socket,
+process_response({_MsgType, Request = #request{type = Method, socket = Socket}, Result}) ->
 	inet:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
 	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 	% TCP_DEFER_ACCEPT for Linux
 	inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 	case Result of
-		<<Content/binary>> -> 
-			Response = ems_http_util:encode_response(<<"200">>, Content),
-			send_response(200, ok, Request, Response);
 		{ok, <<Content/binary>>} -> 
-			Response = ems_http_util:encode_response(<<"200">>, Content),
-			send_response(200, ok, Request, Response);
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+			Response = ems_http_util:encode_response(HttpCodeBin, Content),
+			send_response(HttpCode, ok, Request, Response);
 		{ok, <<Content/binary>>, <<MimeType/binary>>} ->
-			Response = ems_http_util:encode_response(<<"200">>, Content, MimeType),
-			send_response(200, ok, Request, Response);
-		Error ->
-			Response = ems_http_util:encode_response(<<"400">>, Error),
-			send_response(400, Error, Request, Response)
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+			Response = ems_http_util:encode_response(HttpCodeBin, Content, MimeType),
+			send_response(HttpCode, ok, Request, Response);
+		{error, Reason} ->
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
+			Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
+			send_response(HttpCode, {error, Reason}, Request, Response);
+		Content when is_map(Content) -> 
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+			Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
+			send_response(HttpCode, ok, Request, Response);
+		Content = [H|_] when is_map(H) -> 
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+			Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
+			send_response(HttpCode, ok, Request, Response);
+		Content -> 
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+			Response = ems_http_util:encode_response(HttpCodeBin, Content),
+			send_response(HttpCode, ok, Request, Response)
 	end.
+
+get_http_code_verb("POST", true)  -> {201, <<"201">>};
+get_http_code_verb("PUT", false)  -> {400, <<"400">>};
+get_http_code_verb(_, true)  -> {200, <<"200">>};
+get_http_code_verb(_, false)  -> {400, <<"400">>}.
 
 send_response(Code, Reason, Request, Response) ->
 	T2 = ems_util:get_milliseconds(),
@@ -229,11 +249,4 @@ send_response(Code, Reason, Request, Response) ->
 		_  -> ems_eventmgr:notifica_evento(send_error_request, Request2)
 	end.
 
-send_error(Socket, Reason) when is_atom(Reason) ->	
-	send_error(Socket, atom_to_list(Reason));
-send_error(Socket, Reason) ->
-	Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(Reason), <<"application/json; charset=utf-8"/utf8>>),
-	ems_tcp_util:send_data(Socket, Response),
-	gen_tcp:close(Socket),
-	ems_logger:error("Error: ~p.", [Reason]).
 	

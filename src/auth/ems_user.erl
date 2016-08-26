@@ -191,7 +191,7 @@ find_by_username_and_password(Username, Password) ->
 		  )
 	   end,
 	case mnesia:transaction(Query) of
-		{atomic, []} -> {error, notfound};
+		{atomic, []} -> {error, enoent};
 		{atomic, [Record|_]} -> {ok, Record};
 		{aborted, _Reason} -> {error, aborted}
 	end.

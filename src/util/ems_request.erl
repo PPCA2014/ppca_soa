@@ -175,7 +175,7 @@ get_request_by_rid(RID) ->
 %% @doc Retorna uma requisição pelo seu id
 get_request_em_andamento(RID) -> 
 	case ets:lookup(tbl_request_andamento, RID) of
-		[] -> {erro, notfound};
+		[] -> {erro, enoent};
 		[Request] -> {ok, Request}
 	end.
 

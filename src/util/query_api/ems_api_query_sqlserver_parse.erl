@@ -1,33 +1,19 @@
 %%********************************************************************
-%% @title Module ems_api_query_sqlite
+%% @title Module ems_api_query_sqlserver_parse
 %% @version 1.0.0
-%% @doc It provides api query functions for sqlite database.
+%% @doc It provides parse api query mnesia
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_api_query_sqlite).
+-module(ems_api_query_sqlserver_parse).
 
--export([find/7, find_by_id/4]).
+-compile(export_all).
 
 -include("../../../include/ems_config.hrl").
 -include("../../../include/ems_schema.hrl").
 
 
-find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->
-	case generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource, Debug);
-		{error, Reason} -> {error, Reason}
-	end.
-
-
-find_by_id(Id, Fields, Datasource, Debug) ->
-	case generate_dynamic_query(Id, Fields, Datasource) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource, Debug);
-		{error, Reason} -> {error, Reason}
-	end.
-
-	    
 parse_fields([]) -> "*";
 parse_fields(Fields) -> 
 	case string:tokens(string:strip(Fields), ",") of
@@ -37,7 +23,7 @@ parse_fields(Fields) ->
 
 	    
 parse_filter(<<>>) -> {"", ""};
-parse_filter(Filter) ->    
+parse_filter(<<Filter/binary>>) ->    
     case ems_util:json_decode(Filter) of
 		{ok, Filter2} -> 
 			parse_filter(Filter2, [], []);
@@ -67,7 +53,7 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 	parse_condition(Param2, Value, sql_boolean);
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
-	Value2 = unicode:characters_to_list(Value, latin1),
+	Value2 = unicode:characters_to_list(Value, utf8),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
@@ -144,10 +130,10 @@ parse_name_and_operator(Param) ->
 			Op = string:to_lower(string:sub_string(Param, Idx+2)),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
-				_ -> throw({einvalid_condition, Param})
+				_ -> throw({einvalid_param_filter, Param})
 			end;
 		0 -> {Param, "e"};
-		_ -> throw({einvalid_condition, Param})
+		_ -> io:format("aqui\n"),throw({einvalid_param_filter, Param})
 	end.
 
 
@@ -199,27 +185,61 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
 
-parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
-	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
+parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> ok;
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
-generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = TableName}, Limit, Offset, Sort) ->
+generate_dynamic_query(FilterJson, Fields, 
+					   #service_datasource{table_name = TableName, 
+										   sql = "",	
+										   primary_key = PrimaryKey}, 
+					   Limit, Offset, Sort) ->
 	{FilterSmnt, Params} = parse_filter(FilterJson),
 	FieldsSmnt = parse_fields(Fields),
 	SortSmnt = parse_sort(Sort),
-	LimitSmnt = parse_limit(Limit, Offset),
-	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	parse_limit(Limit, Offset),
+	SqlSmnt = lists:flatten(case Offset == 1 of
+								 true -> 
+										io_lib:format("select top ~p ~s from ~s ~s ~s", 
+											[Limit, FieldsSmnt, TableName, FilterSmnt, SortSmnt]);
+
+								 _ ->   %% bastante lento se não existir índice na chave
+										io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from ~s ~s ~s) _t where _t._RowNumber between ~p and ~p", 
+											[FieldsSmnt, PrimaryKey, TableName, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
+							end),
+	%io:format("sql is ~p\n", [SqlSmnt]),
+	{ok, {SqlSmnt, Params}};
+
+generate_dynamic_query(FilterJson, Fields, 
+					   #service_datasource{table_name = "", 
+										   sql = Sql,	
+										   primary_key = PrimaryKey}, 
+					   Limit, Offset, Sort) ->
+	{FilterSmnt, Params} = parse_filter(FilterJson),
+	FieldsSmnt = parse_fields(Fields),
+	SortSmnt = parse_sort(Sort),
+	parse_limit(Limit, Offset),
+	SqlSmnt = lists:flatten(case Offset == 1 of
+								 true -> 
+										io_lib:format("select top ~p ~s from (~s) _t ~s ~s", 
+											[Limit, FieldsSmnt, Sql, FilterSmnt, SortSmnt]);
+
+								 _ ->   %% bastante lento se não existir índice na chave
+										io_lib:format("select * from (select ~s, row_number() over (order by ~s) AS _RowNumber from (~s) _t_sql ~s ~s) _t where _t._RowNumber between ~p and ~p", 
+											[FieldsSmnt, PrimaryKey, Sql, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
+							end),
 	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
-
-generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, primary_key = PrimaryKey}) ->
+generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, 
+														primary_key = PrimaryKey}) when Id > 0, Id =< ?MAX_ID_RECORD_QUERY ->
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
-	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s where ~s = ? limit 1", [Fields2, TableName, PrimaryKey])),
+	SqlSmnt = lists:flatten(io_lib:format("select top 1 ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
 	%io:format("sql is ~p\n", [SqlSmnt]),
-	{ok, {SqlSmnt, Params}}.
+	{ok, {SqlSmnt, Params}};
+generate_dynamic_query(_, _, _) -> erlang:error(einvalid_id_object).
+	
 
 
 execute_dynamic_query(Sql, _, _, true) -> 

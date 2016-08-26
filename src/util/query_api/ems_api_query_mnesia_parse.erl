@@ -14,7 +14,7 @@
 -include("../../../include/ems_schema.hrl").
 
 
-generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) ->
+generate_dynamic_query(FilterJson, Fields, _Datasource, Limit, Offset, Sort) ->
 	FieldList = parse_fields(Fields),
 	FilterList = parse_filter(FilterJson),
 	SortSmnt = parse_sort(Sort),
@@ -26,8 +26,12 @@ generate_dynamic_query(Id, Fields, Datasource) ->
 	{ok, FieldList}.
 
    
-parse_fields([]) -> [];
-parse_fields(Fields) -> string:tokens(Fields, ",").
+parse_fields([]) -> "*";
+parse_fields(Fields) -> 
+	case string:tokens(string:strip(Fields), ",") of
+		[] -> erlang:error(einvalid_fields);
+		Fields2 -> string:join(Fields2, ",")
+	end.
 
 parse_filter(<<>>) -> [];
 parse_filter(Filter) ->    
@@ -65,28 +69,23 @@ parse_name_and_operator(Param) ->
 		Idx when Idx > 1 ->
 			Name = string:sub_string(Param, 1, Idx-1),
 			Op = string:sub_string(Param, Idx+2),
-			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
+			case lists:member(Op, ["e", "ne", "gt", "gte", "lt", "lte"]) of
 				true -> 
 					Op2 = format_mnesia_operator(Op),
 					{Name, Op2};
-				_ -> erlang:error(einvalid_operator_filter)
+				_ -> throw({einvalid_condition, Param})
 			end;
 		0 -> {Param, "=="};
-		_ -> erlang:error(einvalid_param_filter)
+		_ -> throw({einvalid_condition, Param})
 	end.
 
 
 format_mnesia_operator("e") -> "==";
 format_mnesia_operator("ne") -> "=/=";
-format_mnesia_operator("like") -> "like";
-format_mnesia_operator("ilike") -> "like";
-format_mnesia_operator("contains") -> "like";
-format_mnesia_operator("icontains") -> "like";
 format_mnesia_operator("gt") -> ">";
 format_mnesia_operator("gte") -> ">=";
 format_mnesia_operator("lt") -> "<" ;
 format_mnesia_operator("lte") -> "=<";
-format_mnesia_operator("isnull") -> "is null";
 format_mnesia_operator(_) -> erlang:error(invalid_operator_filter).
 
 
@@ -111,7 +110,7 @@ parse_sort_asc_desc(F, ["desc"]) -> F;
 parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
-parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> -{Limit, Offset};
+parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> -{Limit, Offset};
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 

@@ -41,44 +41,48 @@ encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, Worker
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
 		[Url|Querystring] = string:tokens(Uri, "?"),
-		Url2 = ems_util:remove_ult_backslash_url(Url),
-		Content_Length = maps:get('Content-Length', HttpParams, 0),
-		Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
-		Accept = maps:get('Accept', HttpParams, "*/*"),
-		Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
-		User_Agent = maps:get('User-Agent', HttpParams, ""),
-		Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
-		Host = maps:get('Host', HttpParams, ""),
-		QuerystringMap = parse_querystring(Querystring),
-		Authorization = maps:get('Authorization', HttpParams, ""),
-		{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
-		Request = #request{
-			rid = RID,
-			rowid = Rowid,
-			type = Method,
-			uri = Uri,
-			url = Url2,
-			version = Http_Version,
-			querystring = Querystring,
-			querystring_map = QuerystringMap,
-			params_url = Params_url,
-			content_length = Content_Length,
-			content_type = Content_Type,
-			accept = Accept,
-			user_agent = User_Agent,
-			accept_encoding = Accept_Encoding,
-			cache_control = Cache_Control,
-			host = Host,
-			socket = Socket, 
-			t1 = T1, 
-			payload = binary_to_list(Payload), 
-			payload_map = decode_payload(Payload),
-			timestamp = Timestamp,
-			authorization = Authorization,
-			worker_send = WorkerSend,
-			protocol = http
-		},	
-		{ok, Request}
+		case length(Querystring) =< 1 of
+			 true ->
+				Url2 = ems_util:remove_ult_backslash_url(Url),
+				Content_Length = maps:get('Content-Length', HttpParams, 0),
+				Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
+				Accept = maps:get('Accept', HttpParams, "*/*"),
+				Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
+				User_Agent = maps:get('User-Agent', HttpParams, ""),
+				Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
+				Host = maps:get('Host', HttpParams, ""),
+				QuerystringMap = parse_querystring(Querystring),
+				Authorization = maps:get('Authorization', HttpParams, ""),
+				{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
+				Request = #request{
+					rid = RID,
+					rowid = Rowid,
+					type = Method,
+					uri = Uri,
+					url = Url2,
+					version = Http_Version,
+					querystring = Querystring,
+					querystring_map = QuerystringMap,
+					params_url = Params_url,
+					content_length = Content_Length,
+					content_type = Content_Type,
+					accept = Accept,
+					user_agent = User_Agent,
+					accept_encoding = Accept_Encoding,
+					cache_control = Cache_Control,
+					host = Host,
+					socket = Socket, 
+					t1 = T1, 
+					payload = binary_to_list(Payload), 
+					payload_map = decode_payload(Payload),
+					timestamp = Timestamp,
+					authorization = Authorization,
+					worker_send = WorkerSend,
+					protocol = http
+				},	
+				{ok, Request};
+			_ -> {error, einvalid_querystring}
+		end
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
@@ -133,8 +137,8 @@ parse_querystring([]) -> #{};
 parse_querystring([Q]) ->
 	Q1 = httpd:parse_query(Q),
 	Q2 = [{iolist_to_binary(P), 
-		   iolist_to_binary(case hd(V) of
-										34 -> string:substr(V, 2, length(V)-2);
+		   iolist_to_binary(case V of
+										[34|_] -> string:substr(V, 2, length(V)-2);
 										_  -> V
 						    end)}  || {P,V} <- Q1],
 	maps:from_list(Q2).
@@ -166,7 +170,7 @@ decode_http_request(RequestBin) ->
 										   Payload};
 				Error -> Error
 			end;
-		Error -> Error
+		_ -> {error, einvalid_http_request}
 	end.
 
 

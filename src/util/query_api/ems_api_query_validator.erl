@@ -16,7 +16,7 @@ validate(Data, CatalogSchemaId) ->
 	{ok, CatalogSchema} = ems_catalog_schema:find_by_id(CatalogSchemaId),
 	jesse:add_schema(CatalogSchemaId, CatalogSchema#catalog_schema.json_schema),
 	case jesse:validate(CatalogSchemaId, Data) of
-		{ok, Record} -> ok;
+		{ok, _} -> ok;
 		{error, [{data_invalid, SchemaErrorMap, TypeError, TypeValue, [TypeField]}]} ->
 			{error, {<<"field">>, TypeField,  <<"reason">>, TypeError, <<"value">>, TypeValue, <<"field_def">>, SchemaErrorMap}};
 		{error, [{data_invalid, SchemaErrorMap, missing_required_property, _, []}]} ->

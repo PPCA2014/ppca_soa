@@ -112,7 +112,7 @@ code_change(_OldVsn, State, _Extra) ->
 do_list_catalog(_Request, _State) -> 
 	ems_catalog:list_catalog().
 	
-do_insert(Request = #request{payload = CatalogJson}, _State) ->
+do_insert(#request{payload = CatalogJson}, _State) ->
 	io:format("catalog is ~p\n", [CatalogJson]),
 	1.
 	
