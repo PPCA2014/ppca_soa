@@ -81,12 +81,12 @@ get(RecordType, Id) when is_number(Id) ->
 		mnesia:read(RecordType, Id)
 	end,
 	case mnesia:transaction(Query) of
-		{atomic, []} -> {erro, enoent};
+		{atomic, []} -> {error, enoent};
 		{atomic, [Record|_]} -> {ok, Record};
 		{aborted, _Reason} -> {erro, aborted}
 	end;
 
-get(_RecordType, _) -> {erro, enoent}.
+get(_RecordType, _) -> {error, enoent}.
 
 
 all(RecordType) ->

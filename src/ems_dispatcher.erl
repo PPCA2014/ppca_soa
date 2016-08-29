@@ -89,7 +89,7 @@ handle_info({Code, RID, Reply}, State) ->
 			ems_request:registra_request(Request),
 			ems_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
 			{noreply, State};
-		{erro, enoent} -> {noreply, State}
+		{error, enoent} -> {noreply, State}
 	end;
 
 handle_info(_Msg, State) ->
