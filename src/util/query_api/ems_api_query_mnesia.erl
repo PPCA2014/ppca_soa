@@ -8,7 +8,7 @@
 
 -module(ems_api_query_mnesia).
 
--export([find/7, find_by_id/4, insert/3]).
+-export([find/7, find_by_id/4, insert/3, update/4]).
 
 -include("../../../include/ems_schema.hrl").
 
@@ -36,13 +36,28 @@ insert(Payload, Service = #service{schema_in = Schema}, #service_datasource{tabl
 		ok -> 
 			Record = ems_schema:to_record(Payload, list_to_atom(TableName)),
 			case ems_db:insert(Record) of
-				{ok, Record2 } ->
-					ems_schema:to_json(Record2);
+				{ok, Record2 } -> Record2;
 				Error -> Error
 			end;
 		Error -> Error
 	end.
 
+
+update(Id, Payload, Service = #service{schema_in = Schema}, #service_datasource{table_name = TableNameStr}) -> 
+	TableName = list_to_atom(TableNameStr),
+	case ems_db:get(TableName, Id) of
+		{ok, Record} ->
+			Record2 = ems_schema:to_record(Payload, Record),  %% copia os dados do payload para Record
+			case ems_api_query_validator:validate(Record2, Schema) of
+				ok -> 
+					case ems_db:update(Record2) of
+						ok -> Record2;
+						Error -> Error
+					end;
+				Error -> Error
+			end;
+		Error -> Error
+	end.
 
 	
 

@@ -100,10 +100,23 @@ all(RecordType) ->
 
 insert(Record) ->
 	RecordType = element(1, Record),
-	Id = sequence(RecordType),
-	Record1 = setelement(2, Record, Id),
-	mnesia:transaction(fun() -> mnesia:write(Record1) end),
-	{ok, Record1}.
+	F = fun() ->
+		case element(2, Record) of
+			undefined ->
+				Id = sequence(RecordType),
+				Record1 = setelement(2, Record, Id),
+				mnesia:write(Record1),
+				Record1;
+			Id -> 
+				case mnesia:read(RecordType, Id) of
+					[] -> mnesia:write(Record),
+						  Record;
+					_ -> {error, ealready_exist}
+				end
+		end
+	end,		
+	{atomic, Result} = mnesia:transaction(F),
+	{ok, Result}.
 
 update(Record) ->
 	Write = fun() -> mnesia:write(Record) end,

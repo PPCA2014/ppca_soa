@@ -222,6 +222,10 @@ process_response({_MsgType, Request = #request{type = Method, socket = Socket}, 
 			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 			Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
 			send_response(HttpCode, ok, Request, Response);
+		Content = [H|_] when is_tuple(H) -> 
+			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+			Response = ems_http_util:encode_response(HttpCodeBin, ems_schema:to_json(Content)),
+			send_response(HttpCode, ok, Request, Response);
 		Content -> 
 			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 			Response = ems_http_util:encode_response(HttpCodeBin, Content),

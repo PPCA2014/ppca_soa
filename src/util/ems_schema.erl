@@ -24,23 +24,26 @@ to_record(Json, Type) when is_binary(Json), is_atom(Type) ->
 	JsonStruct = {struct, JsonMap},
 	NewRecord = new(Type),
 	json_rec:to_rec(JsonStruct, ?MODULE, NewRecord);
-
 to_record(Json, Record) when is_binary(Json), is_tuple(Record)->
 	{ok, JsonMap} = ems_util:json_decode(Json),
 	JsonStruct = {struct, JsonMap},
 	json_rec:to_rec(JsonStruct, ?MODULE, Record);
-
 to_record(Map, Type) when is_map(Map), is_atom(Type) ->
 	List = maps:to_list(Map),
 	JsonStruct = {struct, List},
 	NewRecord = new(Type),
 	json_rec:to_rec(JsonStruct, ?MODULE, NewRecord);
-
 to_record(Map, Record) when is_map(Map), is_tuple(Record)->
 	List = maps:to_list(Map),
 	JsonStruct = {struct, List},
 	json_rec:to_rec(JsonStruct, ?MODULE, Record);
-
+to_record(DestRecord, Source) when is_tuple(DestRecord) ->
+	io:format("aqui1\n"),
+	ListRec = to_list(DestRecord),
+	io:format("aqui2\n"),
+	MapRec = maps:from_list(ListRec),
+	io:format("aqui3 ~p  and ~p\n", [MapRec, Source]),
+	to_record(MapRec, Source);
 to_record(_, _) -> erlang:error(einvalid_to_record).
 
 

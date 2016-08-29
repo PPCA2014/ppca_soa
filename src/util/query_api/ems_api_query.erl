@@ -8,7 +8,7 @@
 
 -module(ems_api_query).
 
--export([find/7, find_by_id/4, insert/3]).
+-export([find/7, find_by_id/4, insert/3, update/4]).
 
 -include("../../../include/ems_schema.hrl").
 
@@ -39,4 +39,16 @@ insert(Payload, Service, Datasource = #service_datasource{type = ConnType}) ->
 		_ -> erlang:raise(einvalid_datasource)
 	end.
 		
+
+update(Id, Payload, Service, Datasource = #service_datasource{type = ConnType}) ->
+	case maps:is_key(<<"id">>, Payload) of
+		true -> {error, eupdate_id_not_allowed};
+		_ ->
+			case ConnType of
+				sqlserver -> ok;
+				sqlite -> ok;
+				mnesia -> ems_api_query_mnesia:update(Id, Payload, Service, Datasource);
+				_ -> erlang:raise(einvalid_datasource)
+			end
+	end.
 

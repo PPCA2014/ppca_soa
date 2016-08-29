@@ -26,7 +26,7 @@ generate_dynamic_query(Id, Fields, Datasource) ->
 	{ok, FieldList}.
 
    
-parse_fields([]) -> "*";
+parse_fields([]) -> [];
 parse_fields(Fields) -> 
 	case string:tokens(string:strip(Fields), ",") of
 		[] -> erlang:error(einvalid_fields);
@@ -110,7 +110,7 @@ parse_sort_asc_desc(F, ["desc"]) -> F;
 parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
-parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> -{Limit, Offset};
+parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> {Limit, Offset};
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 
