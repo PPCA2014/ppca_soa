@@ -76,7 +76,7 @@ to_record(_, _) -> erlang:error(einvalid_to_record).
 
 find_by_id(Id) -> ems_db:get(catalog_schema, Id).
 
-find_by_name(Name) -> ems_db:find(catalog_schema, {name, "==", Name}).
+find_by_name(Name) -> ems_db:find_first(catalog_schema, {name, "==", Name}).
 
 find_id_by_name(Name) -> 
 	case ems_db:find_first(catalog_schema, [id], {name, "==", Name}) of

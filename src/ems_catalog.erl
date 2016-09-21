@@ -484,7 +484,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 	
 	
 parse_schema(null) -> null;
-parse_schema(Name) -> ems_catalog_schema:find_id_by_name(Name).
+parse_schema(Name) -> Name.
 
 	
 parse_datasource(null) -> null;
