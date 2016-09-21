@@ -35,6 +35,8 @@ create_database(Nodes) ->
 	filelib:ensure_dir(?DATABASE_PATH ++ "/"),
 	application:set_env(mnesia, dir, ?DATABASE_PATH),
 
+	mnesia:create_schema(Nodes),
+	
 	mnesia:start(),
 
     mnesia:create_table(user, [{type, set},
@@ -55,7 +57,7 @@ create_database(Nodes) ->
 								  {index, [#request.timestamp]}]),
 
     mnesia:create_table(ctrl_sqlite_table, [{type, set},
-											{ram_copies, Nodes},
+											{disc_copies, Nodes},
 											{attributes, record_info(fields, ctrl_sqlite_table)}]),
 
     mnesia:create_table(catalog_schema, [{type, set},

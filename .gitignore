@@ -1,5 +1,6 @@
 ebin/**
 priv/conf/msbus.conf**
+priv/db/**
 *.beam
 .eunit
 *~
