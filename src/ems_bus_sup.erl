@@ -2,6 +2,7 @@
 
 -behaviour(supervisor).
 
+-include("../include/ems_schema.hrl").
 
 %% Supervisor callbacks
 -export([start_link/1, init/1]).
@@ -21,29 +22,31 @@ start_link(Args) ->
 %% ===================================================================
 
 init([]) ->
-
-	%% Instantiate the process pool
-	{ok, Pools} = application:get_env(ems_bus, pools),
+	KernelServices = ems_catalog_loader:list_kernel_catalog(),
+	
+	io:format("Kernel services ~p\n", [KernelServices]),
+	
     PoolSpecs = lists:map(
-		fun
-			({Name, [{size, SizePool}, _] = SizeArgs, WorkerArgs}) ->
-				PoolName = atom_to_list(Name),
-				WorkerName = string:substr(PoolName, 1, length(PoolName)-5),
-				Worker = list_to_atom(WorkerName),
-				case SizePool of
+		fun(#service{name = WorkerName, pool_size = PoolSize, properties = WorkerArgs, module = Worker}) ->
+				io:format("aqui1\n"),
+				case PoolSize of
 					1 -> 
+				io:format("aqui2\n"),
 						ems_logger:info("Start ~s with 1 worker", [WorkerName]),
 						{Worker,
-							{Worker, start, WorkerArgs},
+							{Worker, start, [WorkerArgs]},
 							permanent, 10000, worker,  [Worker]
 						};
 					_ ->
-						ems_logger:info("Start ~s with ~p workers", [WorkerName, SizePool]),
+					io:format("aqui3\n"),
+						ems_logger:info("Start ~s with ~p workers", [WorkerName, PoolSize]),
 						PoolArgs = [{strategy, fifo},
-									{name, {local, Name}},
-									{worker_module, Worker}] ++ SizeArgs,
-						ems_pool:child_spec(Name, PoolArgs, WorkerArgs)
+									{name, {local, WorkerName}},
+									{worker_module, Worker},
+									{size, PoolSize}],
+						ems_pool:child_spec(WorkerName, PoolArgs, WorkerArgs)
 				end
-		end, Pools),
+		end, KernelServices),
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
+	
 

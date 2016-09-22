@@ -68,7 +68,7 @@
 					id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
 					name :: string(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço
-					type :: string(),							%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS)
+					type :: string(),							%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
 					service :: string(),						%% Serviço que será executado no contrato
 					module_name :: string(), 					%% Nome do módulo do serviço que vai atender a requisição. Ex.: br.erlangms.HelloWorldService  
 					module_name_canonical :: string(), 			%% Nome do módulo canonico do serviço que vai atender a requisição. Ex.: HelloWorldService  
@@ -92,7 +92,10 @@
 					datasource,									%% Datasource para a fonte de dados
 					debug,										%% Permite habilitar um modo debug (depende da implementação do serviço)
 					schema_in :: non_neg_integer(),
-					schema_out :: non_neg_integer()
+					schema_out :: non_neg_integer(),
+					pool_size :: non_neg_integer(),
+					pool_max :: non_neg_integer(),
+					properties :: map()		
 				}).
 
 

@@ -15,7 +15,7 @@
 -include("../include/ems_http_messages.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/1, stop/0]).
 
 %% Client API
 -export([start_listeners/2, stop_listener/2]).
@@ -32,8 +32,9 @@
 %% Server API
 %%====================================================================
 
-start() -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Args) -> 
+	io:format("start args is ~p\n", [Args]),
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -54,7 +55,8 @@ stop_listener(Port, IpAddress) ->
 %% gen_server callbacks
 %%====================================================================
  
-init(_Args) ->
+init(Args) ->
+ 	io:format("server init is ~p\n", [Args]),
  	Config = ems_config:getConfig(),
 	case start_listeners(Config#config.tcp_listen_address_t,
 						 Config#config.tcp_port, 

@@ -1,184 +1,42 @@
 %%********************************************************************
-%% @title Module ems_catalog
+%% @title Module ems_catalog_loader
 %% @version 1.0.0
-%% @doc Module responsible for catalog management services
+%% @doc Module responsible for parse e load catalog services
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_catalog).
-
--behavior(gen_server). 
+-module(ems_catalog_loader).
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
-%% Server API
--export([start/0, start_link/1, stop/0]).
-
 %% Client
 -export([init_catalog/0,
-		 list_catalog/0, 
-		 update_catalog/0,
-		 lookup/1,
-		 lookup/2,
-		 get_querystring/2, 
-		 get_ult_lookup/0,
-		 list_cat2/0, 
-		 list_cat3/0]).
+		 list_kernel_catalog/0]).
 
-
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
-
--define(SERVER, ?MODULE).
-
-%  Armazena o estado do catálogo. 
--record(state, {cat1, 			%% Catalog JSON
-				cat2, 			%% Parsed catalog 
-				cat3, 			%% Regular expression parsed catalog
-				ult_lookup, 	%% Last lookup performed
-				ult_rowid,		%% Rowid of the last request
-				tbl_cache_lookup = [],
-				tbl_cache_index = 0
-		}). 
-
-
-%%====================================================================
-%% Server API
-%%====================================================================
-
-start() -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
- 
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
  
 %%====================================================================
 %% Client API
 %%====================================================================
  
-list_catalog() ->
-	gen_server:call(?SERVER, list_catalog).
-
-update_catalog() ->
-	gen_server:cast(?SERVER, update_catalog).
-
-lookup(Request) ->	
-	gen_server:call(?SERVER, {lookup, Request}).
-
-lookup(Method, Uri) ->
-	gen_server:call(?SERVER, {lookup, Method, Uri}).
-
-list_cat2() ->
-	gen_server:call(?SERVER, list_cat2).
-
-list_cat3() ->
-	gen_server:call(?SERVER, list_cat3).
-
-get_ult_lookup() ->
-	gen_server:call(?SERVER, get_ult_lookup).
-
-
-	
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-	case ets:lookup(ets_ems_catalog, cat) of
-		[] -> 
-			{stop, nocatalog};
-		[{cat, {Cat1, Cat2, Cat3}}] ->
-			{ok, #state{cat1 = Cat1, cat2 = Cat2, cat3 = Cat3}}
-	end.
-    
-handle_cast(shutdown, State) ->
-    {stop, normal, State};
-
-handle_cast(update_catalog, _State) ->
-	NewState = get_catalog(),
-	{noreply, NewState}.
-
-handle_call(list_catalog, _From, State) ->
-	Reply = do_list_catalog(State),
-	{reply, Reply, State};
-    
-handle_call({lookup, Request}, _From, State) ->
-	Ult_lookup = do_lookup(Request, State),
-	%NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State),
-	{reply, Ult_lookup, State, 60000};
-
-handle_call({lookup, Method, Uri}, _From, State) ->
-	Ult_lookup = do_lookup(Method, Uri, State),
-	{reply, Ult_lookup, State, 60000};
-
-handle_call(list_cat2, _From, State) ->
-	{reply, State#state.cat2, State};
-
-handle_call(list_cat3, _From, State) ->
-	{reply, State#state.cat3, State};
-
-handle_call(get_ult_lookup, _From, State) ->
-	{reply, State#state.ult_lookup, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-    
-    
-%%====================================================================
-%% Funções internas
-%%====================================================================
 
 init_catalog() ->
 	ets:new(ets_ems_catalog, [set, named_table, public]),
 	case get_catalog() of
-		{ok, Cat1, Cat2, Cat3} -> 
-			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3}}),
+		{ok, Cat1, Cat2, Cat3, CatK} -> 
+			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3, CatK}}),
 			ok;
 		{error, Reason} ->
 			{stop, Reason}
 	end.
 	
+list_kernel_catalog() ->
+	case ets:lookup(ets_ems_catalog, cat) of
+		[] -> {stop, nocatalog};
+		[{cat, {_, _, _, CatK}}] -> CatK
+	end.
 
-
-%add_lookup_cache(Ult_rowid, Ult_lookup, State=#state{tbl_cache_lookup=Tbl,
-%													 tbl_cache_index=Index}) when Index < 10 ->
-%	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}|Tbl],
-%	            tbl_cache_index = Index+1};
-%
-%add_lookup_cache(Ult_rowid, Ult_lookup, State) ->
-%	State#state{tbl_cache_lookup = [{Ult_rowid, Ult_lookup}], 
-%				tbl_cache_index = 1}.
-
-
-%lookup_cache(Rowid, State) ->
-%	lookup_cache_tail(State#state.tbl_cache_lookup, Rowid).
-
-%lookup_cache_tail([], _Rowid) -> [];
-
-%lookup_cache_tail([{Ult_rowid, Ult_lookup}|T], Rowid) ->
-%	case Rowid == Ult_rowid of
-%		true -> Ult_lookup;
-%		false -> lookup_cache_tail(T, Rowid)
-%	end.
-
-
-%% @doc Serviço que lista o catálogo
-do_list_catalog(State) -> State#state.cat1.
 
 %% @doc Obtém o catálogo
 get_catalog() -> 
@@ -211,8 +69,8 @@ get_catalog() ->
 			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
 			%% Faz o parser do catálogo
 			Conf = ems_config:getConfig(),
-			case parse_catalog(Cat1, [], [], [], 1, Conf) of
-				{Cat2, Cat3, Cat4} -> {ok, Cat4, Cat2, Cat3};
+			case parse_catalog(Cat1, [], [], [], [], 1, Conf) of
+				{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
 				Error -> Error
 			end;
 		Error -> Error
@@ -298,7 +156,7 @@ valida_type_querystring(Type) ->
 
 %% @doc Valida o método do serviço 
 valida_type_service(Type) ->
-	case ems_http_util:is_metodo_suportado(Type) of
+	case ems_http_util:is_metodo_suportado(Type) orelse Type =:= <<"KERNEL">> of
 		true -> ok;
 		false -> erlang:error(invalid_type_service)
 	end.
@@ -393,13 +251,13 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 %	end.
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
-parse_catalog([], Cat2, Cat3, Cat4, _Id, _Conf) ->
+parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	EtsCat2 = ems_util:list_to_ets(Cat2, ets_cat2, [set, 
 													  public, 
 													  {read_concurrency, true}]),
-	{EtsCat2, Cat3, Cat4};
+	{EtsCat2, Cat3, Cat4, CatK};
 	
-parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
+parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
 		Name = maps:get(<<"name">>, H),
 		Url = maps:get(<<"url">>, H),
@@ -422,6 +280,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 		UseRE = ems_util:binary_to_bool(maps:get(<<"use_re">>, H, <<"false">>)),
 		SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
 		SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
+		PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
+		PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
 		valida_lang(Lang),
 		valida_name_service(Name),
 		valida_type_service(Type),
@@ -462,8 +322,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										   Host, HostName, Result_Cache,
 										   Authentication, Node, Lang,
 										   Datasource, 
-										   Debug, SchemaIn, SchemaOut),
-				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], Id+1, Conf);
+										   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
+				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf);
 			false -> 
 				Service = new_service(Rowid, IdBin, Name, Url2, 
 										ServiceImpl,
@@ -475,8 +335,13 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, Id, Conf) ->
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
 										Datasource, 
-										Debug, SchemaIn, SchemaOut),
-				parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], Id+1, Conf)
+										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
+				case Type of
+					<<"KERNEL">> -> 
+						io:format("passei aqui\n\n"),
+						parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
+					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+				end
 		end
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -537,104 +402,11 @@ parse_host_service(Host, ModuleNameCanonical, Node, Conf) ->
 	{ClusterNode, ClusterName}.
 	
 
-get_querystring(<<QueryName/binary>>, Servico) ->	
-	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#service.comment == QueryName],
-	Query.
-
-
-processa_querystring(Service, Request) ->
-	%% Querystrings do módulo ems_static_file_service e ems_options_service não são processados.
-	QuerystringUser = Request#request.querystring_map,
-	case Service#service.module of
-		ems_static_file_service -> QuerystringUser;
-		ems_options_service -> QuerystringUser;
-		_ ->
-			QuerystringServico = Service#service.querystring,
-			case QuerystringUser =:= #{} of
-				true -> 
-					case QuerystringServico =:= <<>> of
-						true -> QuerystringUser;
-						false -> valida_querystring(QuerystringServico, QuerystringUser)
-					end;
-				false -> 
-					case QuerystringServico =:= <<>> of
-						true -> enoent;
-						false -> valida_querystring(QuerystringServico, QuerystringUser)
-					end
-			end
-	end.
-
-valida_querystring(QuerystringServico, QuerystringUser) ->
-	case valida_querystring(QuerystringServico, QuerystringUser, []) of
-		{ok, Querystring} -> Querystring;
-		enoent -> enoent
-	end.
-
-valida_querystring([], _QuerystringUser, enoent) -> enoent;
-
-valida_querystring([], _QuerystringUser, QuerystringList) ->
-	{ok, maps:from_list(QuerystringList)};
-
-valida_querystring([H|T], QuerystringUser, QuerystringList) ->
-	%% Verifica se encontra a query na querystring do usuário
-	NomeQuery = maps:get(<<"name">>, H),
-	case maps:find(NomeQuery, QuerystringUser) of
-		{ok, Value} -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
-		error ->
-			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
-			case maps:get(<<"default">>, H, enoent) of
-				enoent -> enoent;
-				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
-			end
-	end.
-
-
-do_lookup(Method, Uri, State) ->
-	case ems_http_util:encode_request(Method, Uri) of
-		{ok, Request} -> do_lookup(Request, State);
-		{error, Reason} -> {error, Reason}
-	end.
-
-
-do_lookup(Request, State) ->
-	Rowid = Request#request.rowid,
-	case ets:lookup(State#state.cat2, Rowid) of
-		[] -> 
-			case do_lookup_re(Request, State#state.cat3) of
-				{Service, ParamsMap} -> 
-					Querystring = processa_querystring(Service, Request),
-					{Service, ParamsMap, Querystring};
-				enoent -> enoent
-			end;
-		[{_Rowid, Service}] -> 
-			case processa_querystring(Service, Request) of
-			   enoent -> enoent;
-			   Querystring -> {Service, Request#request.params_url, Querystring}
-			end
-	end.
-
-
-do_lookup_re(_Request, []) ->
-	enoent;
-
-do_lookup_re(Request, [H|T]) ->
-	RE = H#service.id_re_compiled,
-	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
-		match -> {H, #{}};
-		{match, Params} -> 
-			{namelist, ParamNames} = re:inspect(RE, namelist),
-			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
-			{H, ParamsMap};
-		nomatch -> do_lookup_re(Request, T);
-		{error, _ErrType} -> enoent 
-	end.
-
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
-			   Authentication, Node, Lang, 
-			   Datasource,
-			   Debug, SchemaIn, SchemaOut) ->
+			   Authentication, Node, Lang, Datasource,
+			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties) ->
 	{ok, Id_re_compiled} = re:compile(Rowid),
 	#service{
 				rowid = Rowid,
@@ -665,14 +437,17 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    debug = Debug,
 			    lang = Lang,
 			    schema_in = SchemaIn,
-			    schema_out = SchemaOut
+			    schema_out = SchemaOut,
+			    pool_size = PoolSize,
+			    pool_max = PoolMax,
+			    properties = Properties
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang, Datasource, 
-			Debug, SchemaIn, SchemaOut) ->
+			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -701,7 +476,10 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    debug = Debug,
 			    lang = Lang,
 			    schema_in = SchemaIn,
-			    schema_out = SchemaOut
+			    schema_out = SchemaOut,
+			    pool_size = PoolSize,
+			    pool_max = PoolMax,
+			    properties = Properties
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,

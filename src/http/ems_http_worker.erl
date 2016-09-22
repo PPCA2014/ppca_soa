@@ -61,6 +61,7 @@ cast(Msg) -> ems_pool:cast(ems_http_worker_pool, Msg).
 %%====================================================================
 
 init({Owner, LSocket, Allowed_Address}) ->
+	io:format("init0\n"),
 	process_flag(trap_exit, true),	
     State = #state{owner = Owner,
 				   lsocket = LSocket, 
@@ -71,6 +72,7 @@ init({Owner, LSocket, Allowed_Address}) ->
 
 %% init for processes that will process the queue of outgoing requests
 init(_) ->
+    io:format("init1\n"),
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
 
