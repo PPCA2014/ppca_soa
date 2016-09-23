@@ -129,6 +129,7 @@ to_list([H|T], FieldList, Result) ->
 
 % to_json
 to_json(Record) when is_tuple(Record)-> 
+	io:format("record is ~p\n", [Record]),
 	ListTuple = to_list(Record),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
 to_json(List) when is_list(List) -> 

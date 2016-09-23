@@ -13,7 +13,7 @@
 -include("../include/ems_schema.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/1, stop/0]).
 
 %% Client API
 -export([adiciona_evento/1, 
@@ -39,7 +39,7 @@
 %% Server API
 %%====================================================================
 
-start() ->
+start(_) ->
     Result = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
     Result.
  

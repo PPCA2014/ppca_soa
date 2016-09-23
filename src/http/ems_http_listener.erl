@@ -30,8 +30,8 @@
 %% Server API
 %%====================================================================
 
-start(Port, IpAddress) -> 
-    gen_server:start_link(?MODULE, {Port, IpAddress}, []).
+start(IpAddress, TcpConfig) -> 
+    gen_server:start_link(?MODULE, {IpAddress, TcpConfig}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -42,27 +42,27 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({Port, IpAddress}) ->
-	Conf = ems_config:getConfig(),
+init({IpAddress, #tcp_config{tcp_keepalive = KeepAlive, 
+							 tcp_nodelay = NoDelay, 
+							 tcp_allowed_address_t = AllowedAddress,
+							 tcp_max_http_worker = MaxHttpWorker,
+							 tcp_port = Port}}) ->
 	Opts = [binary, 
 			{packet, 0}, 
 			{active, true},
 			{buffer, 8000},
 			{send_timeout_close, true},
 			{send_timeout, ?TCP_SEND_TIMEOUT}, 
-			{keepalive, Conf#config.tcp_keepalive}, 
-			{nodelay, Conf#config.tcp_nodelay},
+			{keepalive, KeepAlive}, 
+			{nodelay, NoDelay},
 			{backlog, ?TCP_BACKLOG},
 			{ip, IpAddress},
 			{reuseaddr, true},
 			{delay_send, false}],
 	case gen_tcp:listen(Port, Opts) of
 		{ok, LSocket} ->
-			NewState = #state{lsocket = LSocket,
-							  allowed_address = Conf#config.tcp_allowed_address_t},
-			start_server_workers(Conf#config.tcp_max_http_worker, 
-								 LSocket,
-								 Conf#config.tcp_allowed_address_t),
+			NewState = #state{lsocket = LSocket, allowed_address = AllowedAddress},
+			start_server_workers(MaxHttpWorker, LSocket, AllowedAddress),
 			ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
 			{ok, NewState};
 		{error,eaddrnotavail} ->

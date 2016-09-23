@@ -17,7 +17,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 %% Server API  
--export([start/0, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([get/2, insert/2, update/2, delete/2, all/2]).
@@ -35,7 +35,7 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start(_) -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 start_link(Args) ->

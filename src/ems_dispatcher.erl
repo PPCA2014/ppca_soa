@@ -16,7 +16,7 @@
 -include("../include/ems_http_messages.hrl").
 
 %% Server API
--export([start/0, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 %% Client API
 -export([dispatch_request/1]).
@@ -33,7 +33,8 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start(_) -> 
+	io:format("passei aqui\n"),
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 start_link(Args) ->
@@ -57,7 +58,6 @@ dispatch_request(Request) ->
  
 init(_Args) ->
     createEtsControle(),
-    %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
  
 createEtsControle() ->
@@ -160,7 +160,7 @@ executa_service(_Node, Request=#request{service=#service{host='',
 		end,
 		ok
 	catch
-		_Exception:ErroInterno ->  {error, service_falhou, ErroInterno}
+		_Exception:ErroInterno ->  {error, eservice_fail, {Module, ErroInterno}}
 	end;
 
 %% @doc Executa um serviço remotamente

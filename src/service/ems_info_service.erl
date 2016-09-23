@@ -15,7 +15,7 @@
 -include("../../include/ems_config.hrl").
 
 %% Server API
--export([start/0, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([execute/2]).
@@ -33,7 +33,7 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start(_) -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 start_link(Args) ->
@@ -48,6 +48,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
+	io:format("execute...\n"),
 	ems_pool:cast(ems_info_service_pool, {info, Request, From}).
 
 
@@ -65,7 +66,6 @@ handle_cast(shutdown, State) ->
 handle_cast({info, Request, _From}, State) ->
 	{Result, NewState} = do_info(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
-	%gen_server:cast(From, {service, Request, Result}), 
 	{noreply, NewState}.
     
 handle_call({info, Request}, _From, State) ->
@@ -90,6 +90,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 do_info(_Request, State) ->
+	io:format("info\n"),
 	Result = <<"{\"message\": \"It works!!!\"}">>,
 	{Result, State}.
 

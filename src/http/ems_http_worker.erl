@@ -28,7 +28,7 @@
 -record(state, {owner 	  = undefined,	 	 %% http listener
 				lsocket   = undefined,		 %% socket of listener
 				socket	  = undefined,		 %% socket of request
-				allowed_address = undefined, %% range of IP addresses that can access the server
+				tcp_allowed_address = undefined,  %% range of IP addresses that can access the server
 				open_requests = []
 			}).
 
@@ -60,19 +60,17 @@ cast(Msg) -> ems_pool:cast(ems_http_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-init({Owner, LSocket, Allowed_Address}) ->
-	io:format("init0\n"),
+init({Owner, LSocket, AllowedAddress}) ->
 	process_flag(trap_exit, true),	
     State = #state{owner = Owner,
 				   lsocket = LSocket, 
-				   allowed_address = Allowed_Address},
+				   tcp_allowed_address = AllowedAddress},
     {ok, State, 0};
 
 
 
 %% init for processes that will process the queue of outgoing requests
 init(_) ->
-    io:format("init1\n"),
     %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
 
@@ -126,19 +124,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-%%close_timeout_connections(#state{open_requests = Open_requests}) ->
-%%	lists:foreach(fun(R) -> 
-%%						case gen_tcp:controlling_process(R#request.socket, self()) of
-%%							ok -> gen_tcp:close(R#request.socket);
-%%							_ -> ok
-%%						end
-%%				  end, Open_requests).
-	
-
-
 accept_request(timeout, State=#state{owner = Owner, 
 									 lsocket = LSocket, 
-									 allowed_address = Allowed_Address}) ->
+									 tcp_allowed_address = AllowedAddress}) ->
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
 			% back to listen to the door as quickly as possible
@@ -151,7 +139,7 @@ accept_request(timeout, State=#state{owner = Owner,
 						{127, 0, _,_} -> 
 							{noreply, State#state{socket = Socket}};
 						_ -> 
-							case ems_http_util:match_ip_address(Allowed_Address, Ip) of
+							case ems_http_util:match_ip_address(AllowedAddress, Ip) of
 								true -> 
 									{noreply, State#state{socket = Socket}};
 								false -> 
@@ -188,6 +176,7 @@ process_request(Socket, RequestBin) ->
 			% TCP_DEFER_ACCEPT for Linux
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
+			io:format("despachando\n\n\n\n"),
 			ems_dispatcher:dispatch_request(Request);
 		 {error, Reason} -> 
 			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),

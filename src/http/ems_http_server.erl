@@ -24,7 +24,9 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
--record(state, {listener=[]}).
+-record(state, {listener=[],
+				tcp_config
+		}).
 
 -define(SERVER, ?MODULE).
 
@@ -33,7 +35,6 @@
 %%====================================================================
 
 start(Args) -> 
-	io:format("start args is ~p\n", [Args]),
     gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
  
 stop() ->
@@ -56,15 +57,24 @@ stop_listener(Port, IpAddress) ->
 %%====================================================================
  
 init(Args) ->
- 	io:format("server init is ~p\n", [Args]),
- 	Config = ems_config:getConfig(),
-	case start_listeners(Config#config.tcp_listen_address_t,
-						 Config#config.tcp_port, 
-						 #state{}) of
-		{ok, State} ->
-			{ok, State};
-		{error, _Reason, State} -> 
-			{stop, State}
+ 	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
+ 	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
+	TcpConfig = #tcp_config{
+		tcp_listen_address = ListenAddress,
+		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
+		tcp_allowed_address = AllowedAddress,
+		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
+		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Args, 2301)),
+		tcp_keepalive = parse_keepalive(maps:get(<<"tcp_keepalive">>, Args, true)),
+		tcp_nodelay = ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Args, true)),
+		tcp_max_http_worker = parse_max_http_worker(maps:get(<<"tcp_max_http_worker">>, Args, ?MAX_HTTP_WORKER))
+ 	},
+ 	State = #state{tcp_config = TcpConfig},
+	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, State) of
+		{ok, State2} ->
+			{ok, State2};
+		{error, _Reason, State2} -> 
+			{stop, State2}
 	end.
     
 handle_cast(shutdown, State) ->
@@ -95,16 +105,15 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_listeners([], _Port, State) -> {ok, State};
-
-start_listeners([H|T], Port, State) ->
-	case do_start_listener(Port, H, State) of
-		{ok, NewState} -> start_listeners(T, Port, NewState);
+start_listeners([], _TcpConfig, State) -> {ok, State};
+start_listeners([H|T], TcpConfig, State) ->
+	case do_start_listener(H, TcpConfig, State) of
+		{ok, NewState} -> start_listeners(T, TcpConfig, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 
-do_start_listener(Port, IpAddress, State) ->
-	case ems_http_listener:start(Port, IpAddress) of
+do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, State) ->
+	case ems_http_listener:start(IpAddress, TcpConfig) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			{ok, NewState};
@@ -122,3 +131,37 @@ do_stop_listener(Port, IpAddress, State) ->
 		_ -> 
 			{{error, enolisten}, State}
 	end.
+	
+parse_tcp_listen_address(ListenAddress) ->
+	lists:map(fun(IP) -> 
+					{ok, L2} = inet:parse_address(IP),
+					L2 
+			  end, ListenAddress).
+
+parse_allowed_address(AllowedAddress) ->
+	lists:map(fun(IP) -> 
+					ems_http_util:mask_ipaddress_to_tuple(IP)
+			  end, AllowedAddress).
+
+parse_keepalive(Keepalive) ->
+	ems_util:binary_to_bool(Keepalive).
+
+parse_tcp_port(<<Port/binary>>) -> 
+	parse_tcp_port(binary_to_list(Port));		
+parse_tcp_port(Port) when is_list(Port) -> 
+	parse_tcp_port(list_to_integer(Port));
+parse_tcp_port(Port) when is_integer(Port) -> 
+	case ems_consist:is_range_valido(Port, 1024, 5000) of
+		true -> Port;
+		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
+	end.
+	
+parse_max_http_worker(<<Value/binary>>) -> 
+	parse_max_http_worker(binary_to_list(Value));
+parse_max_http_worker(Value) -> 
+	case ems_consist:is_range_valido(Value, 1, ?MAX_HTTP_WORKER_RANGE) of
+		true -> Value;
+		false -> erlang:error("Parameter tcp_max_http_worker invalid.")
+	end.
+	
+	

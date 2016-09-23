@@ -16,7 +16,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 %% Server API  
--export([start/0, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([top_services/2, top_services_by_type/2, qtd_requests_by_date/2]).
@@ -34,7 +34,7 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start(_) -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 start_link(Args) ->
@@ -71,19 +71,16 @@ handle_cast(shutdown, State) ->
 handle_cast({top_services, Request, _From}, State) ->
 	Reply = get_top_services(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
-	%gen_server:cast(From, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({top_services_by_type, Request, _From}, State) ->
 	Reply = get_top_services_by_type(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
-	%gen_server:cast(From, {service, Request, {ok, Reply}}),
 	{noreply, State};
 
 handle_cast({qtd_requests_by_date, Request, _From}, State) ->
 	Reply = get_qtd_requests_by_date(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, {ok, Reply}}),
-	%gen_server:cast(From, {service, Request, {ok, Reply}}),
 	{noreply, State}.
 
 handle_call(_Params, _From, State) ->

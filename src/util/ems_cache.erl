@@ -12,7 +12,7 @@
 -behavior(gen_server). 
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/1, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -29,7 +29,7 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start(_) -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->

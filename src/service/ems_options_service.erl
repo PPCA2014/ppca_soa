@@ -15,7 +15,7 @@
 -include("../../include/ems_config.hrl").
 
 %% Server API
--export([start/0, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([execute/2]).
@@ -33,7 +33,7 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start(_) -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 start_link(Args) ->
@@ -56,7 +56,6 @@ execute(Request, From)	->
 %%====================================================================
  
 init(_Args) ->
-	%fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
@@ -64,7 +63,6 @@ handle_cast(shutdown, State) ->
 
 handle_cast({option, Request, _From}, State) ->
 	ems_eventmgr:notifica_evento(ok_request, {200, Request, <<>>}),
-	%gen_server:cast(From, {service, Request, <<>>}), 
 	{noreply, State}.
     
 handle_call(Msg, _From, State) ->

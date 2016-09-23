@@ -335,13 +335,12 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
 										Datasource, 
-										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
-				case Type of
-					<<"KERNEL">> -> 
-						io:format("passei aqui\n\n"),
-						parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
-					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
-				end
+										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H)
+		end,
+		case Type of
+			<<"KERNEL">> -> 
+				parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
+			_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
 		end
 	catch
 		_Exception:Reason -> {error, Reason}

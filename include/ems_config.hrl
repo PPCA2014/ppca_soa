@@ -120,3 +120,15 @@
 
 
 
+%  Definição para o arquivo de configuração
+-record(tcp_config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
+					 tcp_listen_address_t,			%% Quais IPs das interfaces de rede que o barramento vai ouvir (formato de tupla para inet)
+					 tcp_port, 						%% Qual a porta que será utilizada para o barramento
+					 tcp_keepalive, 				%% Propriedade keepalive do TCP (true/false)
+					 tcp_nodelay, 					%% Propriedade nodelay do TCP (true/false)
+					 tcp_max_http_worker,			%% Quantos workers serão criados para cada listener
+					 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
+					 tcp_allowed_address_t
+			 }). 	
+
+
