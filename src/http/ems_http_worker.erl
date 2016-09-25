@@ -176,7 +176,6 @@ process_request(Socket, RequestBin) ->
 			% TCP_DEFER_ACCEPT for Linux
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
-			io:format("despachando\n\n\n\n"),
 			ems_dispatcher:dispatch_request(Request);
 		 {error, Reason} -> 
 			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),

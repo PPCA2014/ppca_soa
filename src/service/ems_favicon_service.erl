@@ -47,7 +47,7 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
-	ems_pool:cast(ems_favicon_service_pool, {favicon, Request, From}).
+	ems_pool:cast(ems_favicon_service, {favicon, Request, From}).
 
 
 %%====================================================================

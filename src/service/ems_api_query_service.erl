@@ -51,16 +51,16 @@ stop() ->
 %%====================================================================
  
 find(Request, From) ->
-	ems_pool:cast(ems_api_query_service_pool, {find, Request, From}).
+	ems_pool:cast(ems_api_query_service, {find, Request, From}).
 
 find_by_id(Request, From) ->
-	ems_pool:cast(ems_api_query_service_pool, {find_by_id, Request, From}).
+	ems_pool:cast(ems_api_query_service, {find_by_id, Request, From}).
 
 insert(Request, From) ->
-	ems_pool:cast(ems_api_query_service_pool, {insert, Request, From}).
+	ems_pool:cast(ems_api_query_service, {insert, Request, From}).
 
 update(Request, From) ->
-	ems_pool:cast(ems_api_query_service_pool, {update, Request, From}).
+	ems_pool:cast(ems_api_query_service, {update, Request, From}).
 
 %%====================================================================
 %% gen_server callbacks

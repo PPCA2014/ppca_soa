@@ -17,7 +17,8 @@
 -export([start/1, start_link/1, stop/0]).
 
 %% Client
--export([lookup/1,
+-export([list_catalog/0, 
+		 lookup/1,
 		 lookup/2,
 		 get_querystring/2, 
 		 get_ult_lookup/0,
@@ -60,6 +61,9 @@ stop() ->
 %% Client API
 %%====================================================================
 
+list_catalog() ->
+	gen_server:call(?SERVER, list_catalog).
+
 lookup(Request) ->	
 	gen_server:call(?SERVER, {lookup, Request}).
 
@@ -91,6 +95,10 @@ init(_Args) ->
     
 handle_cast(shutdown, State) ->
     {stop, normal, State}.
+
+handle_call(list_catalog, _From, State) ->
+	Reply = do_list_catalog(State),
+	{reply, Reply, State};
 
 handle_call({lookup, Request}, _From, State) ->
 	Ult_lookup = do_lookup(Request, State),
@@ -127,6 +135,8 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
+%% @doc Serviço que lista o catálogo
+do_list_catalog(State) -> State#state.cat1.
 
 get_querystring(<<QueryName/binary>>, Servico) ->	
 	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#service.comment == QueryName],

@@ -52,19 +52,19 @@ stop() ->
 %%====================================================================
  
 list_catalog(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {list_catalog, Request, From}).
+	ems_pool:cast(ems_catalog_service, {list_catalog, Request, From}).
 
 get(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {get, Request, From}).
+	ems_pool:cast(ems_catalog_service, {get, Request, From}).
 	
 insert(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {insert, Request, From}).
+	ems_pool:cast(ems_catalog_service, {insert, Request, From}).
 
 update(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {update, Request, From}).
+	ems_pool:cast(ems_catalog_service, {update, Request, From}).
 
 delete(Request, From)	->
-	ems_pool:cast(ems_catalog_service_pool, {delete, Request, From}).
+	ems_pool:cast(ems_catalog_service, {delete, Request, From}).
 	
 
 %%====================================================================

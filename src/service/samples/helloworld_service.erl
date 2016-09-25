@@ -12,7 +12,7 @@
 -include("../include/ems_config.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start_link/1, stop/0]).
 
 %% Cliente interno API
 -export([execute/2]).
@@ -30,7 +30,7 @@
 %% Server API
 %%====================================================================
 
-start() -> 
+start_link(_Args) -> 
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
  
 stop() ->

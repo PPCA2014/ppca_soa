@@ -50,19 +50,19 @@ stop() ->
 %%====================================================================
  
 get(Request, From)	->
-	ems_pool:cast(ems_user_service_pool, {get, Request, From}).
+	ems_pool:cast(ems_user_service, {get, Request, From}).
 	
 insert(Request, From)	->
-	ems_pool:cast(ems_user_service_pool, {insert, Request, From}).
+	ems_pool:cast(ems_user_service, {insert, Request, From}).
 
 update(Request, From)	->
-	ems_pool:cast(ems_user_service_pool, {update, Request, From}).
+	ems_pool:cast(ems_user_service, {update, Request, From}).
 
 delete(Request, From)	->
-	ems_pool:cast(ems_user_service_pool, {delete, Request, From}).
+	ems_pool:cast(ems_user_service, {delete, Request, From}).
 
 all(Request, From)	->
-	ems_pool:cast(ems_user_service_pool, {all, Request, From}).
+	ems_pool:cast(ems_user_service, {all, Request, From}).
 
 
 %%====================================================================

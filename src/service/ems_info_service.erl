@@ -49,7 +49,7 @@ stop() ->
  
 execute(Request, From)	->
 	io:format("execute...\n"),
-	ems_pool:cast(ems_info_service_pool, {info, Request, From}).
+	ems_pool:cast(ems_info_service, {info, Request, From}).
 
 
 %%====================================================================

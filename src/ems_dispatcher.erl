@@ -49,7 +49,7 @@ stop() ->
 %%====================================================================
 
 dispatch_request(Request) -> 
-	ems_pool:cast(ems_dispatcher_pool, {dispatch_request, Request}).
+	ems_pool:cast(ems_dispatcher, {dispatch_request, Request}).
 
  
 %%====================================================================
@@ -123,7 +123,6 @@ do_dispatch_request(Request) ->
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
 							ems_request:registra_request(Request2),
-							%ems_eventmgr:notifica_evento(new_request, Request2),
 							case executa_service(Node, Request2) of
 								ok -> ok;
 								Error -> ems_eventmgr:notifica_evento(erro_request, {service, Request2, Error})
@@ -150,12 +149,15 @@ executa_service(_Node, Request=#request{service=#service{host='',
 														 %function_name = FunctionName, 
 														 function=Function}}) ->
 	try
+		io:format("quem eh ~p?\n", [Module]),
 		case whereis(Module) of
 			undefined -> 
-				Module:start(),
+				io:format("new ~p?\n", [Module]),
+				Module:start_link([]),
 				%ems_logger:debug("Serviço ~p não está ativo. Iniciando...", [Module]),
 				apply(Module, Function, [Request, self()]);
-			_Pid -> 
+			Pid -> 
+				io:format("eh ~p?\n", [Pid]),
 				apply(Module, Function, [Request, self()])
 		end,
 		ok

@@ -56,17 +56,17 @@ stop() ->
 %%====================================================================
 
 get_top_services(Top, Periodo, Sort) -> 
-	ems_pool:call(ems_health_pool, {top_services, Top, Periodo, Sort}).
+	ems_pool:call(ems_health, {top_services, Top, Periodo, Sort}).
 
 get_top_services_by_type(Top, Periodo, Sort) -> 
-	ems_pool:call(ems_health_pool, {top_services_by_type, Top, Periodo, Sort}).
+	ems_pool:call(ems_health, {top_services_by_type, Top, Periodo, Sort}).
 
 get_qtd_requests_by_date(Top, Periodo, Sort) -> 
-	ems_pool:call(ems_health_pool, {qtd_requets_by_date, Top, Periodo, Sort}).
+	ems_pool:call(ems_health, {qtd_requets_by_date, Top, Periodo, Sort}).
 	
 %% @doc Lista os requests por período
 get_requests_periodo(Periodo) ->	
-	ems_pool:call(ems_health_pool, {requests_periodo, Periodo}).
+	ems_pool:call(ems_health, {requests_periodo, Periodo}).
 
  
 %%====================================================================

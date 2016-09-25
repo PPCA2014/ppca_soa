@@ -49,13 +49,13 @@ stop() ->
 %%====================================================================
  
 top_services(Request, From)	->
-	ems_pool:cast(ems_health_service_pool, {top_services, Request, From}).
+	ems_pool:cast(ems_health_service, {top_services, Request, From}).
 
 top_services_by_type(Request, From)	->
-	ems_pool:cast(ems_health_service_pool, {top_services_by_type, Request, From}).
+	ems_pool:cast(ems_health_service, {top_services_by_type, Request, From}).
 
 qtd_requests_by_date(Request, From)	->
-	ems_pool:cast(ems_health_service_pool, {qtd_requests_by_date, Request, From}).
+	ems_pool:cast(ems_health_service, {qtd_requests_by_date, Request, From}).
 
 %%====================================================================
 %% gen_server callbacks

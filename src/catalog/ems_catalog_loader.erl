@@ -277,7 +277,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		Result_Cache = maps:get(<<"result_cache">>, H, 0),
 		Authentication = maps:get(<<"authentication">>, H, <<>>),
 		Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
-		UseRE = ems_util:binary_to_bool(maps:get(<<"use_re">>, H, <<"false">>)),
+		UseRE = maps:get(<<"use_re">>, H, false),
 		SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
 		SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
 		PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
@@ -310,7 +310,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										 Authentication, Node, Lang,
 										 Datasource,
 										 Debug, SchemaIn, SchemaOut),
-		case is_url_com_re(binary_to_list(Url2)) orelse ModuleName =:= "ems_static_file_service" orelse ModuleName =:= "ems_options_service" of
+		case UseRE of
 			true -> 
 				Service = new_service_re(Rowid, IdBin, Name, Url2, 
 										   ServiceImpl,
@@ -323,7 +323,10 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										   Authentication, Node, Lang,
 										   Datasource, 
 										   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
-				parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf);
+				case Type of
+					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
+					_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
+				end;
 			false -> 
 				Service = new_service(Rowid, IdBin, Name, Url2, 
 										ServiceImpl,
@@ -335,12 +338,11 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
 										Datasource, 
-										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H)
-		end,
-		case Type of
-			<<"KERNEL">> -> 
-				parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
-			_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
+				case Type of
+					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
+					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+				end
 		end
 	catch
 		_Exception:Reason -> {error, Reason}

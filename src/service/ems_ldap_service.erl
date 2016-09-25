@@ -55,10 +55,10 @@ stop() ->
 %%====================================================================
  
 execute(Request, From) ->
-	ems_pool:cast(ems_ldap_service_pool, {search, Request, From}).
+	ems_pool:cast(ems_ldap_service, {search, Request, From}).
 
 find_user_by_login(UsuLogin) ->
-	ems_pool:call(ems_ldap_service_pool, {find_user_by_login, UsuLogin}).
+	ems_pool:call(ems_ldap_service, {find_user_by_login, UsuLogin}).
 
 
 %%====================================================================
