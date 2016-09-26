@@ -141,7 +141,7 @@ accept_request(State=#state{owner = Owner,
 												     tcp_min_http_worker = MinHttpWorker,
 												     tcp_accept_timeout = AcceptTimeout},
 							listener_name = ListenerName}) ->
-	%io:format("accept -> ~p\n", [ems_db:sequence(ListenerName)]),
+	ems_db:sequence(ListenerName),
 	case gen_tcp:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
 			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
@@ -150,10 +150,7 @@ accept_request(State=#state{owner = Owner,
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case CurrentWorkerCount == 0 of
-						true ->
-							% back to listen to the door as quickly as possible
-							%io:format("new worker\n"),
-							gen_server:cast(Owner, new_worker);
+						true -> gen_server:cast(Owner, new_worker);
 						_ -> ok
 					end,
 					case Ip of
@@ -179,8 +176,8 @@ accept_request(State=#state{owner = Owner,
 			ems_logger:info("Listener socket was closed."),
 			{stop, normal, State};
 		{error, timeout} ->
-			ems_db:sequence(ListenerName, -1),
 			% no connection is established within the specified time
+			ems_db:sequence(ListenerName, -1),
 			%io:format("timeout current: ~p  Min: ~p\n", [ems_db:current_sequence(ListenerName), MinHttpWorker]),
 			case ems_db:current_sequence(ListenerName) < MinHttpWorker of
 				true -> accept_request(State);

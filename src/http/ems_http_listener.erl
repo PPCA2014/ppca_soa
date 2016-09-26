@@ -82,11 +82,17 @@ init({IpAddress,
 
 handle_cast(new_worker, State = #state{lsocket = LSocket,
 									   listener_name = ListenerName,
-									   tcp_config = TcpConfig = #tcp_config{tcp_min_http_worker = _MinHttpWorker}}) ->
+									   tcp_config = TcpConfig}) ->
 	%io:format("Iniciando worker extra\n"),
-	%start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
-	ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
-	flush(),
+	case ems_db:sequence(ListenerName, 0) == 0 of
+		true ->
+			ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
+			erlang:yield(),
+			erlang:yield(),
+			erlang:yield(),
+			flush();
+		_ -> ok
+	end,
     {noreply, State};
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->

@@ -138,7 +138,8 @@
 					 tcp_buffer,
 					 tcp_delay_send,
 					 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
-					 tcp_allowed_address_t
+					 tcp_allowed_address_t,
+					 tcp_ssl
 			 }). 	
 
 

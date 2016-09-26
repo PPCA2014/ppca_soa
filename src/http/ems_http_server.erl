@@ -34,7 +34,8 @@
 %%====================================================================
 
 start(Args) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
+ 	ServerName = list_to_atom(binary_to_list(maps:get(<<"name">>, Args))),
+    gen_server:start_link({local, ServerName}, ?MODULE, Args, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -49,7 +50,7 @@ stop() ->
 init(Args) ->
  	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
  	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
- 	NameServer = binary_to_list(maps:get(<<"name">>, Args)),
+ 	ServerName = binary_to_list(maps:get(<<"name">>, Args)),
 	TcpConfig = #tcp_config{
 		tcp_listen_address = ListenAddress,
 		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
@@ -64,10 +65,11 @@ init(Args) ->
 		tcp_backlog = maps:get(<<"tcp_backlog">>, Args, 128),
 		tcp_buffer = maps:get(<<"tcp_buffer">>, Args, 8000),
 		tcp_send_timeout = maps:get(<<"tcp_send_timeout">>, Args, 16000),
-		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Args, false)
+		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Args, false),
+		tcp_ssl = maps:get(<<"tcp_ssl">>, Args, false)
  	},
- 	State = #state{tcp_config = TcpConfig, name = NameServer},
-	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, NameServer, 1, State) of
+ 	State = #state{tcp_config = TcpConfig, name = ServerName},
+	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, 1, State) of
 		{ok, State2} ->
 			{ok, State2};
 		{error, _Reason, State2} -> 
@@ -100,11 +102,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_listeners([], _TcpConfig, _NameServer, _ListenerNo, State) -> {ok, State};
-start_listeners([H|T], TcpConfig, NameServer, ListenerNo, State) ->
-	ListenerName = list_to_atom(NameServer ++ integer_to_list(ListenerNo)),
+start_listeners([], _TcpConfig, _ServerName, _ListenerNo, State) -> {ok, State};
+start_listeners([H|T], TcpConfig, ServerName, ListenerNo, State) ->
+	ListenerName = list_to_atom(ServerName ++ integer_to_list(ListenerNo)),
 	case do_start_listener(H, TcpConfig, ListenerName, State) of
-		{ok, NewState} -> start_listeners(T, TcpConfig, NameServer, ListenerNo+1, NewState);
+		{ok, NewState} -> start_listeners(T, TcpConfig, ServerName, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 

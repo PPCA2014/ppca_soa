@@ -29,21 +29,22 @@ init([]) ->
 					 pool_max = PoolMax, 
 					 properties = WorkerArgs, 
 					 module = Worker}) ->
+				WorkerNameAtom = list_to_atom(binary_to_list(WorkerName)),
 				case PoolSize == 1 andalso PoolMax == 1 of
 					true -> 
 						ems_logger:info("Start ~s with 1 worker", [WorkerName]),
-						{Worker,
+						{WorkerNameAtom,
 							{Worker, start, [WorkerArgs]},
-							permanent, 10000, worker,  [Worker]
+							permanent, 10000, worker,  [WorkerNameAtom]
 						};
 					false ->
 						ems_logger:info("Start ~s with ~p workers (Max ~p)", [WorkerName, PoolSize, PoolMax]),
 						PoolArgs = [{strategy, fifo},
-									{name, {local, Worker}},
+									{name, {local, WorkerNameAtom}},
 									{worker_module, Worker},
 									{size, PoolSize},
 									{max_overflow, PoolMax - PoolSize}],
-						ems_pool:child_spec(Worker, PoolArgs, WorkerArgs)
+						ems_pool:child_spec(WorkerNameAtom, PoolArgs, WorkerArgs)
 				end
 		end, KernelServices),
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
