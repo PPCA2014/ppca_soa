@@ -83,7 +83,7 @@ init({IpAddress,
 handle_cast(new_worker, State = #state{lsocket = LSocket,
 									   listener_name = ListenerName,
 									   tcp_config = TcpConfig = #tcp_config{tcp_min_http_worker = _MinHttpWorker}}) ->
-	io:format("Iniciando worker extra\n"),
+	%io:format("Iniciando worker extra\n"),
 	%start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
 	ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
 	flush(),

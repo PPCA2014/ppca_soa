@@ -89,12 +89,12 @@ handle_info(timeout, State=#state{socket = undefined}) ->
 	accept_request(State);
 
 handle_info(timeout, State=#state{socket = Socket}) ->
-	io:format("Timeout enquanto aguarda service http\n"),
+	%io:format("Timeout enquanto aguarda service http\n"),
 	gen_tcp:close(Socket),
 	accept_request(State);
 
 handle_info(timeout, State) ->
-	io:format("Timeout com state ~p\n", [State]),
+	%io:format("Timeout com state ~p\n", [State]),
 	accept_request(State);
 
 handle_info({tcp, Socket, RequestBin}, State) ->
@@ -141,18 +141,18 @@ accept_request(State=#state{owner = Owner,
 												     tcp_min_http_worker = MinHttpWorker,
 												     tcp_accept_timeout = AcceptTimeout},
 							listener_name = ListenerName}) ->
-	io:format("accept -> ~p\n", [ems_db:sequence(ListenerName)]),
+	%io:format("accept -> ~p\n", [ems_db:sequence(ListenerName)]),
 	case gen_tcp:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
 			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
-			io:format("accept -> ~p\n", [CurrentWorkerCount]),
+			%io:format("accept -> ~p\n", [CurrentWorkerCount]),
 			%% It is in the range of IP addresses authorized to access the bus?
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case CurrentWorkerCount == 0 of
 						true ->
 							% back to listen to the door as quickly as possible
-							io:format("new worker\n"),
+							%io:format("new worker\n"),
 							gen_server:cast(Owner, new_worker);
 						_ -> ok
 					end,
@@ -181,12 +181,11 @@ accept_request(State=#state{owner = Owner,
 		{error, timeout} ->
 			ems_db:sequence(ListenerName, -1),
 			% no connection is established within the specified time
-			%close_timeout_connections(State),
-			io:format("timeout current: ~p  Min: ~p\n", [ems_db:current_sequence(ListenerName), MinHttpWorker]),
+			%io:format("timeout current: ~p  Min: ~p\n", [ems_db:current_sequence(ListenerName), MinHttpWorker]),
 			case ems_db:current_sequence(ListenerName) < MinHttpWorker of
 				true -> accept_request(State);
 				_ ->
-					io:format("Liberando um worker por timeout!\n"),
+					%io:format("Liberando um worker por timeout!\n"),
 					{stop, normal, State}
 			end;
 		{error, PosixError} ->
@@ -209,8 +208,7 @@ process_request(Socket, RequestBin) ->
 			% TCP_DEFER_ACCEPT for Linux
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
-			ems_dispatcher:dispatch_request(Request),
-			io:format("despachado!\n");
+			ems_dispatcher:dispatch_request(Request);
 		 {error, Reason} -> 
 			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),
 			ems_tcp_util:send_data(Socket, Response),
