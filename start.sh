@@ -1,14 +1,22 @@
-#!/bin/sh
+#!/bin/bash
 #
 # author Everton de Vargas Agilar <<evertonagilar@gmail.com>>
 #
 current_dir=`pwd`
 
-# with observer daemon
-#erl -pa $current_dir/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin  -sname emsbus -setcookie erlangms -eval "ems_bus:start()" -boot start_sasl -config ./priv/conf/elog -run observer
+if [ "$1" == "observer" ]; then
+	echo "Start with observer daemon..."
+	erl -pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin  \
+		-sname emsbus -setcookie erlangms \
+		-eval "ems_bus:start()" \
+		-boot start_sasl \
+		-config ./priv/conf/elog \
+		-run observer
+else
+	erl -pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin  \
+		-sname emsbus -setcookie erlangms \
+		-eval "ems_bus:start()" \
+		-boot start_sasl \
+		-config ./priv/conf/elog
+fi
 
-erl -pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin  \
- 	-sname emsbus -setcookie erlangms \
-	-eval "ems_bus:start()" \
-	-boot start_sasl \
-	-config ./priv/conf/elog

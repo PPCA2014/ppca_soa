@@ -122,35 +122,33 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-do_all(_Request, _State) ->
-	ems_user:call(all).
+do_all(_Request, _State) -> ems_user:all().
 	
 do_get(Request, _State) ->
 	Id = ems_request:get_param_url(<<"id">>, -1, Request),
-	Result = ems_user:call({get, Id}),
-	Result.
+	ems_user:get(Id).
 
 do_insert(Request, _State) ->
 	UserJson = ems_request:get_property_request(<<"payload">>, Request),
 	User = #user{name  = maps:get(<<"name">>, UserJson, ""),
 				 email = maps:get(<<"email">>, UserJson, ""),
 				 password = maps:get(<<"password">>, UserJson, "")},
-	ems_user:call({insert, User}).
+	ems_user:insert(User).
 
 do_update(Request, _State) ->
 	Id = ems_request:get_param_url(<<"id">>, -1, Request),
 	UserJson = ems_request:get_property_request(<<"payload">>, Request),
-	case ems_user:call({get, Id}) of
+	case ems_user:get(Id) of
 		{ok, User} -> 
 			User2 = User#user{name  = maps:get(<<"name">>, UserJson, User#user.name),
 							  email = maps:get(<<"email">>, UserJson, User#user.email),
 							  password = maps:get(<<"password">>, UserJson, User#user.password)},
-			ems_user:call({update, User2});
+			ems_user:update(User2);
 		Error -> Error
 	end.
 
 do_delete(Request, _State) ->
 	Id = ems_request:get_param_url(<<"id">>, -1, Request),
-	ems_user:call({delete, Id}).
+	ems_user:delete(Id).
 	
 

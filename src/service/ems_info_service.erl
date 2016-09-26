@@ -48,7 +48,6 @@ stop() ->
 %%====================================================================
  
 execute(Request, From)	->
-	io:format("execute...\n"),
 	ems_pool:cast(ems_info_service, {info, Request, From}).
 
 
@@ -90,7 +89,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 do_info(_Request, State) ->
-	io:format("info\n"),
 	Result = <<"{\"message\": \"It works!!!\"}">>,
 	{Result, State}.
 

@@ -1,113 +1,29 @@
 %%********************************************************************
 %% @title Module ems_dispatcher
 %% @version 1.0.0
-%% @doc Responsible for forwarding the requests to / from the REST services.
+%% @doc Responsible for forwarding the requests to services.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_dispatcher).
 
--behavior(gen_server). 
--behaviour(poolboy_worker).
-
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 -include("../include/ems_http_messages.hrl").
 
-%% Server API
--export([start/1, start_link/1, stop/0]).
-
 %% Client API
--export([dispatch_request/1]).
+-export([start/0, dispatch_request/1]).
 
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
-% estado do servidor
--record(state, {}).
-
--define(SERVER, ?MODULE).
-
-%%====================================================================
-%% Server API
-%%====================================================================
-
-start(_) -> 
-	io:format("passei aqui\n"),
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
- 
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
-
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
-
-%%====================================================================
-%% Client API
-%%====================================================================
-
-dispatch_request(Request) -> 
-	ems_pool:cast(ems_dispatcher, {dispatch_request, Request}).
-
- 
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-    createEtsControle(),
-    {ok, #state{}}.
- 
-createEtsControle() ->
+start() -> 
     try
 		ets:new(ctrl_node_dispatch, [set, named_table, public])
 	catch
 		_:_ -> ok
 	end.
- 
-handle_cast(shutdown, State) ->
-    {stop, normal, State};
 
-handle_cast({dispatch_request, Request}, State) ->
-	do_dispatch_request(Request),
-	{noreply, State};
-
-handle_cast(_Msg, State) ->
-	{noreply, State}.
-    
-handle_call(Msg, _From, State) ->
-	{reply, Msg, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-handle_info({Code, RID, Reply}, State) ->
-	case ems_request:get_request_em_andamento(RID) of
-		{ok, Request} -> 
-			ems_request:registra_request(Request),
-			ems_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
-			{noreply, State};
-		{error, enoent} -> {noreply, State}
-	end;
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-	
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-%% @doc Dispatches the request to the service registered in the catalog
-do_dispatch_request(Request) ->
+dispatch_request(Request) -> 
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
 			case ems_auth_user:autentica(Service, Request) of
@@ -144,20 +60,14 @@ do_dispatch_request(Request) ->
 %% @doc Executa o serviço local (Serviço escrito em Erlang)
 executa_service(_Node, Request=#request{service=#service{host='', 
 														 module=Module, 
-														 %host_name = HostName,	
-														 %module_name = ModuleName, 
-														 %function_name = FunctionName, 
 														 function=Function}}) ->
 	try
-		io:format("quem eh ~p?\n", [Module]),
 		case whereis(Module) of
 			undefined -> 
 				io:format("new ~p?\n", [Module]),
 				Module:start_link([]),
-				%ems_logger:debug("Serviço ~p não está ativo. Iniciando...", [Module]),
 				apply(Module, Function, [Request, self()]);
-			Pid -> 
-				io:format("eh ~p?\n", [Pid]),
+			_Pid -> 
 				apply(Module, Function, [Request, self()])
 		end,
 		ok

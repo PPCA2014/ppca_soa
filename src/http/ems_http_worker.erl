@@ -25,11 +25,10 @@
 -export([cast/1]).
 
 % State of server
--record(state, {owner 	  = undefined,	 	 %% http listener
-				lsocket   = undefined,		 %% socket of listener
-				socket	  = undefined,		 %% socket of request
-				tcp_allowed_address = undefined,  %% range of IP addresses that can access the server
-				open_requests = []
+-record(state, {owner 	  = undefined,	 	 	%% http listener
+				lsocket   = undefined,		 	%% socket of listener
+				socket	  = undefined,		 	%% socket of request
+				tcp_allowed_address = undefined  %% range of IP addresses that can access the server
 			}).
 
 -define(SERVER, ?MODULE).
@@ -79,25 +78,34 @@ handle_cast(shutdown, State) ->
 
 handle_cast(Msg, State) ->
 	process_response(Msg),
-	{stop, normal, State}.
+	{noreply, State, 0}.
 
 handle_call(_Msg, _From, State) ->
 	{reply, _Msg, State}.
 
-handle_info(timeout, State=#state{lsocket = undefined}) ->
-	io:format("Timeout http\n"),
-	{noreply, State};
+handle_info(timeout, State=#state{socket = undefined}) ->
+	io:format("Timeout\n"),
+	accept_request(State);
+
+handle_info(timeout, State=#state{socket = Socket}) ->
+	io:format("Timeout enquanto aguarda service http\n"),
+	gen_tcp:close(Socket),
+	accept_request(State);
 
 handle_info(timeout, State) ->
-	accept_request(timeout, State);
+	io:format("Timeout com state ~p\n", [State]),
+	accept_request(State);
 
 handle_info({tcp, Socket, RequestBin}, State) ->
 	process_request(Socket, RequestBin),
-	{noreply, State};
+	{noreply, State, 6000};
 
 handle_info({tcp_closed, _Socket}, State) ->
 	io:format("process tcp closed end\n"),
-	{noreply, State#state{socket = undefined}};
+	erlang:yield(),
+	erlang:yield(),
+	erlang:yield(),
+	{noreply, State#state{socket = undefined}, 0};
 
 handle_info({'EXIT', _Pid, _Reason}, State) ->
     io:format("process exit end\n"),
@@ -110,6 +118,7 @@ handle_info(State) ->
    {noreply, State}.
 
 terminate(_Reason, #state{socket = undefined}) ->
+   io:format("terminate\n"),
     ok;
 
 terminate(_Reason, #state{socket = Socket}) ->
@@ -124,14 +133,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-accept_request(timeout, State=#state{owner = Owner, 
-									 lsocket = LSocket, 
-									 tcp_allowed_address = AllowedAddress}) ->
+accept_request(State=#state{lsocket = LSocket, 
+							tcp_allowed_address = AllowedAddress}) ->
 	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
 		{ok, Socket} -> 
-			% back to listen to the door as quickly as possible
-			gen_server:cast(Owner, new_worker),
-			
 			%% It is in the range of IP addresses authorized to access the bus?
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
@@ -145,25 +150,28 @@ accept_request(timeout, State=#state{owner = Owner,
 								false -> 
 									gen_tcp:close(Socket),
 									ems_logger:warn("Host ~s not authorized!", [inet:ntoa(Ip)]),
-									{stop, normal, State}
+									accept_request(State)
 							end
 					end;
 				_ -> 
 					gen_tcp:close(Socket),
-					{stop, normal, State}
+					accept_request(State)
 			end;
 		{error, closed} -> 
 			% ListenSocket is closed
 			ems_logger:info("Listener socket was closed."),
-			{noreply, State#state{lsocket = undefined}}; %% stop accept
+			{stop, normal, State};
 		{error, timeout} ->
 			% no connection is established within the specified time
 			%close_timeout_connections(State),
-			{noreply, State#state{open_requests = []}};
+			accept_request(State);
 		{error, PosixError} ->
 			PosixErrorDescription = ems_tcp_util:posix_error_description(PosixError),
 			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
-			{noreply, State}
+			erlang:yield(),
+			erlang:yield(),
+			erlang:yield(),
+			accept_request(State)
 	end.
 
 
@@ -176,7 +184,8 @@ process_request(Socket, RequestBin) ->
 			% TCP_DEFER_ACCEPT for Linux
 			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
-			ems_dispatcher:dispatch_request(Request);
+			ems_dispatcher:dispatch_request(Request),
+			io:format("despachado!\n");
 		 {error, Reason} -> 
 			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),
 			ems_tcp_util:send_data(Socket, Response),

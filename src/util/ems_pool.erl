@@ -36,19 +36,19 @@ checkout(Pool) -> poolboy:checkout(Pool).
 checkin(Pool, Worker) -> poolboy:checkin(Pool, Worker).
 
 cast(Pool, Args) ->
-	Result = poolboy:checkout(Pool, false, 6000),
-	io:format("cast pool ~p\n", [Result]),
+	Result = poolboy:checkout(Pool, true, 30000),
 	case Result of
-		full -> io:format("~p is cheio!\n\n\n", [Pool]);
-		Worker ->
+		full -> 
+			io:format("~p is full, start new!\n\n\n", [Pool]),
+			{Worker, _Ref} = poolboy:new_worker(Pool),
+			gen_server:cast(Worker, Args);
+		Worker -> 
 			try
-				io:format("worker of ~p is ~p\n", [Pool, Worker]),
 				gen_server:cast(Worker, Args),
 				erlang:yield(),
 				erlang:yield(),
 				erlang:yield()
 			after
-				io:format("volta\n"),
 				poolboy:checkin(Pool, Worker)
 			end
 	end.

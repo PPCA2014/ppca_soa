@@ -8,153 +8,30 @@
 
 -module(ems_user).
 
--behavior(gen_server). 
--behaviour(poolboy_worker).
-
-
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
-%% Server API  
--export([start/1, start_link/1, stop/0]).
+-export([get/1, insert/1, update/1, all/0, delete/1, find_by_username_and_password/2]).
 
-%% Cliente interno API
--export([call/1	, cast/1]).
+get(Id) -> ems_db:get(user, Id).
 
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
-
--define(SERVER, ?MODULE).
-
-%  Armazena o estado do service. 
--record(state, {}). 
-
-
-
-%%====================================================================
-%% Server API
-%%====================================================================
-
-start(_) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
- 
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
-
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
- 
-%%====================================================================
-%% Cliente API
-%%====================================================================
- 
-call(Msg) -> ems_pool:call(ems_user_pool, Msg).
-
-cast(Msg) -> ems_pool:cast(ems_user_pool, Msg).
-
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-    process_flag(trap_exit, true),
-    {ok, #state{}}. 
-    
-handle_cast(shutdown, State) ->
-    {stop, normal, State};
-
-handle_cast({get, Id, From}, State) ->
-	Reply = do_get(Id),
-	From ! Reply, 
-	{noreply, State};
-
-handle_cast({insert, User, From}, State) ->
-	Reply = do_insert(User),
-	From ! Reply, 
-	{noreply, State};
-
-handle_cast({update, User, From}, State) ->
-	Reply = do_update(User),
-	From ! Reply, 
-	{noreply, State};
-
-handle_cast({delete, Id, From}, State) ->
-	Reply = do_delete(Id),
-	From ! {ok, Reply}, 
-	{noreply, State};
-
-handle_cast({all, From}, State) ->
-	Reply = do_all(),
-	From ! Reply, 
-	{noreply, State}.
-    
-handle_call({get, Id}, _From, State) ->
-	Reply = do_get(Id),
-	{reply, Reply, State};
-
-handle_call({insert, User}, _From, State) ->
-	Reply = do_insert(User),
-	{reply, Reply, State};
-
-handle_call({update, User}, _From, State) ->
-	Reply = do_update(User),
-	{reply, Reply, State};
-
-handle_call({delete, Id}, _From, State) ->
-	Reply = do_delete(Id),
-	{reply, Reply, State};
-
-handle_call({find_by_username_and_password, Username, Password}, _From, State) ->
-	Reply = find_by_username_and_password(Username, Password),
-	{reply, Reply, State};
-
-handle_call(all, _From, State) ->
-	Reply = do_all(),
-	{reply, Reply, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-    
-    
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-do_get(Id) -> ems_db:get(user, Id).
-
-do_insert(User) -> 
+insert(User) -> 
 	case valida(User, insert) of
 		ok -> ems_db:insert(User);
 		Error -> 
 			Error
 	end.
 
-do_update(User) -> 
+update(User) -> 
 	case valida(User, update) of
 		ok -> ems_db:update(User);
 		Error -> Error
 	end.
 
-do_all() -> ems_db:all(user).
+all() -> ems_db:all(user).
 
-do_delete(Id) -> 
-	case valida(null, delete) of
-		ok -> 
-			ems_db:delete(user, Id);
-		Error -> Error
-	end.
+delete(Id) -> ems_db:delete(user, Id).
 
 valida(User, insert) ->
 	case ems_consist:mensagens([ems_consist:msg_campo_obrigatorio("name", User#user.name),
