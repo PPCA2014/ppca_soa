@@ -28,7 +28,8 @@
 -record(state, {owner 	  = undefined,	 	 	%% http listener
 				lsocket   = undefined,		 	%% socket of listener
 				socket	  = undefined,		 	%% socket of request
-				tcp_allowed_address = undefined  %% range of IP addresses that can access the server
+				tcp_config = undefined,  		%% range of IP addresses that can access the server
+				listener_name = undefined
 			}).
 
 -define(SERVER, ?MODULE).
@@ -59,11 +60,12 @@ cast(Msg) -> ems_pool:cast(ems_http_worker_pool, Msg).
 %% gen_server callbacks
 %%====================================================================
 
-init({Owner, LSocket, AllowedAddress}) ->
+init({Owner, LSocket, TcpConfig, ListenerName}) ->
 	process_flag(trap_exit, true),	
     State = #state{owner = Owner,
 				   lsocket = LSocket, 
-				   tcp_allowed_address = AllowedAddress},
+				   tcp_config = TcpConfig,
+				   listener_name = ListenerName},
     {ok, State, 0};
 
 
@@ -84,7 +86,6 @@ handle_call(_Msg, _From, State) ->
 	{reply, _Msg, State}.
 
 handle_info(timeout, State=#state{socket = undefined}) ->
-	io:format("Timeout\n"),
 	accept_request(State);
 
 handle_info(timeout, State=#state{socket = Socket}) ->
@@ -133,13 +134,28 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-accept_request(State=#state{lsocket = LSocket, 
-							tcp_allowed_address = AllowedAddress}) ->
-	case gen_tcp:accept(LSocket, ?TCP_ACCEPT_CONNECT_TIMEOUT) of
+accept_request(State=#state{owner = Owner,
+							lsocket = LSocket, 
+							tcp_config = #tcp_config{tcp_allowed_address = AllowedAddress, 
+												     tcp_max_http_worker = _MaxHttpWorker,
+												     tcp_min_http_worker = MinHttpWorker,
+												     tcp_accept_timeout = AcceptTimeout},
+							listener_name = ListenerName}) ->
+	io:format("accept -> ~p\n", [ems_db:sequence(ListenerName)]),
+	case gen_tcp:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
+			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
+			io:format("accept -> ~p\n", [CurrentWorkerCount]),
 			%% It is in the range of IP addresses authorized to access the bus?
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
+					case CurrentWorkerCount == 0 of
+						true ->
+							% back to listen to the door as quickly as possible
+							io:format("new worker\n"),
+							gen_server:cast(Owner, new_worker);
+						_ -> ok
+					end,
 					case Ip of
 						{127, 0, _,_} -> 
 							{noreply, State#state{socket = Socket}};
@@ -159,13 +175,22 @@ accept_request(State=#state{lsocket = LSocket,
 			end;
 		{error, closed} -> 
 			% ListenSocket is closed
+			ems_db:sequence(ListenerName, -1),
 			ems_logger:info("Listener socket was closed."),
 			{stop, normal, State};
 		{error, timeout} ->
+			ems_db:sequence(ListenerName, -1),
 			% no connection is established within the specified time
 			%close_timeout_connections(State),
-			accept_request(State);
+			io:format("timeout current: ~p  Min: ~p\n", [ems_db:current_sequence(ListenerName), MinHttpWorker]),
+			case ems_db:current_sequence(ListenerName) < MinHttpWorker of
+				true -> accept_request(State);
+				_ ->
+					io:format("Liberando um worker por timeout!\n"),
+					{stop, normal, State}
+			end;
 		{error, PosixError} ->
+			ems_db:sequence(ListenerName, -1),
 			PosixErrorDescription = ems_tcp_util:posix_error_description(PosixError),
 			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
 			erlang:yield(),

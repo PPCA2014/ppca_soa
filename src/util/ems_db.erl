@@ -13,7 +13,7 @@
 		 match/2, find/2, find/3, find/5, find_by_id/3, filter/2, 
 		 filter_with_limit/4, select_fields/2, 
 		 find_first/2, find_first/3, find_first/4]).
--export([sequence/1, init_sequence/2]).
+-export([sequence/1, sequence/2, init_sequence/2, current_sequence/1]).
 -export([get_connection/1, release_connection/1]).
 
 
@@ -164,8 +164,9 @@ init_sequence(Name, Value) ->
      ok.
 
 %% Retorna o valor corrente para uma sequence. A sequence é criada se não existir.
-sequence(Name) ->
-     sequence(Name, 1).
+sequence(Name) ->  sequence(Name, 1).
+
+current_sequence(Name) -> sequence(Name, 0).
 
 %% Incrementa a sequence com Inc
 sequence(Name, Inc) ->

@@ -62,14 +62,18 @@
 % Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
 -define(LOG_ARCHIVE_CHECKPOINT, 10000 * 60 * 60 * 4).  % Por default são 4 horas
 
+
 % Quantos workers HTTP instanciar se não especificado no arquivo de configuração
--define(MAX_HTTP_WORKER, 12).
+-define(MIN_HTTP_WORKER, 1).
+
+% Quantos workers HTTP instanciar se não especificado no arquivo de configuração
+-define(MAX_HTTP_WORKER, 1000).
 
 % Quantos workers HTTP são permitidos especificar no arquivo de configuração (1 até MAX_HTTP_WORKER_RANGE)
 -define(MAX_HTTP_WORKER_RANGE, 1000).  % a cada 4 horas
 
 % Quanto tempo o listener vai aguardar uma conexão antes de ocorrer um timeout
--define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60 * 60 * 30). % 30 minutos
+-define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000). % 1 minuto
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
@@ -126,7 +130,13 @@
 					 tcp_port, 						%% Qual a porta que será utilizada para o barramento
 					 tcp_keepalive, 				%% Propriedade keepalive do TCP (true/false)
 					 tcp_nodelay, 					%% Propriedade nodelay do TCP (true/false)
-					 tcp_max_http_worker,			%% Quantos workers serão criados para cada listener
+					 tcp_max_http_worker,			%% Max workers criados para cada listener
+					 tcp_min_http_worker,			%% Min workers criados para cada listener
+					 tcp_accept_timeout,			%% Timeout accept
+					 tcp_send_timeout,				
+					 tcp_backlog,
+					 tcp_buffer,
+					 tcp_delay_send,
 					 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
 					 tcp_allowed_address_t
 			 }). 	

@@ -17,15 +17,14 @@
 %% Server API
 -export([start/1, stop/0]).
 
-%% Client API
--export([start_listeners/2, stop_listener/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
 -record(state, {listener=[],
-				tcp_config
+				tcp_config,
+				name
 		}).
 
 -define(SERVER, ?MODULE).
@@ -41,16 +40,7 @@ stop() ->
     gen_server:cast(?SERVER, shutdown).
  
 
-%%====================================================================
-%% Client API
-%%====================================================================
 
-start_listeners(Port, Listen_Address) ->
-	gen_server:cast(?SERVER, {start_listeners, Port, Listen_Address}).
- 
-stop_listener(Port, IpAddress) ->
-	gen_server:call(?SERVER, {stop_listener, Port, IpAddress}).
-	
  
 %%====================================================================
 %% gen_server callbacks
@@ -59,6 +49,7 @@ stop_listener(Port, IpAddress) ->
 init(Args) ->
  	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
  	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
+ 	NameServer = binary_to_list(maps:get(<<"name">>, Args)),
 	TcpConfig = #tcp_config{
 		tcp_listen_address = ListenAddress,
 		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
@@ -67,10 +58,16 @@ init(Args) ->
 		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Args, 2301)),
 		tcp_keepalive = parse_keepalive(maps:get(<<"tcp_keepalive">>, Args, true)),
 		tcp_nodelay = ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Args, true)),
-		tcp_max_http_worker = parse_max_http_worker(maps:get(<<"tcp_max_http_worker">>, Args, ?MAX_HTTP_WORKER))
+		tcp_min_http_worker = parse_max_http_worker(maps:get(<<"tcp_min_http_worker">>, Args, ?MIN_HTTP_WORKER)),
+		tcp_max_http_worker = parse_max_http_worker(maps:get(<<"tcp_max_http_worker">>, Args, ?MAX_HTTP_WORKER)),
+		tcp_accept_timeout = maps:get(<<"tcp_accept_timeout">>, Args, 30000),
+		tcp_backlog = maps:get(<<"tcp_backlog">>, Args, 128),
+		tcp_buffer = maps:get(<<"tcp_buffer">>, Args, 8000),
+		tcp_send_timeout = maps:get(<<"tcp_send_timeout">>, Args, 16000),
+		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Args, false)
  	},
- 	State = #state{tcp_config = TcpConfig},
-	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, State) of
+ 	State = #state{tcp_config = TcpConfig, name = NameServer},
+	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, NameServer, 1, State) of
 		{ok, State2} ->
 			{ok, State2};
 		{error, _Reason, State2} -> 
@@ -80,13 +77,11 @@ init(Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({start_listeners, Port, Listen_Address}, State) ->
-	{_, NewState} = start_listeners(Listen_Address, Port, State),
-	{noreply, NewState}.
+handle_cast(_Msg, State) ->
+	{noreply, State}.
 
-handle_call({stop_listener, Port, IpAddress}, _From, State) ->
-	{Reply, NewState} = do_stop_listener(Port, IpAddress, State),
-	{reply, Reply, NewState}.
+handle_call(Msg, _From, State) ->
+	{reply, Msg, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -105,15 +100,16 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_listeners([], _TcpConfig, State) -> {ok, State};
-start_listeners([H|T], TcpConfig, State) ->
-	case do_start_listener(H, TcpConfig, State) of
-		{ok, NewState} -> start_listeners(T, TcpConfig, NewState);
+start_listeners([], _TcpConfig, _NameServer, _ListenerNo, State) -> {ok, State};
+start_listeners([H|T], TcpConfig, NameServer, ListenerNo, State) ->
+	ListenerName = list_to_atom(NameServer ++ integer_to_list(ListenerNo)),
+	case do_start_listener(H, TcpConfig, ListenerName, State) of
+		{ok, NewState} -> start_listeners(T, TcpConfig, NameServer, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 
-do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, State) ->
-	case ems_http_listener:start(IpAddress, TcpConfig) of
+do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, State) ->
+	case ems_http_listener:start(IpAddress, TcpConfig, ListenerName) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			{ok, NewState};

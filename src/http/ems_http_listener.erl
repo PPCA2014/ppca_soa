@@ -15,14 +15,15 @@
 -include("../include/ems_http_messages.hrl").
 
 %% Server API
--export([start/2, stop/0]).
+-export([start/3, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
 -record(state, {lsocket = undefined, 
-				allowed_address = undefined}).
+				listener_name,
+				tcp_config}).
 
 -define(SERVER, ?MODULE).
 
@@ -30,8 +31,8 @@
 %% Server API
 %%====================================================================
 
-start(IpAddress, TcpConfig) -> 
-    gen_server:start_link(?MODULE, {IpAddress, TcpConfig}, []).
+start(IpAddress, TcpConfig, ListenerName) -> 
+    gen_server:start_link(?MODULE, {IpAddress, TcpConfig, ListenerName}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -42,27 +43,35 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({IpAddress, #tcp_config{tcp_keepalive = KeepAlive, 
-							 tcp_nodelay = NoDelay, 
-							 tcp_allowed_address_t = AllowedAddress,
-							 tcp_max_http_worker = MaxHttpWorker,
-							 tcp_port = Port}}) ->
+init({IpAddress, 
+	  TcpConfig = #tcp_config{tcp_keepalive = KeepAlive, 
+							  tcp_nodelay = NoDelay, 
+							  tcp_min_http_worker = MinHttpWorker,
+							  tcp_port = Port,
+							  tcp_send_timeout = SendTimeout,
+							  tcp_backlog = Backlog,
+							  tcp_delay_send = DelaySend,
+							  tcp_buffer = Buffer},
+	  ListenerName}) ->
 	Opts = [binary, 
 			{packet, 0}, 
 			{active, true},
-			{buffer, 8000},
+			{buffer, Buffer},
 			{send_timeout_close, true},
-			{send_timeout, ?TCP_SEND_TIMEOUT}, 
+			{send_timeout, SendTimeout}, 
 			{keepalive, KeepAlive}, 
 			{nodelay, NoDelay},
-			{backlog, ?TCP_BACKLOG},
+			{backlog, Backlog},
 			{ip, IpAddress},
 			{reuseaddr, true},
-			{delay_send, false}],
+			{delay_send, DelaySend}],
 	case gen_tcp:listen(Port, Opts) of
 		{ok, LSocket} ->
-			NewState = #state{lsocket = LSocket, allowed_address = AllowedAddress},
-			start_server_workers(MaxHttpWorker, LSocket, AllowedAddress),
+			NewState = #state{lsocket = LSocket, 
+							  listener_name = ListenerName,
+							  tcp_config = TcpConfig},
+			ems_db:init_sequence(ListenerName, 0),
+			start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
 			ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
 			{ok, NewState};
 		{error,eaddrnotavail} ->
@@ -72,8 +81,12 @@ init({IpAddress, #tcp_config{tcp_keepalive = KeepAlive,
      end.	
 
 handle_cast(new_worker, State = #state{lsocket = LSocket,
-									   allowed_address = Allowed_Address}) ->
-    ems_http_worker:start_link({self(), LSocket, Allowed_Address}),
+									   listener_name = ListenerName,
+									   tcp_config = TcpConfig = #tcp_config{tcp_min_http_worker = _MinHttpWorker}}) ->
+	io:format("Iniciando worker extra\n"),
+	%start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
+	ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
+	flush(),
     {noreply, State};
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
@@ -107,9 +120,16 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_server_workers(0,_,_) ->
-    ok;
 
-start_server_workers(Num, LSocket, Allowed_Address) ->
-    ems_http_worker:start_link({self(), LSocket, Allowed_Address}),
-    start_server_workers(Num-1, LSocket, Allowed_Address).
+flush() ->
+    receive
+        _ -> flush()
+    after 0 ->
+        ok
+    end.
+    
+start_server_workers(0,_,_,_) ->
+    ok;
+start_server_workers(Num, LSocket, TcpConfig, ListenerName) ->
+    ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
+    start_server_workers(Num-1, LSocket, TcpConfig, ListenerName).
