@@ -40,12 +40,14 @@ make_opts_listen(IpAddress, #tcp_config{tcp_keepalive = KeepAlive,
 	case IsSsl of
 		true  -> 
 			Opts ++ [
-						%%{ssl, true},
+						{ssl_imp, true},
 						%%{ssl_imp, list_to_atom(binary_to_list(maps:get(<<"ssl_imp">>, Ssl)))},
 						%%{cacertfile, ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"cacertfile">>, Ssl))},
 						{certfile, ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"certfile">>, Ssl))},
-						{keyfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"keyfile">>, Ssl))}
-						%%{depth, maps:get(<<"depth">>, Ssl)}
+						{keyfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"keyfile">>, Ssl))},
+						%%{cacertfile, "/etc/ssl/certs/ca-certificates.crt"},
+						%%{versions, ['tlsv1', 'tlsv1.1', 'tlsv1.2']}
+						{depth, maps:get(<<"depth">>, Ssl)}
 					  ];
 		false -> Opts
 	end.
@@ -66,16 +68,22 @@ listen(IsSsl, Port, Opts) ->
 accept({ssl, ListenSocket}, Timeout) ->
     try ssl:transport_accept(ListenSocket) of
         {ok, Socket} ->
-            case ssl:ssl_accept(Socket, Timeout) of
+			io:format("transport accept ~p\n", [Socket]),
+            case ssl:ssl_accept(Socket) of
                 ok ->
+					io:format("ssl accept ~p\n", [Socket]),
                     {ok, {ssl, Socket}};
                 {error, _} = Err ->
-                    Err
+					io:format("deu erro! \n"),
+					Err
             end;
         {error, _} = Err ->
-            Err
+			io:format("deu erro 2\n"),
+			Err
+            
     catch
         error:{badmatch, {error, Reason}} ->
+            io:format("deu erro 3 \n"),
             {error, Reason}
     end;
 accept(ListenSocket, Timeout) ->

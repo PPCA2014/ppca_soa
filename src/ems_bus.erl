@@ -16,7 +16,6 @@
 %%%===================================================================
 
 start() ->
-	io:format("passei aqui\n"),
 	application:start(ranch),
     application:start(oauth2),
     application:start(crypto),

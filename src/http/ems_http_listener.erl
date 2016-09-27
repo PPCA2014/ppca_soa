@@ -52,14 +52,11 @@ init({IpAddress,
 	io:format("opts is ~p\n", [Opts]),
 	case ems_socket:listen(IsSsl, Port, Opts) of
 		{ok, LSocket} ->
-			io:format("o socket eh ~p\n", [LSocket]),
 			NewState = #state{lsocket = LSocket, 
 							  listener_name = ListenerName,
 							  tcp_config = TcpConfig},
 			ems_db:init_sequence(ListenerName, 0), % listener counter for accepts workers
-			io:format("aqui1\n"),
 			start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
-			io:format("aqui2\n"),
 			case IsSsl of
 				true -> ems_logger:info("Listening https packets on ~s:~p.", [inet:ntoa(IpAddress), Port]);
 				false -> ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port])

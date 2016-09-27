@@ -100,6 +100,12 @@ handle_info({tcp, Socket, RequestBin}, State) ->
 	process_request(Socket, RequestBin),
 	{noreply, State, 6000};
 
+handle_info({ssl, Socket, RequestBin}, State) ->
+	process_request(Socket, RequestBin),
+	{noreply, State, 6000};
+
+
+
 handle_info({tcp_closed, _Socket}, State) ->
 	io:format("process tcp closed end\n"),
 	erlang:yield(),
@@ -111,8 +117,9 @@ handle_info({'EXIT', _Pid, _Reason}, State) ->
     io:format("process exit end\n"),
     {noreply, State};
 
-handle_info(_Msg, State) ->
-   {noreply, State}.
+handle_info(Msg, State) ->
+	io:format("Msg is ~p\n", [Msg]),
+	{noreply, State, 6000}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -143,10 +150,10 @@ accept_request(State=#state{owner = Owner,
 	ems_db:sequence(ListenerName),
 	case ems_socket:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
+			io:format("recebi ~p\n", [Socket]),
 			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
-			%io:format("accept -> ~p\n", [CurrentWorkerCount]),
-			%% It is in the range of IP addresses authorized to access the bus?
-			case inet:peername(Socket) of
+			io:format("peername ~p\n", [ems_socket:peername(Socket)]),
+			case ems_socket:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case CurrentWorkerCount == 0 of
 						true -> gen_server:cast(Owner, new_worker);
@@ -154,14 +161,16 @@ accept_request(State=#state{owner = Owner,
 					end,
 					case Ip of
 						{127, 0, _,_} -> 
+							io:format("sim\n"),
 							{noreply, State#state{socket = Socket}};
 						_ -> 
 							case ems_http_util:match_ip_address(AllowedAddress, Ip) of
 								true -> 
+									io:format("math ip address\n"),
 									{noreply, State#state{socket = Socket}};
 								false -> 
 									ems_socket:close(Socket),
-									ems_logger:warn("Host ~s not authorized!", [inet:ntoa(Ip)]),
+									ems_logger:warn("Host ~s not authorized!", [ems_socket:ntoa(Ip)]),
 									accept_request(State)
 							end
 					end;
@@ -185,6 +194,7 @@ accept_request(State=#state{owner = Owner,
 					{stop, normal, State}
 			end;
 		{error, PosixError} ->
+			io:format("um erro ~p\n", [PosixError]),
 			ems_db:sequence(ListenerName, -1),
 			PosixErrorDescription = ems_socket:posix_error_description(PosixError),
 			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
@@ -196,13 +206,14 @@ accept_request(State=#state{owner = Owner,
 
 
 process_request(Socket, RequestBin) ->
+	io:format("proces request ~p\n", [Socket]),
 	case ems_http_util:encode_request(Socket, RequestBin, self()) of
 		 {ok, Request} -> 
-			inet:setopts(Socket,[{active,once}]),
+			ems_socket:setopts(Socket,[{active,once}]),
 			% TCP_LINGER2 for Linux
-			inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
+			ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 			% TCP_DEFER_ACCEPT for Linux
-			inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+			ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 			%ems_logger:info("Dispatch new request: ~p.", [Request]),
 			ems_dispatcher:dispatch_request(Request);
 		 {error, Reason} -> 
@@ -214,11 +225,11 @@ process_request(Socket, RequestBin) ->
 
 
 process_response({_MsgType, Request = #request{type = Method, socket = Socket}, Result}) ->
-	inet:setopts(Socket,[{active,once}]),
+	ems_socket:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
-	inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
+	ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 	% TCP_DEFER_ACCEPT for Linux
-	inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+	ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
 	case Result of
 		{ok, <<Content/binary>>} -> 
 			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
