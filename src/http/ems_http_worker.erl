@@ -72,7 +72,6 @@ init({Owner, LSocket, TcpConfig, ListenerName}) ->
 
 %% init for processes that will process the queue of outgoing requests
 init(_) ->
-    %fprof:trace([start, {procs, [self()]}]),
     {ok, #state{}}.
 
 handle_cast(shutdown, State) ->
@@ -90,7 +89,7 @@ handle_info(timeout, State=#state{socket = undefined}) ->
 
 handle_info(timeout, State=#state{socket = Socket}) ->
 	%io:format("Timeout enquanto aguarda service http\n"),
-	gen_tcp:close(Socket),
+	ems_socket:close(Socket),
 	accept_request(State);
 
 handle_info(timeout, State) ->
@@ -123,7 +122,7 @@ terminate(_Reason, #state{socket = undefined}) ->
     ok;
 
 terminate(_Reason, #state{socket = Socket}) ->
-	gen_tcp:close(Socket),
+	ems_socket:close(Socket),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -142,7 +141,7 @@ accept_request(State=#state{owner = Owner,
 												     tcp_accept_timeout = AcceptTimeout},
 							listener_name = ListenerName}) ->
 	ems_db:sequence(ListenerName),
-	case gen_tcp:accept(LSocket, AcceptTimeout) of
+	case ems_socket:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
 			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
 			%io:format("accept -> ~p\n", [CurrentWorkerCount]),
@@ -161,13 +160,13 @@ accept_request(State=#state{owner = Owner,
 								true -> 
 									{noreply, State#state{socket = Socket}};
 								false -> 
-									gen_tcp:close(Socket),
+									ems_socket:close(Socket),
 									ems_logger:warn("Host ~s not authorized!", [inet:ntoa(Ip)]),
 									accept_request(State)
 							end
 					end;
 				_ -> 
-					gen_tcp:close(Socket),
+					ems_socket:close(Socket),
 					accept_request(State)
 			end;
 		{error, closed} -> 
@@ -187,7 +186,7 @@ accept_request(State=#state{owner = Owner,
 			end;
 		{error, PosixError} ->
 			ems_db:sequence(ListenerName, -1),
-			PosixErrorDescription = ems_tcp_util:posix_error_description(PosixError),
+			PosixErrorDescription = ems_socket:posix_error_description(PosixError),
 			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
 			erlang:yield(),
 			erlang:yield(),
@@ -208,8 +207,8 @@ process_request(Socket, RequestBin) ->
 			ems_dispatcher:dispatch_request(Request);
 		 {error, Reason} -> 
 			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),
-			ems_tcp_util:send_data(Socket, Response),
-			gen_tcp:close(Socket),
+			ems_socket:send_data(Socket, Response),
+			ems_socket:close(Socket),
 			ems_logger:error("Invalid request: ~p.", [Reason])
 	end.
 
@@ -259,8 +258,8 @@ get_http_code_verb(_, false)  -> {400, <<"400">>}.
 send_response(Code, Reason, Request, Response) ->
 	T2 = ems_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	StatusSend = ems_tcp_util:send_data(Request#request.socket, Response),
-	gen_tcp:close(Request#request.socket),
+	StatusSend = ems_socket:send_data(Request#request.socket, Response),
+	ems_socket:close(Request#request.socket),
 	case  StatusSend of
 		ok -> Status = req_send;
 		_  -> Status = req_done

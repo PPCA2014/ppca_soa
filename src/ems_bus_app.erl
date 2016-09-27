@@ -31,6 +31,7 @@ start(_StartType, StartArgs) ->
 					ems_logger:start(),
 					ems_dispatcher:start(),
 					ems_health:start(),
+					ssl:start(),
 					ems_logger:info("~n~s", [?SERVER_NAME]),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					ems_logger:info("cat_host_alias: ~p", [Config#config.cat_host_alias]),

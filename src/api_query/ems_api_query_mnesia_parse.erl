@@ -10,8 +10,8 @@
 
 -export([generate_dynamic_query/6, generate_dynamic_query/3]).
 
--include("../../../include/ems_config.hrl").
--include("../../../include/ems_schema.hrl").
+-include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
 
 generate_dynamic_query(FilterJson, Fields, _Datasource, Limit, Offset, Sort) ->

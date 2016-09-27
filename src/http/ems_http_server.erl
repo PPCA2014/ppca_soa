@@ -66,7 +66,8 @@ init(Args) ->
 		tcp_buffer = maps:get(<<"tcp_buffer">>, Args, 8000),
 		tcp_send_timeout = maps:get(<<"tcp_send_timeout">>, Args, 16000),
 		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Args, false),
-		tcp_ssl = maps:get(<<"tcp_ssl">>, Args, false)
+		tcp_ssl = maps:get(<<"tcp_ssl">>, Args, null),
+		tcp_is_ssl = maps:get(<<"tcp_ssl">>, Args, null) =/= null
  	},
  	State = #state{tcp_config = TcpConfig, name = ServerName},
 	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, 1, State) of

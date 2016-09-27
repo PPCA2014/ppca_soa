@@ -47,6 +47,9 @@
 % Caminho inicial para os arquivos de carga de dados em formato CSV
 -define(CSV_FILE_PATH, ?PRIV_PATH ++ "/csv").
 
+% Caminho dos certificados ssl
+-define(SSL_PATH, ?PRIV_PATH ++ "/ssl").
+
 % Propriedade TCP Timeout para envio do response
 -define(TCP_SEND_TIMEOUT, 30000).
 
@@ -73,7 +76,7 @@
 -define(MAX_HTTP_WORKER_RANGE, 1000).  % a cada 4 horas
 
 % Quanto tempo o listener vai aguardar uma conexão antes de ocorrer um timeout
--define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000). % 1 minuto
+-define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
@@ -139,6 +142,7 @@
 					 tcp_delay_send,
 					 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
 					 tcp_allowed_address_t,
+					 tcp_is_ssl,
 					 tcp_ssl
 			 }). 	
 

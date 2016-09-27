@@ -10,7 +10,7 @@
 
 -export([validate/2]).
 
--include("../../../include/ems_schema.hrl").
+-include("../../include/ems_schema.hrl").
 
 validate(Record, null) -> ok;
 validate(Record, Schema) when is_tuple(Record) ->

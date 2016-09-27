@@ -10,7 +10,7 @@
 
 -export([find/7, find_by_id/4, insert/3, update/4]).
 
--include("../../../include/ems_schema.hrl").
+-include("../../include/ems_schema.hrl").
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}, Debug) ->

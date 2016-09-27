@@ -10,8 +10,8 @@
 
 -export([find/7, find_by_id/4]).
 
--include("../../../include/ems_config.hrl").
--include("../../../include/ems_schema.hrl").
+-include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->

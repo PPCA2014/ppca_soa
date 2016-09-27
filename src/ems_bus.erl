@@ -16,15 +16,18 @@
 %%%===================================================================
 
 start() ->
+	io:format("passei aqui\n"),
 	application:start(ranch),
     application:start(oauth2),
     application:start(crypto),
+	application:start(ssl),    
     application:start(odbc),
     application:start(ems_bus).
     
 
 stop() ->
     application:stop(ems_bus),
+    application:stop(ssl),
     application:stop(crypto),
     application:stop(oauth2),
     application:stop(odbc),

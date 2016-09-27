@@ -10,8 +10,8 @@
 
 -compile(export_all).
 
--include("../../../include/ems_config.hrl").
--include("../../../include/ems_schema.hrl").
+-include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
 
 parse_fields([]) -> "*";

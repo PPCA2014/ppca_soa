@@ -1,17 +1,17 @@
 %%********************************************************************
-%% @title Module ems_api_query_odbc
+%% @title Module ems_api_query_sqlite
 %% @version 1.0.0
-%% @doc It provides api query functions for odbc database.
+%% @doc It provides api query functions for sqlite database.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_api_query_odbc).
+-module(ems_api_query_sqlite).
 
 -export([find/7, find_by_id/4]).
 
--include("../../../include/ems_config.hrl").
--include("../../../include/ems_schema.hrl").
+-include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->
@@ -30,14 +30,17 @@ find_by_id(Id, Fields, Datasource, Debug) ->
 	    
 parse_fields([]) -> "*";
 parse_fields(Fields) -> 
-	Fields2 = string:tokens(Fields, ","),
-	string:join(Fields2, ",").	    
+	case string:tokens(string:strip(Fields), ",") of
+		[] -> erlang:error(einvalid_fields);
+		Fields2 -> string:join(Fields2, ",")
+	end.
 
 	    
 parse_filter(<<>>) -> {"", ""};
 parse_filter(Filter) ->    
     case ems_util:json_decode(Filter) of
-		{ok, Filter2} -> parse_filter(Filter2, [], []);
+		{ok, Filter2} -> 
+			parse_filter(Filter2, [], []);
 		_ -> erlang:error(einvalid_filter)
 	end.
 parse_filter([], [], []) -> {"", ""};
@@ -64,7 +67,7 @@ parse_condition({<<Param/binary>>, Value}) when is_boolean(Value) ->
 	parse_condition(Param2, Value, sql_boolean);
 parse_condition({<<Param/binary>>, Value}) -> 
 	Param2 = binary_to_list(Param), 
-	Value2 = binary_to_list(Value),
+	Value2 = unicode:characters_to_list(Value, latin1),
 	parse_condition(Param2, Value2, sql_varchar).
 parse_condition(Param, Value, DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
@@ -129,7 +132,7 @@ parse_value(Param, Value, "lte", sql_integer) ->
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
-format_odbc_data_type(_Value, sql_varchar) -> {sql_varchar, 100};
+format_odbc_data_type(Value, sql_varchar) -> {sql_varchar, length(Value)};
 format_odbc_data_type(_Value, sql_integer) -> sql_integer;
 format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
@@ -138,13 +141,13 @@ parse_name_and_operator(Param) ->
 	case string:str(Param, "__") of
 		Idx when Idx > 1 ->
 			Name = string:sub_string(Param, 1, Idx-1),
-			Op = string:sub_string(Param, Idx+2),
+			Op = string:to_lower(string:sub_string(Param, Idx+2)),
 			case lists:member(Op, ["like", "ilike", "contains", "icontains", "e", "ne", "gt", "gte", "lt", "lte", "isnull"]) of
 				true -> {Name, Op};
-				_ -> erlang:error(einvalid_condition)
+				_ -> throw({einvalid_condition, Param})
 			end;
 		0 -> {Param, "e"};
-		_ -> erlang:error(einvalid_condition)
+		_ -> throw({einvalid_condition, Param})
 	end.
 
 
@@ -196,7 +199,7 @@ parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
 	
 
 
-parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit < ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
+parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY ->
 	io_lib:format("LIMIT ~p OFFSET ~p", [Limit, Offset]);
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
@@ -207,14 +210,16 @@ generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = Tabl
 	SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
 	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
+	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 
 generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, primary_key = PrimaryKey}) ->
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
-	Sql = lists:flatten(io_lib:format("select ~s from ~s where ~s = ?", [Fields2, TableName, PrimaryKey])),
-	{ok, {Sql, Params}}.
+	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s where ~s = ? limit 1", [Fields2, TableName, PrimaryKey])),
+	%io:format("sql is ~p\n", [SqlSmnt]),
+	{ok, {SqlSmnt, Params}}.
 
 
 execute_dynamic_query(Sql, _, _, true) -> 
@@ -222,7 +227,7 @@ execute_dynamic_query(Sql, _, _, true) ->
 	{ok, Result};
 execute_dynamic_query(Sql, Params, #service_datasource{conn_ref = Conn}, false) ->
 	try
-		case odbc:param_query(Conn, Sql, Params, 3500) of
+		case odbc:param_query(Conn, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
 				Objects = ems_util:json_encode_table(Fields, Records),
 				{ok, Objects};

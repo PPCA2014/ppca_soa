@@ -44,40 +44,33 @@ stop() ->
 %%====================================================================
  
 init({IpAddress, 
-	  TcpConfig = #tcp_config{tcp_keepalive = KeepAlive, 
-							  tcp_nodelay = NoDelay, 
-							  tcp_min_http_worker = MinHttpWorker,
+	  TcpConfig = #tcp_config{tcp_min_http_worker = MinHttpWorker,
 							  tcp_port = Port,
-							  tcp_send_timeout = SendTimeout,
-							  tcp_backlog = Backlog,
-							  tcp_delay_send = DelaySend,
-							  tcp_buffer = Buffer},
+							  tcp_is_ssl = IsSsl},
 	  ListenerName}) ->
-	Opts = [binary, 
-			{packet, 0}, 
-			{active, true},
-			{buffer, Buffer},
-			{send_timeout_close, true},
-			{send_timeout, SendTimeout}, 
-			{keepalive, KeepAlive}, 
-			{nodelay, NoDelay},
-			{backlog, Backlog},
-			{ip, IpAddress},
-			{reuseaddr, true},
-			{delay_send, DelaySend}],
-	case gen_tcp:listen(Port, Opts) of
+	Opts = ems_socket:make_opts_listen(IpAddress, TcpConfig),
+	io:format("opts is ~p\n", [Opts]),
+	case ems_socket:listen(IsSsl, Port, Opts) of
 		{ok, LSocket} ->
+			io:format("o socket eh ~p\n", [LSocket]),
 			NewState = #state{lsocket = LSocket, 
 							  listener_name = ListenerName,
 							  tcp_config = TcpConfig},
-			ems_db:init_sequence(ListenerName, 0),
+			ems_db:init_sequence(ListenerName, 0), % listener counter for accepts workers
+			io:format("aqui1\n"),
 			start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
-			ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
+			io:format("aqui2\n"),
+			case IsSsl of
+				true -> ems_logger:info("Listening https packets on ~s:~p.", [inet:ntoa(IpAddress), Port]);
+				false -> ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port])
+			end,
 			{ok, NewState};
 		{error,eaddrnotavail} ->
 			ems_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
 			{ok, #state{}};    
-		Error -> Error
+		Error ->
+			io:format("o erro eh ~p\n", [Error]),
+			Error
      end.	
 
 handle_cast(new_worker, State = #state{lsocket = LSocket,
@@ -99,7 +92,7 @@ handle_cast(shutdown, State=#state{lsocket = undefined}) ->
     {stop, normal, State};
     
 handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    gen_tcp:close(LSocket),
+    ems_socket:close(LSocket),
     {stop, normal, State#state{lsocket = undefined}}.
 
 handle_call(_Request, _From, State) ->
@@ -115,7 +108,7 @@ terminate(_Reason, #state{lsocket = undefined}) ->
     ok;
    
 terminate(_Reason, #state{lsocket = LSocket}) ->
-    gen_tcp:close(LSocket),
+    ems_socket:close(LSocket),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
