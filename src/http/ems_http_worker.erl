@@ -101,10 +101,8 @@ handle_info({tcp, Socket, RequestBin}, State) ->
 	{noreply, State, 6000};
 
 handle_info({ssl, Socket, RequestBin}, State) ->
-	process_request(Socket, RequestBin),
+	process_request({ssl, Socket}, RequestBin),
 	{noreply, State, 6000};
-
-
 
 handle_info({tcp_closed, _Socket}, State) ->
 	io:format("process tcp closed end\n"),
@@ -118,7 +116,6 @@ handle_info({'EXIT', _Pid, _Reason}, State) ->
     {noreply, State};
 
 handle_info(Msg, State) ->
-	io:format("Msg is ~p\n", [Msg]),
 	{noreply, State, 6000}.
 
 handle_info(State) ->
@@ -126,7 +123,7 @@ handle_info(State) ->
 
 terminate(_Reason, #state{socket = undefined}) ->
    io:format("terminate\n"),
-    ok;
+   ok;
 
 terminate(_Reason, #state{socket = Socket}) ->
 	ems_socket:close(Socket),
@@ -150,9 +147,7 @@ accept_request(State=#state{owner = Owner,
 	ems_db:sequence(ListenerName),
 	case ems_socket:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
-			io:format("recebi ~p\n", [Socket]),
 			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
-			io:format("peername ~p\n", [ems_socket:peername(Socket)]),
 			case ems_socket:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case CurrentWorkerCount == 0 of
@@ -161,12 +156,10 @@ accept_request(State=#state{owner = Owner,
 					end,
 					case Ip of
 						{127, 0, _,_} -> 
-							io:format("sim\n"),
 							{noreply, State#state{socket = Socket}};
 						_ -> 
 							case ems_http_util:match_ip_address(AllowedAddress, Ip) of
 								true -> 
-									io:format("math ip address\n"),
 									{noreply, State#state{socket = Socket}};
 								false -> 
 									ems_socket:close(Socket),
@@ -194,7 +187,6 @@ accept_request(State=#state{owner = Owner,
 					{stop, normal, State}
 			end;
 		{error, PosixError} ->
-			io:format("um erro ~p\n", [PosixError]),
 			ems_db:sequence(ListenerName, -1),
 			PosixErrorDescription = ems_socket:posix_error_description(PosixError),
 			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
@@ -206,16 +198,17 @@ accept_request(State=#state{owner = Owner,
 
 
 process_request(Socket, RequestBin) ->
-	io:format("proces request ~p\n", [Socket]),
 	case ems_http_util:encode_request(Socket, RequestBin, self()) of
 		 {ok, Request} -> 
+			% Send request to service
+			ems_dispatcher:dispatch_request(Request),
+			erlang:yield(),
+			% Settings for tcp
 			ems_socket:setopts(Socket,[{active,once}]),
 			% TCP_LINGER2 for Linux
 			ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 			% TCP_DEFER_ACCEPT for Linux
-			ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-			%ems_logger:info("Dispatch new request: ~p.", [Request]),
-			ems_dispatcher:dispatch_request(Request);
+			ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]);
 		 {error, Reason} -> 
 			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),
 			ems_socket:send_data(Socket, Response),

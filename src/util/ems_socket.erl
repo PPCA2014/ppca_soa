@@ -68,22 +68,16 @@ listen(IsSsl, Port, Opts) ->
 accept({ssl, ListenSocket}, Timeout) ->
     try ssl:transport_accept(ListenSocket) of
         {ok, Socket} ->
-			io:format("transport accept ~p\n", [Socket]),
-            case ssl:ssl_accept(Socket) of
-                ok ->
-					io:format("ssl accept ~p\n", [Socket]),
-                    {ok, {ssl, Socket}};
+            case ssl:ssl_accept(Socket, Timeout) of
+                ok -> {ok, {ssl, Socket}};
                 {error, _} = Err ->
-					io:format("deu erro! \n"),
 					Err
             end;
         {error, _} = Err ->
-			io:format("deu erro 2\n"),
 			Err
             
     catch
         error:{badmatch, {error, Reason}} ->
-            io:format("deu erro 3 \n"),
             {error, Reason}
     end;
 accept(ListenSocket, Timeout) ->

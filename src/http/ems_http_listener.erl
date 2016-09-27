@@ -49,7 +49,6 @@ init({IpAddress,
 							  tcp_is_ssl = IsSsl},
 	  ListenerName}) ->
 	Opts = ems_socket:make_opts_listen(IpAddress, TcpConfig),
-	io:format("opts is ~p\n", [Opts]),
 	case ems_socket:listen(IsSsl, Port, Opts) of
 		{ok, LSocket} ->
 			NewState = #state{lsocket = LSocket, 
@@ -66,7 +65,6 @@ init({IpAddress,
 			ems_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
 			{ok, #state{}};    
 		Error ->
-			io:format("o erro eh ~p\n", [Error]),
 			Error
      end.	
 
