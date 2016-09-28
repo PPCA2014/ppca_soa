@@ -159,6 +159,7 @@ decode_http_header(Headers, Params) ->
 
 decode_http_request(RequestBin) ->
 	case erlang:decode_packet(http_bin, RequestBin, []) of
+		{ok, {http_error, _}, _} -> {error, einvalid_http_request};
 		{ok, Req, Rest} ->
 			{http_request, Method, {abs_path, Uri}, {Http_Version_Major, Http_Version_Minor}} = Req,
 			Http_Version = io_lib:format("HTTP/~p.~p", [Http_Version_Major, Http_Version_Minor]),

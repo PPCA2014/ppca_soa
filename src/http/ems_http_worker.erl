@@ -106,16 +106,13 @@ handle_info({ssl, Socket, RequestBin}, State) ->
 
 handle_info({tcp_closed, _Socket}, State) ->
 	io:format("process tcp closed end\n"),
-	erlang:yield(),
-	erlang:yield(),
-	erlang:yield(),
 	{noreply, State#state{socket = undefined}, 0};
 
 handle_info({'EXIT', _Pid, _Reason}, State) ->
     io:format("process exit end\n"),
     {noreply, State};
 
-handle_info(Msg, State) ->
+handle_info(_Msg, State) ->
 	{noreply, State, 6000}.
 
 handle_info(State) ->
@@ -174,8 +171,11 @@ accept_request(State=#state{owner = Owner,
 		{error, closed} -> 
 			% ListenSocket is closed
 			ems_db:sequence(ListenerName, -1),
-			ems_logger:info("Listener socket was closed."),
-			{stop, normal, State};
+			%ems_logger:info("Listener socket was closed."),
+			erlang:yield(),
+			erlang:yield(),
+			erlang:yield(),
+			accept_request(State);
 		{error, timeout} ->
 			% no connection is established within the specified time
 			ems_db:sequence(ListenerName, -1),
@@ -183,13 +183,13 @@ accept_request(State=#state{owner = Owner,
 			case ems_db:current_sequence(ListenerName) < MinHttpWorker of
 				true -> accept_request(State);
 				_ ->
-					%io:format("Liberando um worker por timeout!\n"),
+					io:format("Liberando um worker por timeout!\n"),
 					{stop, normal, State}
 			end;
 		{error, PosixError} ->
 			ems_db:sequence(ListenerName, -1),
 			PosixErrorDescription = ems_socket:posix_error_description(PosixError),
-			ems_logger:error("~p in http worker.", [PosixErrorDescription]),
+			io:format("~p in http worker.", [PosixErrorDescription]),
 			erlang:yield(),
 			erlang:yield(),
 			erlang:yield(),
@@ -209,11 +209,9 @@ process_request(Socket, RequestBin) ->
 			ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 			% TCP_DEFER_ACCEPT for Linux
 			ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]);
-		 {error, Reason} -> 
-			Response = ems_http_util:encode_response(<<"400">>, ?HTTP_ERROR_400(atom_to_list(Reason)), <<"application/json; charset=utf-8"/utf8>>),
-			ems_socket:send_data(Socket, Response),
+		 {error, _} -> 
 			ems_socket:close(Socket),
-			ems_logger:error("Invalid request: ~p.", [Reason])
+			ems_logger:error("Close invalid http/https request.")
 	end.
 
 

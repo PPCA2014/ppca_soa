@@ -293,28 +293,37 @@ do_log_request(#request{protocol = http,
 						code = Code,
 						reason = Reason,
 						latency = Latencia,
+						socket = Socket,
 						authorization = Authorization,
-						node_exec = Node}, _State) ->
-		ServiceImpl = case Service of
-			undefined -> "";
-			_ -> Service#service.service
-		end,
-		case Payload of
-			undefined ->
-				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-				Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, 
-											   ServiceImpl, Query, Authorization, 
-											   Node, Code, Reason, 
-											   Latencia]);
-			_ ->
-				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-				Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Accept, User_Agent, 
-											   Content_Type, Payload, ServiceImpl, Query, 
-											   Authorization, Node, Code, Reason, 
-											   Latencia])
-		end,
-		case Code of
-			200 -> ems_logger:info(Texto1);
-			_ 	-> ems_logger:error(Texto1)
+						node_exec = Node}, #state{level = Level}) ->
+		case Level of
+			info ->
+				case Socket of
+					{ssl, _} -> Ssl = "SSL";
+					_ -> Ssl = ""
+				end,
+				ServiceImpl = case Service of
+					undefined -> "";
+					_ -> Service#service.service
+				end,
+				case Payload of
+					undefined ->
+						Texto =  "~s ~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+						Texto1 = io_lib:format(Texto, [Metodo, Url, Version, Ssl, RID, Accept, User_Agent, 
+													   ServiceImpl, Query, Authorization, 
+													   Node, Code, Reason, 
+													   Latencia]);
+					_ ->
+						Texto =  "~s ~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+						Texto1 = io_lib:format(Texto, [Metodo, Url, Version, Ssl, RID, Accept, User_Agent, 
+													   Content_Type, Payload, ServiceImpl, Query, 
+													   Authorization, Node, Code, Reason, 
+													   Latencia])
+				end,
+				case Code of
+					200 -> ems_logger:info(Texto1);
+					_ 	-> ems_logger:error(Texto1)
+				end;
+			_ -> ok
 		end.
 

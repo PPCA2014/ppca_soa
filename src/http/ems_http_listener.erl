@@ -84,9 +84,11 @@ handle_cast(new_worker, State = #state{lsocket = LSocket,
     {noreply, State};
 
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
+	io:format("listener undefined socket shutdown ~p\n", [shutdown]),
     {stop, normal, State};
     
 handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
+    io:format("listener socket shutdown ~p\n", [shutdown]),
     ems_socket:close(LSocket),
     {stop, normal, State#state{lsocket = undefined}}.
 
@@ -99,10 +101,12 @@ handle_info(_Msg, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-terminate(_Reason, #state{lsocket = undefined}) ->
+terminate(Reason, #state{lsocket = undefined}) ->
+	io:format("listener undefined socket terminate ~p\n", [Reason]),
     ok;
    
-terminate(_Reason, #state{lsocket = LSocket}) ->
+terminate(Reason, #state{lsocket = LSocket}) ->
+    io:format("listener terminate ~p\n", [Reason]),
     ems_socket:close(LSocket),
     ok.
  
