@@ -38,6 +38,23 @@
 		 json_decode_as_map_file/1]).
 
 
+hashsym(S) -> hashsym(S, 0).
+
+hashsym([], Result) -> Result;
+hashsym([H|T], Result) when H >= 48 andalso H =< 57 -> hashsym(T, Result);
+hashsym([H|T], Result) -> hashsym(T, Result + H).
+	
+hashsymdef(S) -> hashsymdef(S, 0).
+
+hashsymdef([], Result) -> Result;
+hashsymdef([H|T], Result) when H == 58 -> hashsymdef(hashsymdef_id(T), Result);
+hashsymdef([H|T], Result) when H >= 48 andalso H =< 57 -> hashsymdef(T, Result);
+hashsymdef([H|T], Result) -> hashsymdef(T, Result + H).
+
+hashsymdef_id([]) -> [];
+hashsymdef_id([H|T]) when H == 47 -> T;
+hashsymdef_id([_|T]) -> hashsymdef_id(T).
+
 get_priv_dir() ->
 	{ok, Path} = file:get_cwd(),
 	Path ++ "/priv".

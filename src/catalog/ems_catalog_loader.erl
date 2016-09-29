@@ -250,9 +250,27 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 %			parse_url_service(T, [P | Url])
 %	end.
 
+make_ets_catalog([]) -> ok;
+make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) -> 
+	case Type of
+		<<"GET">> -> ets:insert(ets_get, H);
+		<<"POST">> -> ets:insert(ets_post, H);
+		<<"PUT">> -> ets:insert(ets_update, H);
+		<<"DELETE">> -> ets:insert(ets_delete, H);
+		<<"OPTIONS">> -> ets:insert(ets_options, H)
+	end,
+	make_ets_catalog(T). 	
+
+
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
-	EtsCat2 = ems_util:list_to_ets(Cat2, ets_cat2, [set, 
+	ets:new(ets_get, [ordered_set, named_table, public, {read_concurrency, true}]),
+	ets:new(ets_post, [ordered_set, named_table, public, {read_concurrency, true}]),
+	ets:new(ets_update, [ordered_set, named_table, public, {read_concurrency, true}]),
+	ets:new(ets_delete, [ordered_set, named_table, public, {read_concurrency, true}]),
+	ets:new(ets_options, [ordered_set, named_table, public, {read_concurrency, true}]),
+	make_ets_catalog(Cat2),
+	EtsCat2 = ems_util:list_to_ets(Cat2, ets_cat2, [ordered_set, 
 													  public, 
 													  {read_concurrency, true}]),
 	{EtsCat2, Cat3, Cat4, CatK};

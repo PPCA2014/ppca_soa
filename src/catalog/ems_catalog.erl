@@ -199,6 +199,7 @@ do_lookup(Method, Uri, State) ->
 
 do_lookup(Request, State) ->
 	Rowid = Request#request.rowid,
+	io:format("Rowid ~p\n  cat2 ~p\n", [Rowid, State#state.cat2]),
 	case ets:lookup(State#state.cat2, Rowid) of
 		[] -> 
 			case do_lookup_re(Request, State#state.cat3) of
