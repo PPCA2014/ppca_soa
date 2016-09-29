@@ -118,14 +118,6 @@ is_type_valido(_) 	 		 -> false.
 %% @doc Indica se o tamanho é válido
 is_valid_length(Value, MaxLength) -> length(binary_to_list(Value)) =< MaxLength.
 
-%% @doc Indica se a URL contém expressão regular
-is_url_com_re([]) -> false;
-is_url_com_re([H|T]) -> 
-	case lists:member(H, [$?, $<, $>, $$, ${, $}, $-, $,]) of
-		true -> true;
-		false -> is_url_com_re(T)
-	end.
-
 %% @doc Valida o name do serviço
 valida_name_service(Name) ->
 	case is_name_service_valido(Name) of
@@ -278,8 +270,7 @@ parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
 		Name = maps:get(<<"name">>, H),
-		Url = maps:get(<<"url">>, H),
-		Url2 = Url,
+		Url2 = maps:get(<<"url">>, H),
 		Type = maps:get(<<"type">>, H, <<"GET">>),
 		valida_url_service(Url2),
 		ServiceImpl = maps:get(<<"service">>, H),
@@ -289,7 +280,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		Version = maps:get(<<"version">>, H, <<>>),
 		Owner = maps:get(<<"owner">>, H, <<>>),
 		Async = maps:get(<<"async">>, H, <<"false">>),
-		Rowid = ems_util:make_rowid_from_url(Url2, Type),
+		Rowid = ems_util:hashsymdef(Url2),
 		Lang = maps:get(<<"lang">>, H, <<>>),
 		Datasource = parse_datasource(maps:get(<<"datasource">>, H, null)),
 		Result_Cache = maps:get(<<"result_cache">>, H, 0),
@@ -322,7 +313,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		end,
 		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
 		IdBin = list_to_binary(integer_to_list(Id)),
-		ServiceView = new_service_view(IdBin, Name, Url, ModuleName, FunctionName, 
+		ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 										 Type, Apikey, Comment, Version, Owner, 
 										 Async, Host, Result_Cache, 
 										 Authentication, Node, Lang,
@@ -426,7 +417,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties) ->
-	{ok, Id_re_compiled} = re:compile(Rowid),
+	PatternKey = ems_util:make_rowid_from_url(Url, Type),
+	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
 				rowid = Rowid,
 				id = Id,

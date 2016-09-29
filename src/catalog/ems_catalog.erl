@@ -64,8 +64,23 @@ stop() ->
 list_catalog() ->
 	gen_server:call(?SERVER, list_catalog).
 
-lookup(Request) ->	
-	gen_server:call(?SERVER, {lookup, Request}).
+lookup(Request = #request{type = Type, rowid = Rowid, params_url = Params}) ->	
+	case Type of
+		"GET" -> EtsLookup = ets_get;
+		"POST" -> EtsLookup = ets_post;
+		"PUT" -> EtsLookup = ets_put;
+		"DELETE" -> EtsLookup = ets_delete;
+		"OPTIONS" -> EtsLookup = ets_options
+	end,
+	case ets:lookup(EtsLookup, Rowid) of
+		[] -> 
+			gen_server:call(?SERVER, {lookup, Request});
+		[{_Rowid, Service}] -> 
+			case processa_querystring(Service, Request) of
+			   enoent -> enoent;
+			   Querystring -> {Service, Params, Querystring}
+			end
+	end.
 
 lookup(Method, Uri) ->
 	gen_server:call(?SERVER, {lookup, Method, Uri}).
@@ -197,31 +212,22 @@ do_lookup(Method, Uri, State) ->
 	end.
 
 
-do_lookup(Request, State) ->
-	Rowid = Request#request.rowid,
-	io:format("Rowid ~p\n  cat2 ~p\n", [Rowid, State#state.cat2]),
-	case ets:lookup(State#state.cat2, Rowid) of
-		[] -> 
-			case do_lookup_re(Request, State#state.cat3) of
-				{Service, ParamsMap} -> 
-					Querystring = processa_querystring(Service, Request),
-					{Service, ParamsMap, Querystring};
-				enoent -> enoent
-			end;
-		[{_Rowid, Service}] -> 
-			case processa_querystring(Service, Request) of
-			   enoent -> enoent;
-			   Querystring -> {Service, Request#request.params_url, Querystring}
-			end
+do_lookup(Request, #state{cat3 = Cat}) ->
+	case do_lookup_re(Request, Cat) of
+		{Service, ParamsMap} -> 
+			Querystring = processa_querystring(Service, Request),
+			{Service, ParamsMap, Querystring};
+		enoent -> enoent
 	end.
 
 
 do_lookup_re(_Request, []) ->
 	enoent;
 
-do_lookup_re(Request, [H|T]) ->
+do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 	RE = H#service.id_re_compiled,
-	case re:run(Request#request.rowid, RE, [{capture,all_names,binary}]) of
+	PatternKey = ems_util:make_rowid_from_url(Url, Type),
+	case re:run(PatternKey, RE, [{capture,all_names,binary}]) of
 		match -> {H, #{}};
 		{match, Params} -> 
 			{namelist, ParamNames} = re:inspect(RE, namelist),

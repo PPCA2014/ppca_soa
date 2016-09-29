@@ -53,7 +53,7 @@ encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, Worker
 				Host = maps:get('Host', HttpParams, ""),
 				QuerystringMap = parse_querystring(Querystring),
 				Authorization = maps:get('Authorization', HttpParams, ""),
-				{Rowid, Params_url} = ems_util:get_rowid_and_params_from_url(Url2, Method),
+				{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 				Request = #request{
 					rid = RID,
 					rowid = Rowid,

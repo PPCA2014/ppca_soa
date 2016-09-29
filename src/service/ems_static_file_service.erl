@@ -49,7 +49,6 @@ stop() ->
 %%====================================================================
  
 execute(Request, From) ->
-	io:format("get static file\n"),
 	ems_pool:cast(ems_static_file_service, {get_file, Request, From}).
 
 

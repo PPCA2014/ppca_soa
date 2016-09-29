@@ -39,6 +39,7 @@
 
 
 %% Retorna o hash da url e os parâmetros do request
+hashsym_and_params(S) when is_binary(S) -> hashsym_and_params(binary_to_list(S), 1, 0, []);
 hashsym_and_params(S) -> hashsym_and_params(S, 1, 0, []).
 
 hashsym_and_params([], _Idx, Hash, Params) -> {Hash, maps:from_list(Params)};
@@ -57,6 +58,7 @@ hashsym_and_params_id([H|T], P) -> hashsym_and_params_id(T, P * 10 + H - $0).
 
 
 %% Retorna o hash da url (uso em tempo de execução)
+hashsym(S) when is_binary(S) -> hashsym(binary_to_list(S), 0);
 hashsym(S) -> hashsym(S, 0).
 
 hashsym([], Hash) -> Hash;
@@ -65,6 +67,7 @@ hashsym([H|T], Hash) -> hashsym(T, Hash + H).
 
 
 %% Retorna o hash da url (uso no carregamento dos catálogos)	
+hashsymdef(S) when is_binary(S) -> hashsymdef(binary_to_list(S), 0);
 hashsymdef(S) -> hashsymdef(S, 0).
 
 hashsymdef([], Hash) -> Hash;
