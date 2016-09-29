@@ -45,6 +45,9 @@ create_database(Nodes) ->
 
     mnesia:create_table(sequence, [{type, set},
 								   {disc_copies, Nodes},
+								   {dc_dump_limit, 40},
+								   {dump_log_write_threshold, 10000},
+								   {dump_log, false},
 								   {attributes, record_info(fields, sequence)}]),
 
     mnesia:create_table(sequence_transient, [{type, set},
