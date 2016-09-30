@@ -81,7 +81,6 @@ handle_cast(shutdown, State) ->
 handle_cast({list_catalog, Request, _From}, State) ->
 	Result = do_list_catalog(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
-	%gen_server:cast(From, {service, Request, Result}),
 	{noreply, State};
 
 handle_cast({insert, Request, _From}, State) ->

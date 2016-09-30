@@ -54,13 +54,13 @@ init({IpAddress,
 			NewState = #state{lsocket = LSocket, 
 							  listener_name = ListenerName,
 							  tcp_config = TcpConfig},
-			ems_db:init_sequence(ListenerName, 0), % listener counter for accepts workers
+			ems_db:init_counter(ListenerName, 0), % listener counter for accepts workers
 			start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
 			case IsSsl of
 				true -> ems_logger:info("Listening https packets on ~s:~p.", [inet:ntoa(IpAddress), Port]);
 				false -> ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port])
 			end,
-			{ok, NewState};
+			{ok, NewState, 3000};
 		{error,eaddrnotavail} ->
 			ems_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
 			{ok, #state{}};    
@@ -68,45 +68,31 @@ init({IpAddress,
 			Error
      end.	
 
-handle_cast(new_worker, State = #state{lsocket = LSocket,
-									   listener_name = ListenerName,
-									   tcp_config = TcpConfig}) ->
-	%io:format("Iniciando worker extra\n"),
-	case ems_db:sequence(ListenerName, 0) == 0 of
-		true ->
-			ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
-			erlang:yield(),
-			erlang:yield(),
-			erlang:yield(),
-			flush();
-		_ -> ok
-	end,
-    {noreply, State};
-
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
-	io:format("listener undefined socket shutdown ~p\n", [shutdown]),
+	%io:format("listener undefined socket shutdown ~p\n", [shutdown]),
     {stop, normal, State};
     
 handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    io:format("listener socket shutdown ~p\n", [shutdown]),
+    %io:format("listener socket shutdown ~p\n", [shutdown]),
     ems_socket:close(LSocket),
     {stop, normal, State#state{lsocket = undefined}}.
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
     
-handle_info(_Msg, State) ->
-   {noreply, State}.
+handle_info(timeout, State) ->
+	check_accept_workers(State),
+   {noreply, State, 200}.
 
 handle_info(State) ->
    {noreply, State}.
 
-terminate(Reason, #state{lsocket = undefined}) ->
-	io:format("listener undefined socket terminate ~p\n", [Reason]),
+terminate(_Reason, #state{lsocket = undefined}) ->
+	%io:format("listener undefined socket terminate ~p\n", [Reason]),
     ok;
    
-terminate(Reason, #state{lsocket = LSocket}) ->
-    io:format("listener terminate ~p\n", [Reason]),
+terminate(_Reason, #state{lsocket = LSocket}) ->
+    %io:format("listener terminate ~p\n", [Reason]),
     ems_socket:close(LSocket),
     ok.
  
@@ -118,16 +104,20 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-
-flush() ->
-    receive
-        _ -> flush()
-    after 0 ->
-        ok
-    end.
-    
 start_server_workers(0,_,_,_) ->
     ok;
 start_server_workers(Num, LSocket, TcpConfig, ListenerName) ->
     ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
     start_server_workers(Num-1, LSocket, TcpConfig, ListenerName).
+
+check_accept_workers(#state{lsocket = LSocket,
+						   listener_name = ListenerName,
+						   tcp_config = TcpConfig}) ->
+	WorkerCounter = ems_db:current_counter(ListenerName),
+	case WorkerCounter == 0 of
+		true ->
+			io:format("Iniciando accept worker extra\n"),
+			start_server_workers(TcpConfig#tcp_config.tcp_min_http_worker, LSocket, TcpConfig, ListenerName);
+		_ -> ok
+	end.
+									   

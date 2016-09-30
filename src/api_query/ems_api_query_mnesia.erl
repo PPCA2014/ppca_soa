@@ -13,7 +13,7 @@
 -include("../../include/ems_schema.hrl").
 
 
-find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}, Debug) ->
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}, _Debug) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, LimitSmnt}} -> 
 			TableName2 = list_to_atom(TableName),

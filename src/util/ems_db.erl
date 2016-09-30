@@ -13,7 +13,8 @@
 		 match/2, find/2, find/3, find/5, find_by_id/3, filter/2, 
 		 filter_with_limit/4, select_fields/2, 
 		 find_first/2, find_first/3, find_first/4]).
--export([sequence/1, sequence/2, init_sequence/2, current_sequence/1]).
+-export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
+-export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
 -export([get_connection/1, release_connection/1]).
 
 
@@ -45,12 +46,9 @@ create_database(Nodes) ->
 
     mnesia:create_table(sequence, [{type, set},
 								   {disc_copies, Nodes},
-								   {dc_dump_limit, 40},
-								   {dump_log_write_threshold, 10000},
-								   {dump_log, false},
 								   {attributes, record_info(fields, sequence)}]),
 
-    mnesia:create_table(sequence_transient, [{type, set},
+    mnesia:create_table(counter, [{type, set},
 											 {ram_copies, Nodes},
 											 {attributes, record_info(fields, sequence)}]),
 
@@ -159,21 +157,33 @@ existe(Pattern) ->
 
 %% ************* Funções para gerar sequences *************
 
-%% Inicializa ou reseta uma sequence
 init_sequence(Name, Value) ->
      {atomic, ok} =	mnesia:transaction(fun() ->
 						mnesia:write(#sequence{key=Name, index=Value})
 					end),
      ok.
 
-%% Retorna o valor corrente para uma sequence. A sequence é criada se não existir.
-sequence(Name) ->  sequence(Name, 1).
+sequence(Name) ->  mnesia:dirty_update_counter(sequence, Name, 1).
 
-current_sequence(Name) -> sequence(Name, 0).
+current_sequence(Name) -> mnesia:dirty_update_counter(sequence, Name, 0).
 
-%% Incrementa a sequence com Inc
-sequence(Name, Inc) ->
-     mnesia:dirty_update_counter(sequence, Name, Inc).
+sequence(Name, Inc) -> mnesia:dirty_update_counter(sequence, Name, Inc).
+
+
+%% ************* Funções para gerar counters *************
+
+init_counter(Name, Value) ->
+     {atomic, ok} =	mnesia:transaction(fun() ->
+						mnesia:write(#counter{key=Name, index=Value})
+					end),
+     ok.
+
+inc_counter(Name) ->  mnesia:dirty_update_counter(counter, Name, 1).
+dec_counter(Name) ->  mnesia:dirty_update_counter(counter, Name, -1).
+current_counter(Name) -> mnesia:dirty_update_counter(counter, Name, 0).
+counter(Name, Inc) -> mnesia:dirty_update_counter(counter, Name, Inc).
+     
+
 
 
 % Get the connection from a datasource (sqlserver, sqlite, ou mnesia)

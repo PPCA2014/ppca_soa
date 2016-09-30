@@ -247,7 +247,7 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 	case Type of
 		<<"GET">> -> ets:insert(ets_get, H);
 		<<"POST">> -> ets:insert(ets_post, H);
-		<<"PUT">> -> ets:insert(ets_update, H);
+		<<"PUT">> -> ets:insert(ets_put, H);
 		<<"DELETE">> -> ets:insert(ets_delete, H);
 		<<"OPTIONS">> -> ets:insert(ets_options, H)
 	end,
@@ -258,7 +258,7 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	ets:new(ets_get, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_post, [ordered_set, named_table, public, {read_concurrency, true}]),
-	ets:new(ets_update, [ordered_set, named_table, public, {read_concurrency, true}]),
+	ets:new(ets_put, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_delete, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_options, [ordered_set, named_table, public, {read_concurrency, true}]),
 	make_ets_catalog(Cat2),
@@ -333,7 +333,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										   Datasource, 
 										   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
 				case Type of
-					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
+					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
 				end;
 			false -> 
@@ -349,7 +349,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										Datasource, 
 										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
 				case Type of
-					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, [ServiceView|Cat4], [Service|CatK], Id+1, Conf);
+					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
 				end
 		end

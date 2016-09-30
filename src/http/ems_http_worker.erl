@@ -98,18 +98,18 @@ handle_info(timeout, State) ->
 
 handle_info({tcp, Socket, RequestBin}, State) ->
 	process_request(Socket, RequestBin),
-	{noreply, State, 6000};
+	{noreply, State, 15000};
 
 handle_info({ssl, Socket, RequestBin}, State) ->
 	process_request({ssl, Socket}, RequestBin),
-	{noreply, State, 6000};
+	{noreply, State, 15000};
 
 handle_info({tcp_closed, _Socket}, State) ->
-	io:format("process tcp closed end\n"),
+	%io:format("process tcp closed end\n"),
 	{noreply, State#state{socket = undefined}, 0};
 
 handle_info({'EXIT', _Pid, _Reason}, State) ->
-    io:format("process exit end\n"),
+    %io:format("process exit end\n"),
     {noreply, State};
 
 handle_info(_Msg, State) ->
@@ -119,7 +119,7 @@ handle_info(State) ->
    {noreply, State}.
 
 terminate(_Reason, #state{socket = undefined}) ->
-   io:format("terminate\n"),
+   %io:format("terminate\n"),
    ok;
 
 terminate(_Reason, #state{socket = Socket}) ->
@@ -136,21 +136,17 @@ code_change(_OldVsn, State, _Extra) ->
 
 accept_request(State=#state{owner = Owner,
 							lsocket = LSocket, 
-							tcp_config = #tcp_config{tcp_allowed_address = AllowedAddress, 
+							tcp_config = #tcp_config{tcp_allowed_address_t = AllowedAddress, 
 												     tcp_max_http_worker = _MaxHttpWorker,
 												     tcp_min_http_worker = MinHttpWorker,
 												     tcp_accept_timeout = AcceptTimeout},
 							listener_name = ListenerName}) ->
-	ems_db:sequence(ListenerName),
+	ems_db:inc_counter(ListenerName),
 	case ems_socket:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
-			CurrentWorkerCount = ems_db:sequence(ListenerName, -1),
+			CurrentWorkerCount = ems_db:dec_counter(ListenerName),
 			case ems_socket:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
-					case CurrentWorkerCount == 0 of
-						true -> gen_server:cast(Owner, new_worker);
-						_ -> ok
-					end,
 					case Ip of
 						{127, 0, _,_} -> 
 							{noreply, State#state{socket = Socket}};
@@ -170,7 +166,7 @@ accept_request(State=#state{owner = Owner,
 			end;
 		{error, closed} -> 
 			% ListenSocket is closed
-			ems_db:sequence(ListenerName, -1),
+			ems_db:dec_counter(ListenerName),
 			%ems_logger:info("Listener socket was closed."),
 			erlang:yield(),
 			erlang:yield(),
@@ -178,16 +174,18 @@ accept_request(State=#state{owner = Owner,
 			accept_request(State);
 		{error, timeout} ->
 			% no connection is established within the specified time
-			ems_db:sequence(ListenerName, -1),
-			%io:format("timeout current: ~p  Min: ~p\n", [ems_db:current_sequence(ListenerName), MinHttpWorker]),
-			case ems_db:current_sequence(ListenerName) < MinHttpWorker of
+			ems_db:dec_counter(ListenerName),
+			erlang:yield(),
+			erlang:yield(),
+			erlang:yield(),
+			case ems_db:current_counter(ListenerName) < MinHttpWorker of
 				true -> accept_request(State);
 				_ ->
 					io:format("Liberando um worker por timeout!\n"),
 					{stop, normal, State}
 			end;
 		{error, PosixError} ->
-			ems_db:sequence(ListenerName, -1),
+			ems_db:dec_counter(ListenerName),
 			PosixErrorDescription = ems_socket:posix_error_description(PosixError),
 			io:format("~p in http worker.", [PosixErrorDescription]),
 			erlang:yield(),

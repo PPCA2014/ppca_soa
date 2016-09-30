@@ -39,16 +39,20 @@ make_opts_listen(IpAddress, #tcp_config{tcp_keepalive = KeepAlive,
 			{delay_send, DelaySend}],
 	case IsSsl of
 		true  -> 
-			Opts ++ [
-						{ssl_imp, true},
-						%%{ssl_imp, list_to_atom(binary_to_list(maps:get(<<"ssl_imp">>, Ssl)))},
-						%%{cacertfile, ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"cacertfile">>, Ssl))},
-						{certfile, ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"certfile">>, Ssl))},
-						{keyfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"keyfile">>, Ssl))},
-						%%{cacertfile, "/etc/ssl/certs/ca-certificates.crt"},
-						%%{versions, ['tlsv1', 'tlsv1.1', 'tlsv1.2']}
-						{depth, maps:get(<<"depth">>, Ssl)}
-					  ];
+			SslOpts1 = add_ssl_opts([], Ssl, cacertfile, fun() -> ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"cacertfile">>, Ssl)) end),
+			SslOpts2 = add_ssl_opts(SslOpts1, Ssl, certfile, fun() -> ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"certfile">>, Ssl)) end),
+			SslOpts3 = add_ssl_opts(SslOpts2, Ssl, keyfile, fun() -> ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"keyfile">>, Ssl)) end),
+			SslOpts4 = add_ssl_opts(SslOpts3, Ssl, depth, fun() -> maps:get(<<"depth">>, Ssl) end),
+			SslOpts5 = add_ssl_opts(SslOpts4, Ssl, password, fun() -> binary_to_list(maps:get(<<"keyfile">>, Ssl)) end),
+			SslOpts6 = add_ssl_opts(SslOpts5, Ssl, key, fun() -> binary_to_list(maps:get(<<"key">>, Ssl)) end),
+			Opts ++ SslOpts6;		
+		false -> Opts
+	end.
+	
+add_ssl_opts(Opts, Ssl, Param, FunValue) -> 	
+	ParamBin = erlang:atom_to_binary(Param, latin1),
+	case maps:is_key(ParamBin, Ssl) of
+		true -> [{Param, FunValue()} | Opts];
 		false -> Opts
 	end.
 

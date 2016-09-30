@@ -14,14 +14,14 @@
 -include("../../include/ems_schema.hrl").
 
 
-generate_dynamic_query(FilterJson, Fields, _Datasource, Limit, Offset, Sort) ->
+generate_dynamic_query(FilterJson, Fields, _Datasource, Limit, Offset, _Sort) ->
 	FieldList = parse_fields(Fields),
 	FilterList = parse_filter(FilterJson),
-	SortSmnt = parse_sort(Sort),
+	%SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
 	{ok, {FieldList, FilterList, LimitSmnt}}.
 
-generate_dynamic_query(Id, Fields, Datasource) ->
+generate_dynamic_query(_Id, Fields, _Datasource) ->
 	FieldList = parse_fields(Fields),
 	{ok, FieldList}.
 
@@ -59,7 +59,7 @@ parse_condition({<<Param/binary>>, Value}) ->
 	Value2 = binary_to_list(Value),
 	parse_condition(Param2, Value2, sql_varchar).
 	
-parse_condition(Param, Value, DataType) -> 
+parse_condition(Param, Value, _DataType) -> 
 	{Param2, Op} = parse_name_and_operator(Param),
 	{Param2, Op, Value}.	
 

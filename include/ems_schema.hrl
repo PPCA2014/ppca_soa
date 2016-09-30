@@ -10,6 +10,9 @@
 -record(sequence, {key :: atom(), 
 				   index :: non_neg_integer()}).
 
+-record(counter, {key :: atom(), 
+     			  index :: non_neg_integer()}).
+
 -record(user, {id :: non_neg_integer(), 
 			   name :: string(), 
 			   email :: string(), 

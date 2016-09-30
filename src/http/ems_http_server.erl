@@ -162,5 +162,6 @@ parse_max_http_worker(Value) ->
 		true -> Value;
 		false -> erlang:error("Parameter tcp_max_http_worker invalid.")
 	end.
+
 	
 	
