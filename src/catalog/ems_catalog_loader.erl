@@ -313,12 +313,12 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		end,
 		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
 		IdBin = list_to_binary(integer_to_list(Id)),
+		Page = maps:get(<<"page">>, H, null),
+		PageModule = compile_page_module(Page, ModuleNameCanonical),
 		ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 										 Type, Apikey, Comment, Version, Owner, 
-										 Async, Host, Result_Cache, 
-										 Authentication, Node, Lang,
-										 Datasource,
-										 Debug, SchemaIn, SchemaOut),
+										 Async, Host, Result_Cache, Authentication, Node, Lang,
+										 Datasource, Debug, SchemaIn, SchemaOut, Page),
 		case UseRE of
 			true -> 
 				Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -330,8 +330,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										   Querystring, QtdQuerystringRequired,
 										   Host, HostName, Result_Cache,
 										   Authentication, Node, Lang,
-										   Datasource, 
-										   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
+										   Datasource, Debug, SchemaIn, SchemaOut, 
+										   PoolSize, PoolMax, H, Page, PageModule),
 				case Type of
 					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -346,8 +346,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										Querystring, QtdQuerystringRequired,
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
-										Datasource, 
-										Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, H),
+										Datasource, Debug, SchemaIn, SchemaOut, 
+										PoolSize, PoolMax, H, Page, PageModule),
 				case Type of
 					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -356,7 +356,17 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
-	
+
+
+compile_page_module(null, _) -> null;
+compile_page_module(Page, ModuleNameCanonical) -> 
+	ModuleNamePage = list_to_atom(ModuleNameCanonical ++ "_page"),
+	io:format("page is ~p ~p\n", [Page, ModuleNamePage]),
+	case ems_page:compile_file(Page, ModuleNamePage) of
+		{ok, PageModule} -> PageModule;
+		_ -> throw({einvalid_page, Page})
+	end.
+
 	
 parse_schema(null) -> null;
 parse_schema(Name) -> Name.
@@ -416,7 +426,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, Datasource,
-			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties) ->
+			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
+			   Page, PageModule) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -444,6 +455,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
 			    node = Node,
+			    page = Page,
+			    page_module = PageModule,
 			    datasource = Datasource,
 			    debug = Debug,
 			    lang = Lang,
@@ -458,7 +471,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang, Datasource, 
-			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties) ->
+			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
+			Page, PageModule) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -483,6 +497,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    result_cache = Result_Cache,
 			    authentication = Authentication,
 			    node = Node,
+			    page = Page,
+			    page_module = PageModule,
 			    datasource = Datasource,
 			    debug = Debug,
 			    lang = Lang,
@@ -495,9 +511,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
-				  Authentication, Node, Lang, 
-				  _Datasource, 
-				  Debug, SchemaIn, SchemaOut) ->
+				  Authentication, Node, Lang, _Datasource, 
+				  Debug, SchemaIn, SchemaOut, Page) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -513,10 +528,12 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"result_cache">> => Result_Cache,
 			    <<"authentication">> => Authentication,
 			    <<"node">> => Node,
+			    <<"page">> => Page,
 			    <<"debug">> => Debug,
 			    <<"schema_in">> => SchemaIn,
 			    <<"schema_out">> => SchemaOut,
 			    <<"lang">> => Lang},
 	Service.
+
 
 

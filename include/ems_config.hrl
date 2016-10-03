@@ -44,6 +44,9 @@
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, ?PRIV_PATH ++ "/www").
 
+% Caminho inicial para os arquivos estáticos
+-define(WEBAPPS_PATH, ?PRIV_PATH ++ "/www").
+
 % Caminho inicial para os arquivos de carga de dados em formato CSV
 -define(CSV_FILE_PATH, ?PRIV_PATH ++ "/csv").
 

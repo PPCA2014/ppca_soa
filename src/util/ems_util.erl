@@ -1,7 +1,7 @@
 %%********************************************************************
-%% @title Módulo de utilitários
+%% @title Módulo ems_page
 %% @version 1.0.0
-%% @doc Contém funções de propósito gerais.
+%% @doc Contém funções para compilação de paginas Django
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -50,7 +50,7 @@ hashsym_and_params([H|_] = L, Idx, Hash, Params) when H >= 48 andalso H =< 57 ->
 			_ -> {list_to_binary("id_" ++ erlang:integer_to_list(Idx)), P}
 		 end,
 	hashsym_and_params(L2, Idx+1, Hash, [P2 | Params]);
-hashsym_and_params([H|T], Idx, Hash, Params) -> hashsym_and_params(T, Idx, Hash + H, Params).
+hashsym_and_params([H|T], Idx, Hash, Params) -> hashsym_and_params(T, Idx, (Hash + H) bsl 1, Params).
 
 hashsym_and_params_id([], P) -> {[], P};
 hashsym_and_params_id([H|T], P) when H == 47 -> {T, P};
@@ -63,7 +63,7 @@ hashsym(S) -> hashsym(S, 0).
 
 hashsym([], Hash) -> Hash;
 hashsym([H|T], Hash) when H >= 48 andalso H =< 57 -> hashsym(T, Hash);
-hashsym([H|T], Hash) -> hashsym(T, Hash + H).
+hashsym([H|T], Hash) -> hashsym(T, (Hash + H) bsl 1).
 
 
 %% Retorna o hash da url (uso no carregamento dos catálogos)	
@@ -73,7 +73,7 @@ hashsymdef(S) -> hashsymdef(S, 0).
 hashsymdef([], Hash) -> Hash;
 hashsymdef([H|T], Hash) when H == 58 -> hashsymdef(hashsymdef_id(T), Hash);
 hashsymdef([H|T], Hash) when H >= 48 andalso H =< 57 -> hashsymdef(T, Hash);
-hashsymdef([H|T], Hash) -> hashsymdef(T, Hash + H).
+hashsymdef([H|T], Hash) -> hashsymdef(T, (Hash + H) bsl 1).
 
 hashsymdef_id([]) -> [];
 hashsymdef_id([H|T]) when H == 47 -> T;
