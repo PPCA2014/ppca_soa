@@ -19,7 +19,7 @@
 -export([start/1, start_link/1, stop/0]).
 
 %% Cliente interno API
--export([open/2]).
+-export([open/2, sobre/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -51,6 +51,9 @@ stop() ->
 open(Request, From)	->
 	ems_pool:cast(ems_portal_dashboard, {open, Request, From}).
 
+sobre(Request, From)->
+	ems_pool:cast(ems_portal_dashboard, {sobre, Request, From}).
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -63,10 +66,15 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({open, Request, _From}, State) ->
-	{Result, NewState} = do_open(Request, State),
+handle_cast({sobre, Request, _From}, State) ->
+	Result = do_sobre(Request),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
-	{noreply, NewState}.
+	{noreply, State};
+
+handle_cast({open, Request, _From}, State) ->
+	Result = do_open(Request),
+	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
+	{noreply, State}.
     
 handle_call(Msg, _From, State) ->
 	{reply, Msg, State}.
@@ -88,9 +96,15 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
     
-do_open(#request{service = #service{page_module = PageModule}}, State) ->
-	io:format("page module is ~p\n", [PageModule]),
-	Response = ems_page:render(PageModule, []),
-	io:format("result is ~p\n", [Response]),
-	{{ok, Response, <<"text/html">>}, State}.
+do_open(_Request) -> 
+	[{nome_sistema, "Portal ErlangMS"},
+	 {lista_sistemas, [{{titulo, "Simar"}, {image_url, "img/simar.png"}}]}
+	 
+	 ].
+
+do_sobre(_Request) -> 
+	[{nome_sistema, "Portal ErlangMS"}].
 	
+	
+	
+

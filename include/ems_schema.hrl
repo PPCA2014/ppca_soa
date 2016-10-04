@@ -92,6 +92,7 @@
 					authentication :: string(),					%% Forma de autenticação (Por enquanto somente Basic)
 					page,										%% Page django file
 					page_module,								%% Page module django file compiled
+					page_mime_type = <<"text/html">>,			%% Page mime type
 					node,										%% Node ou lista de node onde os serviços estão publicados
 					lang,										%% Linguagem que foi utilizada para implementar o serviço
 					datasource,									%% Datasource para a fonte de dados

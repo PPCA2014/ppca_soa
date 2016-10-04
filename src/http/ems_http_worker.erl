@@ -213,42 +213,55 @@ process_request(Socket, RequestBin) ->
 	end.
 
 
-process_response({_MsgType, Request = #request{type = Method, socket = Socket}, Result}) ->
+process_response({_MsgType, Request = #request{type = Method, socket = Socket, 
+				  service = #service{page_module = PageModule,
+									 page_mime_type = PageMimeType}}, Result}) ->
 	ems_socket:setopts(Socket,[{active,once}]),
 	% TCP_LINGER2 for Linux
 	ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 	% TCP_DEFER_ACCEPT for Linux
 	ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
-	case Result of
-		{ok, <<Content/binary>>} -> 
+	case PageModule of
+		null ->
+			case Result of
+				{ok, <<Content/binary>>} -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content),
+					send_response(HttpCode, ok, Request, Response);
+				{ok, <<Content/binary>>, <<MimeType/binary>>} ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content, MimeType),
+					send_response(HttpCode, ok, Request, Response);
+				{error, Reason} ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
+					Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
+					send_response(HttpCode, {error, Reason}, Request, Response);
+				Content when is_map(Content) -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
+					send_response(HttpCode, ok, Request, Response);
+				Content = [H|_] when is_map(H) -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
+					send_response(HttpCode, ok, Request, Response);
+				Content = [H|_] when is_tuple(H) -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, ems_schema:to_json(Content)),
+					send_response(HttpCode, ok, Request, Response);
+				Content -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content),
+					send_response(HttpCode, ok, Request, Response)
+			end;
+		_ -> 
+			Content = ems_page:render(PageModule, Result),
 			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, Content),
-			send_response(HttpCode, ok, Request, Response);
-		{ok, <<Content/binary>>, <<MimeType/binary>>} ->
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, Content, MimeType),
-			send_response(HttpCode, ok, Request, Response);
-		{error, Reason} ->
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
-			Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
-			send_response(HttpCode, {error, Reason}, Request, Response);
-		Content when is_map(Content) -> 
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
-			send_response(HttpCode, ok, Request, Response);
-		Content = [H|_] when is_map(H) -> 
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
-			send_response(HttpCode, ok, Request, Response);
-		Content = [H|_] when is_tuple(H) -> 
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, ems_schema:to_json(Content)),
-			send_response(HttpCode, ok, Request, Response);
-		Content -> 
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, Content),
+			Response = ems_http_util:encode_response(HttpCodeBin, Content, PageMimeType),
 			send_response(HttpCode, ok, Request, Response)
 	end.
+		
+			
+		
 
 get_http_code_verb("POST", true)  -> {201, <<"201">>};
 get_http_code_verb("PUT", false)  -> {400, <<"400">>};

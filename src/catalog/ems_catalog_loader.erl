@@ -314,7 +314,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
 		IdBin = list_to_binary(integer_to_list(Id)),
 		Page = maps:get(<<"page">>, H, null),
-		PageModule = compile_page_module(Page, ModuleNameCanonical),
+		PageModule = compile_page_module(Page, Rowid),
 		ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 										 Type, Apikey, Comment, Version, Owner, 
 										 Async, Host, Result_Cache, Authentication, Node, Lang,
@@ -359,8 +359,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 
 
 compile_page_module(null, _) -> null;
-compile_page_module(Page, ModuleNameCanonical) -> 
-	ModuleNamePage = list_to_atom(ModuleNameCanonical ++ "_page"),
+compile_page_module(Page, Rowid) -> 
+	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
 	io:format("page is ~p ~p\n", [Page, ModuleNamePage]),
 	case ems_page:compile_file(Page, ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
