@@ -11,7 +11,6 @@
 -behavior(gen_server). 
 -behaviour(poolboy_worker).
 
-
 -include("../..//include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
@@ -21,6 +20,8 @@
 %% Cliente interno API
 -export([open/2, sobre/2]).
 
+-export([titulo/1, image_url/1]).
+
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
@@ -28,6 +29,8 @@
 
 %  Armazena o estado do service. 
 -record(state, {}). 
+
+-record(?MODULE, {titulo, image_url}).
 
 
 %%====================================================================
@@ -98,13 +101,22 @@ code_change(_OldVsn, State, _Extra) ->
     
 do_open(_Request) -> 
 	[{nome_sistema, "Portal ErlangMS"},
-	 {lista_sistemas, [{{titulo, "Simar"}, {image_url, "img/simar.png"}}]}
+	 {breadcrumb, [<<"Simar">>, <<"Cadastros">>, <<"Catalogo de Materiais">>]},
+	 {webapps, [{?MODULE, <<"Simar">>, "img/pedidos.png"}, 
+				{?MODULE, <<"Relatórios"/utf8>>, "img/relatorios.png"}]}
 	 
 	 ].
 
 do_sobre(_Request) -> 
 	[{nome_sistema, "Portal ErlangMS"}].
+
 	
+titulo(#?MODULE{titulo = Titulo}) -> 
+	io:format("aqui\n"),
+	Titulo.	
+image_url(#?MODULE{image_url = Url}) -> 
+	io:format("aqui2\n"),
+	Url.	
 	
 	
 
