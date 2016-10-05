@@ -101,7 +101,7 @@ code_change(_OldVsn, State, _Extra) ->
     
 do_open(_Request) -> 
 	[{nome_sistema, "Portal ErlangMS"},
-	 {breadcrumb, [<<"Simar">>, <<"Cadastros">>, <<"Catalogo de Materiais">>]},
+	 {breadcrumb, [<<"Portal ErlangMS">>, <<"Aplicativos">>]},
 	 {webapps, [{?MODULE, <<"Simar">>, "img/pedidos.png"}, 
 				{?MODULE, <<"Relatórios"/utf8>>, "img/relatorios.png"}]}
 	 
