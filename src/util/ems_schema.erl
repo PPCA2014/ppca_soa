@@ -38,11 +38,8 @@ to_record(Map, Record) when is_map(Map), is_tuple(Record)->
 	JsonStruct = {struct, List},
 	json_rec:to_rec(JsonStruct, ?MODULE, Record);
 to_record(DestRecord, Source) when is_tuple(DestRecord) ->
-	io:format("aqui1\n"),
 	ListRec = to_list(DestRecord),
-	io:format("aqui2\n"),
 	MapRec = maps:from_list(ListRec),
-	io:format("aqui3 ~p  and ~p\n", [MapRec, Source]),
 	to_record(MapRec, Source);
 to_record(_, _) -> erlang:error(einvalid_to_record).
 
@@ -129,7 +126,6 @@ to_list([H|T], FieldList, Result) ->
 
 % to_json
 to_json(Record) when is_tuple(Record)-> 
-	io:format("record is ~p\n", [Record]),
 	ListTuple = to_list(Record),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
 to_json(List) when is_list(List) -> 

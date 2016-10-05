@@ -134,8 +134,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-accept_request(State=#state{owner = Owner,
-							lsocket = LSocket, 
+accept_request(State=#state{lsocket = LSocket, 
 							tcp_config = #tcp_config{tcp_allowed_address_t = AllowedAddress, 
 												     tcp_max_http_worker = _MaxHttpWorker,
 												     tcp_min_http_worker = MinHttpWorker,
@@ -144,7 +143,7 @@ accept_request(State=#state{owner = Owner,
 	ems_db:inc_counter(ListenerName),
 	case ems_socket:accept(LSocket, AcceptTimeout) of
 		{ok, Socket} -> 
-			CurrentWorkerCount = ems_db:dec_counter(ListenerName),
+			ems_db:dec_counter(ListenerName),
 			case ems_socket:peername(Socket) of
 				{ok, {Ip,_Port}} -> 
 					case Ip of
@@ -213,6 +212,15 @@ process_request(Socket, RequestBin) ->
 	end.
 
 
+process_response({_MsgType, Request = #request{type = Method, service = undefined, socket = Socket}, Error}) ->
+	ems_socket:setopts(Socket,[{active,once}]),
+	% TCP_LINGER2 for Linux
+	ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
+	% TCP_DEFER_ACCEPT for Linux
+	ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+	{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
+	Response = ems_http_util:encode_response(HttpCodeBin, Error),
+	send_response(HttpCode, Error, Request, Response);
 process_response({_MsgType, Request = #request{type = Method, socket = Socket, 
 				  service = #service{page_module = PageModule,
 									 page_mime_type = PageMimeType}}, Result}) ->
@@ -254,10 +262,17 @@ process_response({_MsgType, Request = #request{type = Method, socket = Socket,
 					send_response(HttpCode, ok, Request, Response)
 			end;
 		_ -> 
-			Content = ems_page:render(PageModule, Result),
-			{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
-			Response = ems_http_util:encode_response(HttpCodeBin, Content, PageMimeType),
-			send_response(HttpCode, ok, Request, Response)
+			case Result of
+				{error, Reason} ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
+					Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
+					send_response(HttpCode, {error, Reason}, Request, Response);
+				_ ->
+					Content = ems_page:render(PageModule, Result),
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content, PageMimeType),
+					send_response(HttpCode, ok, Request, Response)
+			end
 	end.
 		
 			

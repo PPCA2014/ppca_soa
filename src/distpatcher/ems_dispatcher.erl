@@ -57,25 +57,24 @@ dispatch_request(Request) ->
 	end,
 	ok.
 
-%% @doc Executa o serviço local (Serviço escrito em Erlang)
+
+%% @doc Executa um web service local
 executa_service(_Node, Request=#request{service=#service{host='', 
 														 module=Module, 
 														 function=Function}}) ->
 	try
 		case whereis(Module) of
 			undefined -> 
-				io:format("new ~p?\n", [Module]),
-				Module:start_link([]),
-				apply(Module, Function, [Request, self()]);
-			_Pid -> 
-				apply(Module, Function, [Request, self()])
+				io:format("module ~p undefined\n", [Module]),
+				ems_pool:cast(ems_web_service, Request);
+			_Pid -> apply(Module, Function, [Request, self()])
 		end,
 		ok
 	catch
 		_Exception:ErroInterno ->  {error, eservice_fail, {Module, ErroInterno}}
 	end;
-
-%% @doc Executa um serviço remotamente
+	
+%% @doc Executa um web service remoto
 executa_service(Node, Request=#request{service=#service{host = _HostList, 
 														host_name = _HostNames,	
 														module_name = ModuleName, 

@@ -181,6 +181,17 @@ valida_length(Value, MaxLength) ->
 		false -> erlang:error(invalid_length)
 	end.
 
+valida_web_service(_, _, _, _, false) -> ok;
+valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
+	Module = list_to_atom(ModuleName),
+	Function = list_to_atom(FunctionName),
+	case proplists:lookup(Function, apply(Module, module_info, [exports])) of
+		{Function, 1} -> ok;
+		{Function, 2} -> ok;
+		_ -> throw({einvalid_web_service, ServiceImpl, Cat})
+	end.
+	
+
 %% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
 parse_querystring(<<>>) -> {<<>>, 0};
 parse_querystring(Querystring) -> parse_querystring_def(Querystring, [], 0).
@@ -275,7 +286,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		valida_url_service(Url2),
 		ServiceImpl = maps:get(<<"service">>, H),
 		{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
-		Apikey = maps:get(<<"APIkey">>, H, <<"false">>),
+		Apikey = ems_util:binary_to_bool(maps:get(<<"APIkey">>, H, <<"false">>)),
 		Comment = maps:get(<<"comment">>, H, <<>>),
 		Version = maps:get(<<"version">>, H, <<>>),
 		Owner = maps:get(<<"owner">>, H, <<>>),
@@ -306,7 +317,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 			<<"erlang">> -> 
 				Node = <<>>,
 				Host = '',
-				HostName = Conf#config.ems_hostname;
+				HostName = Conf#config.ems_hostname,
+				valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Apikey);
 			_ ->	
 				Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 				{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
@@ -361,7 +373,6 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 compile_page_module(null, _) -> null;
 compile_page_module(Page, Rowid) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	io:format("page is ~p ~p\n", [Page, ModuleNamePage]),
 	case ems_page:compile_file(Page, ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
@@ -443,7 +454,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    function_name = FunctionName,
 			    function = list_to_atom(FunctionName),
 			    id_re_compiled = Id_re_compiled,
-			    apikey = ems_util:binary_to_bool(Apikey),
+			    apikey = Apikey,
 			    comment = Comment,
 			    version = Version,
 			    owner = Owner,
@@ -485,11 +496,11 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    module = list_to_atom(ModuleName),
 			    function_name = FunctionName,
 			    function = list_to_atom(FunctionName),
-			    apikey = ems_util:binary_to_bool(Apikey),
+			    apikey = Apikey,
 			    comment = Comment,
 			    version = Version,
 			    owner = Owner,
-			    async = ems_util:binary_to_bool(Async),
+			    async = Async,
 			    querystring = Querystring,
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
