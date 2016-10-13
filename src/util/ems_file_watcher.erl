@@ -102,26 +102,27 @@ code_change(_OldVsn, State, _Extra) ->
 do_watch(Path, Fun) ->
 	case ets:lookup(ems_file_watcher_watch, Path) of
 		[] -> 
-			EventTag = inotify:watch(Path, ?ALL),
+			Path2 = ems_util:remove_ult_backslash_url(Path),
+			EventTag = inotify:watch(Path2, ?ALL),
 			Ref = erlang:ref_to_list(EventTag),
-			ets:insert(ems_file_watcher_watch, {Path, {Ref, EventTag}}),
-			ets:insert(ems_file_watcher_events, {Ref, {Path, EventTag}}),
+			ets:insert(ems_file_watcher_watch, {Path2, {Ref, EventTag}}),
+			ets:insert(ems_file_watcher_events, {Ref, {Path2, EventTag}}),
 			inotify:add_handler(EventTag, ?MODULE, Fun);
 		[_] -> ok
 	end.
 
 do_unwatch(Path) ->
-	case ets:lookup(ems_file_watcher_watch, Path) of
+	Path2 = ems_util:remove_ult_backslash_url(Path),
+	case ets:lookup(ems_file_watcher_watch, Path2) of
 		[] -> ok;
 		[{_, {Ref, EventTag}}] -> 
 			inotify:unwatch(EventTag),
-			ets:delete(ems_file_watcher_watch, Path),
+			ets:delete(ems_file_watcher_watch, Path2),
 			ets:delete(ems_file_watcher_events, Ref),
 			ok
 	end.
 	
 do_inotify_event(Fun, EventTag, Msg) ->	
-	ems_util:sleep(500),
 	Ref = erlang:ref_to_list(EventTag),
 	case ets:lookup(ems_file_watcher_events, Ref) of
 		[] -> ok;
@@ -132,10 +133,9 @@ do_inotify_event(Fun, EventTag, Msg) ->
 				{inotify_msg,[delete_self], 0, []} -> 
 					ets:delete(ems_file_watcher_events, Ref),
 					ets:delete(ems_file_watcher_watch, Path),
-					ems_util:sleep(1000),
+					ems_util:sleep(350),
 					case filelib:is_file(Path) of
-						true -> 
-							watch(Path, Fun);
+						true -> watch(Path, Fun);
 						false -> Fun({delete, Path})
 					end;
 				{inotify_msg,[delete_self], 0, FileName} -> Fun({delete, Path ++ "/" ++ FileName});
