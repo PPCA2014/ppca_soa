@@ -188,7 +188,7 @@ valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
 	case proplists:lookup(Function, apply(Module, module_info, [exports])) of
 		{Function, 1} -> ok;
 		{Function, 2} -> ok;
-		_ -> throw({einvalid_web_service, ServiceImpl, Cat})
+		_ -> throw({enoent, ServiceImpl, Cat})
 	end.
 	
 
