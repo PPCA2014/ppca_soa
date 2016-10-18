@@ -40,20 +40,21 @@
 
 
 # Parâmetros
-ems_ctl_version="1.0"
+ems_ctl_version="1.0.0"
 ems_cookie=erlangms
 ems_node="emsbus"
 ems_init="application:start(ems_bus)"
 ems_stop="application:stop(ems_bus)."
 ems_log_conf="./priv/conf/elog"
 ems_hostname=`hostname`
-ems_ctl_node="msbus_shell_`date +"%I%M%S"`@$ems_hostname"
-ems_path="-pa ../emsbus/ebin deps/jsx/ebin deps/poolboy/ebin"
+ems_ctl_node="ems_shell_`date +"%I%M%S"`@$ems_hostname"
+ems_path="-pa `pwd`/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin deps/erlydtl/ebin deps/inotify/ebin"
+
 
 # Conectar no terminal de uma instância ErlangMS
 function console() {
 	node_name=$(format_node_name $1)
-	echo "Conectando na instância ErlangMS $node_name..."
+	echo "Connecting in instance $node_name..."
 	erl -remsh $node_name -sname $ems_ctl_node \
 		-setcookie $ems_cookie \
 		$ems_path \
@@ -66,15 +67,16 @@ function start() {
 	node_name=$(format_node_name $1)
 	status $node_name
 	if [ $? != 0 ]; then
+		echo "ATTENTION: Instance $node_name is already open in the cluster!!!"
 		console $node_name
 	else
 		if [ "$is_daemon" == "daemon" ]; then
-			echo "Starting instance ErlangMS $node_name como daemon ..."
+			echo "Starting instance $node_name como daemon ..."
 			erl -detached $ems_path \
 				-sname $node_name -setcookie $ems_cookie \
 				-eval $ems_init -boot start_sasl -config $ems_log_conf 
 		else
-			echo "Starting instance ErlangMS $node_name..."
+			echo "Starting instance $node_name..."
 			erl $ems_path \
 				-sname $node_name -setcookie $ems_cookie -eval $ems_init \
 				-boot start_sasl -config $ems_log_conf 
@@ -86,19 +88,12 @@ function start() {
 # Verifica se uma instância ErlangMS está executando
 function status(){
 	node_name=$(format_node_name $1)
-	echo "Checking for an instance $node_name puebla running..."
-	is_running=`erl -noshell $ems_path \
-				-boot start_clean  \
-				-sname $ems_ctl_node \
-				-setcookie $ems_cookie \
-				-eval 'io:format( "~p", [ msbus_util:node_is_live( '$node_name' ) ] ), halt()'`
-	if [ "$is_running" == "1" ]; then
-		echo "$node_name is already running!"
-		return 1
-	else
-		echo "$node_name is stopped!"
-		return 0
-	fi
+	erl $ems_path \
+		-sname emsbus -setcookie erlangms \
+		-boot start_sasl \
+		-config ./priv/conf/elog 1> /dev/null 2> /dev/null <<EOF
+			halt().
+EOF
 }
 
 function list_nodes(){
@@ -116,10 +111,22 @@ function format_node_name(){
 	echo $node_name
 }
 
+help() {
+	echo "Use: ems_ctl.sh start|start-daemon|console|list|status [node]"
+	echo ""
+	echo "Params:"
+	echo "    start -> starts a new instance in the foreground"
+	echo "    start-daemon -> starts a new instance in the background"
+	echo "    console -> connect the console to a running instance"
+	echo "    list -> list the instances running on cluster"
+	echo "    tstatus -> it indicates whether the instance is running"
+	echo "    [node] -> which the instance of the bus. By default it is emsbus"
+	
+}
 
 # header do comando
 clear
-echo "ErlangMS Control Manager [ Hostname: $ems_hostname,  Version: $ems_ctl_version ]"
+echo "ErlangMS Control Manager ( Hostname: $ems_hostname,  Version: $ems_ctl_version )"
 
 # Aciona o comando escolhido
 case "$1" in
@@ -133,9 +140,12 @@ case "$1" in
 			start "$Node" "daemon"
 	  ;;
 
-	  'start-daemon')
-			Node="$2"
-			start "$Node" "daemon"
+	  'stop')
+			echo "To stop an instance, connect it first!"
+	  ;;
+
+	  'restart')
+			echo "To restart an instance, connect it first!"
 	  ;;
 
 	  'console')
@@ -146,16 +156,21 @@ case "$1" in
 			list_nodes
 	  ;;
 
+	  '--help')
+			help
+	  ;;
+
 	  'status')
 			status $2
+			if [ "$?" == "1" ]; then
+				echo "$node_name is already running!"
+			else
+				echo "$node_name is stopped!"
+			fi
 	  ;;
 
 	  *)
-			if [ $1 != "" ]; then
-				echo "Uso: ems_ctl.sh start|start-daemon|console|list|status [node]"
-			else
-				start $2
-			fi
+			help
 	  ;;
 
 esac
