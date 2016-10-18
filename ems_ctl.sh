@@ -65,13 +65,14 @@ function console() {
 # Instanciar um node ErlangMS
 function start() {
 	node_name=$(format_node_name $1)
+	is_daemon=$2
 	status $node_name
 	if [ $? != 0 ]; then
 		echo "ATTENTION: Instance $node_name is already open in the cluster!!!"
 		console $node_name
 	else
 		if [ "$is_daemon" == "daemon" ]; then
-			echo "Starting instance $node_name como daemon ..."
+			echo "Starting instance $node_name daemon..."
 			erl -detached $ems_path \
 				-sname $node_name -setcookie $ems_cookie \
 				-eval $ems_init -boot start_sasl -config $ems_log_conf 
@@ -136,6 +137,11 @@ case "$1" in
 	  ;;
 
 	  'start_daemon')
+			Node="$2"
+			start "$Node" "daemon"
+	  ;;
+
+	  'start-daemon')
 			Node="$2"
 			start "$Node" "daemon"
 	  ;;
