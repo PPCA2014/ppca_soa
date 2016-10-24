@@ -32,9 +32,9 @@ describe("EstudoSocioEconomico", function() {
 	//
 
 	// define os dados do aluno
-	var objAluno = {"nome":"Aluno Teste "+ testeId,
-					"cpf":"1111111111",
-					"senha" : "10/10/2015"};
+	var objAluno = {"nome" : "Aluno Teste Estudo Socioeconomico"+ testeId,
+					"cpf": Math.floor(Math.random() * 99999999).toString(),
+					"senha" : Math.floor(Math.random() * 99999999).toString()};
 	
 	// tenta incluir aluno
 	var result = $.ajax({
@@ -54,7 +54,7 @@ describe("EstudoSocioEconomico", function() {
 	//
 
 	// define os dados do cadastro de questionário
-	var objQuestionario = {"denominacao":"questionário de teste "+ testeId,
+	var objQuestionario = {"denominacao":"questionário de teste estudo socioeconomico "+ testeId,
 						   "dataInicio":"1/12/2015", 
 						   "dataFim":"30/12/2015"}
 	
@@ -77,7 +77,7 @@ describe("EstudoSocioEconomico", function() {
 
 
 	// precisamos cadastrar primeiramente uma categoria de pergunta
-	var objCategoria = {"denominacao" : "Dados Familiares Teste. TesteId " + testeId};
+	var objCategoria = {"denominacao" : "Dados Familiares Teste Estudo Socioeconomico. TesteId " + testeId};
 	
 	// tenta incluir categoria da pergunta
 	result = $.ajax({

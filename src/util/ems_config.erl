@@ -84,7 +84,6 @@ get_name_arq_config() ->
 	case init:get_argument(home) of
 		{ok, [[Home]]} -> 
 			NomeArqConfig = lists:concat([Home, "/.erlangms/", node(), ".conf"]),
-			io:format("Lendo arquivo de configuração: ~p\n", [NomeArqConfig]),
 			% O arquivo no home deve existir!
 			case file:read_file(NomeArqConfig) of 
 				{ok, _} -> NomeArqConfig;
@@ -97,6 +96,7 @@ get_name_arq_config() ->
 % Lê as configurações do arquivo de configuração
 le_config() ->
 	NomeArqConfig = get_name_arq_config(),
+	io:format("Reading configuration file: ~p\n", [NomeArqConfig]),
 	case ems_util:read_file_as_map(NomeArqConfig) of
 		{ok, Json} -> 
 			try

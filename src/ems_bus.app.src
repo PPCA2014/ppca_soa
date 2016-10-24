@@ -1,93 +1,14 @@
 {application, ems_bus,
  [
   {description, "ErlangMS"},
-  {vsn, "1.0"},
+  {vsn, "1.0.6"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
   {mod, { ems_bus_app, []}},
-  {env, [
-        {pools, [
-            {ems_eventmgr_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
-            {ems_catalog_pool, [
-                {size, 1},
-                {max_overflow, 1}
-            ], []},
-            {ems_user_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_cache_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
-            {ems_http_server_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
-            {ems_ldap_server_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
-            {ems_request_pool, [
-                {size, 1},
-                {max_overflow, 0}
-            ], []},
-            {ems_ldap_worker_pool, [
-                {size, 3},
-                {max_overflow, 0}
-            ], []},
-            {ems_health_pool, [
-                {size, 6},
-                {max_overflow, 6}
-            ], []},
-            {ems_dispatcher_pool, [
-                {size, 6},
-                {max_overflow, 0}
-            ], []},
-            {ems_static_file_service_pool, [
-                {size, 6},
-                {max_overflow, 24}
-            ], []},
-            {ems_user_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_catalog_service_pool, [
-                {size, 2},
-                {max_overflow, 10}
-            ], []},
-            {ems_info_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_favicon_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_options_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_ldap_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_api_query_service_pool, [
-                {size, 2},
-                {max_overflow, 6}
-            ], []},
-            {ems_health_service_pool, [
-                {size, 12},
-                {max_overflow, 24}
-            ], []}
-        ]}
-    ]}
+  {env, []}
  ]}.
 
 

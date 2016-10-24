@@ -40,22 +40,15 @@ dispatch_request(Request) ->
 													   querystring_map = QuerystringMap},
 							ems_request:registra_request(Request2),
 							case executa_service(Node, Request2) of
-								ok -> ok;
-								Error -> ems_eventmgr:notifica_evento(erro_request, {service, Request2, Error})
+								ok -> {ok, Request2};
+								Error -> Error
 							end;
-						Error -> 
-							ems_eventmgr:notifica_evento(erro_request, {service, Request, Error})
+						Error ->  Error
 					end;
-				{error, no_authorization} -> 
-					ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, no_authorization}})
+				Error -> Error
 			end;
-		enoent -> 
-			ems_request:registra_request(Request),
-			ems_eventmgr:notifica_evento(erro_request, {service, Request, {error, enoent}});
-		Erro ->
-			io:format("ERRO -> ~p\n", [Erro])
-	end,
-	ok.
+		Error -> Error
+	end.
 
 
 %% @doc Executa um web service local
@@ -65,7 +58,6 @@ executa_service(_Node, Request=#request{service=#service{host='',
 	try
 		case whereis(Module) of
 			undefined -> 
-				io:format("module ~p undefined\n", [Module]),
 				ems_pool:cast(ems_web_service, Request);
 			_Pid -> apply(Module, Function, [Request, self()])
 		end,
@@ -80,6 +72,7 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 														module_name = ModuleName, 
 														function_name = FunctionName, 
 														module = Module}}) ->
+	WebService = ems_pool:checkout(ems_web_service),
 	% Envia uma mensagem assíncrona para o serviço
 	Msg = {{Request#request.rid, 
 					   Request#request.uri, 
@@ -90,10 +83,10 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 					   Request#request.content_type,	
 					   ModuleName,
 					   FunctionName}, 
-					   self()
+					   WebService
 					  },
-	%ems_logger:debug("Msg enviada para ~p: ~p.", [Node, Msg]),
 	{Module, Node} ! Msg,
+	ems_pool:checkin(ems_web_service, WebService),
 	ok.
 
 get_work_node('', _, _, _, _) -> {ok, node()};

@@ -196,19 +196,28 @@ accept_request(State=#state{lsocket = LSocket,
 
 process_request(Socket, RequestBin) ->
 	case ems_http_util:encode_request(Socket, RequestBin, self()) of
+		 {ok, Request = #request{type = "OPTIONS"}} -> 
+			% Settings for tcp
+			ems_socket:setopts(Socket,[{active,once}]),
+			% TCP_LINGER2 for Linux
+			ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
+			% TCP_DEFER_ACCEPT for Linux
+			ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+			{HttpCode, HttpCodeBin} = get_http_code_verb("OPTIONS", true),
+			Response = ems_http_util:encode_response(HttpCodeBin, <<>>),
+			send_response(HttpCode, ok, Request, Response);
 		 {ok, Request} -> 
 			% Send request to service
 			ems_dispatcher:dispatch_request(Request),
-			erlang:yield(),
 			% Settings for tcp
 			ems_socket:setopts(Socket,[{active,once}]),
 			% TCP_LINGER2 for Linux
 			ems_socket:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 			% TCP_DEFER_ACCEPT for Linux
 			ems_socket:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]);
-		 {error, _} -> 
+		 {error, Reason} -> 
 			ems_socket:close(Socket),
-			ems_logger:error("Close invalid http/https request.")
+			ems_logger:error("Invalid http/https request: Reason: ~p", [Reason])
 	end.
 
 

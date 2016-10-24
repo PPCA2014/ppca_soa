@@ -48,6 +48,7 @@ stop() ->
 %%====================================================================
  
 init(Args) ->
+	application:start(ranch),
  	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
  	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
  	ServerName = binary_to_list(maps:get(<<"name">>, Args)),

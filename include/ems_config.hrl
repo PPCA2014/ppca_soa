@@ -81,6 +81,9 @@
 % Quanto tempo o listener vai aguardar uma conexão antes de ocorrer um timeout
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
+% Quanto tempo aguardar um serviço
+-define(SERVICE_TIMEOUT, 1000 * 60). % 1 minuto
+
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
 

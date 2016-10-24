@@ -28,9 +28,9 @@ describe("EstudoPreliminar", function() {
 	var testeId = Math.floor(Math.random() * 99999999);
 
 	// define os dados do aluno
-	var objAluno = {"nome":"Aluno Teste "+ testeId,
-					"cpf":"1111111111",
-					"senha" : "10/10/2015"};
+	var objAluno = {"nome":"Aluno Teste Estudo Preliminar "+ testeId,
+					"cpf": Math.floor(Math.random() * 99999999).toString(),
+					"senha" : Math.floor(Math.random() * 99999999).toString()};
 	
 	// tenta incluir aluno
 	var result = $.ajax({
@@ -47,9 +47,9 @@ describe("EstudoPreliminar", function() {
 	var idAluno = result.responseJSON.id;
 
 	// define os dados do cadastro de questionário
-	var objQuestionario = {"denominacao":"questionário de teste "+ testeId,
-						   "dataInicio":"01/12/2015", 
-						   "dataFim":"30/12/2015"}
+	var objQuestionario = {"denominacao" : "questionário de teste estudo preliminar "+ testeId,
+						   "dataInicio" : "01/12/2015", 
+						   "dataFim" : "30/12/2015"}
 	
 	// tenta incluir questionario		   
 	result = $.ajax({

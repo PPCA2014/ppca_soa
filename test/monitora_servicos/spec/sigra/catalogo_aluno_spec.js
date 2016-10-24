@@ -25,7 +25,7 @@ describe("Aluno", function() {
 
 	// define os dados do cadastro aluno
 	var obj = {"nome":"Aluno "+ testeId,
-			   "cpf":"1111111111",
+			   "cpf": testeId.toString(),
 			   "senha" : "10/10/2015"};
 	
 	// tenta incluir		   
@@ -46,7 +46,7 @@ describe("Aluno", function() {
 
 			objAlunoUpdate = objAlunoInserido;
 			objAlunoUpdate.senha = "6546546";
-			objAlunoUpdate.cpf = "22222222222";
+			objAlunoUpdate.cpf = Math.floor(Math.random() * 99999999);
 
 			// tenta modificar
 			var result = $.ajax({
@@ -83,7 +83,7 @@ describe("Aluno", function() {
 
 	// define os dados do cadastro aluno
 	var obj = {"nome":"Aluno "+ testeId,
-			   "cpf":"1111111111",
+			   "cpf": testeId.toString(),
 			   "senha" : "10/10/2015"};
 	
 	// tenta incluir para pesquisar 	   

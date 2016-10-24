@@ -16,7 +16,6 @@
 %%%===================================================================
 
 start() ->
-	application:start(ranch),
     application:start(oauth2),
     application:start(crypto),
 	application:start(ssl),    
@@ -29,5 +28,4 @@ stop() ->
     application:stop(ssl),
     application:stop(crypto),
     application:stop(oauth2),
-    application:stop(odbc),
-    application:stop(ranch).
+    application:stop(odbc).

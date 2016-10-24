@@ -64,6 +64,14 @@ handle_call(Msg, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
+handle_info({Code, RID, Reply}, State) ->
+	case ems_request:get_request_em_andamento(RID) of
+		{ok, Request} -> 
+			ems_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
+			{noreply, State};
+		{erro, notfound} -> {noreply, State}
+	end;
+
 handle_info(Msg, State) ->
    io:format("msg... ~p\n", [Msg]),
    {noreply, State}.

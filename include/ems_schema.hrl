@@ -101,7 +101,8 @@
 					schema_out :: non_neg_integer(),
 					pool_size :: non_neg_integer(),
 					pool_max :: non_neg_integer(),
-					properties :: map()		
+					properties :: map(),
+					timeout :: non_neg_integer()		
 				}).
 
 

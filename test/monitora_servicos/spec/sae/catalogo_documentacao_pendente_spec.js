@@ -29,7 +29,7 @@ describe("DocumentacaoPendente", function() {
 
 	// define os dados do aluno
 	var objAluno = {"nome":"Aluno Teste "+ testeId,
-					"cpf":"1111111111",
+					"cpf": Math.floor(Math.random() * 99999999).toString(),
 					"senha" : "10/10/2015"};
 	
 	// tenta incluir aluno

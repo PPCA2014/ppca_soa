@@ -44,80 +44,122 @@ stop() ->
 %%====================================================================
  
 init({IpAddress, 
-	  TcpConfig = #tcp_config{tcp_min_http_worker = MinHttpWorker,
-							  tcp_port = Port,
+	  TcpConfig = #tcp_config{tcp_port = Port,
 							  tcp_is_ssl = IsSsl},
 	  ListenerName}) ->
-	Opts = ems_socket:make_opts_listen(IpAddress, TcpConfig),
-	case ems_socket:listen(IsSsl, Port, Opts) of
-		{ok, LSocket} ->
-			NewState = #state{lsocket = LSocket, 
-							  listener_name = ListenerName,
-							  tcp_config = TcpConfig},
-			ems_db:init_counter(ListenerName, 0), % listener counter for accepts workers
-			start_server_workers(MinHttpWorker, LSocket, TcpConfig, ListenerName),
-			case IsSsl of
-				true -> ems_logger:info("Listening https packets on ~s:~p.", [inet:ntoa(IpAddress), Port]);
-				false -> ems_logger:info("Listening http packets on ~s:~p.", [inet:ntoa(IpAddress), Port])
-			end,
-			{ok, NewState, 3000};
-		{error,eaddrnotavail} ->
-			ems_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
-			{ok, #state{}};    
-		Error ->
-			Error
-     end.	
-
+	  mochiweb_http:start([{port, Port}, {loop, fun(Req) -> process_request(Req) end}]).
+		
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
-	%io:format("listener undefined socket shutdown ~p\n", [shutdown]),
     {stop, normal, State};
     
 handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    %io:format("listener socket shutdown ~p\n", [shutdown]),
-    ems_socket:close(LSocket),
     {stop, normal, State#state{lsocket = undefined}}.
 
-handle_call(_Request, _From, State) ->
+handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
     
-handle_info(timeout, State) ->
-	check_accept_workers(State),
-   {noreply, State, 200}.
+handle_info(timeout, State) ->  {noreply, State}.
 
-handle_info(State) ->
-   {noreply, State}.
+handle_info(State) -> {noreply, State}.
 
-terminate(_Reason, #state{lsocket = undefined}) ->
-	%io:format("listener undefined socket terminate ~p\n", [Reason]),
-    ok;
-   
-terminate(_Reason, #state{lsocket = LSocket}) ->
-    %io:format("listener terminate ~p\n", [Reason]),
-    ems_socket:close(LSocket),
-    ok.
+terminate(Reason, _State) -> ok.
  
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-start_server_workers(0,_,_,_) ->
-    ok;
-start_server_workers(Num, LSocket, TcpConfig, ListenerName) ->
-    ems_http_worker:start_link({self(), LSocket, TcpConfig, ListenerName}),
-    start_server_workers(Num-1, LSocket, TcpConfig, ListenerName).
-
-check_accept_workers(#state{lsocket = LSocket,
-						   listener_name = ListenerName,
-						   tcp_config = TcpConfig}) ->
-	WorkerCounter = ems_db:current_counter(ListenerName),
-	case WorkerCounter == 0 of
-		true ->
-			io:format("Iniciando accept worker extra\n"),
-			start_server_workers(TcpConfig#tcp_config.tcp_min_http_worker, LSocket, TcpConfig, ListenerName);
-		_ -> ok
+process_request(Req) ->
+	case ems_http_util:encode_request_mochiweb(Req, self()) of
+		{ok, Request = #request{type = "OPTIONS"}} -> 
+			{HttpCode, HttpCodeBin} = get_http_code_verb("OPTIONS", true),
+			Response = ems_http_util:encode_response(HttpCodeBin, <<>>),
+			send_response(HttpCode, ok, Request, Response);
+		{ok, Request} -> 
+			case ems_dispatcher:dispatch_request(Request) of
+				{ok, Request2} ->
+					receive
+						{_, Msg} -> process_response(Msg)
+						after Request2#request.service#service.timeout ->
+							Error = {error, etimeout_service},
+							Response = ems_http_util:encode_response(<<"400">>, Error),
+							send_response(400, Error, Request, Response)
+					end;
+				Error ->
+					Response = ems_http_util:encode_response(<<"400">>, Error),
+					send_response(400, Error, Request, Response)
+			end;
+		{error, Reason} -> 
+			Error = {error, Reason},
+			Req:respond({400, [{"Content-Type", "application/json; charset=utf-8"}], [Error]})
 	end.
-									   
+
+process_response({_MsgType, Request = #request{type = Method, 
+											   service = #service{page_module = PageModule,
+																  page_mime_type = PageMimeType}}, Result}) ->
+	case PageModule of
+		null ->
+			case Result of
+				{ok, <<Content/binary>>} -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content),
+					send_response(HttpCode, ok, Request, Response);
+				{ok, <<Content/binary>>, <<MimeType/binary>>} ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content, MimeType),
+					send_response(HttpCode, ok, Request, Response);
+				{error, Reason} ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
+					Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
+					send_response(HttpCode, {error, Reason}, Request, Response);
+				Content when is_map(Content) -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
+					send_response(HttpCode, ok, Request, Response);
+				Content = [H|_] when is_map(H) -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
+					send_response(HttpCode, ok, Request, Response);
+				Content = [H|_] when is_tuple(H) -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, ems_schema:to_json(Content)),
+					send_response(HttpCode, ok, Request, Response);
+				Content -> 
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content),
+					send_response(HttpCode, ok, Request, Response)
+			end;
+		_ -> 
+			case Result of
+				{error, Reason} ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
+					Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
+					send_response(HttpCode, {error, Reason}, Request, Response);
+				_ ->
+					Content = ems_page:render(PageModule, Result),
+					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
+					Response = ems_http_util:encode_response(HttpCodeBin, Content, PageMimeType),
+					send_response(HttpCode, ok, Request, Response)
+			end
+	end.
+
+get_http_code_verb("POST", true)  -> {201, <<"201">>};
+get_http_code_verb("PUT", false)  -> {400, <<"400">>};
+get_http_code_verb(_, true)  -> {200, <<"200">>};
+get_http_code_verb(_, false)  -> {400, <<"400">>}.
+
+send_response(Code, Reason, Request, Response) ->
+	T2 = ems_util:get_milliseconds(),
+	Latencia = T2 - Request#request.t1,
+	StatusSend = ems_socket:send_data(Request#request.socket, Response),
+	ems_socket:close(Request#request.socket),
+	case  StatusSend of
+		ok -> Status = req_send;
+		_  -> Status = req_done
+	end,
+	Request2 = Request#request{latency = Latencia, code = Code, reason = Reason, status_send = StatusSend, status = Status},
+	ems_request:finaliza_request(Request2),
+	case StatusSend of
+		ok -> ems_eventmgr:notifica_evento(close_request, Request2);
+		_  -> ems_eventmgr:notifica_evento(send_error_request, Request2)
+	end.
+
+	
+

@@ -289,7 +289,6 @@ do_log_request(#request{protocol = http,
 						payload = Payload,
 						service = Service,
 						querystring_map = Query,
-						content_type = Content_Type,
 						code = Code,
 						reason = Reason,
 						latency = Latencia,
@@ -302,24 +301,15 @@ do_log_request(#request{protocol = http,
 					{ssl, _} -> Ssl = "SSL";
 					_ -> Ssl = ""
 				end,
-				ServiceImpl = case Service of
-					undefined -> "";
-					_ -> Service#service.service
+				case Service of
+					undefined -> Service2 = undefined;
+					_ -> Service2 = Service#service.service
 				end,
-				case Payload of
-					undefined ->
-						Texto =  "~s ~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-						Texto1 = io_lib:format(Texto, [Metodo, Url, Version, Ssl, RID, Accept, User_Agent, 
-													   ServiceImpl, Query, Authorization, 
-													   Node, Code, Reason, 
-													   Latencia]);
-					_ ->
-						Texto =  "~s ~s ~s ~s {\n\tRID: ~p\n\tAccept: ~s:\n\tUser-Agent: ~s\n\tContent-Type: ~s\n\tPayload: ~s\n\tService: ~s\n\tQuery: ~p\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-						Texto1 = io_lib:format(Texto, [Metodo, Url, Version, Ssl, RID, Accept, User_Agent, 
-													   Content_Type, Payload, ServiceImpl, Query, 
-													   Authorization, Node, Code, Reason, 
-													   Latencia])
-				end,
+				{HttpMajorVersion, HttpMinorVersion} = Version,
+				Texto =  "~s ~s HTTP ~p/~p ~s {\n\tRID: ~p\n\tAccept: ~p:\n\tUser-Agent: ~p\n\tPayload: ~p\n\tService: ~p\n\tQuery: ~p\n\tAuthorization: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+				Texto1 = io_lib:format(Texto, [Metodo, Url, HttpMajorVersion, HttpMinorVersion, Ssl, RID, Accept, User_Agent, 
+											   Payload, Service2, Query, Authorization, 
+											   Node, Code, Reason, Latencia]),
 				case Code of
 					200 -> ems_logger:info(Texto1);
 					_ 	-> ems_logger:error(Texto1)

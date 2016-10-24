@@ -87,6 +87,61 @@ encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, Worker
 		_Exception:Reason -> {error, Reason}
 	end.
 
+encode_request_mochiweb(MochiReq, WorkerSend) ->
+	try
+		UriRaw = MochiReq:get(raw_path),
+		Uri = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(mochiweb_util:unquote(UriRaw))), utf8),
+		RID = erlang:system_time(),
+		Timestamp = calendar:local_time(),
+		T1 = ems_util:get_milliseconds(),
+		[Url|Querystring] = string:tokens(Uri, "?"),
+		Payload = MochiReq:recv_body(),
+		case length(Querystring) =< 1 of
+			 true ->
+				Url2 = ems_util:remove_ult_backslash_url(Url),
+				Content_Length = MochiReq:get(body_length),
+				Content_Type = MochiReq:get_header_value("content-type"),
+				Accept = MochiReq:get_header_value("accept"),
+				Accept_Encoding = MochiReq:get_header_value("accept-encoding"),
+				User_Agent = MochiReq:get_header_value("user-agent"),
+				Cache_Control = MochiReq:get_header_value("cache-control"),
+				Host = MochiReq:get(peer),
+				QuerystringMap = parse_querystring(Querystring),
+				Authorization = MochiReq:get_header_value("authorization"),
+				{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
+				Request = #request{
+					rid = RID,
+					rowid = Rowid,
+					type = atom_to_list(MochiReq:get(method)),
+					uri = Uri,
+					url = Url2,
+					version = MochiReq:get(version),
+					querystring = Querystring,
+					querystring_map = QuerystringMap,
+					params_url = Params_url,
+					content_length = Content_Length,
+					content_type = Content_Type,
+					accept = Accept,
+					user_agent = User_Agent,
+					accept_encoding = Accept_Encoding,
+					cache_control = Cache_Control,
+					host = Host,
+					socket = MochiReq:get(socket), 
+					t1 = T1, 
+					payload = Payload, 
+					payload_map = decode_payload(Payload),
+					timestamp = Timestamp,
+					authorization = Authorization,
+					worker_send = WorkerSend,
+					protocol = http
+				},	
+				{ok, Request};
+			_ -> {error, einvalid_querystring}
+		end
+	catch
+		_Exception:Reason -> {error, Reason}
+	end.
+
 
 %%-spec get_http_header(Header::list()) -> tuple.
 encode_request(Socket, RequestBin, WorkerSend) ->
@@ -95,7 +150,9 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 			encode_request(Method, UriRaw, HttpParams, 
 						   Http_Version, Payload, 
 						   Socket, WorkerSend);
-		Error -> Error
+		Error -> 
+			ems_logger:error("Error in request: ~p\n", [RequestBin]),
+			Error
 	end.
 
 
@@ -158,28 +215,31 @@ decode_http_header(Headers, Params) ->
     end.
 
 decode_http_request(RequestBin) ->
+	io:format("requestbin -> ~p\n", [RequestBin]),
 	case erlang:decode_packet(http_bin, RequestBin, []) of
-		{ok, {http_error, _}, _} -> {error, einvalid_http_request};
+		{ok, {http_error, _}, _} ->
+			ems_logger:error("RequestBin -> ~p", [RequestBin]),
+			{error, http_error};
 		{ok, Req, Rest} ->
 			{http_request, Method, {abs_path, Uri}, {Http_Version_Major, Http_Version_Minor}} = Req,
 			Http_Version = io_lib:format("HTTP/~p.~p", [Http_Version_Major, Http_Version_Minor]),
 			case decode_http_header(Rest, []) of
+				{error, ReasonDecodeHeader} -> {error, ReasonDecodeHeader};
 				{Http_Params, Payload} -> {method_to_string(Method), 
 										   binary_to_list(Uri), 
 										   Http_Params, 
 										   Http_Version,
-										   Payload};
-				Error -> Error
+										   Payload}
 			end;
-		_ -> {error, einvalid_http_request}
+		{error, Reason} -> 
+			ems_logger:error("RequestBin -> ~p", [RequestBin]),
+			{error, Reason}
 	end.
 
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
-decode_payload(<<>>) ->
-	{ok, #{}};
-
-%% @doc Decodifica o payload e transforma em um tipo Erlang
+decode_payload(undefined) -> #{};
+decode_payload(<<>>) -> #{};
 decode_payload(PayloadBin) ->
 	case ems_util:json_decode_as_map(PayloadBin) of
 		{ok, PayloadMap} -> PayloadMap;

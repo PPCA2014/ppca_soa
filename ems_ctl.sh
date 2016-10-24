@@ -38,17 +38,22 @@
 #         Exemplo 2: ./ems_ctl.sh console   (vai conectar na instância padrão msbus)
 #
 
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
 
-# Parâmetros
+# Set working dir
+current_dir=$(dirname $0)
+cd $current_dir
+
+# Parameters
 ems_ctl_version="1.0.0"
 ems_cookie=erlangms
 ems_node="emsbus"
 ems_init="application:start(ems_bus)"
 ems_stop="application:stop(ems_bus)."
-ems_log_conf="./priv/conf/elog"
+ems_log_conf="$current_dir/priv/conf/elog"
 ems_hostname=`hostname`
 ems_ctl_node="ems_shell_`date +"%I%M%S"`@$ems_hostname"
-ems_path="-pa `pwd`/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin deps/erlydtl/ebin deps/inotify/ebin"
+ems_path="-pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin deps/erlydtl/ebin deps/inotify/ebin"
 
 
 # Conectar no terminal de uma instância ErlangMS
@@ -73,9 +78,10 @@ function start() {
 	else
 		if [ "$is_daemon" == "daemon" ]; then
 			echo "Starting instance $node_name daemon..."
-			erl -detached $ems_path \
+			erl -detached $ems_path -noinput \
 				-sname $node_name -setcookie $ems_cookie \
 				-eval $ems_init -boot start_sasl -config $ems_log_conf 
+			echo "OK!"
 		else
 			echo "Starting instance $node_name..."
 			erl $ems_path \

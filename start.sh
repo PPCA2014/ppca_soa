@@ -2,21 +2,24 @@
 #
 # author Everton de Vargas Agilar <<evertonagilar@gmail.com>>
 #
-current_dir=`pwd`
+
+current_dir=$(dirname $0)
+cd $current_dir
+deps=$(ls -d deps/*/ebin)
 
 if [ "$1" == "observer" ]; then
 	echo "Start with observer daemon..."
-	erl -pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin deps/erlydtl/ebin deps/inotify/ebin \
+	/usr/bin/erl -pa $current_dir/ebin $deps \
 		-sname emsbus -setcookie erlangms \
 		-eval "ems_bus:start()" \
 		-boot start_sasl \
-		-config ./priv/conf/elog \
+		-config $current_dir/priv/conf/elog \
 		-run observer
 else
-	erl -pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin deps/erlydtl/ebin deps/inotify/ebin \
+	/usr/bin/erl -pa $current_dir/ebin $deps \
 		-sname emsbus -setcookie erlangms \
 		-eval "ems_bus:start()" \
 		-boot start_sasl \
-		-config ./priv/conf/elog
+		-config $current_dir/priv/conf/elog
 fi
 
