@@ -77,7 +77,7 @@ lookup(Request = #request{type = Type, rowid = Rowid, params_url = Params}) ->
 			gen_server:call(?SERVER, {lookup, Request});
 		[{_Rowid, Service}] -> 
 			case processa_querystring(Service, Request) of
-			   enoent -> enoent;
+			   enoent -> {error, enoent};
 			   Querystring -> {Service, Params, Querystring}
 			end
 	end.
@@ -174,7 +174,7 @@ processa_querystring(Service, Request) ->
 					end;
 				false -> 
 					case QuerystringServico =:= <<>> of
-						true -> enoent;
+						true -> {error, enoent};
 						false -> valida_querystring(QuerystringServico, QuerystringUser)
 					end
 			end
@@ -183,14 +183,12 @@ processa_querystring(Service, Request) ->
 valida_querystring(QuerystringServico, QuerystringUser) ->
 	case valida_querystring(QuerystringServico, QuerystringUser, []) of
 		{ok, Querystring} -> Querystring;
-		enoent -> enoent
+		Error -> Error
 	end.
 
-valida_querystring([], _QuerystringUser, enoent) -> enoent;
-
+valida_querystring([], _QuerystringUser, {error, enoent} = Error) -> Error;
 valida_querystring([], _QuerystringUser, QuerystringList) ->
 	{ok, maps:from_list(QuerystringList)};
-
 valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 	%% Verifica se encontra a query na querystring do usuário
 	NomeQuery = maps:get(<<"name">>, H),
@@ -199,7 +197,7 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 		error ->
 			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
 			case maps:get(<<"default">>, H, enoent) of
-				enoent -> enoent;
+				enoent -> {error, enoent};
 				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
 			end
 	end.
@@ -214,16 +212,15 @@ do_lookup(Method, Uri, State) ->
 
 do_lookup(Request, #state{cat3 = Cat}) ->
 	case do_lookup_re(Request, Cat) of
+		{error, enoent} = Error -> Error;
 		{Service, ParamsMap} -> 
 			Querystring = processa_querystring(Service, Request),
-			{Service, ParamsMap, Querystring};
-		enoent -> enoent
+			{Service, ParamsMap, Querystring}
 	end.
 
 
 do_lookup_re(_Request, []) ->
-	enoent;
-
+	{error, enoent};
 do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 	RE = H#service.id_re_compiled,
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
@@ -234,6 +231,6 @@ do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 			{H, ParamsMap};
 		nomatch -> do_lookup_re(Request, T);
-		{error, _ErrType} -> enoent 
+		{error, _ErrType} -> {error, enoent}
 	end.
 
