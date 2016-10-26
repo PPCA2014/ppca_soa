@@ -69,7 +69,7 @@ handle_info({Code, RID, Reply}, State) ->
 		{ok, Request} -> 
 			ems_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
 			{noreply, State};
-		{erro, notfound} -> {noreply, State}
+		{erro, enoent} -> {noreply, State}
 	end;
 
 handle_info(Msg, State) ->

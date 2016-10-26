@@ -17,13 +17,28 @@
 
 
 start() -> 
-    try
-		ets:new(ctrl_node_dispatch, [set, named_table, public])
-	catch
-		_:_ -> ok
+	ets:new(ctrl_node_dispatch, [set, named_table, public]),
+	ets:new(result_cache_get, [set, named_table, public]).
+
+check_result_cache_get(Rowid, Timeout, Timestamp2) ->
+	case ets:lookup(result_cache_get, Rowid) of
+		[] -> false;
+		[{_, Timestamp, _}] when Timestamp2 - Timestamp > Timeout -> 
+			io:format("timeout!\n"),
+			false;
+		[{Rowid, _, Cache}] -> {true, Cache}
 	end.
 
-dispatch_request(Request) -> 
+dispatch_request(Request = #request{type = "GET", rowid = Rowid, t1 = Timestamp}) -> 
+	case check_result_cache_get(Rowid, 15000, Timestamp) of
+		{true, Response} -> 
+			io:format("hit!\n"),
+			{ok, Request#request{result_cache = true}, Response};
+		false -> lookup_request(Request)
+	end;
+dispatch_request(Request) -> lookup_request(Request).
+	
+lookup_request(Request = #request{rowid = Rowid, t1 = Timestamp}) -> 
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
 			case ems_auth_user:autentica(Service, Request) of
@@ -40,7 +55,17 @@ dispatch_request(Request) ->
 													   querystring_map = QuerystringMap},
 							ems_request:registra_request(Request2),
 							case executa_service(Node, Request2) of
-								ok -> {ok, Request2};
+								ok -> 
+									receive
+										{_, {_, _, {ok, Response}}} -> 
+											ets:insert(result_cache_get, {Rowid, Timestamp, Response}),
+											{ok, Request2, Response};
+										{_, {_, _, Response}} -> 
+											ets:insert(result_cache_get, {Rowid, Timestamp, Response}),
+											{ok, Request2, Response};
+										Msg -> io:format("msg ~p\n", [Msg])
+										after Request2#request.service#service.timeout -> {error, etimeout_service}
+									end;
 								Error -> Error
 							end;
 						Error ->  Error

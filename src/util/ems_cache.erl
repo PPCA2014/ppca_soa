@@ -125,8 +125,10 @@ get(_CacheName, 0, _Key, FunResult) ->
 	FunResult();
 
 get(CacheName, LifeTime, Key, FunResult) ->
+	io:format("em cache ~p\n", [{CacheName, LifeTime, Key}]), 
 	case ets:lookup(CacheName, Key) of
 		[] ->
+			io:format("not!"),
 		  % Not found, create it.
 		  V = FunResult(),
 		  ets:insert(CacheName, {Key, V}),

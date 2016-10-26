@@ -133,7 +133,8 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 					timestamp = Timestamp,
 					authorization = Authorization,
 					worker_send = WorkerSend,
-					protocol = http
+					protocol = http,
+					result_cache = false
 				},	
 				{ok, Request};
 			_ -> {error, einvalid_querystring}
@@ -156,8 +157,11 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 	end.
 
 
-%% @doc Gera o response para enviar para o cliente
+%% @doc Gera o response HTTP
 encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
+	encode_response(Codigo, Payload, MimeType, undefined).
+	
+encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>, Header) ->
 	PayloadLength = list_to_binary(integer_to_list(size(Payload))),
 	Response = [<<"HTTP/1.1 "/utf8>>, Codigo, <<" OK\n"/utf8>>,
 				<<"Server: ErlangMS\n"/utf8>>,
@@ -166,7 +170,7 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>, <<MimeType/binary>>) ->
 				<<"Access-Control-Allow-Origin: *\n"/utf8>>,
 				<<"Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS\n"/utf8>>,
 				<<"Access-Control-Allow-Headers: Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization\n"/utf8>>,
-				header_cache_control(MimeType),
+				case Header of undefined -> header_cache_control(MimeType); _ -> Header end,
 				<<"\n\n"/utf8>>, 
 	            Payload],
 	Response2 = iolist_to_binary(Response),
@@ -185,7 +189,21 @@ encode_response(Codigo, Payload) when is_tuple(Payload) ->
     Payload2 = ems_schema:to_json(Payload),
     encode_response(Codigo, Payload2).
 
+header_cache_control(<<"application/x-javascript">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
+header_cache_control(<<"text/css">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
 header_cache_control(<<"image/x-icon">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
+header_cache_control(<<"image/png">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
+header_cache_control(<<"image/gif">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
+header_cache_control(<<"image/jpeg">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
+header_cache_control(<<"image/bmp">>) ->
+	<<"Cache-Control: max-age=290304000, public"/utf8>>;
+header_cache_control(<<"application/font-woff">>) ->
 	<<"Cache-Control: max-age=290304000, public"/utf8>>;
 header_cache_control(<<_MimeType/binary>>) ->
 	<<"Cache-Control: no-cache"/utf8>>.
@@ -215,7 +233,6 @@ decode_http_header(Headers, Params) ->
     end.
 
 decode_http_request(RequestBin) ->
-	io:format("requestbin -> ~p\n", [RequestBin]),
 	case erlang:decode_packet(http_bin, RequestBin, []) of
 		{ok, {http_error, _}, _} ->
 			ems_logger:error("RequestBin -> ~p", [RequestBin]),

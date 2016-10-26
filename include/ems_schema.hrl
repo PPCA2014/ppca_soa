@@ -51,7 +51,8 @@
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
-					  protocol = http							%% Protocol (http, ldap)
+					  protocol = http,							%% Protocol (http, ldap)
+					  result_cache = false :: boolean()
 				  }).
 
 

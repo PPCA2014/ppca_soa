@@ -124,7 +124,6 @@ do_registra_request(Request) ->
 	ets:insert(tbl_request_andamento, Request).
 	
 do_finaliza_request(Request) ->
-	ems_db:update(Request),
 	ets:delete(tbl_request_cache, Request#request.rid),
 	ets:delete(tbl_request_andamento, Request#request.rid).
 		

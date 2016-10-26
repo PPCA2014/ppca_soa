@@ -67,33 +67,37 @@ terminate(Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 process_request(Req) ->
-	case ems_http_util:encode_request_mochiweb(Req, self()) of
-		{ok, Request = #request{type = "OPTIONS"}} -> 
-			{HttpCode, HttpCodeBin} = get_http_code_verb("OPTIONS", true),
-			Response = ems_http_util:encode_response(HttpCodeBin, <<>>),
-			send_response(HttpCode, ok, Request, Response);
-		{ok, Request} -> 
-			case ems_dispatcher:dispatch_request(Request) of
-				{ok, Request2} ->
-					receive
-						{_, Msg} -> process_response(Msg)
-						after Request2#request.service#service.timeout ->
-							Error = {error, etimeout_service},
+	case Req:get(method) of
+		'OPTIONS' ->
+			case erlang:get(result_cache_options) of
+				undefined ->
+					{HttpCode, HttpCodeBin} = get_http_code_verb("OPTIONS", true),
+					Response = ems_http_util:encode_response(HttpCodeBin, <<>>, <<"Cache-Control: max-age=290304000, public"/utf8>>),
+					erlang:put(result_cache_options, Response),
+					ems_socket:send_data(Req:get(socket), Response);
+				Response -> ems_socket:send_data(Req:get(socket), Response)
+			end;
+		_ ->
+			case ems_http_util:encode_request_mochiweb(Req, self()) of
+				{ok, Request} -> 
+					case ems_dispatcher:dispatch_request(Request) of
+						{ok, #request{result_cache = true}, Response} -> 
+							send_response(200, ok, Request, Response);
+						{ok, Request2, Response} -> 
+							process_response(Request2, Response);
+						Error ->
 							Response = ems_http_util:encode_response(<<"400">>, Error),
 							send_response(400, Error, Request, Response)
 					end;
-				Error ->
-					Response = ems_http_util:encode_response(<<"400">>, Error),
-					send_response(400, Error, Request, Response)
-			end;
-		{error, Reason} -> 
-			Error = {error, Reason},
-			Req:respond({400, [{"Content-Type", "application/json; charset=utf-8"}], [Error]})
+				{error, Reason} -> 
+					Error = {error, Reason},
+					Req:respond({400, [{"Content-Type", "application/json; charset=utf-8"}], [Error]})
+			end
 	end.
 
-process_response({_MsgType, Request = #request{type = Method, 
-											   service = #service{page_module = PageModule,
-																  page_mime_type = PageMimeType}}, Result}) ->
+process_response(Request = #request{type = Method, 
+								    service = #service{page_module = PageModule,
+									 				   page_mime_type = PageMimeType}}, Result) ->
 	case PageModule of
 		null ->
 			case Result of
@@ -145,11 +149,11 @@ get_http_code_verb("PUT", false)  -> {400, <<"400">>};
 get_http_code_verb(_, true)  -> {200, <<"200">>};
 get_http_code_verb(_, false)  -> {400, <<"400">>}.
 
-send_response(Code, Reason, Request, Response) ->
+send_response(Code, Reason, Request = #request{rowid = Rowid, result_cache = ResultCache, socket = Socket}, Response) ->
 	T2 = ems_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
-	StatusSend = ems_socket:send_data(Request#request.socket, Response),
-	ems_socket:close(Request#request.socket),
+	StatusSend = ems_socket:send_data(Socket, Response),
+	ems_socket:close(Socket),
 	case  StatusSend of
 		ok -> Status = req_send;
 		_  -> Status = req_done
