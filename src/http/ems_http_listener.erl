@@ -69,22 +69,24 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 process_request(Req) ->
 	case Req:get(method) of
 		'OPTIONS' ->
-			case erlang:get(result_cache_options) of
-				undefined ->
-					{HttpCode, HttpCodeBin} = get_http_code_verb("OPTIONS", true),
-					Response = ems_http_util:encode_response(HttpCodeBin, <<>>, <<"Cache-Control: max-age=290304000, public"/utf8>>),
-					erlang:put(result_cache_options, Response),
+			case ems_dispatcher_cache:lookup_options() of
+				false ->
+					io:format("no cache options\n"),
+					Response = ems_http_util:encode_response(<<"200">>, <<>>, <<"Cache-Control: max-age=290304000, public"/utf8>>),
+					ems_dispatcher_cache:add_options(Response),
 					ems_socket:send_data(Req:get(socket), Response);
-				Response -> ems_socket:send_data(Req:get(socket), Response)
+				{true, Response} -> ems_socket:send_data(Req:get(socket), Response)
 			end;
 		_ ->
 			case ems_http_util:encode_request_mochiweb(Req, self()) of
-				{ok, Request} -> 
+				{ok, Request = #request{rowid = Rowid, t1 = Timestamp}} -> 
 					case ems_dispatcher:dispatch_request(Request) of
 						{ok, #request{result_cache = true}, Response} -> 
 							send_response(200, ok, Request, Response);
 						{ok, Request2, Response} -> 
-							process_response(Request2, Response);
+							{HttpCode, Reason, Response2} = encode_response(Request2, Response),
+							ems_dispatcher_cache:add(Rowid, Timestamp, Response2),
+							send_response(HttpCode, Reason, Request2, Response2);
 						Error ->
 							Response = ems_http_util:encode_response(<<"400">>, Error),
 							send_response(400, Error, Request, Response)
@@ -95,7 +97,7 @@ process_request(Req) ->
 			end
 	end.
 
-process_response(Request = #request{type = Method, 
+encode_response(Request = #request{type = Method, 
 								    service = #service{page_module = PageModule,
 									 				   page_mime_type = PageMimeType}}, Result) ->
 	case PageModule of
@@ -104,43 +106,43 @@ process_response(Request = #request{type = Method,
 				{ok, <<Content/binary>>} -> 
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, Content),
-					send_response(HttpCode, ok, Request, Response);
+					{HttpCode, ok, Response};
 				{ok, <<Content/binary>>, <<MimeType/binary>>} ->
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, Content, MimeType),
-					send_response(HttpCode, ok, Request, Response);
-				{error, Reason} ->
+					{HttpCode, ok, Response};
+				{error, Reason} = Error ->
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
 					Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
-					send_response(HttpCode, {error, Reason}, Request, Response);
+					{HttpCode, Error, Response};
 				Content when is_map(Content) -> 
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
-					send_response(HttpCode, ok, Request, Response);
+					{HttpCode, ok, Response};
 				Content = [H|_] when is_map(H) -> 
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, ems_util:json_encode(Content)),
-					send_response(HttpCode, ok, Request, Response);
+					{HttpCode, ok, Response};
 				Content = [H|_] when is_tuple(H) -> 
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, ems_schema:to_json(Content)),
-					send_response(HttpCode, ok, Request, Response);
+					{HttpCode, ok, Response};
 				Content -> 
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, Content),
-					send_response(HttpCode, ok, Request, Response)
+					{HttpCode, ok, Response}
 			end;
 		_ -> 
 			case Result of
-				{error, Reason} ->
+				{error, Reason} = Error ->
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, false),
 					Response = ems_http_util:encode_response(HttpCodeBin, {error, Reason}),
-					send_response(HttpCode, {error, Reason}, Request, Response);
+					{HttpCode, Error, Response};
 				_ ->
 					Content = ems_page:render(PageModule, Result),
 					{HttpCode, HttpCodeBin} = get_http_code_verb(Method, true),
 					Response = ems_http_util:encode_response(HttpCodeBin, Content, PageMimeType),
-					send_response(HttpCode, ok, Request, Response)
+					{HttpCode, ok, Response}
 			end
 	end.
 
@@ -153,7 +155,6 @@ send_response(Code, Reason, Request = #request{rowid = Rowid, result_cache = Res
 	T2 = ems_util:get_milliseconds(),
 	Latencia = T2 - Request#request.t1,
 	StatusSend = ems_socket:send_data(Socket, Response),
-	ems_socket:close(Socket),
 	case  StatusSend of
 		ok -> Status = req_send;
 		_  -> Status = req_done

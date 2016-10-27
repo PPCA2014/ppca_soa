@@ -188,7 +188,7 @@ encode_response(<<Codigo/binary>>, <<Payload/binary>>) ->
 encode_response(Codigo, Payload) when is_tuple(Payload) ->
     Payload2 = ems_schema:to_json(Payload),
     encode_response(Codigo, Payload2).
-
+						
 header_cache_control(<<"application/x-javascript">>) ->
 	<<"Cache-Control: max-age=290304000, public"/utf8>>;
 header_cache_control(<<"text/css">>) ->

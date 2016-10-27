@@ -105,6 +105,9 @@
 -define(MAX_TIME_ODBC_QUERY, 30000).
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
+% Timeout to expire cache of dispatcher
+-define(TIMEOUT_DISPATCHER_CACHE, 16000).
+
 
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
