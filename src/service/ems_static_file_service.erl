@@ -91,16 +91,38 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 do_get_file(Request, _State) ->
-	FilePath = ?STATIC_FILE_PATH ++ Request#request.url,
-	ems_cache:get(static_file_cache, Request#request.service#service.result_cache, FilePath, 
+	FileName = ?STATIC_FILE_PATH ++ Request#request.url,
+	ems_cache:get(static_file_cache, Request#request.service#service.result_cache, FileName, 
 		fun() -> 
-			case file:read_file(FilePath) of
+			case file:read_file(FileName) of
 				{ok, Arquivo} -> 
-					ContentType = ems_http_util:mime_type(filename:extension(FilePath)),
-					{ok, Arquivo, ContentType};
+					{FSize, MTime} = file_info(FileName),
+					MimeType = ems_http_util:mime_type(filename:extension(FileName)),
+					ETag = generate_etag(FSize, MTime),
+					LastModified = cowboy_clock:rfc1123(MTime),
+					{ok, Arquivo, #{
+								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"content_type">> => MimeType,
+								<<"cache-control">> => <<"max-age=290304000, public">>,
+								<<"etag">> => ETag,
+								<<"last-modified">> => LastModified,
+								<<"access-control-allow-Origin">> => <<"*">>,
+								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
+								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+							}};
 				{error, Reason} -> {error, Reason}
 			end
 		end).
+
+file_info(FileName) ->
+	{ok,{file_info, FSize, _Type, _Access,
+		   _ATime,
+		   MTime,
+		   _CTime,
+		   _Mode,_,_,_,_,_,_}} = file:read_file_info(FileName, [{time, universal}]),
+	{FSize, MTime}.
+
+generate_etag(FSize, MTime) -> integer_to_binary(erlang:phash2({FSize, MTime}, 16#ffffffff)).
 
 create_shared_cache() ->
 	try

@@ -7,19 +7,22 @@
 
 
 %% Application callbacks
--export([start/0, start/2, stop/0, stop/1]).
+-export([start/2, stop/1]).
 
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
 
-start() ->
-    application:start(?MODULE).
-
-stop() ->
-    application:stop(?MODULE).
-    
+ 
 start(_StartType, StartArgs) ->
+    io:format("Iniciando ErlangMS...\n"),
+    application:start(oauth2),
+    application:start(crypto),
+	application:start(ssl),    
+    application:start(odbc),
+    application:start(ranch),
+	application:start(cowlib),
+	application:start(cowboy),
 	case ems_config:start() of
 		{ok, _Pid} ->
 			T1 = ems_util:get_milliseconds(),
@@ -54,9 +57,17 @@ start(_StartType, StartArgs) ->
 	end.
 
 stop(_State) ->
+    io:format("FinalizandoIniciando ErlangMS...\n"),
     ems_bus_sup:stop(),
     ems_logger:stop(),
 	ems_config:stop(),
+    application:stop(ssl),
+    application:stop(crypto),
+    application:stop(oauth2),
+    application:stop(odbc),
+	application:start(cowboy),
+	application:start(cowlib),
+	application:start(ranch),
     ok.
     
     

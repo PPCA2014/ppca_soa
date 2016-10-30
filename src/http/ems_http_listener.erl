@@ -47,7 +47,17 @@ init({IpAddress,
 	  TcpConfig = #tcp_config{tcp_port = Port,
 							  tcp_is_ssl = IsSsl},
 	  ListenerName}) ->
-	  mochiweb_http:start([{port, Port}, {loop, fun(Req) -> process_request(Req) end}]).
+	  %mochiweb_http:start([{port, Port}, {loop, fun(Req) -> process_request(Req) end}]).
+	  Dispatch = cowboy_router:compile([
+		{'_', [
+			{'_', ems_http_handler, []},
+			{"/ws", ems_websocket_handler, []}
+		]}
+	]),
+	{ok, _} = cowboy:start_clear(http, 100, [{port, Port}], #{
+		compress => true,
+		env => #{dispatch => Dispatch}
+	}).
 		
 handle_cast(shutdown, State=#state{lsocket = undefined}) ->
     {stop, normal, State};

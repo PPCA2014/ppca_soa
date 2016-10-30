@@ -15,17 +15,7 @@
 %%% API
 %%%===================================================================
 
-start() ->
-    application:start(oauth2),
-    application:start(crypto),
-	application:start(ssl),    
-    application:start(odbc),
-    application:start(ems_bus).
+start() -> application:start(ems_bus).
     
 
-stop() ->
-    application:stop(ems_bus),
-    application:stop(ssl),
-    application:stop(crypto),
-    application:stop(oauth2),
-    application:stop(odbc).
+stop() -> application:stop(ems_bus).

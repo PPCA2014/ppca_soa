@@ -144,6 +144,57 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 	end.
 
 
+encode_request_cowboy(CowboyReq, WorkerSend) ->
+	try
+		Url2 = binary_to_list(cowboy_req:path(CowboyReq)),
+		RID = erlang:system_time(),
+		Timestamp = calendar:local_time(),
+		T1 = ems_util:get_milliseconds(),
+		Querystring = binary_to_list(cowboy_req:qs(CowboyReq)),
+		QuerystringMap = parse_querystring([Querystring]),
+		{ok, Payload, _Req} = cowboy_req:read_body(CowboyReq),
+		Content_Length = cowboy_req:body_length(CowboyReq),
+		Content_Type = cowboy_req:header(<<"content-type">>, CowboyReq),
+		Accept = cowboy_req:header(<<"accept">>, CowboyReq),
+		Accept_Encoding = cowboy_req:header(<<"accept-encoding">>, CowboyReq),
+		User_Agent = cowboy_req:header(<<"user-agent">>, CowboyReq),
+		Cache_Control = cowboy_req:header(<<"cache-control">>, CowboyReq),
+		Host = cowboy_req:host(CowboyReq),
+		Authorization = cowboy_req:header("authorization", CowboyReq),
+		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
+		Request = #request{
+			rid = RID,
+			rowid = Rowid,
+			type = binary_to_list(cowboy_req:method(CowboyReq)),
+			uri = Url2,
+			url = Url2,
+			version = cowboy_req:version(CowboyReq),
+			querystring = Querystring,
+			querystring_map = QuerystringMap,
+			params_url = Params_url,
+			content_length = Content_Length,
+			content_type = Content_Type,
+			accept = Accept,
+			user_agent = User_Agent,
+			accept_encoding = Accept_Encoding,
+			cache_control = Cache_Control,
+			host = Host,
+			socket = undefined, 
+			t1 = T1, 
+			payload = Payload, 
+			payload_map = decode_payload(Payload),
+			timestamp = Timestamp,
+			authorization = Authorization,
+			worker_send = WorkerSend,
+			protocol = http,
+			result_cache = false
+		},	
+		{ok, Request}
+	catch
+		_Exception:Reason -> {error, Reason}
+	end.
+
+
 %%-spec get_http_header(Header::list()) -> tuple.
 encode_request(Socket, RequestBin, WorkerSend) ->
 	case decode_http_request(RequestBin) of
