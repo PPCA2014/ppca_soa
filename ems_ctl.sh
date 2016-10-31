@@ -48,12 +48,12 @@ cd $current_dir
 ems_ctl_version="1.0.0"
 ems_cookie=erlangms
 ems_node="emsbus"
-ems_init="application:start(ems_bus)"
-ems_stop="application:stop(ems_bus)."
-ems_log_conf="$current_dir/priv/conf/elog"
+ems_init="ems_bus:start()"
+ems_stop="ems_bus:stop()"
+ems_log_conf="$current_dir/priv/conf/elog"  
 ems_hostname=`hostname`
 ems_ctl_node="ems_shell_`date +"%I%M%S"`@$ems_hostname"
-ems_path="-pa `ls -d deps/*/ebin`"
+ems_path="-pa $current_dir/ebin `ls -d deps/*/ebin`"
 
 
 # Conectar no terminal de uma instância ErlangMS
