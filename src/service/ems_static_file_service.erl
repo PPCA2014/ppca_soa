@@ -141,7 +141,7 @@ generate_header(MimeType, ETag, LastModified, Expires) ->
 error_http_header() ->
 	#{
 		<<"server">> => ?SERVER_NAME,
-		<<"content_type">> => <<"application/json; charset=utf-8">>,
+		<<"content-type">> => <<"application/json; charset=utf-8">>,
 		<<"cache-control">> => <<"no-cache">>
 	}.
 

@@ -58,14 +58,14 @@ encode_result(Request = #request{type = Method,
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				{ok, <<Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => MimeType,
+								<<"content-type">> => MimeType,
 								<<"cache-control">> => header_cache_control(MimeType)
 							}};
 				{HttpCode, <<Content/binary>> = ResponseData, HttpHeader} ->
@@ -76,14 +76,14 @@ encode_result(Request = #request{type = Method,
 					HttpCode = get_http_code_verb(Method, false),
 					{HttpCode, Error, ems_schema:to_json(Error), #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				<<Content/binary>> = ResponseData -> 
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content when is_map(Content) -> 
@@ -91,7 +91,7 @@ encode_result(Request = #request{type = Method,
 					ResponseData = ems_schema:to_json(Content),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content = [H|_] when is_map(H) -> 
@@ -99,7 +99,7 @@ encode_result(Request = #request{type = Method,
 					ResponseData = ems_schema:to_json(Content),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content = [H|_] when is_tuple(H) -> 
@@ -107,7 +107,7 @@ encode_result(Request = #request{type = Method,
 					ResponseData = ems_schema:to_json(Content),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content -> 
@@ -122,7 +122,7 @@ encode_result(Request = #request{type = Method,
 					HttpCode = get_http_code_verb(Method, false),
 					{HttpCode, Error, ems_schema:to_json(Error), #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => <<"application/json; charset=utf-8">>,
+								<<"content-type">> => <<"application/json; charset=utf-8">>,
 								<<"cache-control">> => <<"no-cache">>
 							}};
 				_ ->
@@ -130,7 +130,7 @@ encode_result(Request = #request{type = Method,
 					ResponseData = ems_page:render(PageModule, Result),
 					{HttpCode, ok, ResponseData, #{
 								<<"server">> => ?SERVER_NAME,
-								<<"content_type">> => PageMimeType,
+								<<"content-type">> => PageMimeType,
 								<<"cache-control">> => header_cache_control(PageMimeType)
 							}}
 			end
