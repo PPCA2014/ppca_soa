@@ -14,10 +14,10 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, io_lib:format(<<"ErlangMS Development Version ~s">>, [case application:get_key(ems_bus, vsn) of 
-																					{ok, Version} -> Version;
-																					undefined -> "1.0"
-																			end])).
+-define(SERVER_NAME, io_lib:format(<<"ErlangMS-~s">>, [case application:get_key(ems_bus, vsn) of 
+																{ok, Version} -> Version;
+																undefined -> "1.0.0"
+														end])).
 
 
 % Caminho do diretório privado
@@ -106,7 +106,7 @@
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
 % Timeout to expire cache of dispatcher
--define(TIMEOUT_DISPATCHER_CACHE, 16000).
+-define(TIMEOUT_DISPATCHER_CACHE, 1000).
 
 
 %  Definição para o arquivo de configuração

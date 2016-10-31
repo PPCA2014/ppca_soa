@@ -90,37 +90,61 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-do_get_file(Request, _State) ->
+do_get_file(Request = #request{if_modified_since = IfModifiedSinceReq, 
+							   if_none_match = IfNoneMatchReq,
+							   timestamp = {{Year,Month,Day},{Hour,Min,Secs}}}, _State) ->
 	FileName = ?STATIC_FILE_PATH ++ Request#request.url,
-	ems_cache:get(static_file_cache, Request#request.service#service.result_cache, FileName, 
-		fun() -> 
-			case file:read_file(FileName) of
-				{ok, Arquivo} -> 
-					{FSize, MTime} = file_info(FileName),
-					MimeType = ems_http_util:mime_type(filename:extension(FileName)),
-					ETag = generate_etag(FSize, MTime),
-					LastModified = cowboy_clock:rfc1123(MTime),
-					{ok, Arquivo, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
-								<<"content_type">> => MimeType,
-								<<"cache-control">> => <<"max-age=290304000, public">>,
-								<<"etag">> => ETag,
-								<<"last-modified">> => LastModified,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
-							}};
-				{error, Reason} -> {error, Reason}
+	case file_info(FileName) of
+		{error, _Reason} = Err -> {404, Err, error_http_header()};
+		{FSize, MTime} -> 
+			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
+			ETag = generate_etag(FSize, MTime),
+			LastModified = cowboy_clock:rfc1123(MTime),
+			Expires = cowboy_clock:rfc1123({{Year+1,Month,Day},{Hour,Min,Secs}}),
+			HttpHeader = generate_header(MimeType, ETag, LastModified, Expires),
+			case ETag == IfNoneMatchReq orelse LastModified == IfModifiedSinceReq of
+				true -> {304, <<>>, HttpHeader};
+				false ->
+					ems_cache:get(static_file_cache, Request#request.service#service.result_cache, FileName, 
+						fun() -> 
+							case file:read_file(FileName) of
+								{ok, FileContent} -> {200, FileContent, HttpHeader};
+								{error, enoent} = Err -> {404, Err, error_http_header()};
+								{error, _Reason} = Err -> {400, Err, error_http_header()}
+							end
+						end)
 			end
-		end).
+	end.
+	
+		
 
 file_info(FileName) ->
-	{ok,{file_info, FSize, _Type, _Access,
-		   _ATime,
-		   MTime,
-		   _CTime,
-		   _Mode,_,_,_,_,_,_}} = file:read_file_info(FileName, [{time, universal}]),
-	{FSize, MTime}.
+	case file:read_file_info(FileName, [{time, universal}]) of
+		{ok,{file_info, FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} = 
+			Result -> Result,
+			{FSize, MTime};
+		Error -> Error
+	end.
+	
+
+generate_header(MimeType, ETag, LastModified, Expires) ->
+	#{
+		<<"server">> => ?SERVER_NAME,
+		<<"content-type">> => MimeType,
+		<<"cache-control">> => <<"max-age=290304000, public">>,
+		<<"etag">> => ETag,
+		<<"last-modified">> => LastModified,
+		<<"expires">> => Expires
+	}.
+
+
+error_http_header() ->
+	#{
+		<<"server">> => ?SERVER_NAME,
+		<<"content_type">> => <<"application/json; charset=utf-8">>,
+		<<"cache-control">> => <<"no-cache">>
+	}.
+
 
 generate_etag(FSize, MTime) -> integer_to_binary(erlang:phash2({FSize, MTime}, 16#ffffffff)).
 

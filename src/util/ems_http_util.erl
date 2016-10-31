@@ -160,7 +160,10 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		User_Agent = cowboy_req:header(<<"user-agent">>, CowboyReq),
 		Cache_Control = cowboy_req:header(<<"cache-control">>, CowboyReq),
 		Host = cowboy_req:host(CowboyReq),
-		Authorization = cowboy_req:header("authorization", CowboyReq),
+		Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
+		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
+		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
+		PayloadMap = decode_payload(Payload),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 		Request = #request{
 			rid = RID,
@@ -182,10 +185,12 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			socket = undefined, 
 			t1 = T1, 
 			payload = Payload, 
-			payload_map = decode_payload(Payload),
+			payload_map = PayloadMap,
 			timestamp = Timestamp,
 			authorization = Authorization,
 			worker_send = WorkerSend,
+			if_modified_since = IfModifiedSince,
+			if_none_match = IfNoneMatch,
 			protocol = http,
 			result_cache = false
 		},	
@@ -193,6 +198,11 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
+
+
+-spec parse_if_modified_since(binary() | undefined) -> calendar:datetime().
+parse_if_modified_since(undefined) -> undefined;
+parse_if_modified_since(IfModifiedSince) -> cow_date:parse_date(IfModifiedSince).
 
 
 %%-spec get_http_header(Header::list()) -> tuple.

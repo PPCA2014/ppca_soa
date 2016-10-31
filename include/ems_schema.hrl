@@ -41,6 +41,9 @@
 					  user_agent :: string(),					%% Parâmetro USER_AGENT HTTP
 					  accept_encoding :: string(),				%% Parâmetro ACCEPT_ENCODING HTTP
 					  cache_control :: string(),				%% Parâmetro CACHE-CONTROL HTTP
+					  etag :: string(),							%% Parâmetro ETag
+					  if_modified_since :: string(),			%% Parâmetro If-Modified-Since
+					  if_none_match :: string(),			    %% Parâmetro If-None-Match
 					  host :: string(),							%% Host que iniciou a requisição
 					  t1,										%% Utilizado para cálculo da latência (Tempo inicial em milisegundos)
 					  socket :: gen_tcp:socket(),				%% Socket da requisição

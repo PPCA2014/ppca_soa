@@ -14,17 +14,17 @@
 
 -export([init/2]).
 
+
 init(CowboyReq, Opts) ->
-	io:format("init\n"),
+	io:format("req is ~p\n", [CowboyReq]),
 	case cowboy_req:method(CowboyReq) of
 		<<"OPTIONS">> ->
 			case ems_dispatcher_cache:lookup_options() of
 				false ->
-					io:format("no cache options\n"),
 					Response = cowboy_req:reply(204, http_header_options(), <<>>, CowboyReq),
 					ems_dispatcher_cache:add_options(Response);
-				{true, Response} -> 
-					io:format("hit options ~p\n", [Response])
+				{true, ResponseData} -> 
+					Response = ResponseData
 			end;
 		_ ->
 			case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
@@ -57,86 +57,63 @@ encode_result(Request = #request{type = Method,
 				{ok, <<Content/binary>> = ResponseData} -> 
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				{ok, <<Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => MimeType,
-								<<"cache-control">> => header_cache_control(MimeType),
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => header_cache_control(MimeType)
 							}};
-				{ok, <<Content/binary>> = ResponseData, HttpHeader} ->
-					HttpCode = get_http_code_verb(Method, true),
+				{HttpCode, <<Content/binary>> = ResponseData, HttpHeader} ->
 					{HttpCode, ok, ResponseData, HttpHeader};
+				{HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
+					{HttpCode, ResponseData, ems_schema:to_json(ResponseData), HttpHeader};
 				{error, Reason} = Error ->
 					HttpCode = get_http_code_verb(Method, false),
 					{HttpCode, Error, ems_schema:to_json(Error), #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				<<Content/binary>> = ResponseData -> 
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content when is_map(Content) -> 
 					HttpCode = get_http_code_verb(Method, true),
 					ResponseData = ems_schema:to_json(Content),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content = [H|_] when is_map(H) -> 
 					HttpCode = get_http_code_verb(Method, true),
 					ResponseData = ems_schema:to_json(Content),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content = [H|_] when is_tuple(H) -> 
 					HttpCode = get_http_code_verb(Method, true),
 					ResponseData = ems_schema:to_json(Content),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				Content -> 
 					HttpCode = get_http_code_verb(Method, true),
 					{HttpCode, ok, Content, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"server">> => ?SERVER_NAME
 							}}
 			end;
 		_ -> 
@@ -144,23 +121,17 @@ encode_result(Request = #request{type = Method,
 				{error, Reason} = Error ->
 					HttpCode = get_http_code_verb(Method, false),
 					{HttpCode, Error, ems_schema:to_json(Error), #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>,
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => <<"no-cache">>
 							}};
 				_ ->
 					HttpCode = get_http_code_verb(Method, true),
 					ResponseData = ems_page:render(PageModule, Result),
 					{HttpCode, ok, ResponseData, #{
-								<<"server">> => <<"ErlangMS Cowboy">>,
+								<<"server">> => ?SERVER_NAME,
 								<<"content_type">> => PageMimeType,
-								<<"cache-control">> => header_cache_control(PageMimeType),
-								<<"access-control-allow-Origin">> => <<"*">>,
-								<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-								<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+								<<"cache-control">> => header_cache_control(PageMimeType)
 							}}
 			end
 	end.
@@ -168,19 +139,13 @@ encode_result(Request = #request{type = Method,
 
 default_http_header() ->
 	#{
-		<<"server">> => <<"ErlangMS">>,
-		<<"access-control-allow-Origin">> => <<"*">>,
-		<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-		<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+		<<"server">> => ?SERVER_NAME
 	}.
 
 http_header_options() ->
 	#{
 		<<"cache-control">> => <<"max-age=290304000, public">>,
-		<<"server">> => <<"ErlangMS">>,
-		<<"access-control-allow-Origin">> => <<"*">>,
-		<<"access-control-allow-Methods">> => <<"GET, PUT, POST, DELETE, OPTIONS">>,
-		<<"access-control-allow-Headers">> => <<"Content-Type, Content-Range, Content-Disposition, Content-Description, X-Requested-With, X-CSRFToken, X-CSRF-Token, Authorization">>
+		<<"server">> => ?SERVER_NAME
 	}.
 
 get_http_code_verb("POST", true)  -> 201;
@@ -209,6 +174,4 @@ header_cache_control(<<_MimeType/binary>>) ->
 	<<"no-cache"/utf8>>.
 
 	
-terminate(_Reason, _Req, _State) ->  
-	io:format("passei terminate\n"),
-	ok.    
+%terminate(_Reason, _Req, _State) ->  ok.    

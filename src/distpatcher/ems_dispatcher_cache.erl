@@ -23,7 +23,7 @@ lookup(Rowid, Timestamp2) ->
 	case ets:lookup(dispatcher_cache_get, Rowid) of
 		[] -> false;
 		[{_, Timestamp, _}] when Timestamp2 - Timestamp > ?TIMEOUT_DISPATCHER_CACHE -> 
-			io:format("timeout!\n"),
+			io:format("timeout!!!\n"),
 			false;
 		[{_, _, Response}] -> {true, Response}
 	end.
