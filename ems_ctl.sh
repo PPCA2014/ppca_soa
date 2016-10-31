@@ -53,7 +53,7 @@ ems_stop="application:stop(ems_bus)."
 ems_log_conf="$current_dir/priv/conf/elog"
 ems_hostname=`hostname`
 ems_ctl_node="ems_shell_`date +"%I%M%S"`@$ems_hostname"
-ems_path="-pa $current_dir/ebin deps/jesse/ebin deps/json_rec/ebin deps/mochiweb/ebin deps/jiffy/ebin deps/ecsv/ebin deps/jsx/ebin deps/poolboy/ebin deps/erlydtl/ebin deps/inotify/ebin"
+ems_path=$(ls -d deps/*/ebin)
 
 
 # Conectar no terminal de uma instância ErlangMS
