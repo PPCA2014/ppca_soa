@@ -24,7 +24,8 @@
 		 sync/0, 
 		 log_request/1,
 		 mode_debug/1,
-		 set_level/1]).
+		 set_level/1,
+		 show_response/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -41,7 +42,8 @@
 				log_file_name,		      		% timeout configuration to unload file buffer
 				log_file_handle,				% IODevice of file
 				debug,							% It indicates whether it is in debug mode
-				level = info					% level of errors
+				level = info,					% level of errors
+				show_response = false			% show response of request
  			   }). 
 
 
@@ -99,6 +101,9 @@ log_request(Request) ->
 set_level(Level) -> 
 	gen_server:cast(?SERVER, {set_level, Level}). 
 
+show_response(Value) -> 
+	gen_server:cast(?SERVER, {show_response, Value}). 
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -147,6 +152,9 @@ handle_cast({log_request, Request}, State) ->
 
 handle_cast({set_level, Level}, State) ->
 	{noreply, State#state{level = Level}};
+
+handle_cast({show_response, Value}, State) ->
+	{noreply, State#state{show_response = Value}};
 
 handle_cast({ems_debug, Flag}, State) ->
 	{noreply, State#state{debug = Flag}};
@@ -264,7 +272,7 @@ do_log_request(#request{protocol = ldap,
 						service = Service,
 						code = Code,
 						reason = Reason,
-						latency = Latencia,
+						latency = Latency,
 						authorization = Authorization,
 						node_exec = Node}, _State) ->
 	ServiceImpl = case Service of
@@ -272,7 +280,7 @@ do_log_request(#request{protocol = ldap,
 		_ -> Service#service.service
 	end,
 	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latencia]),
+	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latency]),
 	case Code of
 		200 -> ems_logger:info(Texto1);
 		_ 	-> ems_logger:error(Texto1)
@@ -291,28 +299,35 @@ do_log_request(#request{protocol = http,
 						querystring_map = Query,
 						code = Code,
 						reason = Reason,
-						latency = Latencia,
-						socket = Socket,
+						latency = Latency,
+						result_cache = ResultCache,
+						result_cache_rid = ResultCacheRid,
+						response_data = ResponseData,
 						authorization = Authorization,
-						node_exec = Node}, #state{level = Level}) ->
+						node_exec = Node}, #state{level = Level,
+												  show_response = ShowResponse}) ->
 		case Level of
 			info ->
-				case Socket of
-					{ssl, _} -> Ssl = "SSL";
-					_ -> Ssl = ""
-				end,
-				case Service of
-					undefined -> Service2 = undefined;
-					_ -> Service2 = Service#service.service
-				end,
-				{HttpMajorVersion, HttpMinorVersion} = Version,
-				Texto =  "~s ~s HTTP ~p/~p ~s {\n\tRID: ~p\n\tAccept: ~p:\n\tUser-Agent: ~p\n\tPayload: ~p\n\tService: ~p\n\tQuery: ~p\n\tAuthorization: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-				Texto1 = io_lib:format(Texto, [Metodo, Url, HttpMajorVersion, HttpMinorVersion, Ssl, RID, Accept, User_Agent, 
-											   Payload, Service2, Query, Authorization, 
-											   Node, Code, Reason, Latencia]),
-				case Code of
-					200 -> ems_logger:info(Texto1);
-					_ 	-> ems_logger:error(Texto1)
+				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~p:\n\tUser-Agent: ~p\n\tPayload: ~p\n\tService: ~p\n\tQuery: ~p\n\t~sResult-Cache: ~s\n\tAuthorization: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+				Texto1 = io_lib:format(Texto, [Metodo, 
+											   Url, 
+											   Version, 
+											   RID, 
+											   Accept, 
+											   User_Agent, 
+											   Payload, 
+							   				   case Service of undefined -> <<>>; _ -> Service#service.service end,
+											   Query, 
+											   case ShowResponse of true -> io_lib:format("Response: ~p\n\t", [ResponseData]); false -> <<>> end,
+											   case ResultCache of true -> io_lib:format("true  <<RID: ~s>>", [integer_to_list(ResultCacheRid)]); false -> "false" end,
+											   Authorization, 
+											   Node, 
+											   Code, 
+											   Reason, 
+											   Latency]),
+				case Code >= 400 of
+					true  -> ems_logger:error(Texto1);
+					false -> ems_logger:info(Texto1)
 				end;
 			_ -> ok
 		end.

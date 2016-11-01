@@ -16,7 +16,6 @@
 
 
 init(CowboyReq, Opts) ->
-	io:format("req is ~p\n", [CowboyReq]),
 	case cowboy_req:method(CowboyReq) of
 		<<"OPTIONS">> ->
 			case ems_dispatcher_cache:lookup_options() of
@@ -28,19 +27,39 @@ init(CowboyReq, Opts) ->
 			end;
 		_ ->
 			case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
-				{ok, Request = #request{rowid = Rowid, t1 = Timestamp}} -> 
+				{ok, Request = #request{type = Method,
+										url_hash = UrlHash,
+										t1 = T1}} -> 
 					case ems_dispatcher:dispatch_request(Request) of
-						{ok, #request{result_cache = true}, Cache} ->
-							{HttpCode, Reason, ResponseData2, HttpHeader} = Cache,
-							Response = cowboy_req:reply(HttpCode, HttpHeader, ResponseData2, CowboyReq);
-						{ok, Request2, ResponseData} -> 
-							{HttpCode, Reason, ResponseData2, HttpHeader} = encode_result(Request2, ResponseData),
-							ems_dispatcher_cache:add(Rowid, Timestamp, {HttpCode, Reason, ResponseData2, HttpHeader}),
-							Response = cowboy_req:reply(HttpCode, HttpHeader, ResponseData2, CowboyReq);
+						{ok, Request2 = #request{result_cache = true,
+												 code = HttpCode,
+												 response_data = ResponseData,
+												 response_header = HttpHeader}} ->
+							Response = cowboy_req:reply(HttpCode, HttpHeader, ResponseData, CowboyReq),
+							ems_logger:log_request(Request2);
+						{ok, Request2} ->
+							Request3 = encode_result(Request2),
+							case Method == "GET"of
+								true -> ems_dispatcher_cache:add(UrlHash, T1, Request3);
+								false -> ok
+							end,
+							Response = cowboy_req:reply(Request3#request.code, 
+														Request3#request.response_header, 
+														Request3#request.response_data, 
+														CowboyReq),
+							ems_logger:log_request(Request3);
 						Error ->
-							Response = cowboy_req:reply(400, default_http_header(), ems_schema:to_json(Error), CowboyReq)
+							Request2 = Request#request{code = 400, 
+													   reason = Error, 
+													   response_data = ems_schema:to_json(Error), 
+													   response_header = default_http_header(),
+													   latency = ems_util:get_milliseconds() - T1},
+							Response = cowboy_req:reply(Request2#request.code, 
+													    Request2#request.response_header, 
+													    Request2#request.response_data, CowboyReq),
+							ems_logger:log_request(Request2)
 					end;
-				{error, Reason} = Error -> 
+				{error, _Reason} = Error -> 
 					Response = cowboy_req:reply(400, default_http_header(), ems_schema:to_json(Error), CowboyReq)
 			end
 	end,
@@ -49,90 +68,127 @@ init(CowboyReq, Opts) ->
 
 
 encode_result(Request = #request{type = Method, 
-								    service = #service{page_module = PageModule,
-									 				   page_mime_type = PageMimeType}}, Result) ->
+								 t1 = T1,
+								 response_data = Result,	
+								 service = #service{page_module = PageModule,
+								  				    page_mime_type = PageMimeType}}) ->
 	case PageModule of
-		null ->
+		undefined ->
 			case Result of
-				{ok, <<Content/binary>> = ResponseData} -> 
-					HttpCode = get_http_code_verb(Method, true),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
-				{ok, <<Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
-					HttpCode = get_http_code_verb(Method, true),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => MimeType,
-								<<"cache-control">> => header_cache_control(MimeType)
-							}};
-				{HttpCode, <<Content/binary>> = ResponseData, HttpHeader} ->
-					{HttpCode, ok, ResponseData, HttpHeader};
+				{ok, <<_Content/binary>> = ResponseData} -> 
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ResponseData,
+									response_header = #{
+											<<"server">> => ?SERVER_NAME,
+											<<"content-type">> => <<"application/json; charset=utf-8">>,
+											<<"cache-control">> => <<"no-cache">>
+										}};
+				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ResponseData,
+									response_header = #{
+											<<"server">> => ?SERVER_NAME,
+											<<"content-type">> => MimeType,
+											<<"cache-control">> => header_cache_control(MimeType)
+										}};
+				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
+					Request#request{code = HttpCode, 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ResponseData,
+									response_header = HttpHeader};
 				{HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
-					{HttpCode, ResponseData, ems_schema:to_json(ResponseData), HttpHeader};
-				{error, Reason} = Error ->
-					HttpCode = get_http_code_verb(Method, false),
-					{HttpCode, Error, ems_schema:to_json(Error), #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
-				<<Content/binary>> = ResponseData -> 
-					HttpCode = get_http_code_verb(Method, true),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
+					Request#request{code = HttpCode, 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(ResponseData),
+									response_header = HttpHeader};
+				{error, _Reason} = Error ->
+					Request#request{code = get_http_code_verb(Method, false), 
+									reason = Error, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(Error),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => <<"application/json; charset=utf-8">>,
+										<<"cache-control">> => <<"no-cache">>
+									}};
+				<<_Content/binary>> -> 
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => <<"application/json; charset=utf-8">>,
+										<<"cache-control">> => <<"no-cache">>
+									}};
 				Content when is_map(Content) -> 
-					HttpCode = get_http_code_verb(Method, true),
-					ResponseData = ems_schema:to_json(Content),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(Content),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => <<"application/json; charset=utf-8">>,
+										<<"cache-control">> => <<"no-cache">>
+									}};
 				Content = [H|_] when is_map(H) -> 
-					HttpCode = get_http_code_verb(Method, true),
-					ResponseData = ems_schema:to_json(Content),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(Content),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => <<"application/json; charset=utf-8">>,
+										<<"cache-control">> => <<"no-cache">>
+									}};
 				Content = [H|_] when is_tuple(H) -> 
-					HttpCode = get_http_code_verb(Method, true),
-					ResponseData = ems_schema:to_json(Content),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(Content),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => <<"application/json; charset=utf-8">>,
+										<<"cache-control">> => <<"no-cache">>
+									}};
 				Content -> 
-					HttpCode = get_http_code_verb(Method, true),
-					{HttpCode, ok, Content, #{
-								<<"server">> => ?SERVER_NAME
-							}}
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(Content),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"cache-control">> => <<"no-cache">>
+									}}
 			end;
 		_ -> 
 			case Result of
-				{error, Reason} = Error ->
-					HttpCode = get_http_code_verb(Method, false),
-					{HttpCode, Error, ems_schema:to_json(Error), #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => <<"application/json; charset=utf-8">>,
-								<<"cache-control">> => <<"no-cache">>
-							}};
+				{error, _Reason} = Error ->
+					Request#request{code = get_http_code_verb(Method, false), 
+									reason = Error, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_schema:to_json(Error),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => <<"application/json; charset=utf-8">>,
+										<<"cache-control">> => <<"no-cache">>
+									}};
 				_ ->
-					HttpCode = get_http_code_verb(Method, true),
-					ResponseData = ems_page:render(PageModule, Result),
-					{HttpCode, ok, ResponseData, #{
-								<<"server">> => ?SERVER_NAME,
-								<<"content-type">> => PageMimeType,
-								<<"cache-control">> => header_cache_control(PageMimeType)
-							}}
+					Request#request{code = get_http_code_verb(Method, true), 
+									reason = ok, 
+									latency = ems_util:get_milliseconds() - T1,
+									response_data = ems_page:render(PageModule, Result),
+									response_header = #{
+										<<"server">> => ?SERVER_NAME,
+										<<"content-type">> => PageMimeType,
+										<<"cache-control">> => header_cache_control(PageMimeType)
+									}}
+
 			end
 	end.
 	

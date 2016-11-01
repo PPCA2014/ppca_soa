@@ -32,12 +32,9 @@ find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName},
 
 
 insert(Payload, Service = #service{schema_in = Schema}, #service_datasource{table_name = TableName}) -> 
-	io:format("aqui1 -> ~p\n\n", [Schema]),
 	case ems_api_query_validator:validate(Payload, Schema) of
 		ok -> 
-			io:format("validado"),
 			Record = ems_schema:to_record(Payload, list_to_atom(TableName)),
-			io:format("record is ~p\n", [Record]),
 			case ems_db:insert(Record) of
 				{ok, Record2 } -> Record2;
 				Error -> Error

@@ -150,8 +150,15 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
-		Querystring = binary_to_list(cowboy_req:qs(CowboyReq)),
-		QuerystringMap = parse_querystring([Querystring]),
+		Method = binary_to_list(cowboy_req:method(CowboyReq)),
+		case cowboy_req:qs(CowboyReq) of
+			<<>> -> 
+				Querystring = <<>>,
+				QuerystringMap = #{};
+			Q -> 
+				Querystring = binary_to_list(Q),
+				QuerystringMap = parse_querystring([Querystring])
+		end,
 		{ok, Payload, _Req} = cowboy_req:read_body(CowboyReq),
 		Content_Length = cowboy_req:body_length(CowboyReq),
 		Content_Type = cowboy_req:header(<<"content-type">>, CowboyReq),
@@ -164,11 +171,12 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		PayloadMap = decode_payload(Payload),
+		UrlHash = erlang:phash2(Url2),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 		Request = #request{
 			rid = RID,
 			rowid = Rowid,
-			type = binary_to_list(cowboy_req:method(CowboyReq)),
+			type = Method,
 			uri = Url2,
 			url = Url2,
 			version = cowboy_req:version(CowboyReq),
@@ -182,8 +190,6 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			accept_encoding = Accept_Encoding,
 			cache_control = Cache_Control,
 			host = Host,
-			socket = undefined, 
-			t1 = T1, 
 			payload = Payload, 
 			payload_map = PayloadMap,
 			timestamp = Timestamp,
@@ -192,7 +198,9 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			if_modified_since = IfModifiedSince,
 			if_none_match = IfNoneMatch,
 			protocol = http,
-			result_cache = false
+			result_cache = false,
+			t1 = T1,
+			url_hash = UrlHash
 		},	
 		{ok, Request}
 	catch
@@ -269,8 +277,7 @@ header_cache_control(<<"application/font-woff">>) ->
 header_cache_control(<<_MimeType/binary>>) ->
 	<<"Cache-Control: no-cache"/utf8>>.
 
-parse_querystring([]) -> #{};
-parse_querystring([Q]) ->
+parse_querystring(Q) ->
 	Q1 = httpd:parse_query(Q),
 	Q2 = [{iolist_to_binary(P), 
 		   iolist_to_binary(case V of

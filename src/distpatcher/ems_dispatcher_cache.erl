@@ -25,7 +25,7 @@ lookup(Rowid, Timestamp2) ->
 		[{_, Timestamp, _}] when Timestamp2 - Timestamp > ?TIMEOUT_DISPATCHER_CACHE -> 
 			io:format("timeout!!!\n"),
 			false;
-		[{_, _, Response}] -> {true, Response}
+		[{_, _, Request}] -> {true, Request}
 	end.
 
 lookup_options() ->
@@ -34,6 +34,6 @@ lookup_options() ->
 		[{1, Response}] -> {true, Response}
 	end.
 
-add(Rowid, Timestamp, Response) -> ets:insert(dispatcher_cache_get, {Rowid, Timestamp, Response}).
+add(Rowid, Timestamp, Request) -> ets:insert(dispatcher_cache_get, {Rowid, Timestamp, Request}).
 
 add_options(Response) -> ets:insert(dispatcher_cache_options, {1, Response}).

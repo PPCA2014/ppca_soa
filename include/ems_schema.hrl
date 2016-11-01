@@ -55,7 +55,11 @@
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
 					  protocol = http,							%% Protocol (http, ldap)
-					  result_cache = false :: boolean()
+					  result_cache = false :: boolean(),
+					  result_cache_rid,
+					  response_data,
+					  response_header,
+					  url_hash
 				  }).
 
 
@@ -106,7 +110,7 @@
 					pool_size :: non_neg_integer(),
 					pool_max :: non_neg_integer(),
 					properties :: map(),
-					timeout :: non_neg_integer()		
+					timeout :: non_neg_integer()
 				}).
 
 

@@ -16,7 +16,6 @@ validate(Record, null) -> ok;
 validate(Record, Schema) when is_tuple(Record) ->
 	validate(maps:from_list(ems_schema:to_list(Record)), Schema);
 validate(Map, Schema) ->
-	io:format("schema is ~p\n", [Schema]),
 	case ems_catalog_schema:find_by_name(Schema) of
 		{error, enoent} -> {error, eschema_not_found};
 		CatalogSchema ->

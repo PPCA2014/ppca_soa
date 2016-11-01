@@ -21,11 +21,18 @@ start() ->
 	ems_dispatcher_cache:start().
 
 
-dispatch_request(Request = #request{type = "GET", rowid = Rowid, t1 = Timestamp}) -> 
-	case ems_dispatcher_cache:lookup(Rowid, Timestamp) of
-		{true, Response} -> 
-			io:format("hit!\n"),
-			{ok, Request#request{result_cache = true}, Response};
+dispatch_request(Request = #request{type = "GET", 
+									url_hash = UrlHash, 
+									t1 = Timestamp}) -> 
+	case ems_dispatcher_cache:lookup(UrlHash, Timestamp) of
+		{true, RequestCache} -> 
+			{ok, Request#request{result_cache = true,
+								 code = RequestCache#request.code,
+								 reason = RequestCache#request.reason,
+								 response_data = RequestCache#request.response_data,
+								 response_header = RequestCache#request.response_header,
+								 result_cache_rid = RequestCache#request.rid,
+								 latency = RequestCache#request.latency}};
 		false -> lookup_request(Request)
 	end;
 dispatch_request(Request) -> lookup_request(Request).
@@ -50,9 +57,9 @@ lookup_request(Request) ->
 								ok -> 
 									receive
 										{_, {_, _, {ok, Response}}} -> 
-											{ok, Request2, Response};
+											{ok, Request2#request{response_data = Response}};
 										{_, {_, _, Response}} -> 
-											{ok, Request2, Response};
+											{ok, Request2#request{response_data = Response}};
 										Msg -> io:format("Msg service desconhecida: ~p\n", [Msg])
 										after Request2#request.service#service.timeout -> {error, etimeout_service}
 									end;
