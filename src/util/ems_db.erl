@@ -245,7 +245,7 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 release_odbc_connection(#service_datasource{pid_module = PidModule, 
 											connection = Connection, 
 											conn_ref = Conn}) ->
-	F = fun() -> odbc:disconnect(Conn) end,
+	F = fun(_) -> odbc:disconnect(Conn) end,
 	ems_cache:flush_future(ems_db_odbc_connection_cache, ?LIFE_TIME_ODBC_CONNECTION, {PidModule, Connection}, F).
 	
 
