@@ -107,6 +107,7 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 					   FunctionName}, 
 					   WebService
 					  },
+	io:format("Send msg to ~p\n", [{Module, Node}]),
 	{Module, Node} ! Msg,
 	ems_pool:checkin(ems_web_service, WebService),
 	ok.
