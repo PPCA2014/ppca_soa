@@ -414,17 +414,16 @@ parse_node_service(List) -> List.
 	
 %% @doc O host pode ser um alias definido no arquivo de configuração
 parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
-parse_host_service(Host, ModuleNameCanonical, Node, Conf) ->
-	HostAlias = Conf#config.cat_host_alias,
-	case erlang:is_list(Host) of
-		true  -> ListHost = Host;
-		false -> ListHost = [Host]
-	end,
+parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
+	ListHost = net_adm:host_file(),
 	case erlang:is_list(Node) of
 		true  -> ListNode = Node;
 		false -> ListNode = [Node]
 	end,
-	ListHost2 = lists:map(fun(X) -> binary_to_list(maps:get(X, HostAlias, X)) end, ListHost),
+	ListHost2 = [case string:tokens(atom_to_list(X), ".") of
+					[N, _] -> N;
+					[N] -> N
+				 end || X <- ListHost],
 	ListNode2 = lists:map(fun(X) -> binary_to_list(X) end, ListNode),
 	ClusterName = [case X of
 						[] -> ModuleNameCanonical ++ "@" ++ Y;

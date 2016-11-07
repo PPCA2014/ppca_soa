@@ -14,7 +14,7 @@
 -include("../../include/ems_schema.hrl").
 
 %% Server API
--export([start/1, start_link/1, stop/0, get_connection/1, sqconnection/0]).
+-export([start/1, start_link/1, stop/0, get_connection/1, sqconnection/0, connection_pool_size/1, release_connection/1]).
 
 
 %% gen_server callbacks
@@ -22,8 +22,8 @@
 
 -define(SERVER, ?MODULE).
 
-%  Armazena o estado do service. 
--record(state, {}). 
+%  State
+-record(state, {connection_by_pool = ?MAX_CONNECTION_BY_POOL}). 
 
 
 %%====================================================================
@@ -40,42 +40,29 @@ stop() ->
     gen_server:cast(?SERVER, shutdown).
  
  
-get_connection(Datasource = #service_datasource{connection = Connection, 
-												timeout = Timeout}) ->
-	io:format("aqui1\n"),
-	Key = erlang:pid_to_list(self()),
-	case erlang:get(Key) of
+get_connection(Datasource) ->
+	case erlang:get("my_connection") of
 		undefined ->
-			io:format("aqui2\n"),
-			ConnectFun = fun() ->
-				io:format("create connect... ~p\n", [Connection]),
-				case odbc:connect(Connection, []) of
-					{ok, Conn}	-> 
-						io:format("ok...\n"),
-						{ok, Datasource#service_datasource{conn_ref = Conn, 
-														  pid_module = self()}};
-					{error, Reason} -> 
-						io:format("erro ~p...\n", [Reason]),
-						{error, Reason}
-				end
-			end,
-			ReleaseFun = fun(_) ->
-				io:format("release.\n"),
-				ok
-			end,
-			io:format("aqui3\n"),
-			Result = ems_cache:get(ems_odbc_pool_cache, 
-						  infinity, 
-						  Key, 
-						  ConnectFun,
-						  ReleaseFun),
-			io:format("result is ~p\n", [Result]),
-			Result;
+			case gen_server:call(?SERVER, {create_connection, Datasource}) of
+				{ok, Datasource2} = Result ->
+					erlang:put("my_connection",	Datasource2),
+					Result;
+				Error -> Error
+			end;
 		DatasourceCache -> 
-			io:format("aqui4\n"),
 			{ok, DatasourceCache}
 	end.
- 
+
+
+release_connection(Datasource) ->
+	case erlang:erase("my_connection") of
+		undefined -> {error, enoent};
+		_ -> gen_server:call(?SERVER, {release_connection, Datasource})
+	end.
+
+
+connection_pool_size(Datasource) -> gen_server:call(?SERVER, {get_size, Datasource}).
+
 sqconnection() ->
 	#service_datasource{type = sqlite, connection = ?DATABASE_SQLITE_STRING_CONNECTION}.
 	
@@ -86,24 +73,32 @@ sqconnection() ->
  
 init(_Args) ->
     process_flag(trap_exit, true),
-    io:format("criado cache ems_odbc_pool_cache\n"),
-    ems_cache:new(ems_odbc_pool_cache),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(Msg, State) ->
+handle_cast(_Msg, State) ->
 	{noreply, State}.
     
-handle_call(Msg, _From, State) ->
-	{reply, Msg, State}.
+handle_call({create_connection, Datasource}, {Pid, _Tag}, State) ->
+	Reply = create_connection(Datasource, Pid),
+	{reply, Reply, State};
+
+handle_call({get_size, Datasource}, _From, State) ->
+	Reply = get_connection_pool_size(Datasource),
+	{reply, Reply, State};
+	
+handle_call({release_connection, Datasource}, _From, State) ->
+	Reply = release_connection(Datasource, State),
+	{reply, Reply, State}.
 
 handle_info(State) ->
    {noreply, State}.
 
-handle_info(Msg, State) ->
-   io:format("msg... ~p\n", [Msg]),
+handle_info({'DOWN', Ref, process, _Pid2, _Reason}, State) ->
+   Datasource = erlang:erase(Ref),
+   release_connection(Datasource, State),
    {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -113,4 +108,53 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
     
     
-										 
+						
+create_connection(Datasource = #service_datasource{connection = Connection, 
+												   timeout = _Timeout}, 
+				  PidModule) ->
+	PoolName = "pool_" ++ Connection,
+	Pool = find_pool(PoolName),
+	case queue:len(Pool) of
+		0 ->
+			Worker = ems_odbc_pool_worker:start(),
+			case ems_odbc_pool_worker:connect(Worker, Connection, []) of
+				{ok, Conn}	-> 
+					Datasource2 = Datasource#service_datasource{conn_ref = Conn, pid_module = Worker},
+					MonitorRef = erlang:monitor(process, PidModule),
+					erlang:put(MonitorRef, Datasource2),
+					{ok, Datasource2};
+				Error -> Error
+			end;
+		_ -> 
+			{{value, Datasource2}, Pool2} = queue:out(Pool),
+			MonitorRef = erlang:monitor(process, PidModule),
+			erlang:put(MonitorRef, Datasource2),
+			erlang:put(PoolName, Pool2),
+			{ok, Datasource2}
+	end.
+
+find_pool(PoolName) ->
+	case erlang:get(PoolName) of
+		undefined -> queue:new();
+		Pool -> Pool
+	end.
+
+get_connection_pool_size(#service_datasource{connection = Connection}) ->
+	PoolName = "pool_" ++ Connection,
+	Pool = find_pool(PoolName),
+	queue:len(Pool).
+
+release_connection(Datasource = #service_datasource{connection = Connection, 
+													conn_ref = Conn}, 
+				   #state{connection_by_pool = ConnectionByPool}) ->
+	PoolName = "pool_" ++ Connection,
+	Pool = find_pool(PoolName),
+	case queue:len(Pool) < ConnectionByPool of
+		true ->
+			io:format("volta pool\n"),
+			Pool2 = queue:in(Datasource, Pool),
+			erlang:put(PoolName, Pool2);
+		false -> 
+			io:format("release\n"),
+			odbc:disconnect(Conn)
+	end.

@@ -196,21 +196,10 @@ get_connection(Datasource = #service_datasource{type = mnesia}) ->
 
 % Release a conection from a datasource
 release_connection(#service_datasource{type = mnesia}) -> ok;
-release_connection(Datasource) -> release_odbc_connection(Datasource).
+release_connection(Datasource) -> ems_odbc_pool:release_connection(Datasource).
 
 
-get_odbc_connection(Datasource = #service_datasource{connection = Connection, timeout = Timeout}) ->
-	PidModule = erlang:pid_to_list(self()),
-	F = fun() ->
-		case odbc:connect(Connection, [{scrollable_cursors, off},
-									   {timeout, Timeout},
-									   {trace_driver, off}]) of
-			{ok, Conn}	-> {ok, Datasource#service_datasource{conn_ref = Conn, 
-															  pid_module = PidModule}};
-			{error, Reason} -> {error, Reason}
-		end
-	end,
-	ems_cache:get(ems_db_odbc_connection_cache, infinity, {PidModule, Datasource}, F).
+get_odbc_connection(Datasource) -> ems_odbc_pool:get_connection(Datasource).
 
 
 get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileName,
@@ -242,12 +231,6 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 			get_odbc_connection(Datasource#service_datasource{type = sqlite, connection = ?DATABASE_SQLITE_STRING_CONNECTION})
 	end.
 
-release_odbc_connection(#service_datasource{pid_module = PidModule, 
-											connection = Connection, 
-											conn_ref = Conn}) ->
-	F = fun(_) -> odbc:disconnect(Conn) end,
-	ems_cache:flush_future(ems_db_odbc_connection_cache, ?LIFE_TIME_ODBC_CONNECTION, {PidModule, Connection}, F).
-	
 
 %create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 
 %	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),

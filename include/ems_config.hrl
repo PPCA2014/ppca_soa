@@ -108,6 +108,9 @@
 % Timeout to expire cache of dispatcher
 -define(TIMEOUT_DISPATCHER_CACHE, 1000).
 
+% Number of datasource entries by odbc connection pool
+-define(MAX_CONNECTION_BY_POOL, 50).
+
 
 %  Definição para o arquivo de configuração
 -record(config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
