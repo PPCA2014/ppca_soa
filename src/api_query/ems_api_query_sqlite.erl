@@ -225,9 +225,9 @@ generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, p
 execute_dynamic_query(Sql, _, _, true) -> 
 	Result = list_to_binary(io_lib:format("{\"sql\" : ~p}", [Sql])), 
 	{ok, Result};
-execute_dynamic_query(Sql, Params, #service_datasource{conn_ref = Conn}, false) ->
+execute_dynamic_query(Sql, Params, Datasource, false) ->
 	try
-		case odbc:param_query(Conn, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
+		case ems_odbc_pool:param_query(Datasource, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
 				Objects = ems_util:json_encode_table(Fields, Records),
 				{ok, Objects};

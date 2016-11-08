@@ -71,7 +71,8 @@
 							 pid_module :: string(),
 							 csv_delimiter :: string(),
 							 sql :: string(),
-							 timeout :: non_neg_integer()
+							 timeout :: non_neg_integer(),
+							 owner
 							}).
 
 -record(service, {

@@ -109,7 +109,7 @@
 -define(TIMEOUT_DISPATCHER_CACHE, 1000).
 
 % Number of datasource entries by odbc connection pool
--define(MAX_CONNECTION_BY_POOL, 50).
+-define(MAX_CONNECTION_BY_POOL, 10).
 
 
 %  Definição para o arquivo de configuração
