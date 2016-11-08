@@ -99,11 +99,9 @@ handle_call({release_connection, Datasource}, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({'DOWN', Ref, process, _Pid2, Reason}, State) ->
-   io:format("DOWN ~p\n",[Reason]),
+handle_info({'DOWN', Ref, process, _Pid2, _Reason}, State) ->
    case erlang:erase(Ref) of
-		undefined ->
-			{noreply, State};
+		undefined -> {noreply, State};
 		Datasource ->
 			release_connection(Datasource, State),
 			{noreply, State}
@@ -156,7 +154,6 @@ release_connection(Datasource = #service_datasource{connection = Connection,
 	Pool = find_pool(PoolName),
 	case queue:len(Pool) < ConnectionByPool of
 		true ->
-			io:format("\nvolta pool\n"),
 			Pool2 = queue:in(Datasource, Pool),
 			erlang:put(PoolName, Pool2);
 		false -> gen_server:cast(Owner, shutdown)

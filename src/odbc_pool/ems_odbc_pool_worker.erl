@@ -76,9 +76,6 @@ handle_call(get_datasource, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({'DOWN', Ref, process, _Pid2, Reason}, State) ->
-	{noreply, State};
-
 handle_info(_Msg, State) ->
    {noreply, State}.
 

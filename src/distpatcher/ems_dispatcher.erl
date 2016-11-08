@@ -37,7 +37,7 @@ dispatch_request(Request = #request{type = "GET",
 	end;
 dispatch_request(Request) -> lookup_request(Request).
 	
-lookup_request(Request) -> 
+lookup_request(Request = #request{url = Url}) -> 
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
 			case ems_auth_user:autentica(Service, Request) of
@@ -69,15 +69,18 @@ lookup_request(Request) ->
 					end;
 				Error -> Error
 			end;
-		Error -> Error
+		{error, Reason} = Error -> 
+			ems_logger:info("Lookup request ~p fail. Reason: ~p.", [Url, Reason]),
+			Error
 	end.
 
 
 %% @doc Executa um web service local
-executa_service(_Node, Request=#request{service=#service{host='', 
+executa_service(Node, Request=#request{service=#service{host='', 
 														 module=Module, 
 														 function=Function}}) ->
 	try
+		ems_logger:info("Send msg to ~p.", [{Module, Node}]),
 		case whereis(Module) of
 			undefined -> 
 				ems_pool:cast(ems_web_service, Request);
@@ -107,7 +110,7 @@ executa_service(Node, Request=#request{service=#service{host = _HostList,
 					   FunctionName}, 
 					   WebService
 					  },
-	io:format("Send msg to ~p\n", [{Module, Node}]),
+	ems_logger:info("Send msg to ~p.", [{Module, Node}]),
 	{Module, Node} ! Msg,
 	ems_pool:checkin(ems_web_service, WebService),
 	ok.
@@ -137,7 +140,6 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 
 	% Qual node vamos selecionar
 	Node = lists:nth(Index2, HostList),
-	
 	% Este node está vivo? Temos que rotear para um node existente
 	case net_adm:ping(Node) of
 		pong -> {ok, Node};
