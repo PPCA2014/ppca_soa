@@ -47,7 +47,7 @@ get_connection(Datasource = #service_datasource{rowid = Rowid}) ->
 			io:format("process ~p pediu conexao\n", [self()]),
 			case gen_server:call(?SERVER, {create_connection, Datasource}) of
 				{ok, Datasource2} = Result ->
-					erlang:put(Rowid,	Datasource2),
+					erlang:put(Rowid, Datasource2),
 					Result;
 				Error -> 
 					io:format("erro grave ~p\n", [Error]),
@@ -63,7 +63,7 @@ release_connection(Datasource = #service_datasource{rowid = Rowid}) ->
 	io:format("libera conexao manual?\n"),
 	case erlang:erase(Rowid) of
 		undefined -> ok;
-		_ -> gen_server:cast(?SERVER, {release_connection, Datasource})
+		_ -> gen_server:call(?SERVER, {release_connection, Datasource})
 	end.
 
 
@@ -84,11 +84,11 @@ init(_Args) ->
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
-    {stop, normal, State};
+    {stop, normal, State}.
 
-handle_cast({release_connection, Datasource}, State) ->
+handle_call({release_connection, Datasource}, _From, State) ->
 	do_release_connection(Datasource),
-	{noreply, State}.
+	{reply, ok, State};
 
 handle_call({create_connection, Datasource}, {Pid, _Tag}, State) ->
 	Reply = do_create_connection(Datasource, Pid),
@@ -134,22 +134,45 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 			case ems_odbc_pool_worker:start_link(Datasource) of
 				{ok, WorkerPid} ->
 					ems_logger:info("New odbc connection: ~s.", [Connection]),
-					Datasource2 = ems_odbc_pool_worker:get_datasource(WorkerPid),
-					MonitorRef = erlang:monitor(process, PidModule),
-					erlang:put(MonitorRef, Datasource2),
+					PidModuleRef = erlang:monitor(process, PidModule),
+					Datasource2 = Datasource#service_datasource{owner = WorkerPid, 
+																pid_module = PidModule,
+																pid_module_ref = PidModuleRef},
+					erlang:put(PidModuleRef, Datasource2),
+					
+					io:format("ds com ownwer ~p\n", [WorkerPid]),
 					{ok, Datasource2};
-				Error -> 
+				_ -> 
 					ems_logger:info("NAO CONSEGUIU CRIAR WORKER ODBC\n"),
-					Error
+					{error, enoent}
 			end;
 		_ -> 
 			{{value, Datasource2}, Pool2} = queue:out(Pool),
-			MonitorRef = erlang:monitor(process, PidModule),
-			erlang:put(MonitorRef, Datasource2),
+			PidModuleRef = erlang:monitor(process, PidModule),
+			Datasource3 = Datasource2#service_datasource{pid_module = PidModule,
+														 pid_module_ref = PidModuleRef},
+			erlang:put(PidModuleRef, Datasource3),
 			erlang:put(PoolName, Pool2),
-			
-			io:format("reutiliza mas ta vivo: ~p\n", [erlang:is_pid(Datasource2#service_datasource.owner)]), 
-			{ok, Datasource2}
+			io:format("pega conexao existente: ~p\n", [Datasource3#service_datasource.owner]), 
+			{ok, Datasource3}
+	end.
+
+do_release_connection(Datasource = #service_datasource{connection = Connection, 
+													   owner = Owner, 
+													   pid_module_ref = PidModuleRef,
+													   max_pool_size = MaxPoolSize}) ->
+	erlang:demonitor(PidModuleRef),
+	PoolName = "pool_" ++ Connection,
+	Pool = find_pool(PoolName),
+	case queue:len(Pool) < MaxPoolSize of
+		true ->
+			io:format("volta pool ~p\!!n", [Owner]),
+			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
+														   pid_module_ref = undefined}, Pool),
+			erlang:put(PoolName, Pool2);
+		false -> 
+			io:format("mandando morrer ~p\n!!n", [Owner]),
+			gen_server:call(Owner, shutdown)
 	end.
 
 find_pool(PoolName) ->
@@ -162,25 +185,4 @@ get_connection_pool_size(#service_datasource{connection = Connection}) ->
 	PoolName = "pool_" ++ Connection,
 	Pool = find_pool(PoolName),
 	queue:len(Pool).
-
-do_release_connection(Datasource = #service_datasource{connection = Connection, 
-													   owner = Owner, 
-													   max_pool_size = MaxPoolSize}) ->
-	case erlang:is_pid(Owner) of
-		true -> 
-			PoolName = "pool_" ++ Connection,
-			Pool = find_pool(PoolName),
-			case queue:len(Pool) < MaxPoolSize of
-				true ->
-					io:format("release\!!n"),
-					Pool2 = queue:in(Datasource, Pool),
-					erlang:put(PoolName, Pool2);
-				false -> 
-					io:format("mandando morrer\!!n"),
-					gen_server:cast(Owner, shutdown)
-			end;
-		false ->
-			io:format("tentou liberar uma conexao já liberada!!!\n\n")
-	end.
-
 

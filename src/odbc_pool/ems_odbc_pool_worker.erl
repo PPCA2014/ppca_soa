@@ -97,7 +97,6 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 		case odbc:connect(Connection, []) of
 			{ok, ConnRef}	-> 
 				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
-				erlang:monitor(process, ConnRef),
 				io:format("conexao criada\n"),
 				{ok, Datasource2};
 			{error, Reason} -> 
@@ -106,14 +105,15 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 		end
 	catch 
 		_Exception:{PosixError, _} -> 
-			ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p <<~s>>.", [Connection, PosixError, ems_tcp_util:posix_error_description(PosixError)]),
+			ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p <<~s>>.", [Connection, 
+																				 PosixError, 
+																				 ems_tcp_util:posix_error_description(PosixError)]),
 			{error, PosixError}
 	end.
 
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	io:format("disconnect...\n"), 
-	odbc:disconnect(ConnRef),
-	io:format("disconnect ok\n").
+	odbc:disconnect(ConnRef).
 
 do_param_query(Sql, Params, Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef,
 																			 connection = Connection}}) ->

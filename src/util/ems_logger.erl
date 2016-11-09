@@ -222,7 +222,7 @@ set_timeout_for_sync_buffer(_State) ->
 	ok.
 
 set_timeout_for_sync_tela(#state{flag_checkpoint_tela = false}) ->    
-	erlang:send_after(1600, self(), checkpoint_tela);
+	erlang:send_after(2000, self(), checkpoint_tela);
 
 set_timeout_for_sync_tela(_State) ->    
 	ok.
@@ -234,15 +234,22 @@ write_msg(Tipo, <<Msg/binary>>, State) ->
 	Msg1 = binary_to_list(Msg),
     write_msg(Tipo, Msg1, State);
     
-write_msg(info, Msg, State = #state{level = error}) ->
-	set_timeout_for_sync_tela(State),
-	State#state{buffer_tela = [Msg|State#state.buffer_tela], flag_checkpoint_tela = true};
-
-write_msg(Tipo, Msg, State)  ->
+write_msg(Tipo, Msg, State = #state{level = Level})  ->
 	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", ems_util:timestamp_str(), "  ", Msg]),
-	set_timeout_for_sync_buffer(State),
-	set_timeout_for_sync_tela(State),
-	State#state{buffer = [Msg1|State#state.buffer], buffer_tela = [Msg|State#state.buffer_tela], flag_checkpoint = true, flag_checkpoint_tela = true}.
+	case Level == error andalso Tipo /= error of
+		true ->
+			set_timeout_for_sync_buffer(State),
+			State#state{buffer = [Msg1|State#state.buffer], 
+						flag_checkpoint = true};
+		false ->
+			set_timeout_for_sync_buffer(State),
+			set_timeout_for_sync_tela(State),
+			State#state{buffer = [Msg1|State#state.buffer], 
+						buffer_tela = [Msg|State#state.buffer_tela], 
+						flag_checkpoint = true, 
+						flag_checkpoint_tela = true}
+	end.
+		
 	
 write_msg(Tipo, Msg, Params, State) ->
 	Msg1 = io_lib:format(Msg, Params),
