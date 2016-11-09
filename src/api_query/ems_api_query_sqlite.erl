@@ -234,6 +234,8 @@ execute_dynamic_query(Sql, Params, Datasource, false) ->
 			{error, Reason} -> {error, Reason}
 		end
 	catch
-		_Exception:Reason2 -> {error, Reason2}
+		_Exception:Reason2 -> 
+			io:format("aqui2 ~p\n", [Reason2]),
+			{error, Reason2}
 	end.
 

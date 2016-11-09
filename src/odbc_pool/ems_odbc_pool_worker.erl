@@ -47,27 +47,22 @@ get_datasource(Worker) -> gen_server:call(Worker, get_datasource).
 %% gen_server callbacks
 %%====================================================================
  
-init(Datasource = #service_datasource{connection = Connection, 
-								      timeout = _Timeout}) -> 
-	case odbc:connect(Connection, []) of
-		{ok, Conn}	-> 
-			Datasource2 = Datasource#service_datasource{conn_ref = Conn, 
-														owner = self()},
-			{ok, #state{datasource = Datasource2}};
-		{error, Reason} -> 
-			{stop, Reason}
+init(Datasource) -> 
+	case do_connect(Datasource) of
+		{ok, Datasource2} -> {ok, #state{datasource = Datasource2}};
+		_Error -> ignore
 	end.
-		
+	
     
-handle_cast(shutdown, State = #state{datasource = #service_datasource{conn_ref = Conn}}) ->
-	odbc:disconnect(Conn),
+handle_cast(shutdown, State) ->
+	do_disconnect(State),
     {stop, normal, State};
 
 handle_cast(_Msg, State) ->
 	{noreply, State}.
     
-handle_call({param_query, Datasource, Sql, Params, Timeout}, _From, State) ->
-	Reply = do_param_query(Datasource, Sql, Params, Timeout),
+handle_call({param_query, Sql, Params, Timeout}, _From, State) ->
+	Reply = do_param_query(Sql, Params, Timeout, State),
 	{reply, Reply, State};
 
 handle_call(get_datasource, _From, State) ->
@@ -75,6 +70,10 @@ handle_call(get_datasource, _From, State) ->
 
 handle_info(State) ->
    {noreply, State}.
+
+handle_info({'DOWN', Ref, process, _Pid2, _Reason}, State) ->
+	io:format("MORREU!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n"),
+	{noreply, State};
 
 handle_info(_Msg, State) ->
    {noreply, State}.
@@ -84,16 +83,45 @@ terminate(_Reason, _State) ->
  
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-    
 
-do_param_query(#service_datasource{conn_ref = Conn}, Sql, Params, Timeout) ->
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+    
+do_connect(Datasource = #service_datasource{connection = Connection, 
+											timeout = _Timeout}) -> 
+
 	try
-		case odbc:param_query(Conn, Sql, Params, Timeout) of
+		case odbc:connect(Connection, []) of
+			{ok, ConnRef}	-> 
+				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
+				erlang:monitor(process, ConnRef),
+				io:format("conexao criada\n"),
+				{ok, Datasource2};
+			{error, Reason} -> {error, Reason}
+		end
+	catch 
+		_Exception:_Reason -> {error, eodbc_connection_fail}
+	end.
+
+do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
+	io:format("disconnect...\n"), 
+	odbc:disconnect(ConnRef),
+	io:format("disconnect ok\n").
+
+do_param_query(Sql, Params, Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef}}) ->
+	io:format("do para query\n"),
+	try
+		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, Reason} -> {error, Reason};
 			Result -> Result
 		end
 	catch
-		_Exception:Reason2 -> {error, Reason2}
+		_Exception:Reason2 -> 
+			io:format("falha ao acessar banco ~p\n", [Reason2]),
+			{error, eodbc_connection_fail}
 	end.
 
     

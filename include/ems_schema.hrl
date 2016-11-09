@@ -63,7 +63,8 @@
 				  }).
 
 
--record(service_datasource, {type :: string(),
+-record(service_datasource, {rowid :: non_neg_integer(),
+							 type :: string(),
 							 connection :: string(),
 							 table_name :: string(),
 							 primary_key :: string(),
@@ -72,7 +73,8 @@
 							 csv_delimiter :: string(),
 							 sql :: string(),
 							 timeout :: non_neg_integer(),
-							 owner
+							 owner,
+							 max_pool_size :: non_neg_integer()
 							}).
 
 -record(service, {

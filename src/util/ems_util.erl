@@ -67,17 +67,17 @@ hashsym([H|T], Hash) -> hashsym(T, (Hash + H) bsl 1).
 
 
 %% Retorna o hash da url (uso no carregamento dos catálogos)	
-hashsymdef(S) when is_binary(S) -> hashsymdef(binary_to_list(S), 0);
-hashsymdef(S) -> hashsymdef(S, 0).
+make_rowid(S) when is_binary(S) -> make_rowid(binary_to_list(S), 0);
+make_rowid(S) -> make_rowid(S, 0).
 
-hashsymdef([], Hash) -> Hash;
-hashsymdef([H|T], Hash) when H == 58 -> hashsymdef(hashsymdef_id(T), Hash);
-hashsymdef([H|T], Hash) when H >= 48 andalso H =< 57 -> hashsymdef(T, Hash);
-hashsymdef([H|T], Hash) -> hashsymdef(T, (Hash + H) bsl 1).
+make_rowid([], Hash) -> Hash;
+make_rowid([H|T], Hash) when H == 58 -> make_rowid(make_rowid_id(T), Hash);
+make_rowid([H|T], Hash) when H >= 48 andalso H =< 57 -> make_rowid(T, Hash);
+make_rowid([H|T], Hash) -> make_rowid(T, (Hash + H) bsl 1).
 
-hashsymdef_id([]) -> [];
-hashsymdef_id([H|T]) when H == 47 -> T;
-hashsymdef_id([_|T]) -> hashsymdef_id(T).
+make_rowid_id([]) -> [];
+make_rowid_id([H|T]) when H == 47 -> T;
+make_rowid_id([_|T]) -> make_rowid_id(T).
 
 
 get_priv_dir() ->

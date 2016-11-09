@@ -12,7 +12,7 @@
 
 -include("../../include/ems_schema.hrl").
 
-validate(Record, null) -> ok;
+validate(_, null) -> ok;
 validate(Record, Schema) when is_tuple(Record) ->
 	validate(maps:from_list(ems_schema:to_list(Record)), Schema);
 validate(Map, Schema) ->

@@ -20,17 +20,32 @@ start() ->
 	ets:new(dispatcher_cache_options, [set, named_table, public, {read_concurrency, true}]).
 
 lookup(Rowid, Timestamp2) ->
-	case ets:lookup(dispatcher_cache_get, Rowid) of
-		[] -> false;
-		[{_, Timestamp, _}] when Timestamp2 - Timestamp > ?TIMEOUT_DISPATCHER_CACHE -> false;
-		[{_, _, Request}] -> {true, Request}
+	try
+		case ets:lookup(dispatcher_cache_get, Rowid) of
+			[] -> false;
+			[{_, Timestamp, _}] when Timestamp2 - Timestamp > ?TIMEOUT_DISPATCHER_CACHE -> false;
+			[{_, _, Request}] -> {true, Request}
+		end
+	catch
+		_Exception:_Reason ->
+			ems_logger:warn("Recriando ets dispatcher_cache_get."),
+			ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
+			lookup(Rowid, Timestamp2)
 	end.
 
 lookup_options() ->
-	case ets:lookup(dispatcher_cache_options, 1) of
-		[] -> false;
-		[{1, Response}] -> {true, Response}
+	try
+		case ets:lookup(dispatcher_cache_options, 1) of
+			[] -> false;
+			[{1, Response}] -> {true, Response}
+		end
+	catch
+		_Exception:_Reason ->
+			ems_logger:warn("Recriando ets dispatcher_cache_options."),
+			ets:new(dispatcher_cache_options, [set, named_table, public, {read_concurrency, true}]),
+			lookup_options()
 	end.
+	
 
 add(Rowid, Timestamp, Request) -> ets:insert(dispatcher_cache_get, {Rowid, Timestamp, Request}).
 

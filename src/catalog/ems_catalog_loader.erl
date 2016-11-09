@@ -291,9 +291,9 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		Version = maps:get(<<"version">>, H, <<>>),
 		Owner = maps:get(<<"owner">>, H, <<>>),
 		Async = maps:get(<<"async">>, H, <<"false">>),
-		Rowid = ems_util:hashsymdef(Url2),
+		Rowid = ems_util:make_rowid(Url2),
 		Lang = maps:get(<<"lang">>, H, <<>>),
-		Datasource = parse_datasource(maps:get(<<"datasource">>, H, null)),
+		Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
 		Result_Cache = maps:get(<<"result_cache">>, H, 0),
 		Authentication = maps:get(<<"authentication">>, H, <<>>),
 		Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
@@ -384,15 +384,17 @@ parse_schema(null) -> null;
 parse_schema(Name) -> Name.
 
 	
-parse_datasource(null) -> null;
-parse_datasource(M) -> 
-	#service_datasource{type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
+parse_datasource(undefined, _) -> undefined;
+parse_datasource(M, Rowid) -> 
+	#service_datasource{rowid = Rowid,
+						type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
 						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
 						table_name = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
 						primary_key = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
 						csv_delimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>)),
 						sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
-						timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY)
+						timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY),
+						max_pool_size = maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL)
 						}.
 	
 	

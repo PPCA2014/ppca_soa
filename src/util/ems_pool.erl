@@ -39,7 +39,6 @@ cast(Pool, Args) ->
 	Result = poolboy:checkout(Pool, true, 30000),
 	case Result of
 		full -> 
-			io:format("~p is full, start new!\n\n\n", [Pool]),
 			{Worker, _Ref} = poolboy:new_worker(Pool),
 			gen_server:cast(Worker, Args);
 		Worker -> 

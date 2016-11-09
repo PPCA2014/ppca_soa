@@ -49,6 +49,7 @@ init(CowboyReq, Opts) ->
 														CowboyReq),
 							ems_logger:log_request(Request3);
 						Error ->
+							io:format("Error dispatch request: ~p.\n", [Error]),
 							Request2 = Request#request{code = 400, 
 													   reason = Error, 
 													   response_data = ems_schema:to_json(Error), 
@@ -59,7 +60,8 @@ init(CowboyReq, Opts) ->
 													    Request2#request.response_data, CowboyReq),
 							ems_logger:log_request(Request2)
 					end;
-				{error, _Reason} = Error -> 
+				{error, Reason} = Error -> 
+					io:format("Error encode request: ~p.\n", [Reason]),
 					Response = cowboy_req:reply(400, default_http_header(), ems_schema:to_json(Error), CowboyReq)
 			end
 	end,
