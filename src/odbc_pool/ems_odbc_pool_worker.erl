@@ -100,10 +100,14 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 				erlang:monitor(process, ConnRef),
 				io:format("conexao criada\n"),
 				{ok, Datasource2};
-			{error, Reason} -> {error, Reason}
+			{error, Reason} -> 
+				ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, Reason]),
+				{error, Reason}
 		end
 	catch 
-		_Exception:_Reason -> {error, eodbc_connection_fail}
+		_Exception:{PosixError, _} -> 
+			ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p <<~s>>.", [Connection, PosixError, ems_tcp_util:posix_error_description(PosixError)]),
+			{error, PosixError}
 	end.
 
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
@@ -111,16 +115,18 @@ do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) ->
 	odbc:disconnect(ConnRef),
 	io:format("disconnect ok\n").
 
-do_param_query(Sql, Params, Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef}}) ->
-	io:format("do para query\n"),
+do_param_query(Sql, Params, Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef,
+																			 connection = Connection}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
-			{error, Reason} -> {error, Reason};
+			{error, Reason} -> 
+				ems_logger:error("ODBC query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
+				{error, Reason};
 			Result -> Result
 		end
 	catch
 		_Exception:Reason2 -> 
-			io:format("falha ao acessar banco ~p\n", [Reason2]),
+			ems_logger:error("ODBC query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
 			{error, eodbc_connection_fail}
 	end.
 
