@@ -12,7 +12,7 @@
 -include("../include/ems_schema.hrl").
 -include("../include/ems_http_messages.hrl").
 
--export([init/2]).
+-export([init/2, terminate/3]).
 
 
 init(CowboyReq, Opts) ->
@@ -49,7 +49,6 @@ init(CowboyReq, Opts) ->
 														CowboyReq),
 							ems_logger:log_request(Request3);
 						Error ->
-							io:format("Error dispatch request: ~p.\n", [Error]),
 							Request2 = Request#request{code = 400, 
 													   reason = Error, 
 													   response_data = ems_schema:to_json(Error), 
@@ -232,4 +231,4 @@ header_cache_control(<<_MimeType/binary>>) ->
 	<<"no-cache"/utf8>>.
 
 	
-%terminate(_Reason, _Req, _State) ->  ok.    
+terminate(_Reason, _Req, _State) ->  ok.    

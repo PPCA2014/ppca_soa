@@ -15,7 +15,6 @@
 
  
 start(_StartType, StartArgs) ->
-    io:format("Iniciando ErlangMS...\n"),
     application:start(oauth2),
     application:start(crypto),
 	application:start(ssl),    
@@ -31,12 +30,13 @@ start(_StartType, StartArgs) ->
 			case ems_catalog_loader:init_catalog() of
 				ok ->
 					odbc:start(),
+					ems_clock:start([]),
 					ems_logger:start(),
 					ems_dispatcher:start(),
 					ems_health:start(),
 					ssl:start(),
-					ems_logger:info("~n~s", [?SERVER_NAME]),
 					Ret = ems_bus_sup:start_link(StartArgs),
+					ems_logger:info("~s", [?SERVER_NAME]),
 					ems_logger:info("cat_host_search: ~p", [net_adm:host_file()]),
 					ems_logger:info("cat_node_search: ~s", [ems_util:join_binlist(Config#config.cat_node_search, ", ")]),
 					ems_logger:info("log_file_dest: ~s", [Config#config.log_file_dest]),
@@ -56,7 +56,7 @@ start(_StartType, StartArgs) ->
 	end.
 
 stop(_State) ->
-    io:format("FinalizandoIniciando ErlangMS...\n"),
+    ems_logger:info("Stopping server...\n"),
     ems_bus_sup:stop(),
     ems_logger:stop(),
 	ems_config:stop(),

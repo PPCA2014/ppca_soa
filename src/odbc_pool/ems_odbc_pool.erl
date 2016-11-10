@@ -44,23 +44,17 @@ stop() ->
 get_connection(Datasource = #service_datasource{rowid = Rowid}) ->
 	case erlang:get(Rowid) of
 		undefined ->
-			io:format("process ~p pediu conexao\n", [self()]),
 			case gen_server:call(?SERVER, {create_connection, Datasource}) of
 				{ok, Datasource2} = Result ->
 					erlang:put(Rowid, Datasource2),
 					Result;
-				Error -> 
-					io:format("erro grave ~p\n", [Error]),
-					Error
+				Error -> Error
 			end;
-		DatasourceCache -> 
-			io:format("tava em cache para rowid ~p\n", [Rowid]),
-			{ok, DatasourceCache}
+		DatasourceCache -> {ok, DatasourceCache}
 	end.
 
 
 release_connection(Datasource = #service_datasource{rowid = Rowid}) ->
-	io:format("libera conexao manual?\n"),
 	case erlang:erase(Rowid) of
 		undefined -> ok;
 		_ -> gen_server:call(?SERVER, {release_connection, Datasource})
@@ -71,7 +65,6 @@ connection_pool_size(Datasource) -> gen_server:call(?SERVER, {get_size, Datasour
 
 
 param_query(#service_datasource{owner = Owner}, Sql, Params, Timeout) ->
-	io:format("chamando param quey para owner ~p\n", [Owner]),
 	gen_server:call(Owner, {param_query, Sql, Params, Timeout}).
 
  
@@ -101,13 +94,11 @@ handle_call({get_size, Datasource}, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({'DOWN', Ref, process, Pid2, Reason}, State) ->
+handle_info({'DOWN', Ref, process, _Pid2, _Reason}, State) ->
    case erlang:erase(Ref) of
 		undefined -> 
-			io:format("NAO TAVA DICT!!! ~p\n", [Ref]),
 			{noreply, State};
 		Datasource ->
-			io:format("morreu ~p porque ~p state ~p\n", [Pid2, Reason, State]),
 			do_release_connection(Datasource),
 			{noreply, State}
 	end.
@@ -128,7 +119,6 @@ code_change(_OldVsn, State, _Extra) ->
 do_create_connection(Datasource = #service_datasource{connection = Connection}, PidModule) ->
 	PoolName = "pool_" ++ Connection,
 	Pool = find_pool(PoolName),
-	io:format("queye len: ~p\n", [queue:len(Pool)]),
 	case queue:len(Pool) of
 		0 ->
 			case ems_odbc_pool_worker:start_link(Datasource) of
@@ -139,11 +129,8 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 																pid_module = PidModule,
 																pid_module_ref = PidModuleRef},
 					erlang:put(PidModuleRef, Datasource2),
-					
-					io:format("ds com ownwer ~p\n", [WorkerPid]),
 					{ok, Datasource2};
 				_ -> 
-					ems_logger:info("NAO CONSEGUIU CRIAR WORKER ODBC\n"),
 					{error, enoent}
 			end;
 		_ -> 
@@ -153,7 +140,6 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 														 pid_module_ref = PidModuleRef},
 			erlang:put(PidModuleRef, Datasource3),
 			erlang:put(PoolName, Pool2),
-			io:format("pega conexao existente: ~p\n", [Datasource3#service_datasource.owner]), 
 			{ok, Datasource3}
 	end.
 
@@ -166,12 +152,10 @@ do_release_connection(Datasource = #service_datasource{connection = Connection,
 	Pool = find_pool(PoolName),
 	case queue:len(Pool) < MaxPoolSize of
 		true ->
-			io:format("volta pool ~p\!!n", [Owner]),
 			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 														   pid_module_ref = undefined}, Pool),
 			erlang:put(PoolName, Pool2);
 		false -> 
-			io:format("mandando morrer ~p\n!!n", [Owner]),
 			gen_server:call(Owner, shutdown)
 	end.
 

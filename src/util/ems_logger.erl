@@ -230,24 +230,30 @@ set_timeout_for_sync_tela(_State) ->
 set_timeout_for_get_filename_logger() ->    
 	erlang:send_after(?LOG_ARCHIVE_CHECKPOINT, self(), checkpoint_get_filename_logger).
 
-write_msg(Tipo, <<Msg/binary>>, State) ->
+write_msg(Tipo, Msg, State) when is_binary(Msg) ->
 	Msg1 = binary_to_list(Msg),
     write_msg(Tipo, Msg1, State);
     
 write_msg(Tipo, Msg, State = #state{level = Level})  ->
-	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", ems_util:timestamp_str(), "  ", Msg]),
-	case Level == error andalso Tipo /= error of
+	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", ems_clock:local_time_str(), "  ", Msg]),
+	UltMsg = erlang:get(ult_msg),
+	case UltMsg == undefined orelse UltMsg =/= Msg1 of
 		true ->
-			set_timeout_for_sync_buffer(State),
-			State#state{buffer = [Msg1|State#state.buffer], 
-						flag_checkpoint = true};
-		false ->
-			set_timeout_for_sync_buffer(State),
-			set_timeout_for_sync_tela(State),
-			State#state{buffer = [Msg1|State#state.buffer], 
-						buffer_tela = [Msg|State#state.buffer_tela], 
-						flag_checkpoint = true, 
-						flag_checkpoint_tela = true}
+			erlang:put(ult_msg, Msg1),
+			case Level == error andalso Tipo /= error of
+				true ->
+					set_timeout_for_sync_buffer(State),
+					State#state{buffer = [Msg1|State#state.buffer], 
+								flag_checkpoint = true};
+				false ->
+					set_timeout_for_sync_buffer(State),
+					set_timeout_for_sync_tela(State),
+					State#state{buffer = [Msg1|State#state.buffer], 
+								buffer_tela = [Msg|State#state.buffer_tela], 
+								flag_checkpoint = true, 
+								flag_checkpoint_tela = true}
+			end;
+		false -> State
 	end.
 		
 	
@@ -258,20 +264,19 @@ write_msg(Tipo, Msg, Params, State) ->
 sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
 
 sync_buffer_tela(State) ->
-	io:format("~s", [lists:map(fun(L) -> L ++ "\n" end, lists:reverse(State#state.buffer_tela))]),
+	Msg = [ [L | ["\n"]] || L <- lists:reverse(State#state.buffer_tela)],
+	io:format(Msg),
 	State#state{buffer_tela = [], flag_checkpoint_tela = false}.
 
 sync_buffer(State = #state{buffer = []}) -> State;
 
 sync_buffer(State = #state{log_file_handle = IODevice, 
 						   buffer = Buffer}) ->
-	file:write(IODevice, lists:map(fun(L) -> 
-											L ++ "\n" 
-									end, lists:reverse(Buffer))),
+	Msg = [ [L | ["\n"]] || L <- lists:reverse(Buffer)],
+	file:write(IODevice, Msg),
 	State#state{buffer = [], flag_checkpoint = false}.
 
 do_log_request(#request{protocol = ldap, 
-						rid = RID,
 						type = Metodo,
 						url = Url,
 						version = Version,
@@ -286,8 +291,8 @@ do_log_request(#request{protocol = ldap,
 		undefined -> "";
 		_ -> Service#service.service
 	end,
-	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, RID, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latency]),
+	Texto =  "~s ~s ~s {\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latency]),
 	case Code of
 		200 -> ems_logger:info(Texto1);
 		_ 	-> ems_logger:error(Texto1)
@@ -295,7 +300,6 @@ do_log_request(#request{protocol = ldap,
 	
 	
 do_log_request(#request{protocol = http, 
-						rid = RID,
 						type = Metodo,
 						url = Url,
 						version = Version,
@@ -311,31 +315,26 @@ do_log_request(#request{protocol = http,
 						result_cache_rid = ResultCacheRid,
 						response_data = ResponseData,
 						authorization = Authorization,
-						node_exec = Node}, #state{level = Level,
-												  show_response = ShowResponse}) ->
-		case Level of
-			info ->
-				Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~p:\n\tUser-Agent: ~p\n\tPayload: ~p\n\tService: ~p\n\tQuery: ~p\n\t~sResult-Cache: ~s\n\tAuthorization: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-				Texto1 = io_lib:format(Texto, [Metodo, 
-											   Url, 
-											   Version, 
-											   RID, 
-											   Accept, 
-											   User_Agent, 
-											   Payload, 
-							   				   case Service of undefined -> <<>>; _ -> Service#service.service end,
-											   Query, 
-											   case ShowResponse of true -> io_lib:format("Response: ~p\n\t", [ResponseData]); false -> <<>> end,
-											   case ResultCache of true -> io_lib:format("true  <<RID: ~s>>", [integer_to_list(ResultCacheRid)]); false -> "false" end,
-											   Authorization, 
-											   Node, 
-											   Code, 
-											   Reason, 
-											   Latency]),
-				case Code >= 400 of
-					true  -> ems_logger:error(Texto1);
-					false -> ems_logger:info(Texto1)
-				end;
-			_ -> ok
-		end.
+						node_exec = Node}, 
+			  #state{show_response = ShowResponse}) ->
+	Texto =  "~s ~s ~s {\n\tAccept: ~p:\n\tUser-Agent: ~p\n\tPayload: ~p\n\tService: ~p\n\tQuery: ~p\n\t~sResult-Cache: ~s\n\tAuthorization: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto1 = io_lib:format(Texto, [Metodo, 
+								   Url, 
+								   Version, 
+								   Accept, 
+								   User_Agent, 
+								   Payload, 
+								   case Service of undefined -> <<>>; _ -> Service#service.service end,
+								   Query, 
+								   case ShowResponse of true -> io_lib:format("Response: ~p\n\t", [ResponseData]); false -> <<>> end,
+								   case ResultCache of true -> io_lib:format("true  <<RID: ~s>>", [integer_to_list(ResultCacheRid)]); false -> "false" end,
+								   Authorization, 
+								   Node, 
+								   Code, 
+								   Reason, 
+								   Latency]),
+	case Code >= 400 of
+		true  -> ems_logger:error(Texto1);
+		false -> ems_logger:info(Texto1)
+	end.
 

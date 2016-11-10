@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_odbc_pool_worker
 %% @version 1.0.0
-%% @doc Module ems_webservice
+%% @doc Module ems_odbc_pool_worker
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -71,10 +71,6 @@ handle_call(get_datasource, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({'DOWN', Ref, process, _Pid2, _Reason}, State) ->
-	io:format("MORREU!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n"),
-	{noreply, State};
-
 handle_info(_Msg, State) ->
    {noreply, State}.
 
@@ -97,22 +93,23 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 		case odbc:connect(Connection, []) of
 			{ok, ConnRef}	-> 
 				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
-				io:format("conexao criada\n"),
 				{ok, Datasource2};
+			{error, {PosixError, _}} -> 
+				ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, 
+																			  ems_tcp_util:posix_error_description(PosixError)]),
+				{error, PosixError};
 			{error, Reason} -> 
 				ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, Reason]),
 				{error, Reason}
 		end
 	catch 
-		_Exception:{PosixError, _} -> 
-			ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p <<~s>>.", [Connection, 
-																				 PosixError, 
-																				 ems_tcp_util:posix_error_description(PosixError)]),
-			{error, PosixError}
+		_Exception:{PosixError2, _} -> 
+			ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, 
+																		  ems_tcp_util:posix_error_description(PosixError2)]),
+			{error, PosixError2}
 	end.
 
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
-	io:format("disconnect...\n"), 
 	odbc:disconnect(ConnRef).
 
 do_param_query(Sql, Params, Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef,
