@@ -14,7 +14,7 @@
 -include("../include/ems_schema.hrl").
 
 %% Server API
--export([start/0, start_link/1, stop/0]).
+-export([start/1, stop/0]).
 
 %% Client API
 -export([error/1, error/2, 
@@ -41,7 +41,7 @@
 				log_file_checkpoint,      		% timeout configuration to unload file buffer
 				log_file_name,		      		% timeout configuration to unload file buffer
 				log_file_handle,				% IODevice of file
-				debug,							% It indicates whether it is in debug mode
+				debug = false,					% It indicates whether it is in debug mode
 				level = info,					% level of errors
 				show_response = false			% show response of request
  			   }). 
@@ -51,12 +51,9 @@
 %% Server API
 %%====================================================================
 
-start() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Args) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
  
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
-
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
@@ -110,16 +107,22 @@ show_response(Value) ->
 %%====================================================================
  
 init(_Args) ->
-	Conf = ems_config:getConfig(),
-	LogFileDest = Conf#config.log_file_dest,
-	Checkpoint = Conf#config.log_file_checkpoint,
-	{NomeArqLog, IODevice} = get_filename_logger(LogFileDest),
-	set_timeout_for_get_filename_logger(),
+	Config = ems_config:getConfig(),
+	LogFileDest = Config#config.log_file_dest,
+	Checkpoint = Config#config.log_file_checkpoint,
+	{NomeArqLog, IODevice} = get_filename_device(LogFileDest),
+	info("~s", [?SERVER_NAME]),
+	info("cat_host_search: ~p", [net_adm:host_file()]),
+	info("cat_node_search: ~s", [ems_util:join_binlist(Config#config.cat_node_search, ", ")]),
+	info("log_file_dest: ~s", [Config#config.log_file_dest]),
+	info("log_file_checkpoint: ~pms", [Config#config.log_file_checkpoint]),
+	debug("In debug mode: ~p~", [Config#config.ems_debug]),
+	set_timeout_for_get_filename_device(),
     {ok, #state{log_file_dest = LogFileDest, 
                 log_file_checkpoint = Checkpoint,
                 log_file_name = NomeArqLog,
                 log_file_handle = IODevice,
-                debug = Conf#config.ems_debug}}. 
+                debug = Config#config.ems_debug}}. 
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -184,12 +187,12 @@ handle_info(checkpoint, State) ->
    NewState = sync_buffer(State),
    {noreply, NewState};
 
-handle_info(checkpoint_get_filename_logger, 
+handle_info(checkpoint_get_filename_device, 
 			State = #state{log_file_dest = LogFileDest,
 						   log_file_handle = IODevice}) ->
 	file:close(IODevice),
-	{NewLogFileName, IODevice2} = get_filename_logger(LogFileDest),
-	set_timeout_for_get_filename_logger(),
+	{NewLogFileName, IODevice2} = get_filename_device(LogFileDest),
+	set_timeout_for_get_filename_device(),
 	{noreply, State#state{log_file_name = NewLogFileName, log_file_handle = IODevice2}}.
 
 terminate(_Reason, #state{log_file_handle = undefined}) ->
@@ -207,7 +210,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
-get_filename_logger(LogFileDest) -> 
+get_filename_device(LogFileDest) -> 
 	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
 	NodeName = ems_util:get_node_name(),
 	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~2..0w~2..0w~4..0w_~2..0w~2..0w.log", [LogFileDest, atom_to_list(node()), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
@@ -227,8 +230,8 @@ set_timeout_for_sync_tela(#state{flag_checkpoint_tela = false}) ->
 set_timeout_for_sync_tela(_State) ->    
 	ok.
 
-set_timeout_for_get_filename_logger() ->    
-	erlang:send_after(?LOG_ARCHIVE_CHECKPOINT, self(), checkpoint_get_filename_logger).
+set_timeout_for_get_filename_device() ->    
+	erlang:send_after(?LOG_ARCHIVE_CHECKPOINT, self(), checkpoint_get_filename_device).
 
 write_msg(Tipo, Msg, State) when is_binary(Msg) ->
 	Msg1 = binary_to_list(Msg),

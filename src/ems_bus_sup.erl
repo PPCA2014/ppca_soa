@@ -6,9 +6,8 @@
 
 %% Supervisor callbacks
 -export([start_link/1, init/1]).
+-export([start_process/1, start_process_sup/1]).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start, []}, permanent, 5000, Type, [I]}).
 
 %% ===================================================================
 %% API functions
@@ -30,23 +29,33 @@ init([]) ->
 					 properties = WorkerArgs, 
 					 module = Worker}) ->
 				WorkerNameAtom = list_to_atom(binary_to_list(WorkerName)),
-				case PoolSize == 1 andalso PoolMax == 1 of
+				case PoolMax == 1 of
 					true -> 
-						ems_logger:info("Start ~s with 1 worker", [WorkerName]),
 						{WorkerNameAtom,
-							{Worker, start, [WorkerArgs]},
+							{?MODULE, start_process, [[Worker, start, WorkerArgs]]},
 							permanent, 10000, worker,  [WorkerNameAtom]
 						};
 					false ->
-						ems_logger:info("Start ~s with ~p workers (Max ~p)", [WorkerName, PoolSize, PoolMax]),
-						PoolArgs = [{strategy, fifo},
-									{name, {local, WorkerNameAtom}},
-									{worker_module, Worker},
-									{size, PoolSize},
-									{max_overflow, PoolMax - PoolSize}],
-						ems_pool:child_spec(WorkerNameAtom, PoolArgs, WorkerArgs)
+						{WorkerNameAtom, 
+							{?MODULE, start_process_sup, [[poolboy, start_link, [[{strategy, fifo},
+																				  {name, {local, WorkerNameAtom}},
+																				  {worker_module, Worker},
+																				  {size, PoolSize},
+																				  {max_overflow, PoolMax - PoolSize}], WorkerArgs]]]},
+							 permanent, 5000, worker, [poolboy]
+						}
 				end
 		end, KernelServices),
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 	
+
+start_process([Module, Function, Args]) ->
+	Reply = apply(Module, Function, [Args]),
+	ems_logger:info("Start ~p.", [Module]),
+	Reply.
+	
+start_process_sup([Module, Function, Args = [[_,_,_, {size, PoolSize}, {max_overflow, PoolMax}], _]]) ->
+	Reply = apply(Module, Function, Args),
+	ems_logger:info("Start ~p with ~p workers (Max ~p)", [Module, PoolSize, PoolMax]),
+	Reply.
 

@@ -25,26 +25,19 @@ start(_StartType, StartArgs) ->
 	case ems_config:start() of
 		{ok, _Pid} ->
 			T1 = ems_util:get_milliseconds(),
-			Config = ems_config:getConfig(),
 			ems_db:start(),
 			case ems_catalog_loader:init_catalog() of
 				ok ->
 					odbc:start(),
-					ems_clock:start([]),
-					ems_logger:start(),
 					ems_dispatcher:start(),
 					ems_health:start(),
 					ssl:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
-					ems_logger:info("~s", [?SERVER_NAME]),
-					ems_logger:info("cat_host_search: ~p", [net_adm:host_file()]),
-					ems_logger:info("cat_node_search: ~s", [ems_util:join_binlist(Config#config.cat_node_search, ", ")]),
-					ems_logger:info("log_file_dest: ~s", [Config#config.log_file_dest]),
-					ems_logger:info("log_file_checkpoint: ~pms", [Config#config.log_file_checkpoint]),
-					ems_logger:debug("In debug mode: ~p~", [Config#config.ems_debug]),
-					ems_logger:info("Server ~s started in ~pms.", [node(), ems_util:get_milliseconds() - T1]),
-					ems_logger:sync(),
-					ems_logger:set_level(error),
+					erlang:send_after(1000, spawn(fun() -> 
+														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
+														ems_logger:sync(),
+														ems_logger:set_level(error)
+												  end), set_level),
 					Ret;
 				Error-> 
 					io:format("Error processing catalogs: ~p.", [Error]),
