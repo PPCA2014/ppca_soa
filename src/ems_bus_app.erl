@@ -28,10 +28,8 @@ start(_StartType, StartArgs) ->
 			ems_db:start(),
 			case ems_catalog_loader:init_catalog() of
 				ok ->
-					odbc:start(),
 					ems_dispatcher:start(),
 					ems_health:start(),
-					ssl:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					erlang:send_after(1000, spawn(fun() -> 
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
