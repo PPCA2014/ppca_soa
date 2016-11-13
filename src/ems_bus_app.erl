@@ -31,7 +31,7 @@ start(_StartType, StartArgs) ->
 					ems_dispatcher:start(),
 					ems_health:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
-					erlang:send_after(1000, spawn(fun() -> 
+					erlang:send_after(1500, spawn(fun() -> 
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
 														ems_logger:sync(),
 														ems_logger:set_level(error)
