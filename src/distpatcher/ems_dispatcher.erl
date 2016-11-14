@@ -52,7 +52,7 @@ lookup_request(Request = #request{url = Url}) ->
 													   service = Service,
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
-							case ems_web_service:send_request(Request2) of
+							case ems_web_service:execute(Request2) of
 								{ok, Request3} -> {ok, Request3};
 								{error, Request3} -> {error, request, Request3}
 							end;

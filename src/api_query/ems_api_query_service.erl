@@ -44,6 +44,7 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 					insert -> do_insert(Request, Datasource2);
 					update -> do_update(Request, Datasource2)
 				end,
+				ems_db:release_connection(Datasource2),
 				case Result of
 					{ok, JsonData} ->
 						{ok, Request#request{code = 200,
