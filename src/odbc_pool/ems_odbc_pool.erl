@@ -154,8 +154,10 @@ do_release_connection(Datasource = #service_datasource{connection = Connection,
 		true ->
 			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 														   pid_module_ref = undefined}, Pool),
-			erlang:put(PoolName, Pool2);
+			erlang:put(PoolName, Pool2),
+			io:format("release odbc...\n");
 		false -> 
+			io:format("shutdown odbc...\n"),
 			gen_server:call(Owner, shutdown)
 	end.
 

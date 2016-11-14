@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_api_query_service
 %% @version 1.0.0
-%% @doc It provides dynamic_view service for relational databases.
+%% @doc Api query service for databases.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -20,27 +20,13 @@
 %% Client API
 %%====================================================================
  
-find(Request) -> 
-	Result = execute_command(find, Request),
-	{ok, Request#request{code = 200,
-						 response_data = ems_schema:to_json(Result)}}.
+find(Request) -> execute_command(find, Request).
 
+find_by_id(Request) ->	execute_command(find_by_id, Request).
 
-find_by_id(Request) ->
-	Result = execute_command(find_by_id, Request),
-	{ok, Request#request{code = 200,
-						 response_data = ems_schema:to_json(Result)}}.
+insert(Request) -> execute_command(insert, Request).
 
-insert(Request) ->
-	Result = execute_command(insert, Request),
-	{ok, Request#request{code = 200,
-						 response_data = ems_schema:to_json(Result)}}.
-
-update(Request) ->
-	Result = execute_command(update, Request),
-	{ok, Request#request{code = 200,
-						 response_data = ems_schema:to_json(Result)}}.
-
+update(Request) -> execute_command(update, Request).
   
     
 %%====================================================================
@@ -58,12 +44,26 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 					insert -> do_insert(Request, Datasource2);
 					update -> do_update(Request, Datasource2)
 				end,
-				ems_db:release_connection(Datasource2),
-				Result;
-			{error, Reason} ->	{error, Reason}
+				case Result of
+					{ok, JsonData} ->
+						{ok, Request#request{code = 200,
+											 response_data = JsonData}};
+					{error, Reason} = Error ->
+						{error, Request#request{code = 400,
+												reason = Reason,
+												response_data = Error}}
+				end;
+			{error, Reason2} = Error2 ->	
+				{error, Request#request{code = 400,
+							reason = Reason2,
+							response_data = Error2}}
+
 		end
 	catch
-		_Exception:Reason2 -> {error, Reason2}
+		_Exception:Reason3 -> 
+			{error, Request#request{code = 400,
+									reason = Reason3,
+									response_data = {error, Reason3}}}
 	end.
 
 
@@ -86,11 +86,13 @@ do_find_by_id(Request = #request{querystring_map = QuerystringMap,
 	ems_api_query:find_by_id(Id, Fields, Datasource, Debug).
 
 
-do_insert(#request{payload_map = Payload, service = Service}, Datasource) ->
+do_insert(#request{payload_map = Payload, 
+				   service = Service}, Datasource) ->
 	ems_api_query:insert(Payload, Service, Datasource).
 
 
-do_update(Request = #request{payload_map = Payload, service = Service}, Datasource) ->
+do_update(Request = #request{payload_map = Payload, 
+							 service = Service}, Datasource) ->
 	Id = ems_request:get_param_url(<<"id">>, 0, Request),
 	ems_api_query:update(Id, Payload, Service, Datasource).
 
