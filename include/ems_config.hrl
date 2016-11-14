@@ -82,7 +82,7 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Quanto tempo aguardar um serviço
--define(SERVICE_TIMEOUT, 1000 * 60). % 1 minuto
+-define(SERVICE_TIMEOUT, 2000 * 60). % 1 minuto
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
@@ -109,7 +109,7 @@
 -define(TIMEOUT_DISPATCHER_CACHE, 1000).
 
 % Number of datasource entries by odbc connection pool
--define(MAX_CONNECTION_BY_POOL, 10).
+-define(MAX_CONNECTION_BY_POOL, 50).
 
 
 %  Definição para o arquivo de configuração

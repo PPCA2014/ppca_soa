@@ -34,7 +34,7 @@ start(_StartType, StartArgs) ->
 					erlang:send_after(1500, spawn(fun() -> 
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
 														ems_logger:sync(),
-														ems_logger:set_level(error)
+														ems_logger:set_level(info)
 												  end), set_level),
 					Ret;
 				Error-> 

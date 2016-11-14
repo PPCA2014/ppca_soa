@@ -8,9 +8,12 @@
 
 -module(ems_info_service).
 
-%% Server API
--export([info/1]).
+-include("../include/ems_schema.hrl").
 
+-export([info/1]).
   
-info(_Request) -> <<"{\"message\": \"It works!!!\"}">>.
+info(Request) -> 
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"message\": \"It works!!!\"}">>}
+	}.
 

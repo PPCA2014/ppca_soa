@@ -24,7 +24,7 @@
 					  service,   								%% Contrato que estabelece o serviço que vai atender a requisição
 					  timestamp, 								%% Timestamp de quando que a requisição ocorreu
 					  latency :: non_neg_integer(),				%% Latência (tempo que levou para processar a requisição)
-					  code, 	   								%% Código de retorno HTTP (Ex.: 202 OK, 404 Não Encontrado)
+					  code, 									%% Código de retorno HTTP (Ex.: 202 OK, 404 Não Encontrado)
 					  reason,									%% Registra a mensagem de erro, quando status indicar um erro
 					  type :: string(),							%% Verbo HTTP (GET, POST, PUT, DELETE e OPTIONS)
 					  uri :: string(),							%% URI da requisição do serviço
@@ -58,7 +58,7 @@
 					  result_cache = false :: boolean(),
 					  result_cache_rid,
 					  response_data,
-					  response_header,
+					  response_header = #{},
 					  url_hash
 				  }).
 

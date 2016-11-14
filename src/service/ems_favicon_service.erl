@@ -1,103 +1,66 @@
 %%********************************************************************
 %% @title Módulo favicon
 %% @version 1.0.0
-%% @doc Módulo responsável pelo favicon do erlangMS.
+%% @doc Módulo responsável pelo favicon do barramento.
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_favicon_service).
 
--behavior(gen_server). 
--behaviour(poolboy_worker).
-
 -include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
-%% Server API
--export([start/1, start_link/1, stop/0]).
+-export([execute/1]).
 
-%% Cliente interno API
--export([execute/2]).
-
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
-
--define(SERVER, ?MODULE).
-
-%  Armazena o estado do service. 
--record(state, {arquivo}). 
-
-
-%%====================================================================
-%% Server API
-%%====================================================================
-
-start(_) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
  
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
- 
-%%====================================================================
-%% Cliente API
-%%====================================================================
- 
-execute(Request, From)	->
-	ems_pool:cast(ems_favicon_service, {favicon, Request, From}).
-
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-    process_flag(trap_exit, true),
-	case get_favicon_from_disk() of
-		{ok, Arquivo} ->  State = #state{arquivo=Arquivo};
-		{error, _Reason} -> State = #state{arquivo=null}
-    end,
-    {ok, State}. 
-    
-handle_cast(shutdown, State) ->
-    {stop, normal, State};
-
-handle_cast({favicon, Request, _From}, State) ->
-	Reply = do_get_favicon(State),
-	ems_eventmgr:notifica_evento(ok_request, {service, Request, Reply}),
-	%gen_server:cast(From, {service, Request, Reply}), 
-	{noreply, State}.
-    
-handle_call({favicon, _Request}, _From, State) ->
-	Reply = do_get_favicon(State),
-	{reply, Reply, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-    
-    
-%%====================================================================
-%% Funções internas
-%%====================================================================
-
-get_favicon_from_disk()->
-	case file:read_file(?FAVICON_PATH) of
-		{ok, Arquivo} -> {ok, Arquivo};
-		{error, Reason} -> {error, Reason}
+execute(Request = #request{timestamp = {{Year,Month,Day},{Hour,Min,Secs}}})	->
+	case file_info(?FAVICON_PATH) of
+		{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
+														 reason = Reason,	
+														 response_data = Err, 
+														 response_header = error_http_header()}
+								  };
+		{FSize, MTime} -> 
+			ETag = generate_etag(FSize, MTime),
+			LastModified = cowboy_clock:rfc1123(MTime),
+			Expires = cowboy_clock:rfc1123({{Year+1,Month,Day},{Hour,Min,Secs}}),
+			case file:read_file(?FAVICON_PATH) of
+				{ok, FileData} -> 		
+					{ok, Request#request{code = 200,
+										 response_data = FileData,
+										 response_header = generate_header(ETag, LastModified, Expires)}};
+				{error, Reason} = Err -> 
+					{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
+										    reason = Reason,
+											response_data = Err, 
+											response_header = error_http_header()}
+					 }
+			end
 	end.
-    
-do_get_favicon(State) ->
-	{ok, State#state.arquivo, <<"image/x-icon">>}.
 
+file_info(FileName) ->
+	case file:read_file_info(FileName, [{time, universal}]) of
+		{ok,{file_info, FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} = 
+			Result -> Result,
+			{FSize, MTime};
+		Error -> Error
+	end.
+
+generate_etag(FSize, MTime) -> integer_to_binary(erlang:phash2({FSize, MTime}, 16#ffffffff)).
+
+generate_header(ETag, LastModified, Expires) ->
+	#{
+		<<"content-type">> => <<"image/x-icon">>,
+		<<"cache-control">> => <<"max-age=290304000, public">>,
+		<<"etag">> => ETag,
+		<<"last-modified">> => LastModified,
+		<<"expires">> => Expires
+	}.
+
+
+error_http_header() ->
+	#{
+		<<"content-type">> => <<"application/json; charset=utf-8">>,
+		<<"cache-control">> => <<"no-cache">>
+	}.

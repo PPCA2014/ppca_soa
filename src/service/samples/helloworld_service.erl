@@ -7,7 +7,12 @@
 %%********************************************************************
 -module(helloworld_service).
 
+-include("../include/ems_schema.hrl").
+
 -export([execute/1]).
  
-execute(_Request) -> <<"{\"message\": \"Hello World!!!\"}">>.
+execute(Request) -> 
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"message\": \"Hello World!!!\"}">>}
+	}.
 	

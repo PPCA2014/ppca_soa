@@ -15,7 +15,7 @@
 -include("../../include/ems_schema.hrl").
 
 %% Server API
--export([start/1, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0, send_request/1]).
 
 
 %% gen_server callbacks
@@ -24,7 +24,7 @@
 -define(SERVER, ?MODULE).
 
 %  Armazena o estado do service. 
--record(state, {}). 
+-record(state, {request}). 
 
 
 
@@ -41,7 +41,36 @@ start_link(Args) ->
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
- 
+send_request(Request = #request{node_exec = Node,
+								service=#service{host=Host, 
+												 service = ServName,
+												 module=Module, 
+												 function=Function}}) ->
+	case Host == '' of
+		true ->	
+			ems_logger:info("Send msg to ~p.", [ServName]),
+			apply(Module, Function, [Request]);
+		false ->
+			WebService = ems_pool:checkout(ems_web_service),
+			gen_server:cast(WebService, {send_request, Request}),
+			ems_logger:info("Send msg to ~p.", [{Module, Node}]),
+			receive 
+				{Code, Rid, {ok, ResponseData}} -> 
+					Reply = {ok, Request#request{code = Code,
+												 response_header = #{<<"ems_node">> => erlang:atom_to_binary(Node, utf8)},
+												 response_data = ResponseData}};
+				{Code, Rid, ResponseData} -> 
+					Reply = {ok, Request#request{code = Code,
+												 response_header = #{<<"ems_node">> => erlang:atom_to_binary(Node, utf8)},
+												 response_data = ResponseData}};
+				Msg -> io:format("a msg eh ~p\n", [Msg]), Reply = []
+			end,
+			ems_pool:checkin(ems_web_service, WebService),
+			Reply
+	end.
+
+
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
@@ -53,28 +82,19 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(Request, State) ->
-	Result = execute(Request),
-	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
-	{noreply, State}.
-    
+handle_cast({send_request, Request}, State) ->
+	do_send_request(Request),
+	{noreply, #state{request = Request}}.
+
 handle_call(Msg, _From, State) ->
 	{reply, Msg, State}.
-
+    
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({Code, RID, Reply}, State) ->
-	case ems_request:get_request_em_andamento(RID) of
-		{ok, Request} -> 
-			ems_eventmgr:notifica_evento(ok_request, {Code, Request, Reply}),
-			{noreply, State};
-		{erro, enoent} -> {noreply, State}
-	end;
-
-handle_info(Msg, State) ->
-   io:format("msg... ~p\n", [Msg]),
-   {noreply, State}.
+handle_info(Msg, #state{request = #request{worker_send = Worker}}) ->
+	Worker ! Msg,
+	{noreply, #state{}}.
 
 terminate(_Reason, _State) ->
     ok.
@@ -95,3 +115,17 @@ execute(Request=#request{service=#service{module=Module,
 		_Exception:Reason -> {error, Reason}
 	end.
 										 
+do_send_request(Request = #request{rid = Rid,
+									uri = Uri,
+									type = Type,
+									params_url = ParamsUrl,
+									querystring_map = QuerystringMap,
+									payload = Payload,
+									content_type = ContentType,
+									node_exec = Node,
+									service=#service{host = Host,
+													 module_name = ModuleName, 
+													 function_name = FunctionName, 
+													 module = Module}}) ->
+	Msg = {{Rid, Uri, Type, ParamsUrl, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
+	{Module, Node} ! Msg.

@@ -52,18 +52,9 @@ lookup_request(Request = #request{url = Url}) ->
 													   service = Service,
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
-							ems_request:registra_request(Request2),
-							case executa_service(Node, Request2) of
-								ok -> 
-									receive
-										{_, {_, _, {ok, Response}}} -> 
-											{ok, Request2#request{response_data = Response}};
-										{_, {_, _, Response}} -> 
-											{ok, Request2#request{response_data = Response}};
-										Msg -> io:format("Msg service desconhecida: ~p\n", [Msg])
-										after Request2#request.service#service.timeout -> {error, etimeout_service}
-									end;
-								Error -> Error
+							case ems_web_service:send_request(Request2) of
+								{ok, Request3} -> {ok, Request3};
+								{error, Request3} -> {error, request, Request3}
 							end;
 						Error ->  Error
 					end;
@@ -75,45 +66,6 @@ lookup_request(Request = #request{url = Url}) ->
 	end.
 
 
-%% @doc Executa um web service local
-executa_service(Node, Request=#request{service=#service{host='', 
-														 module=Module, 
-														 function=Function}}) ->
-	try
-		ems_logger:info("Send msg to ~p.", [{Module, Node}]),
-		case whereis(Module) of
-			undefined -> 
-				ems_pool:cast(ems_web_service, Request);
-			_Pid -> apply(Module, Function, [Request, self()])
-		end,
-		ok
-	catch
-		_Exception:ErroInterno ->  {error, eservice_fail, {Module, ErroInterno}}
-	end;
-	
-%% @doc Executa um web service remoto
-executa_service(Node, Request=#request{service=#service{host = _HostList, 
-														host_name = _HostNames,	
-														module_name = ModuleName, 
-														function_name = FunctionName, 
-														module = Module}}) ->
-	WebService = ems_pool:checkout(ems_web_service),
-	% Envia uma mensagem assíncrona para o serviço
-	Msg = {{Request#request.rid, 
-					   Request#request.uri, 
-					   Request#request.type, 
-					   Request#request.params_url, 
-					   Request#request.querystring_map,
-					   Request#request.payload,	
-					   Request#request.content_type,	
-					   ModuleName,
-					   FunctionName}, 
-					   WebService
-					  },
-	ems_logger:info("Send msg to ~p.", [{Module, Node}]),
-	{Module, Node} ! Msg,
-	ems_pool:checkin(ems_web_service, WebService),
-	ok.
 
 get_work_node('', _, _, _, _) -> {ok, node()};
 get_work_node([], HostList, HostNames, ModuleName, 1) -> 
