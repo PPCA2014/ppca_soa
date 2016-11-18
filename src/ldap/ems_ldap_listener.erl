@@ -43,9 +43,7 @@ stop() ->
 %%====================================================================
  
 init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName}) ->
-	 io:format("aqui1\n"),
-	{ok, _} = ranch:start_listener(ListenerName, 1, ranch_tcp, [{port, Port}], ems_ldap_handler, []),
-	io:format("aqui2\n"),
+	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}], ems_ldap_handler, []),
 	{ok, #state{listener_name = ListenerName, tcp_config = TcpConfig}}.
 		
 		

@@ -47,10 +47,9 @@ loop(Socket, Transport, State) ->
 			io:format("msg is ~p\n", [LdapMessage]),
 			MessageID = LdapMessage#'LDAPMessage'.messageID,
 			Result = handle_request(LdapMessage, State),
-			io:format("result is ~p\n", [Result]),
 			case Result of
 				{ok, unbindRequest} ->
-					Transport:send(Socket, <<>>);
+					Transport:close(Socket);
 				{ok, Msg} -> 
 					Response = lists:map(fun(M) -> encode_response(MessageID, M) end, Msg),
 					Transport:send(Socket, Response)
@@ -108,7 +107,6 @@ handle_request({'LDAPMessage', _,
 												 name = Name, 
 												 authentication = {_, Password}}},
 				 _}, State) ->
-	io:format("handle 1\n"),
 	Name2 = parse_base_object(Name),
 	case lists:keytake("cn", 1, Name2) of  
 		{_, {"cn", CnValue}, _} -> 
@@ -135,9 +133,7 @@ handle_request({'LDAPMessage', _,
 													filter =  {equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}},
 													attributes = _Attributes}},
 				 _}, State) ->
-	io:format("handle 2\n"),
 	UsuLogin = binary_to_list(UsuLoginBin),
-	%BaseObject2 = parse_base_object(BaseObject),
 	case find_user_by_login(UsuLogin, State) of
 		{error, unavailable, State2} ->
 			ResultDone = make_result_done(unavailable),
@@ -152,12 +148,18 @@ handle_request({'LDAPMessage', _,
 	end;
 
 
-handle_request({unbindRequest, _}, State) ->
+handle_request({'LDAPMessage', _, 
+					{unbindRequest, _},
+				 _}, State) ->
 	{ok, unbindRequest};
+	
+handle_request({'LDAPMessage', _, 
+					UnknowMsg,
+				 _}, State) ->
+	{ok, unbindRequest}.
+	
 
 
-handle_request(#request{payload = LdapMsg}, State) ->
-	handle_request(LdapMsg#'LDAPMessage'.protocolOp, State).
 
 
 parse_base_object(BaseObject) ->
@@ -210,7 +212,6 @@ make_result_done(ResultCode) ->
 	
 
 find_user_by_login(UserLogin, State = #state{sql_find_user = Sql}) ->
-	io:format("aqui1\n"),
 	case true of
 		true ->
 			UserRecord2 = {format_user_field(1),
