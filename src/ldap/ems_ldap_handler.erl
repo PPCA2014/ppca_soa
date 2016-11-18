@@ -83,7 +83,7 @@ autentica("cn", DnAdmin, Password, State = #state{admin = AdminLdap,
 	autentica(list_to_binary(DnAdmin), Password, AdminLdap, PasswordAdminLdap, State);
 
 autentica("uid", DnUser, PasswordUser, State) -> 
-	io:format("autentica\n"),
+	io:format("autentica  ~p ~p\n", [DnUser, PasswordUser]),
 	case find_user_by_login(DnUser, State) of
 		{error, unavailable, State2} -> 
 			{unavailable, State2};
