@@ -1,32 +1,19 @@
 %%********************************************************************
-%% @title Module ems_ldap_service
+%% @title Module ems_ldap_handler
 %% @version 1.0.0
-%% @doc It provides ldap service.
+%% @doc Main module HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_ldap_service).
+-module(ems_ldap_handler).
 
--behavior(gen_server). 
--behaviour(poolboy_worker).
+-behaviour(ranch_protocol).
 
-
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
--include("../../include/LDAP.hrl").
-
-
-%% Server API
--export([start/1, start_link/1, stop/0]).
-
-%% Client API
--export([execute/1, find_user_by_login/1]).
-
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, criptografia/1]).
-
--define(SERVER, ?MODULE).
+-include("../include/ems_config.hrl").
+-include("../include/ems_schema.hrl").
+-include("../include/ems_http_messages.hrl").
+-include("../include/LDAP.hrl").
 
 %  Stores the state of the service.
 -record(state, {connection,			 	%% connection to ldap database
@@ -35,38 +22,15 @@
 				admin,		 			%% admin ldap
 				password_admin}).  %% Password of admin ldap
 
+-export([start_link/4]).
+-export([init/4]).
 
-%%====================================================================
-%% Server API
-%%====================================================================
+start_link(Ref, Socket, Transport, Opts) ->
+	Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
+	{ok, Pid}.
 
-start(Args) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], Args).
- 
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
-
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
- 
-%%====================================================================
-%% Client API
-%%====================================================================
- 
-execute(Request) ->
-	ems_pool:cast(ems_ldap_service, {search, Request}).
-
-find_user_by_login(UsuLogin) ->
-	ems_pool:call(ems_ldap_service, {find_user_by_login, UsuLogin}).
-
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-    process_flag(trap_exit, true),
+init(Ref, Socket, Transport, _Opts = []) ->
+	ok = ranch:accept_ack(Ref),
     Config = ems_config:getConfig(),
     State = #state{connection = close_connection,
 				   datasource = Config#config.ldap_datasource,
@@ -74,41 +38,47 @@ init(_Args) ->
 				   admin = Config#config.ldap_admin,
 				   password_admin = Config#config.ldap_password_admin
 			   },
-    {ok, State}. 
-    
-handle_cast(shutdown, State) ->
-    {stop, normal, State};
+	loop(Socket, Transport, State).
 
-handle_cast({search, Request}, State) ->
-	{Result, NewState} = handle_request(Request, State),
-	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
-	{noreply, NewState}.
+loop(Socket, Transport, State) ->
+	case Transport:recv(Socket, 0, 5000) of
+		{ok, Data} ->
+			LdapMessage = decode_ldap_message(Data),
+			io:format("msg is ~p\n", [LdapMessage]),
+			MessageID = LdapMessage#'LDAPMessage'.messageID,
+			Result = handle_request(LdapMessage, State),
+			io:format("result is ~p\n", [Result]),
+			case Result of
+				{ok, unbindRequest} ->
+					Transport:send(Socket, <<>>);
+				{ok, Msg} -> 
+					Response = lists:map(fun(M) -> encode_response(MessageID, M) end, Msg),
+					Transport:send(Socket, Response)
+			end,
+			loop(Socket, Transport, State);
+		_ ->
+			ok = Transport:close(Socket)
+	end.
 
-handle_call({search, Request}, _From, State) ->
-	{Result, NewState} = handle_request(Request, State),
-	{reply, Result, NewState};
 
-handle_call({find_user_by_login, UsuLogin}, _From, State) ->
-	Result = find_user_by_login(UsuLogin, State),
-	{reply, Result, State}.
+encode_response(MessageID, Msg) ->
+	Response = #'LDAPMessage'{messageID = MessageID,
+							  protocolOp = Msg,
+							  controls = asn1_NOVALUE},
+    case asn1rt:encode('LDAP', 'LDAPMessage', Response) of
+        {ok, Result} -> Result;
+        {error, Reason} -> {error, Reason}
+    end.
 
-handle_info(State) ->
-   {noreply, State}.
 
-handle_info(_Msg, State) ->
-   {noreply, State}.
+decode_ldap_message(RequestBin) ->
+	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
+        {ok, {'LDAPMessage', _MessageID, _ProtocolOp, _} = LdapMsg} ->
+			LdapMsg;
+		{error, Reason} -> 
+			{error, Reason}
+    end.
 
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-    
-    
-%%====================================================================
-%% Internal functions
-%%====================================================================
-    
 autentica("cn", DnAdmin, Password, State = #state{admin = AdminLdap, 
 												  password_admin = PasswordAdminLdap}) -> 
 	autentica(list_to_binary(DnAdmin), Password, AdminLdap, PasswordAdminLdap, State);
@@ -133,9 +103,12 @@ criptografia(Password) ->
 	Password2 = binary_to_list(Password),
 	base64:encode(sha1:binstring(Password2)).
     
-handle_request({bindRequest, #'BindRequest'{version = _Version, 
-											name = Name, 
-											authentication = {_, Password}}}, State) ->
+handle_request({'LDAPMessage', _,
+					{bindRequest, #'BindRequest'{version = _Version, 
+												 name = Name, 
+												 authentication = {_, Password}}},
+				 _}, State) ->
+	io:format("handle 1\n"),
 	Name2 = parse_base_object(Name),
 	case lists:keytake("cn", 1, Name2) of  
 		{_, {"cn", CnValue}, _} -> 
@@ -149,35 +122,38 @@ handle_request({bindRequest, #'BindRequest'{version = _Version,
 			end
 	end,
 	BindResponse = make_bind_response(ResultCode, Name),
-	{{ok, [BindResponse]}, State2};
+	{ok, [BindResponse]};
     
 
-handle_request({searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
-												scope = _Scope, 
-												derefAliases = _DerefAliases, 
-												sizeLimit = _SizeLimit, 
-												timeLimit = _TimeLimit, 
-												typesOnly = _TypesOnly, 
-												filter =  {equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}},
-												attributes = _Attributes}}, State) ->
+handle_request({'LDAPMessage', _,
+					{searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
+													scope = _Scope, 
+													derefAliases = _DerefAliases, 
+													sizeLimit = _SizeLimit, 
+													timeLimit = _TimeLimit, 
+													typesOnly = _TypesOnly, 
+													filter =  {equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}},
+													attributes = _Attributes}},
+				 _}, State) ->
+	io:format("handle 2\n"),
 	UsuLogin = binary_to_list(UsuLoginBin),
 	%BaseObject2 = parse_base_object(BaseObject),
 	case find_user_by_login(UsuLogin, State) of
 		{error, unavailable, State2} ->
 			ResultDone = make_result_done(unavailable),
-			{{ok, [ResultDone]}, State2};
+			{ok, [ResultDone]};
 		{{}, State2} -> 
 			ResultDone = make_result_done(invalidCredentials),
-			{{ok, [ResultDone]}, State2};
+			{ok, [ResultDone]};
 		{UserRecord, State2} ->
 			ResultEntry = make_result_entry(UsuLoginBin, UserRecord, State2),
 			ResultDone = make_result_done(success),
-			{{ok, [ResultEntry, ResultDone]}, State2}
+			{ok, [ResultEntry, ResultDone]}
 	end;
 
 
 handle_request({unbindRequest, _}, State) ->
-	{{ok, unbindRequest}, State};
+	{ok, unbindRequest};
 
 
 handle_request(#request{payload = LdapMsg}, State) ->

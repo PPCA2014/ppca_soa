@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_ldap_listener
 %% @version 1.0.0
-%% @doc Listener module to the LDAP server
+%% @doc Listener module for HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -15,13 +15,14 @@
 -include("../include/ems_http_messages.hrl").
 
 %% Server API
--export([start/2, stop/0]).
+-export([start/3, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
--record(state, {lsocket = undefined}).
+-record(state, {listener_name,
+				tcp_config}).
 
 -define(SERVER, ?MODULE).
 
@@ -29,8 +30,8 @@
 %% Server API
 %%====================================================================
 
-start(Port, IpAddress) -> 
-    gen_server:start_link(?MODULE, {Port, IpAddress}, []).
+start(IpAddress, TcpConfig, ListenerName) -> 
+    gen_server:start_link(?MODULE, {IpAddress, TcpConfig, ListenerName}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -41,67 +42,24 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({Port, IpAddress}) ->
-	Conf = ems_config:getConfig(),
-	Opts = [binary, 
-			{packet, 0}, 
-			{active, true},
-			{buffer, 8000},
-			{send_timeout_close, true},
-			{send_timeout, ?TCP_SEND_TIMEOUT}, 
-			{keepalive, false}, 
-			{nodelay, true},
-			{backlog, ?TCP_BACKLOG},
-			{ip, IpAddress},
-			{reuseaddr, true},
-			{delay_send, false}],
-	case gen_tcp:listen(Port, Opts) of
-		{ok, LSocket} ->
-				start_server_workers(Conf#config.tcp_max_http_worker, 
-									 LSocket,
-									 Conf#config.tcp_allowed_address_t),
-				ems_logger:info("Listening ldap packets on ~s:~p.", [inet:ntoa(IpAddress), Port]),
-				{ok, #state{lsocket = LSocket}, 0};
-		{error,eaddrnotavail} ->
-			ems_logger:error("Network interface to the IP ~p not available, ignoring this interface...", [inet:ntoa(IpAddress)]),
-			{ok, #state{}};    
-		Error -> Error
-     end.	
-
-handle_cast(shutdown, State=#state{lsocket = undefined}) ->
-    {stop, normal, State};
+init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName}) ->
+	 io:format("aqui1\n"),
+	{ok, _} = ranch:start_listener(ListenerName, 1, ranch_tcp, [{port, Port}], ems_ldap_handler, []),
+	io:format("aqui2\n"),
+	{ok, #state{listener_name = ListenerName, tcp_config = TcpConfig}}.
+		
+		
+handle_cast(shutdown, State) ->
+    {stop, normal, State}.
     
-handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    gen_tcp:close(LSocket),
-    {stop, normal, State#state{lsocket = undefined}}.
-
-handle_call(_Request, _From, State) ->
+handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
     
-handle_info(_Msg, State) ->
-   {noreply, State}.
+handle_info(timeout, State) ->  {noreply, State}.
 
-handle_info(State) ->
-   {noreply, State}.
+handle_info(State) -> {noreply, State}.
 
-terminate(_Reason, #state{lsocket = undefined}) ->
-    ok;
-   
-terminate(_Reason, #state{lsocket = LSocket}) ->
-    gen_tcp:close(LSocket),
-    ok.
+terminate(_Reason, _State) -> ok.
  
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-start_server_workers(0,_,_) ->
-    ok;
-
-start_server_workers(Num, LSocket, Allowed_Address) ->
-    ems_ldap_worker:start_link({Num, LSocket, Allowed_Address}),
-    start_server_workers(Num-1, LSocket, Allowed_Address).

@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_ldap_server
 %% @version 1.0.0
-%% @doc Main module LDAP server
+%% @doc Main module HTTP server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -12,18 +12,20 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
+-include("../include/ems_http_messages.hrl").
 
 %% Server API
 -export([start/1, stop/0]).
 
-%% Client API
--export([start_listeners/2, stop_listener/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
--record(state, {listener=[]}).
+-record(state, {listener=[],
+				tcp_config,
+				name
+		}).
 
 -define(SERVER, ?MODULE).
 
@@ -32,48 +34,46 @@
 %%====================================================================
 
 start(Args) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
+ 	ServerName = list_to_atom(binary_to_list(maps:get(<<"name">>, Args))),
+    gen_server:start_link({local, ServerName}, ?MODULE, Args, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
 
-%%====================================================================
-%% Client API
-%%====================================================================
 
-start_listeners(Port, Listen_Address) ->
-	gen_server:cast(?SERVER, {start_listeners, Port, Listen_Address}).
- 
-stop_listener(Port, IpAddress) ->
-	gen_server:call(?SERVER, {stop_listener, Port, IpAddress}).
-	
  
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
-init(_Args) -> 
-	Config = ems_config:getConfig(),
-	case start_listeners(Config#config.tcp_listen_address_t,
-						 Config#config.ldap_tcp_port, 
-						 #state{}) of
-		{ok, State} ->
-			{ok, State};
-		{error, _Reason, State} -> 
-			{stop, State}
+init(Args) ->
+ 	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
+ 	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
+ 	ServerName = binary_to_list(maps:get(<<"name">>, Args)),
+	TcpConfig = #tcp_config{
+		tcp_listen_address = ListenAddress,
+		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
+		tcp_allowed_address = AllowedAddress,
+		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
+		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Args, 2301))
+ 	},
+ 	State = #state{tcp_config = TcpConfig, name = ServerName},
+	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, 1, State) of
+		{ok, State2} ->
+			{ok, State2};
+		{error, _Reason, State2} -> 
+			{stop, State2}
 	end.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({start_listeners, Port, Listen_Address}, State) ->
-	{_, NewState} = start_listeners(Listen_Address, Port, State),
-	{noreply, NewState}.
+handle_cast(_Msg, State) ->
+	{noreply, State}.
 
-handle_call({stop_listener, Port, IpAddress}, _From, State) ->
-	{Reply, NewState} = do_stop_listener(Port, IpAddress, State),
-	{reply, Reply, NewState}.
+handle_call(Msg, _From, State) ->
+	{reply, Msg, State}.
 
 handle_info(State) ->
    {noreply, State}.
@@ -92,16 +92,16 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_listeners([], _Port, State) -> {ok, State};
-
-start_listeners([H|T], Port, State) ->
-	case do_start_listener(Port, H, State) of
-		{ok, NewState} -> start_listeners(T, Port, NewState);
+start_listeners([], _TcpConfig, _ServerName, _ListenerNo, State) -> {ok, State};
+start_listeners([H|T], TcpConfig, ServerName, ListenerNo, State) ->
+	ListenerName = list_to_atom(ServerName ++ integer_to_list(ListenerNo)),
+	case do_start_listener(H, TcpConfig, ListenerName, State) of
+		{ok, NewState} -> start_listeners(T, TcpConfig, ServerName, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 
-do_start_listener(Port, IpAddress, State) ->
-	case ems_ldap_listener:start(Port, IpAddress) of
+do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, State) ->
+	case ems_ldap_listener:start(IpAddress, TcpConfig, ListenerName) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			{ok, NewState};
@@ -119,3 +119,28 @@ do_stop_listener(Port, IpAddress, State) ->
 		_ -> 
 			{{error, enolisten}, State}
 	end.
+	
+parse_tcp_listen_address(ListenAddress) ->
+	lists:map(fun(IP) -> 
+					{ok, L2} = inet:parse_address(IP),
+					L2 
+			  end, ListenAddress).
+
+parse_allowed_address(AllowedAddress) ->
+	lists:map(fun(IP) -> 
+					ems_http_util:mask_ipaddress_to_tuple(IP)
+			  end, AllowedAddress).
+
+parse_keepalive(Keepalive) ->
+	ems_util:binary_to_bool(Keepalive).
+
+parse_tcp_port(<<Port/binary>>) -> 
+	parse_tcp_port(binary_to_list(Port));		
+parse_tcp_port(Port) when is_list(Port) -> 
+	parse_tcp_port(list_to_integer(Port));
+parse_tcp_port(Port) when is_integer(Port) -> 
+	case ems_consist:is_range_valido(Port, 1024, 5000) of
+		true -> Port;
+		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
+	end.
+	
