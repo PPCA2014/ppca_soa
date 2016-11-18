@@ -78,7 +78,7 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 %% It is not being used
-handle_cast({Socket, RequestBin}, State) ->
+	handle_cast({Socket, RequestBin}, State) ->
 	NewState = trata_request(Socket, RequestBin, State),
 	{noreply, NewState, 0};
 
@@ -188,6 +188,7 @@ trata_request(Socket, RequestBin, State) ->
 					inet:setopts(Socket,[{raw,6,8,<<30:32/native>>}]),
 					% TCP_DEFER_ACCEPT for Linux
 					inet:setopts(Socket,[{raw, 6,9, << 30:32/native >>}]),
+					io:format("dispat!\n"),
 					ems_dispatcher:dispatch_request(Request),
 					NewState = State#state{socket = undefined, 
 										   open_requests = [Request | State#state.open_requests]};

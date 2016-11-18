@@ -218,7 +218,6 @@ generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, p
 	Params = [{sql_integer, [Id]}],
 	Fields2 = parse_fields(Fields),
 	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s where ~s = ? limit 1", [Fields2, TableName, PrimaryKey])),
-	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 

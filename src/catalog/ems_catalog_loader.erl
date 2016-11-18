@@ -303,6 +303,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
 		PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
 		Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
+		Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
 		valida_lang(Lang),
 		valida_name_service(Name),
 		valida_type_service(Type),
@@ -331,7 +332,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 										 Type, Apikey, Comment, Version, Owner, 
 										 Async, Host, Result_Cache, Authentication, Node, Lang,
-										 Datasource, Debug, SchemaIn, SchemaOut, Page, Timeout),
+										 Datasource, Debug, SchemaIn, SchemaOut, 
+										 Page, Timeout, Middleware),
 		case UseRE of
 			true -> 
 				Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -344,7 +346,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										   Host, HostName, Result_Cache,
 										   Authentication, Node, Lang,
 										   Datasource, Debug, SchemaIn, SchemaOut, 
-										   PoolSize, PoolMax, H, Page, PageModule, Timeout),
+										   PoolSize, PoolMax, H, Page, 
+										   PageModule, Timeout, Middleware),
 				case Type of
 					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -360,7 +363,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										Host, HostName, Result_Cache,
 										Authentication, Node, Lang,
 										Datasource, Debug, SchemaIn, SchemaOut, 
-										PoolSize, PoolMax, H, Page, PageModule, Timeout),
+										PoolSize, PoolMax, H, Page, 
+										PageModule, Timeout, Middleware),
 				case Type of
 					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -370,6 +374,9 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		_Exception:Reason -> {error, Reason}
 	end.
 
+parse_middleware(undefined) -> undefined;
+parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
+	
 
 compile_page_module(undefined, _) -> undefined;
 compile_page_module(Page, Rowid) -> 
@@ -440,7 +447,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			   Page, PageModule, Timeout) ->
+			   Page, PageModule, Timeout, Middleware) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -478,6 +485,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    pool_size = PoolSize,
 			    pool_max = PoolMax,
 			    timeout = Timeout,
+			    middleware = Middleware,
 			    properties = Properties
 			}.
 
@@ -486,7 +494,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang, Datasource, 
 			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			Page, PageModule, Timeout) ->
+			Page, PageModule, Timeout, Middleware) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -521,13 +529,14 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    pool_size = PoolSize,
 			    pool_max = PoolMax,
 			    timeout = Timeout,
+			    middleware = Middleware,
 			    properties = Properties
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, _Datasource, 
-				  Debug, SchemaIn, SchemaOut, Page, Timeout) ->
+				  Debug, SchemaIn, SchemaOut, Page, Timeout, Middleware) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -548,6 +557,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"schema_in">> => SchemaIn,
 			    <<"schema_out">> => SchemaOut,
 			    <<"timeout">> => Timeout,
+			    <<"middleware">> => Middleware,
 			    <<"lang">> => Lang},
 	Service.
 

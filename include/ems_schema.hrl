@@ -85,6 +85,7 @@
 					url :: string(),  							%% URL do contrato do serviço
 					type :: string(),							%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
 					service :: string(),						%% Serviço que será executado no contrato
+					middleware,
 					module_name :: string(), 					%% Nome do módulo do serviço que vai atender a requisição. Ex.: br.erlangms.HelloWorldService  
 					module_name_canonical :: string(), 			%% Nome do módulo canonico do serviço que vai atender a requisição. Ex.: HelloWorldService  
 					module :: atom(),  							%% Atom do processo do módulo de serviço que vai atender a requisição

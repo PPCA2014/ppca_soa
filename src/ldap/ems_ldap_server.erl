@@ -14,7 +14,7 @@
 -include("../include/ems_schema.hrl").
 
 %% Server API
--export([start/0, stop/0]).
+-export([start/1, stop/0]).
 
 %% Client API
 -export([start_listeners/2, stop_listener/2]).
@@ -31,8 +31,8 @@
 %% Server API
 %%====================================================================
 
-start() -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Args) -> 
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).

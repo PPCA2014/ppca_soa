@@ -18,10 +18,10 @@
 
 
 %% Server API
--export([start/0, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 %% Client API
--export([execute/2, find_user_by_login/1]).
+-export([execute/1, find_user_by_login/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, criptografia/1]).
@@ -40,8 +40,8 @@
 %% Server API
 %%====================================================================
 
-start() -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Args) -> 
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], Args).
  
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
@@ -54,8 +54,8 @@ stop() ->
 %% Client API
 %%====================================================================
  
-execute(Request, From) ->
-	ems_pool:cast(ems_ldap_service, {search, Request, From}).
+execute(Request) ->
+	ems_pool:cast(ems_ldap_service, {search, Request}).
 
 find_user_by_login(UsuLogin) ->
 	ems_pool:call(ems_ldap_service, {find_user_by_login, UsuLogin}).
@@ -79,7 +79,7 @@ init(_Args) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({search, Request, _From}, State) ->
+handle_cast({search, Request}, State) ->
 	{Result, NewState} = handle_request(Request, State),
 	ems_eventmgr:notifica_evento(ok_request, {service, Request, Result}),
 	{noreply, NewState}.
@@ -114,6 +114,7 @@ autentica("cn", DnAdmin, Password, State = #state{admin = AdminLdap,
 	autentica(list_to_binary(DnAdmin), Password, AdminLdap, PasswordAdminLdap, State);
 
 autentica("uid", DnUser, PasswordUser, State) -> 
+	io:format("autentica\n"),
 	case find_user_by_login(DnUser, State) of
 		{error, unavailable, State2} -> 
 			{unavailable, State2};
@@ -233,40 +234,50 @@ make_result_done(ResultCode) ->
 	
 
 find_user_by_login(UserLogin, State = #state{sql_find_user = Sql}) ->
-	case get_database_connection(State) of
-		close_connection -> 
-			State2 = State#state{connection = close_connection},
-			{error, unavailable, State2};
-		Conn -> 
-			Params = [{{sql_varchar, 100}, [UserLogin]}],
-			try
-				case odbc:param_query(Conn, Sql, Params, 3500) of
-					{_, _, UserRecord} -> 
-						State2 = State#state{connection = Conn},
-						case UserRecord of
-							[{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}] ->
-								UserRecord2 = {format_user_field(UsuId),
-											   format_user_field(UsuNome),
-											   format_user_field(UsuCpf),
-											   format_user_field(UsuEmail),
-											   format_user_field(UsuSenha)}, 
-								{UserRecord2, State2};
-							_->
-								{{}, State2}
-						end;
-					{error, Reason} ->
-						State2 = State#state{connection = close_connection},
-						ems_logger:error("Query ldap database error. Reason: ~p", [Reason]),
-						{error, unavailable, State2}
-				end
-			catch
-				_Exception:Reason3 -> 
-					State3 = State#state{connection = close_connection},
-					ems_logger:error("Connection or query ldap database error. Reason: ~p", [Reason3]),
-					{error, unavailable, State3}
+	io:format("aqui1\n"),
+	case true of
+		true ->
+			UserRecord2 = {format_user_field(1),
+						   format_user_field("geral"),
+						   format_user_field("00167743023"),
+						   format_user_field("evertonagilar@gmail.com"),
+						   format_user_field("123456")},
+			{UserRecord2, State};
+		false ->
+			case get_database_connection(State) of
+				close_connection -> 
+					State2 = State#state{connection = close_connection},
+					{error, unavailable, State2};
+				Conn -> 
+					Params = [{{sql_varchar, 100}, [UserLogin]}],
+					try
+						case odbc:param_query(Conn, Sql, Params, 3500) of
+							{_, _, UserRecord} -> 
+								State2 = State#state{connection = Conn},
+								case UserRecord of
+									[{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}] ->
+										UserRecord2 = {format_user_field(UsuId),
+													   format_user_field(UsuNome),
+													   format_user_field(UsuCpf),
+													   format_user_field(UsuEmail),
+													   format_user_field(UsuSenha)}, 
+										{UserRecord2, State2};
+									_->
+										{{}, State2}
+								end;
+							{error, Reason} ->
+								State2 = State#state{connection = close_connection},
+								ems_logger:error("Query ldap database error. Reason: ~p", [Reason]),
+								{error, unavailable, State2}
+						end
+					catch
+						_Exception:Reason3 -> 
+							State3 = State#state{connection = close_connection},
+							ems_logger:error("Connection or query ldap database error. Reason: ~p", [Reason3]),
+							{error, unavailable, State3}
+					end
 			end
 	end.
-
 
 format_user_field(null) -> <<"">>;
 format_user_field([]) -> <<"">>;

@@ -222,15 +222,19 @@ do_lookup(Request, #state{cat3 = Cat}) ->
 do_lookup_re(_Request, []) ->
 	{error, enoent};
 do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
-	RE = H#service.id_re_compiled,
-	PatternKey = ems_util:make_rowid_from_url(Url, Type),
-	case re:run(PatternKey, RE, [{capture,all_names,binary}]) of
-		match -> {H, #{}};
-		{match, Params} -> 
-			{namelist, ParamNames} = re:inspect(RE, namelist),
-			ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
-			{H, ParamsMap};
-		nomatch -> do_lookup_re(Request, T);
-		{error, _ErrType} -> {error, enoent}
+	try
+		RE = H#service.id_re_compiled,
+		PatternKey = ems_util:make_rowid_from_url(Url, Type),
+		case re:run(PatternKey, RE, [{capture,all_names,binary}]) of
+			match -> {H, #{}};
+			{match, Params} -> 
+				{namelist, ParamNames} = re:inspect(RE, namelist),
+				ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
+				{H, ParamsMap};
+			nomatch -> do_lookup_re(Request, T);
+			{error, _ErrType} -> {error, enoent}
+		end
+	catch 
+		_Exception:_Reason -> {error, enoent}
 	end.
 

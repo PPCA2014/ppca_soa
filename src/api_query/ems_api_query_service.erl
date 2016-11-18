@@ -69,22 +69,27 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 
 
 do_find(#request{querystring_map = QuerystringMap, 
-				 service = #service{debug = Debug}},
-				 Datasource) ->
+			     service = #service{debug = Debug}},
+			     Datasource) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
 	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
 	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
 	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
 	ems_api_query:find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug).
+	
 
 
 do_find_by_id(Request = #request{querystring_map = QuerystringMap, 
 								 service = #service{debug = Debug}}, 
 			 Datasource) ->
 	Id = ems_request:get_param_url(<<"id">>, 0, Request),
-	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
-	ems_api_query:find_by_id(Id, Fields, Datasource, Debug).
+	case Id > 0 of
+		true ->
+			Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
+			ems_api_query:find_by_id(Id, Fields, Datasource, Debug);
+		false -> {error, enoent}
+	end.
 
 
 do_insert(#request{payload_map = Payload, 
