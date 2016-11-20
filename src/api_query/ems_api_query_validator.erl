@@ -26,7 +26,9 @@ validate(Map, Schema) ->
 					{error, {<<"field">>, TypeField,  <<"reason">>, TypeError, <<"value">>, TypeValue, <<"field_def">>, SchemaErrorMap}};
 				{error, [{data_invalid, SchemaErrorMap, missing_required_property, _, []}]} ->
 					{error, {<<"reason">>, missing_required_property, <<"schema">>, SchemaErrorMap}};
-				Other -> io:format("~p\n", [Other]), {error, naosei}
+				{error,[{schema_invalid, SchemaErrorMap = #{<<"type">> := TypeField}, wrong_type_specification}]} ->
+                    {error, {<<"field">>, TypeField,  <<"reason">>, wrong_type_specification, <<"field_def">>, SchemaErrorMap}};
+				Other -> {error, Other}
 			end
 	end.
 

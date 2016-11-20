@@ -52,3 +52,4 @@ update(Id, Payload, Service, Datasource = #service_datasource{type = ConnType}) 
 			end
 	end.
 
+delete(Id, Service, Datasource = #service_datasource{type = ConnType}) -> ok.

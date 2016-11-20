@@ -13,7 +13,7 @@
 
 
 %% Client API
--export([find/1, find_by_id/1, insert/1, update/1]).
+-export([find/1, find_by_id/1, insert/1, update/1, delete/1]).
 
  
 %%====================================================================
@@ -27,6 +27,8 @@ find_by_id(Request) ->	execute_command(find_by_id, Request).
 insert(Request) -> execute_command(insert, Request).
 
 update(Request) -> execute_command(update, Request).
+
+delete(Request) -> execute_command(delete, Request).
   
     
 %%====================================================================
@@ -42,7 +44,8 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 					find -> do_find(Request, Datasource2);
 					find_by_id -> do_find_by_id(Request, Datasource2);
 					insert -> do_insert(Request, Datasource2);
-					update -> do_update(Request, Datasource2)
+					update -> do_update(Request, Datasource2);
+					delete -> do_update(Request, Datasource2)
 				end,
 				ems_db:release_connection(Datasource2),
 				case Result of
@@ -102,4 +105,7 @@ do_update(Request = #request{payload_map = Payload,
 	Id = ems_request:get_param_url(<<"id">>, 0, Request),
 	ems_api_query:update(Id, Payload, Service, Datasource).
 
+do_delete(Request = #request{service = Service}, Datasource) ->
+	Id = ems_request:get_param_url(<<"id">>, 0, Request),
+	ems_api_query:delete(Id, Service, Datasource).
 
