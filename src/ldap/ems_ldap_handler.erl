@@ -16,27 +16,28 @@
 -include("../include/LDAP.hrl").
 
 %  Stores the state of the service.
--record(state, {connection,			 	%% connection to ldap database
-				datasource,		 		%% odbc datasource
-				sql_find_user,		 	%% sql to find user
-				admin,		 			%% admin ldap
-				password_admin}).  %% Password of admin ldap
+-record(state, {datasource,		 	%% datasource
+				middleware,		 	%% middleware to service logic
+				admin,		 		%% admin ldap
+				password_admin}).   %% Password of admin ldap
 
 -export([start_link/4]).
 -export([init/4]).
 
-start_link(Ref, Socket, Transport, Opts) ->
-	Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
+start_link(Ref, Socket, Transport, Service) ->
+	Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Service]),
 	{ok, Pid}.
 
-init(Ref, Socket, Transport, _Opts = []) ->
+init(Ref, Socket, Transport, [#service{datasource = Datasource,
+										middleware = Middleware,
+										properties = Props}]) ->
 	ok = ranch:accept_ack(Ref),
-    Config = ems_config:getConfig(),
-    State = #state{connection = close_connection,
-				   datasource = Config#config.ldap_datasource,
-				   sql_find_user = Config#config.ldap_sql_find_user,
-				   admin = Config#config.ldap_admin,
-				   password_admin = Config#config.ldap_password_admin
+	LdapAdmin = maps:get(<<"ldap_admin">>, Props),
+	LdapPasswdAdmin = maps:get(<<"ldap_password_admin">>, Props),
+    State = #state{datasource = Datasource,
+				   middleware = Middleware,
+				   admin = LdapAdmin,
+				   password_admin = LdapPasswdAdmin
 			   },
 	loop(Socket, Transport, State).
 
@@ -44,7 +45,7 @@ loop(Socket, Transport, State) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
 			LdapMessage = decode_ldap_message(Data),
-			io:format("msg is ~p\n", [LdapMessage]),
+			io:format("Ldap msg is ~p\n", [LdapMessage]),
 			MessageID = LdapMessage#'LDAPMessage'.messageID,
 			Result = handle_request(LdapMessage, State),
 			case Result of
@@ -78,51 +79,28 @@ decode_ldap_message(RequestBin) ->
 			{error, Reason}
     end.
 
-autentica("cn", DnAdmin, Password, State = #state{admin = AdminLdap, 
-												  password_admin = PasswordAdminLdap}) -> 
-	autentica(list_to_binary(DnAdmin), Password, AdminLdap, PasswordAdminLdap, State);
-
-autentica("uid", DnUser, PasswordUser, State) -> 
-	io:format("autentica  ~p ~p\n", [DnUser, PasswordUser]),
-	case find_user_by_login(DnUser, State) of
-		{error, unavailable, State2} -> 
-			{unavailable, State2};
-		{{}, State2} -> 
-			{invalidCredentials, State2};
-		{{_, _, _, _, PasswordLdap}, State2} -> 
-			PasswordUser2 = criptografia(PasswordUser),
-			autentica(DnUser, PasswordUser2, DnUser, PasswordLdap, State2)
-	end.
-
-autentica(Dn, Password, DnLdap, PasswordLdap, State) when Dn =:= DnLdap, Password =:= PasswordLdap -> {success, State};
-
-autentica(_, _, _, _, State) -> {invalidCredentials, State}.
-
-criptografia(Password) -> 
-	Password2 = binary_to_list(Password),
-	base64:encode(sha1:binstring(Password2)).
-    
+  
 handle_request({'LDAPMessage', _,
 					{bindRequest, #'BindRequest'{version = _Version, 
 												 name = Name, 
 												 authentication = {_, Password}}},
-				 _}, State) ->
-	Name2 = parse_base_object(Name),
-	case lists:keytake("cn", 1, Name2) of  
-		{_, {"cn", CnValue}, _} -> 
-			{ResultCode, State2} = autentica("cn", CnValue, Password, State);
-		false -> 
-			case lists:keytake("uid", 1, Name2) of  
-				{_, {"uid", UIdValue}, _} -> 
-					{ResultCode, State2} = autentica("uid", UIdValue, Password, State);
-				false -> 
-					{ResultCode, State2} = {operationsError, State}
+				 _}, State = #state{admin = AdminLdap, 
+									password_admin = PasswordAdminLdap}) ->
+	 <<Cn:3/binary, _/binary>> = Name,
+	case Cn of
+		<<"cn=">> ->
+			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
+				true -> make_bind_response(success, Name);
+				_-> make_bind_response(invalidCredentials, Name)
+			end;
+		<<"uid">> -> 
+			<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
+			BindResponse = case middleware_autentica(UserLogin, Password, State) of
+				{error, _Reason} ->	make_bind_response(invalidCredentials, Name);
+				ok -> make_bind_response(success, Name)
 			end
 	end,
-	BindResponse = make_bind_response(ResultCode, Name),
 	{ok, [BindResponse]};
-    
-
 handle_request({'LDAPMessage', _,
 					{searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
 													scope = _Scope, 
@@ -132,41 +110,26 @@ handle_request({'LDAPMessage', _,
 													typesOnly = _TypesOnly, 
 													filter =  {equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}},
 													attributes = _Attributes}},
-				 _}, State) ->
-	UsuLogin = binary_to_list(UsuLoginBin),
-	case find_user_by_login(UsuLogin, State) of
-		{error, unavailable, State2} ->
-			ResultDone = make_result_done(unavailable),
-			{ok, [ResultDone]};
-		{{}, State2} -> 
+				 _}, State = #state{admin = AdminLdap}) ->
+	UserLogin = UsuLoginBin,
+	case middleware_find_user_by_login(UserLogin, State) of
+		{error, _Reason} ->
 			ResultDone = make_result_done(invalidCredentials),
 			{ok, [ResultDone]};
-		{UserRecord, State2} ->
-			ResultEntry = make_result_entry(UsuLoginBin, UserRecord, State2),
+		{ok, UserRecord} ->
+			ResultEntry = make_result_entry(UsuLoginBin, UserRecord, AdminLdap),
 			ResultDone = make_result_done(success),
 			{ok, [ResultEntry, ResultDone]}
 	end;
-
-
 handle_request({'LDAPMessage', _, 
 					{unbindRequest, _},
-				 _}, State) ->
+				 _}, _State) ->
 	{ok, unbindRequest};
-	
 handle_request({'LDAPMessage', _, 
-					UnknowMsg,
-				 _}, State) ->
+					_UnknowMsg,
+				 _}, _State) ->
 	{ok, unbindRequest}.
 	
-
-
-
-
-parse_base_object(BaseObject) ->
-	lists:map(fun(P) -> 
-						list_to_tuple(string:tokens(P, "=")) 
-			  end, string:tokens(binary_to_list(BaseObject), ",")).
-
 
 make_object_name(UsuId) ->
 	R1 = [<<"uid="/utf8>>, UsuId, <<",ou=funcdis,ou=Classes,dc=unb,dc=br"/utf8>>],
@@ -187,7 +150,7 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
 
-make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}, #state{admin = AdminLdap}) ->
+make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}, AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
@@ -211,50 +174,41 @@ make_result_done(ResultCode) ->
 	}.
 	
 
-find_user_by_login(UserLogin, State = #state{sql_find_user = Sql}) ->
-	case true of
-		true ->
-			UserRecord2 = {format_user_field(1),
-						   format_user_field("geral"),
-						   format_user_field("00167743023"),
-						   format_user_field("evertonagilar@gmail.com"),
-						   format_user_field("123456")},
-			{UserRecord2, State};
-		false ->
-			case get_database_connection(State) of
-				close_connection -> 
-					State2 = State#state{connection = close_connection},
-					{error, unavailable, State2};
-				Conn -> 
-					Params = [{{sql_varchar, 100}, [UserLogin]}],
-					try
-						case odbc:param_query(Conn, Sql, Params, 3500) of
-							{_, _, UserRecord} -> 
-								State2 = State#state{connection = Conn},
-								case UserRecord of
-									[{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}] ->
-										UserRecord2 = {format_user_field(UsuId),
-													   format_user_field(UsuNome),
-													   format_user_field(UsuCpf),
-													   format_user_field(UsuEmail),
-													   format_user_field(UsuSenha)}, 
-										{UserRecord2, State2};
-									_->
-										{{}, State2}
-								end;
-							{error, Reason} ->
-								State2 = State#state{connection = close_connection},
-								ems_logger:error("Query ldap database error. Reason: ~p", [Reason]),
-								{error, unavailable, State2}
-						end
-					catch
-						_Exception:Reason3 -> 
-							State3 = State#state{connection = close_connection},
-							ems_logger:error("Connection or query ldap database error. Reason: ~p", [Reason3]),
-							{error, unavailable, State3}
-					end
-			end
+middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware, 
+																  datasource = Datasource}) ->
+	case code:ensure_loaded(Middleware) of
+		{module, _} ->
+			case erlang:function_exported(Middleware, autentica, 3) of
+				true -> apply(Middleware, autentica, [UserLogin, UserPassword, Datasource]);
+				false -> {error, einvalid_middleware}
+			end;
+		{error, Reason} -> {
+			error, {Reason, Middleware}}
 	end.
+
+middleware_find_user_by_login(UserLogin, #state{middleware = Middleware, 
+												datasource = Datasource}) ->
+	case code:ensure_loaded(Middleware) of
+		{module, _} ->
+			case erlang:function_exported(Middleware, find_user_by_login, 2) of
+				true -> 
+					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
+						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
+							io:format("user ~p\n", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
+							UserRecord2 = {format_user_field(UsuId),
+										   format_user_field(UsuNome),
+										   format_user_field(UsuCpf),
+										   format_user_field(UsuEmail),
+										   format_user_field(UsuSenha)}, 
+							{ok, UserRecord2};
+						Error -> Error
+					end;
+				false -> {error, einvalid_middleware}
+			end;
+		{error, Reason} -> {
+			error, {Reason, Middleware}}
+	end.
+
 
 format_user_field(null) -> <<"">>;
 format_user_field([]) -> <<"">>;
@@ -262,24 +216,3 @@ format_user_field(Number) when is_integer(Number) -> list_to_binary(integer_to_l
 format_user_field(Text) -> list_to_binary(string:strip(Text)).
 	
 
-get_database_connection(#state{connection = close_connection, 
-							   datasource = DataSource}) ->
-	try
-		case odbc:connect(DataSource, [{scrollable_cursors, off},
-									   {timeout, 3500},
-									   {trace_driver, off}]) of
-			{ok, Conn}	->																	  
-				ems_logger:info("Create connection to ldap datasource ~p.", [DataSource]),
-				Conn;
-			{error, Reason} -> 
-				ems_logger:error("Connection ldap database error. Reason: ~p", [Reason]),
-				close_connection
-		end
-	catch
-		_Exception:Reason2 -> 
-			ems_logger:error("Connection ldap database error. Reason: ~p", [Reason2]),
-			close_connection
-	end;
-
-	
-get_database_connection(#state{connection = Conn}) -> Conn.

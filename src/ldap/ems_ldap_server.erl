@@ -33,9 +33,9 @@
 %% Server API
 %%====================================================================
 
-start(Args) -> 
- 	ServerName = list_to_atom(binary_to_list(maps:get(<<"name">>, Args))),
-    gen_server:start_link({local, ServerName}, ?MODULE, Args, []).
+start(Service = #service{name = Name}) -> 
+ 	ServerName = list_to_atom(binary_to_list(Name)),
+    gen_server:start_link({local, ServerName}, ?MODULE, Service, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -47,19 +47,20 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(Args) ->
- 	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
- 	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
- 	ServerName = binary_to_list(maps:get(<<"name">>, Args)),
+init(Service = #service{name = Name, 
+						properties = Props}) ->
+ 	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Props, [<<"127.0.0.1">>])),
+ 	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Props, [])),
+ 	ServerName = binary_to_list(Name),
 	TcpConfig = #tcp_config{
 		tcp_listen_address = ListenAddress,
 		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
 		tcp_allowed_address = AllowedAddress,
 		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
-		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Args, 2301))
+		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, 2301))
  	},
  	State = #state{tcp_config = TcpConfig, name = ServerName},
-	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, 1, State) of
+	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, Service, 1, State) of
 		{ok, State2} ->
 			{ok, State2};
 		{error, _Reason, State2} -> 
@@ -92,16 +93,16 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-start_listeners([], _TcpConfig, _ServerName, _ListenerNo, State) -> {ok, State};
-start_listeners([H|T], TcpConfig, ServerName, ListenerNo, State) ->
+start_listeners([], _TcpConfig, _ServerName, _Service, _ListenerNo, State) -> {ok, State};
+start_listeners([H|T], TcpConfig, ServerName, Service, ListenerNo, State) ->
 	ListenerName = list_to_atom(ServerName ++ integer_to_list(ListenerNo)),
-	case do_start_listener(H, TcpConfig, ListenerName, State) of
-		{ok, NewState} -> start_listeners(T, TcpConfig, ServerName, ListenerNo+1, NewState);
+	case do_start_listener(H, TcpConfig, ListenerName, Service, State) of
+		{ok, NewState} -> start_listeners(T, TcpConfig, ServerName, Service, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 
-do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, State) ->
-	case ems_ldap_listener:start(IpAddress, TcpConfig, ListenerName) of
+do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, Service, State) ->
+	case ems_ldap_listener:start(IpAddress, TcpConfig, ListenerName, Service) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			{ok, NewState};

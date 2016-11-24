@@ -33,9 +33,9 @@
 %% Server API
 %%====================================================================
 
-start(Args) -> 
- 	ServerName = list_to_atom(binary_to_list(maps:get(<<"name">>, Args))),
-    gen_server:start_link({local, ServerName}, ?MODULE, Args, []).
+start(Service = #service{name = Name}) -> 
+ 	ServerName = list_to_atom(binary_to_list(Name)),
+    gen_server:start_link({local, ServerName}, ?MODULE, Service, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -47,27 +47,26 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(Args) ->
- 	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Args, [<<"127.0.0.1">>])),
- 	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Args, [])),
- 	ServerName = binary_to_list(maps:get(<<"name">>, Args)),
+init(Service = #service{name = Name, 
+						properties = Props}) ->
+ 	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Props, [<<"127.0.0.1">>])),
+ 	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Props, [])),
+ 	ServerName = binary_to_list(Name),
 	TcpConfig = #tcp_config{
 		tcp_listen_address = ListenAddress,
 		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
 		tcp_allowed_address = AllowedAddress,
 		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
-		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Args, 2301)),
-		tcp_keepalive = parse_keepalive(maps:get(<<"tcp_keepalive">>, Args, true)),
-		tcp_nodelay = ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Args, true)),
-		tcp_min_http_worker = parse_max_http_worker(maps:get(<<"tcp_min_http_worker">>, Args, ?MIN_HTTP_WORKER)),
-		tcp_max_http_worker = parse_max_http_worker(maps:get(<<"tcp_max_http_worker">>, Args, ?MAX_HTTP_WORKER)),
-		tcp_accept_timeout = maps:get(<<"tcp_accept_timeout">>, Args, 30000),
-		tcp_backlog = maps:get(<<"tcp_backlog">>, Args, 128),
-		tcp_buffer = maps:get(<<"tcp_buffer">>, Args, 8000),
-		tcp_send_timeout = maps:get(<<"tcp_send_timeout">>, Args, 16000),
-		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Args, false),
-		tcp_ssl = maps:get(<<"tcp_ssl">>, Args, null),
-		tcp_is_ssl = maps:get(<<"tcp_ssl">>, Args, null) =/= null
+		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, 2301)),
+		tcp_keepalive = parse_keepalive(maps:get(<<"tcp_keepalive">>, Props, true)),
+		tcp_nodelay = ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Props, true)),
+		tcp_accept_timeout = maps:get(<<"tcp_accept_timeout">>, Props, 30000),
+		tcp_backlog = maps:get(<<"tcp_backlog">>, Props, 128),
+		tcp_buffer = maps:get(<<"tcp_buffer">>, Props, 8000),
+		tcp_send_timeout = maps:get(<<"tcp_send_timeout">>, Props, 16000),
+		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Props, false),
+		tcp_ssl = maps:get(<<"tcp_ssl">>, Props, null),
+		tcp_is_ssl = maps:get(<<"tcp_ssl">>, Props, null) =/= null
  	},
  	State = #state{tcp_config = TcpConfig, name = ServerName},
 	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, 1, State) of

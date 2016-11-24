@@ -15,7 +15,7 @@
 -include("../include/ems_http_messages.hrl").
 
 %% Server API
--export([start/3, stop/0]).
+-export([start/4, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -30,8 +30,8 @@
 %% Server API
 %%====================================================================
 
-start(IpAddress, TcpConfig, ListenerName) -> 
-    gen_server:start_link(?MODULE, {IpAddress, TcpConfig, ListenerName}, []).
+start(IpAddress, TcpConfig, ListenerName, Args) -> 
+    gen_server:start_link(?MODULE, {IpAddress, TcpConfig, ListenerName, Args}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -42,8 +42,8 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName}) ->
-	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}], ems_ldap_handler, []),
+init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, Args}) ->
+	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}], ems_ldap_handler, [Args]),
 	{ok, #state{listener_name = ListenerName, tcp_config = TcpConfig}}.
 		
 		

@@ -23,16 +23,15 @@ start_link(Args) ->
 init([]) ->
 	KernelServices = ems_catalog_loader:list_kernel_catalog(),
     PoolSpecs = lists:map(
-		fun(#service{name = WorkerName, 
-					 pool_size = PoolSize, 
-					 pool_max = PoolMax, 
-					 properties = WorkerArgs, 
-					 module = Worker}) ->
+		fun(S = #service{name = WorkerName, 
+						  pool_size = PoolSize, 
+						  pool_max = PoolMax, 
+						  module = Worker}) ->
 				WorkerNameAtom = list_to_atom(binary_to_list(WorkerName)),
 				case PoolMax == 1 of
 					true -> 
 						{WorkerNameAtom,
-							{?MODULE, start_process, [[Worker, start, WorkerArgs]]},
+							{?MODULE, start_process, [[Worker, start, S]]},
 							permanent, 10000, worker,  [WorkerNameAtom]
 						};
 					false ->
@@ -41,7 +40,7 @@ init([]) ->
 																				  {name, {local, WorkerNameAtom}},
 																				  {worker_module, Worker},
 																				  {size, PoolSize},
-																				  {max_overflow, PoolMax - PoolSize}], WorkerArgs]]]},
+																				  {max_overflow, PoolMax - PoolSize}], S]]]},
 							 permanent, 5000, worker, [poolboy]
 						}
 				end
