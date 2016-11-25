@@ -80,8 +80,11 @@ get_catalog() ->
 %% @doc O catálogo mestre possui os includes para os catálogos
 
 get_main_catalog() ->
+	io:format("le main catalo ~p\n", [?CATALOGO_PATH ++ "/catalog.conf"]),
 	case file:read_file(?CATALOGO_PATH ++ "/catalog.conf") of
-		{ok, Arq} -> ems_util:json_decode_as_map(Arq);
+		{ok, Arq} ->
+			io:format("encontrou main catalog\n"),
+		 ems_util:json_decode_as_map(Arq);
 		Error -> Error
 	end.
 

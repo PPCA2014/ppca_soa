@@ -5,7 +5,17 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  cowboy,
+                  jsx,
+                  poolboy,
+                  jiffy,
+                  mochiweb,
+                  json_rec,
+                  oauth2,
+                  jesse,
+                  erlydtl,
+                  inotify
                  ]},
   {mod, { ems_bus_app, []}},
   {env, []}

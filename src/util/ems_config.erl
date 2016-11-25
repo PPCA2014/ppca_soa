@@ -83,10 +83,14 @@ code_change(_OldVsn, State, _Extra) ->
 get_name_arq_config() ->
 	case init:get_argument(home) of
 		{ok, [[Home]]} -> 
+			io:format("aqui3 ~p\n", [Home]),
 			NomeArqConfig = lists:concat([Home, "/.erlangms/", node(), ".conf"]),
+			io:format("aqui4 ~p\n", [NomeArqConfig]),
 			% O arquivo no home deve existir!
 			case file:read_file(NomeArqConfig) of 
-				{ok, _} -> NomeArqConfig;
+				{ok, _} -> 
+					io:format("aqui4.1 ~p\n", [NomeArqConfig]),
+				NomeArqConfig;
 					
 				_ -> ?CONF_FILE_PATH
 			end;
@@ -100,6 +104,7 @@ le_config() ->
 	case ems_util:read_file_as_map(NomeArqConfig) of
 		{ok, Json} -> 
 			try
+				io:format("aqui5 \n"),
 				parse_config(Json, NomeArqConfig)
 			catch 
 				_Exception:Reason ->
