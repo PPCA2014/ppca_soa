@@ -6,6 +6,7 @@
   {applications, [
                   kernel,
                   stdlib,
+                  ranch,
                   cowboy,
                   jsx,
                   poolboy,
@@ -14,8 +15,7 @@
                   json_rec,
                   oauth2,
                   jesse,
-                  erlydtl,
-                  inotify
+                  erlydtl
                  ]},
   {mod, { ems_bus_app, []}},
   {env, []}

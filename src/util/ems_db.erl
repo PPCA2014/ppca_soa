@@ -220,6 +220,7 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 																	  TableName, 
 																	  FileNamePath, 
 																	  Delimiter])),
+						ems_logger:info("OS command: ~p.", [Csv2SqliteCmd]),
 						os:cmd(Csv2SqliteCmd),
 						mnesia:write(#ctrl_sqlite_table{file_name = FileName, last_modified = LastModified});
 					false -> 

@@ -85,7 +85,7 @@
 -define(SERVICE_TIMEOUT, 2000 * 60). % 1 minuto
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
--define(CSV2SQLITE_PATH, ?WORKING_PATH ++ "/bin/csv2sqlite.py"). 
+-define(CSV2SQLITE_PATH, ?PRIV_PATH ++ "/scripts/csv2sqlite.py"). 
 
 % Caminho do banco de dados sqlite
 -define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/ems_dynamic_view.dat").	

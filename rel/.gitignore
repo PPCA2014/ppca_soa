@@ -1,1 +1,6 @@
 ems_bus
+*~
+#*
+*.log
+*.dump
+*.gz
