@@ -15,7 +15,50 @@
 %%% API
 %%%===================================================================
 
-start() -> application:start(ems_bus).
+start() -> 
+    application:start(asn1),
+    application:start(crypto),
+	application:start(public_key),    
+	application:start(ssl),    
+    application:start(inets),
+	application:start(xmerl),
+	application:start(syntax_tools),
+	application:start(compiler),
+	application:start(parse_trans),
+    application:start(odbc),
+    application:start(ranch),
+	application:start(cowlib),
+	application:start(cowboy),
+	application:start(erlydtl),
+	application:start(json_rec),
+	application:start(jsx),
+	application:start(poolboy),
+	application:start(jiffy),
+	application:start(jesse),
+	application:start(mochiweb),
+    application:start(oauth2),
+	application:start(ems_bus).
     
-
-stop() -> application:stop(ems_bus).
+stop() -> 
+	application:stop(ems_bus),
+	application:stop(public_key),    
+	application:stop(asn1),
+	application:stop(json_rec),
+	application:stop(oauth2),
+	application:stop(mochiweb),
+	application:stop(jesse),
+	application:stop(jiffy),
+	application:stop(syntax_tools),
+	application:stop(xmerl),
+	application:stop(compiler),
+	application:stop(poolboy),
+	application:stop(jsx),
+	application:stop(erlydtl),
+	application:stop(cowboy),
+	application:stop(cowlib),
+	application:stop(ranch),
+	application:stop(odbc),
+    application:stop(ssl),
+    application:stop(inets),
+    application:stop(crypto),
+    application:stop(oauth2).

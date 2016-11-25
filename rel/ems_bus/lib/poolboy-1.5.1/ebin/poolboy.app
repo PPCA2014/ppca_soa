@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {15,30,52}
+%% app generated at {2016,11,25} {19,12,49}
 {application,poolboy,
              [{description,"A hunky Erlang worker pool factory"},
               {vsn,"1.5.1"},

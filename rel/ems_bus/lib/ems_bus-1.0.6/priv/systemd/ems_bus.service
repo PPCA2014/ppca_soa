@@ -3,9 +3,9 @@ Description=ems_bus
 After=network.target
 
 [Service]
-Type=simple
-User=erlangms
-Group=erlangms
+Type=forking
+User=agilar
+Group=users
 ExecStart=/var/opt/ems_bus/bin/ems_bus start
 
 [Install]

@@ -15,14 +15,6 @@
 
 
 start(_StartType, StartArgs) ->
-    application:start(oauth2),
-    application:start(crypto),
-	application:start(ssl),    
-    application:start(odbc),
-    application:start(ranch),
-	application:start(cowlib),
-	application:start(cowboy),
-	application:start(erlydtl),
 	case ems_config:start() of
 		{ok, _Pid} ->
 			T1 = ems_util:get_milliseconds(),
@@ -52,13 +44,6 @@ stop(_State) ->
     ems_bus_sup:stop(),
     ems_logger:stop(),
 	ems_config:stop(),
-    application:stop(ssl),
-    application:stop(crypto),
-    application:stop(oauth2),
-    application:stop(odbc),
-	application:start(cowboy),
-	application:start(cowlib),
-	application:start(ranch),
     ok.
     
     

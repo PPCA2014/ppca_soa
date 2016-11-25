@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {15,30,52}
+%% app generated at {2016,11,25} {19,12,49}
 {application,parse_trans,
              [{description,"Parse transform library"},
               {vsn,"3.0.0"},

@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {15,30,52}
+%% app generated at {2016,11,25} {19,12,48}
 {application,jesse,
              [{description,"jesse (JSon Schema Erlang) is an implementation of a JSON Schema validator for Erlang."},
               {vsn,"1.4.0-11-g9ef92c4"},

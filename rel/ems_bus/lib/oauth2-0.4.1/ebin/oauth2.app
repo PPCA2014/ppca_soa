@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {15,30,52}
+%% app generated at {2016,11,25} {19,12,48}
 {application,oauth2,
              [{description,"Erlang OAuth 2.0 implementation"},
               {vsn,"0.4.1"},

@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {15,30,52}
+%% app generated at {2016,11,25} {19,12,48}
 {application,mochiweb,
              [{description,"MochiMedia Web Server"},
               {vsn,"2.15.1"},

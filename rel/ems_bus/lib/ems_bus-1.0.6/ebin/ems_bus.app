@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {15,30,50}
+%% app generated at {2016,11,25} {19,12,47}
 {application,ems_bus,
              [{description,"ErlangMS"},
               {vsn,"1.0.6"},
@@ -17,10 +17,10 @@
                         ems_health_service,ems_http_handler,ems_http_listener,
                         ems_http_server,ems_http_util,ems_http_worker,
                         ems_info_service,ems_ldap_handler,ems_ldap_listener,
-                        ems_ldap_server,ems_ldap_util,ems_logger,
-                        ems_odbc_pool,ems_odbc_pool_worker,
-                        ems_options_service,ems_page,ems_pool,
-                        ems_portal_dashboard,ems_request,ems_schema,
+                        ems_ldap_server,ems_ldap_service,ems_ldap_util,
+                        ems_ldap_worker,ems_logger,ems_odbc_pool,
+                        ems_odbc_pool_worker,ems_options_service,ems_page,
+                        ems_pool,ems_portal_dashboard,ems_request,ems_schema,
                         ems_socket,ems_static_file_service,ems_tcp_util,
                         ems_user,ems_user_service,ems_util,
                         ems_web_application,ems_web_service,
