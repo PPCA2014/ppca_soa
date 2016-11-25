@@ -1,0 +1,12 @@
+[Unit]
+Description=ems_bus
+After=network.target
+
+[Service]
+Type=simple
+User=erlangms
+Group=erlangms
+ExecStart=/var/opt/ems_bus/bin/ems_bus start
+
+[Install]
+WantedBy=multi-user.target
