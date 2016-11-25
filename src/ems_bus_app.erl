@@ -15,7 +15,6 @@
 
 
 start(_StartType, StartArgs) ->
-    io:format("aqui1\n"),
     application:start(oauth2),
     application:start(crypto),
 	application:start(ssl),    
@@ -26,16 +25,12 @@ start(_StartType, StartArgs) ->
 	application:start(erlydtl),
 	case ems_config:start() of
 		{ok, _Pid} ->
-			io:format("aqui2\n"),
 			T1 = ems_util:get_milliseconds(),
 			ems_db:start(),
-			io:format("aqui2.1\n"),
 			case ems_catalog_loader:init_catalog() of
 				ok ->
-					io:format("aqui2.2\n"),
 					ems_dispatcher:start(),
 					ems_health:start(),
-					io:format("aqui2.3\n"),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					erlang:send_after(1500, spawn(fun() -> 
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
