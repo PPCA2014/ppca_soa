@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {19,12,48}
+%% app generated at {2016,11,25} {20,42,49}
 {application,erlydtl,
              [{description,"Django Template Language for Erlang"},
               {vsn,"0.12.1"},

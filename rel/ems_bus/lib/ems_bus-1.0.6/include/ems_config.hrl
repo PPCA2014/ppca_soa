@@ -113,15 +113,7 @@
 
 
 %  Definição para o arquivo de configuração
--record(config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
-				 tcp_listen_address_t,			%% Quais IPs das interfaces de rede que o barramento vai ouvir (formato de tupla para inet)
-				 tcp_port, 						%% Qual a porta que será utilizada para o barramento
- 				 tcp_keepalive, 				%% Propriedade keepalive do TCP (true/false)
-				 tcp_nodelay, 					%% Propriedade nodelay do TCP (true/false)
-				 tcp_max_http_worker,			%% Quantos workers serão criados para cada listener
-				 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
-				 tcp_allowed_address_t,			%% Faixa de ips que são permitidos acessar os serviços do barramento (formato de tupla para inet)
-				 log_file_dest,					%% Caminho para a pasta dos logs do barramento
+-record(config, {log_file_dest,					%% Caminho para a pasta dos logs do barramento
 				 log_file_checkpoint,			%% De quanto em quanto tempo será descarregado os buffers do módulo msbus_logger (DEFAULT 6 segundos)
 				 cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,				%% Lista de hosts para pesquisar os serviços
@@ -129,12 +121,7 @@
 				 ems_hostname,					%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,						%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,					%% Nome do arquivo de configuração (útil para saber o local do arquivo)
-				 ems_debug,						%% Modo debug (true/false)
-				 ldap_tcp_port, 				%% ldap tcp port
-				 ldap_datasource = "",			%% ldap datasource
-				 ldap_sql_find_user = "",		%% sql to find user
-				 ldap_admin = "",				%% admin of ldap
-				 ldap_password_admin = ""		%% password of admin ldap
+				 ems_debug
 		 }). 	
 
 

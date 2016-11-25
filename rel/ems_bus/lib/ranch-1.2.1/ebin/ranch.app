@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {19,12,49}
+%% app generated at {2016,11,25} {20,42,50}
 {application,ranch,
              [{description,"Socket acceptor pool for TCP protocols."},
               {vsn,"1.2.1"},

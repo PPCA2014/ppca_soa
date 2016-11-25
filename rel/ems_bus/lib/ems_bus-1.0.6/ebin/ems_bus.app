@@ -1,4 +1,4 @@
-%% app generated at {2016,11,25} {19,12,47}
+%% app generated at {2016,11,25} {20,42,48}
 {application,ems_bus,
              [{description,"ErlangMS"},
               {vsn,"1.0.6"},
@@ -28,8 +28,10 @@
                         ldap_sqlserver_middleware,produto_middleware,sha1,
                         user_middleware]},
               {registered,[]},
-              {applications,[kernel,stdlib,ranch,cowboy,jsx,poolboy,jiffy,
-                             mochiweb,json_rec,oauth2,jesse,erlydtl]},
+              {applications,[kernel,stdlib,asn1,crypto,public_key,ssl,inets,
+                             xmerl,syntax_tools,compiler,parse_trans,odbc,
+                             ranch,cowlib,cowboy,erlydtl,json_rec,jsx,poolboy,
+                             jiffy,jesse,mochiweb,oauth2]},
               {included_applications,[]},
               {env,[]},
               {maxT,infinity},
