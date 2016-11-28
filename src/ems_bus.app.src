@@ -24,7 +24,6 @@
 					jsx,
 					poolboy,
 					jiffy,
-					jesse,
 					mochiweb,
 					oauth2
                  ]},
