@@ -72,7 +72,7 @@ rm -rf priv/db
 cd ..
 
 # Empacotando
-tar -czf ems_bus-$VERSION ems_bus/
+tar -czf ems_bus-$VERSION.gz ems_bus/
 
 echo Feito!
 
