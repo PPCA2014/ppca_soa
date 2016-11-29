@@ -37,8 +37,8 @@
 
 
 # Executar a partir do diretório do próprio script
-current_dir=$(dirname $0)
-cd $current_dir
+WORKING_DIR=$(dirname $0)
+cd $WORKING_DIR
 
 
 # Pega a versão do barramneto que está no arquivo rebar.config
@@ -50,10 +50,9 @@ echo "Aguarde, gerando a versão ems-bus-$VERSION_RELEASE do barramento, isso de
 
 # Clean
 echo "Limpando a pasta de release..."
-rm -rf ems-bus
-rm -rf ems-bus-$VERSION_RELEASE.gz
-rm -rf deb/ems-bus_$VERSION_RELEASE_amd64.deb
-rm -rf ems-bus_amd64/usr/lib/ems-bus  
+rm -Rf ems-bus
+rm -Rf ems-bus-$VERSION_RELEASE.tar.gz
+rm -rf deb/*.deb
 
 
 # Recompila todo projeto antes de iniciar a release
@@ -87,19 +86,18 @@ cd ..
 
 # Cria o arquivo do pacote gz
 echo "Criando pacote ems-bus-$VERSION_RELEASE.gz..."
-tar -czf ems-bus-$VERSION_RELEASE.gz ems-bus/ &
+tar -czf ems-bus-$VERSION_RELEASE.tar.gz ems-bus/ &
 
 
-# ####### Criar o pacote ems-bus_x.x.x_amd64.deb para instalação automatizada ############
+# ####### Criar o pacote ems-bus-x.x.x.Ubuntu-yakkety_amd64.deb ############
 
-echo "Criando pacote debian ems-bus-$VERSION_RELEASE.deb..."
-cp -R ems-bus ems-bus_amd64/usr/lib/ems-bus 
-
-# Atualiza a versão do pacote no arquivo DEBIAN/control 
-sed -ri "s/Version: .*/Version: 1:$VERSION_RELEASE/" ems-bus_amd64/DEBIAN/control 
-
-# Compila e gera o pacote deb
-#dpkg-deb -b ems-bus_amd64 deb
+echo "Criando o pacote $DEB_PACKAGE.deb..."
+SKEL_DEB_PACKAGE=deb/ems-bus-Ubuntu-yakkety_amd64
+rm -Rf $SKEL_DEB_PACKAGE/usr/lib/ems-bus  
+cp -R ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus 
+# Atualiza a versão no arquivo DEBIAN/control 
+sed -ri "s/Version: .*/Version: 1:$VERSION_RELEASE/" $SKEL_DEB_PACKAGE/DEBIAN/control 
+dpkg-deb -b $SKEL_DEB_PACKAGE deb
 
 
 
