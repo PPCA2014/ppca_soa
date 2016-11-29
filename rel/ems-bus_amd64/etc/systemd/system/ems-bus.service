@@ -1,0 +1,12 @@
+[Unit]
+Description=ems_bus
+After=network.target
+
+[Service]
+Type=forking
+User=agilar
+Group=users
+ExecStart=ems-bus start
+
+[Install]
+WantedBy=multi-user.target

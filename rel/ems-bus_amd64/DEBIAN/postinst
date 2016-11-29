@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# we can be called with the following arguments (6.5 of Debian policy):
+#  configure:         (our version): installing/configuring new version
+#  abort-upgrade:     (old version): upgrading to a new version failed
+#  abort-remove:      (our version): removing this package failed
+#  abort-deconfigure: (our version): error during resolving conflicts
+
+## @todo Do we really gain anything from not just executing everything
+##       unconditionally?
+
+LOG="/var/log/ems-bus.log"
+
+# defaults
+[ -r /etc/default/ems-bus ] && . /etc/default/ems-bus
+
+
+if [ "$1" = "configure" ]; then
+
+  # create users groups
+  addgroup --system erlangms || true
+
+  # The starters need to be Suid root.
+  if ! dpkg-statoverride --list /usr/lib/ems-bus/bin/ems-bus > /dev/null 2>&1; then
+    chmod 4511 /usr/lib/ems-bus/bin/ems-bus
+  fi
+fi
+
+
+
+# Install and start the new service scripts.
+systemctl enable ems-bus.service > /dev/null || true
+systemctl daemon-reload || true
+systemctl start ems-bus.service || true
+
+exit 0

@@ -17,3 +17,4 @@ fprof**
 _build/**
 deps/**
 .DS_Store*
+*.gz
