@@ -1,0 +1,11 @@
+ems-bus
+*~
+#*
+*.log
+*.dump
+*.gz
+*.tar
+*.gz
+*.zip
+*.tar.gz
+*.gz
