@@ -1,0 +1,10 @@
+[Unit]
+Description=ems-bus server
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/lib/ems-bus/bin/ems-bus start
+
+[Install]
+WantedBy=multi-user.target

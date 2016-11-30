@@ -58,10 +58,10 @@ echo "Aguarde, gerando a versão ems-bus-$VERSION_RELEASE do barramento, isso de
 # Clean
 echo "Limpando a pasta rel..."
 rm -Rf ems-bus
-rm -Rf ems-bus-$VERSION_RELEASE.tar.gz
+rm -Rf *.tar.gz
 rm -Rf deb/*.deb
-for skel_deb_folder in `ls -1 deb/`; do
-	rm -Rf deb/$skel_deb_folder/usr/lib/ems-bus
+for SKEL_DEB_PACKAGE in `find ./deb/* -maxdepth 0 -type d`; do
+	rm -Rf deb/$SKEL_DEB_PACKAGE/usr/lib/ems-bus
 done
 
 
@@ -100,22 +100,28 @@ echo "Criando pacote ems-bus-$VERSION_RELEASE.gz..."
 tar -czf ems-bus-$VERSION_RELEASE.tar.gz ems-bus/ &
 
 
-# ####### Criar o pacote ems-bus-x.x.x.Ubuntu-yakkety_amd64.deb ############
+# ####### Criar os pacotes deb para cada distro ############
 
-SKEL_DEB_PACKAGE=deb/ems-bus-Ubuntu-yakkety_amd64
-rm -Rf $SKEL_DEB_PACKAGE/usr/lib/ems-bus  
-cp -R ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus 
-# Atualiza a versão no arquivo DEBIAN/control 
-sed -ri "s/Version: .*/Version: 1:$VERSION_RELEASE/" $SKEL_DEB_PACKAGE/DEBIAN/control 
-echo "Criando pacote $SKEL_DEB_PACKAGE..."
-dpkg-deb -b $SKEL_DEB_PACKAGE deb || die "Falha ao gerar o pacote $SKEL_DEB_PACKAGE com dpkg-deb!"
+for SKEL_DEB_PACKAGE in `find ./deb/* -maxdepth 0 -type d`; do
+	echo "Criando pacote deb para o template $SKEL_DEB_PACKAGE..."
+	rm -Rf $SKEL_DEB_PACKAGE/usr/lib/ems-bus  
+	cp -R ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus 
+	# Atualiza a versão no arquivo DEBIAN/control 
+	sed -ri "s/Version: .{6}(.*$)/Version: $VERSION_RELEASE-\1/" $SKEL_DEB_PACKAGE/DEBIAN/control
+	dpkg-deb -b $SKEL_DEB_PACKAGE deb || die "Falha ao gerar o pacote $SKEL_DEB_PACKAGE com dpkg-deb!"
+done
+
+
+
+
+
 
 
 #########################################################################################
 
 # Apaga as pastas ems-bus que foram copiados para cada SKEL_DEB_PACKAGE/usr/lib
-for skel_deb_folder in `ls -1 deb/`; do
-	rm -Rf deb/$skel_deb_folder/usr/lib/ems-bus
+for SKEL_DEB_PACKAGE in `find ./deb/* -maxdepth 0 -type d`; do
+	rm -Rf deb/$SKEL_DEB_PACKAGE/usr/lib/ems-bus
 done
 
 

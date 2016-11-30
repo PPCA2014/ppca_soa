@@ -29,6 +29,9 @@
 % Caminho do catálogo de serviços
 -define(CONF_PATH, ?PRIV_PATH ++ "/conf").
 
+% Caminho da pasta log
+-define(LOG_PATH, ?PRIV_PATH ++ "/log").
+
 % Caminho do favicon
 -define(FAVICON_PATH, ?PRIV_PATH ++ "/favicon.ico").
 
@@ -67,7 +70,6 @@
 
 % Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
 -define(LOG_ARCHIVE_CHECKPOINT, 10000 * 60 * 60 * 4).  % Por default são 4 horas
-
 
 % Quantos workers HTTP instanciar se não especificado no arquivo de configuração
 -define(MIN_HTTP_WORKER, 1).

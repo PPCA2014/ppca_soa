@@ -1,6 +1,6 @@
 Package: ems-bus
 Source: ems-bus
-Version: 1:1.0.6
+Version: 1.0.7-Ubuntu~yakkety
 Architecture: amd64
 Depends: procps, libc6, libncurses5, libssl1.0.0 | libssl1.0.2, libgcc1, libstdc++6, libwxbase2.8-0 | libwxbase3.0-0 | libwxbase3.0-0v5, libwxgtk2.8-0 | libwxgtk3.0-0 | libwxgtk3.0-0v5, libsctp1, unixodbc, tdsodbc:amd64, odbcinst1debian2:amd64, odbcinst, libsqliteodbc:amd64,  libodbc1:amd64
 Maintainer: ErlangMS Team <evertonagilar@gmail.com>

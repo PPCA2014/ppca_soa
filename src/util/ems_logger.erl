@@ -37,7 +37,6 @@
 			    buffer_tela = [],        		% The messages go first to a buffer subsequently to screen
 			    flag_checkpoint = false,      	% checkpoint to unload the buffer to the log file
 			    flag_checkpoint_tela = false, 	% checkpoint to unload the screen buffer
-				log_file_dest,           		% path configuration where the logs will be written
 				log_file_checkpoint,      		% timeout configuration to unload file buffer
 				log_file_name,		      		% timeout configuration to unload file buffer
 				log_file_handle,				% IODevice of file
@@ -107,19 +106,19 @@ show_response(Value) ->
 %%====================================================================
  
 init(#service{properties = Props}) ->
-	Config = ems_config:getConfig(),
-	LogFileDest = binary_to_list(maps:get(<<"log_file_dest">>, Props, <<"log">>)),
 	Checkpoint = maps:get(<<"log_file_checkpoint">>, Props, ?LOG_FILE_CHECKPOINT),
-	case get_filename_device(LogFileDest) of
+	Debug = maps:get(<<"debug">>, Props, false),
+	case get_filename_device() of
 		{ok, NomeArqLog, IODevice} ->
 			info("~s", [?SERVER_NAME]),
 			set_timeout_for_get_filename_device(),
-			{ok, #state{log_file_dest = LogFileDest, 
-						log_file_checkpoint = Checkpoint,
+			{ok, #state{log_file_checkpoint = Checkpoint,
 						log_file_name = NomeArqLog,
 						log_file_handle = IODevice,
-						debug = Config#config.ems_debug}};
-		{error, Reason} -> {stop, Reason}
+						debug = Debug}};
+		{error, Reason} -> 
+			io:format("Processo ems_logger falhou ao iniciar: ~p.", [Reason]),
+			{stop, Reason}
 	end.
     
 handle_cast(shutdown, State) ->
@@ -185,16 +184,15 @@ handle_info(checkpoint, State) ->
    NewState = sync_buffer(State),
    {noreply, NewState};
 
-handle_info(checkpoint_get_filename_device, 
-			State = #state{log_file_dest = LogFileDest,
-						   log_file_handle = IODevice}) ->
+handle_info(checkpoint_get_filename_device, State = #state{log_file_handle = IODevice, 
+														   log_file_name = CurLogFileName}) ->
 	file:close(IODevice),
-	case get_filename_device(LogFileDest) of
+	case get_filename_device() of
 		{ok, NewLogFileName, IODevice2} ->
 			set_timeout_for_get_filename_device(),
 			{noreply, State#state{log_file_name = NewLogFileName, log_file_handle = IODevice2}};
 		_Error ->
-			ems_logger:error("Não foi possível substituir arquivo de log ~p. Ele poderá crescer indefinidamente!", [LogFileDest]),
+			ems_logger:error("Não foi possível substituir arquivo de log ~p. Ele poderá crescer indefinidamente!", [CurLogFileName]),
 			{noreply, State}
 	end.
 
@@ -213,10 +211,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
     
-get_filename_device(LogFileDest) -> 
+get_filename_device() -> 
 	{{Ano,Mes,Dia},{Hora,Min,_Seg}} = calendar:local_time(),
 	NodeName = ems_util:get_node_name(),
-	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~2..0w~2..0w~4..0w_~2..0w~2..0w.log", [LogFileDest, atom_to_list(node()), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
+	NomeArqLog = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~2..0w~2..0w~4..0w_~2..0w~2..0w.log", [?LOG_PATH, atom_to_list(node()), Ano, ems_util:mes_extenso(Mes), NodeName, Dia, Mes, Ano, Hora, Min])),
 	case filelib:ensure_dir(NomeArqLog) of
 		ok ->
 			case file:open(NomeArqLog, [append]) of
@@ -224,7 +222,7 @@ get_filename_device(LogFileDest) ->
 				Error -> Error
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:error("Falhou ao abrir arquivo de log ~p: ~p.", [NomeArqLog, Reason]),
+			io:format("Falhou ao abrir arquivo de log ~p: ~p.", [NomeArqLog, Reason]),
 			Error
 	end.
 

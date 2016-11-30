@@ -25,7 +25,10 @@ start(_StartType, StartArgs) ->
 					ems_health:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					erlang:send_after(2500, spawn(fun() -> 
-														ems_logger:info("Hosts in the cluster: ~p", [net_adm:host_file()]),
+														ems_logger:info("Hosts in the cluster: ~p", [ case net_adm:host_file() of 
+																											{error, enoent} -> localhost; 
+																											Hosts -> Hosts 
+																									  end]),
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
 														ems_logger:sync(),
 														ems_logger:set_level(info)
