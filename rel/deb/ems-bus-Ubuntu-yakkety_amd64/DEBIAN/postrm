@@ -1,0 +1,35 @@
+#!/bin/sh
+
+#
+# we can be called with the following arguments (6.5 of Debian policy):
+#  remove:            (our version): remove our package
+#  purge:             (our version): purge our package
+#  upgrade:           (our version): upgrade to a new version
+#  failed-upgrade     (old version): failed to upgrade to a new version
+#  abort-install      (our version): aborted install
+#  abort-upgrade      (old version): aborted upgrade
+
+if [ "$1" = "purge" ]; then
+
+	# pare e desative o serviço systemctl
+	systemctl stop ems-bus.service  > /dev/null 2>&1 || true
+	systemctl disable ems-bus.service > /dev/null 2>&1 || true
+
+	# clean
+	rm -rf /usr/lib/ems-bus
+	rm -f /etc/systemd/system/ems-bus.service
+	rm -f /etc/ems-bus
+
+	# remove user
+	delgroup erlangms > /dev/null 2>&1 || true
+
+	# Automatically added by dh_installdebconf
+	if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+		. /usr/share/debconf/confmodule
+		db_purge
+	fi
+	# End automatically added section
+
+fi
+
+exit 0

@@ -89,27 +89,6 @@ format_mnesia_operator("lte") -> "=<";
 format_mnesia_operator(_) -> erlang:error(invalid_operator_filter).
 
 
-parse_sort([]) -> "";
-parse_sort(SortFields) -> 
-	SortFields2 = string:tokens(SortFields, ","),
-	"order by " ++ parse_sort(SortFields2, []).
-
-parse_sort([], L) -> string:join(L, ",");		
-parse_sort([F|Fs], L) -> 
-	F2 = string:tokens(string:to_lower(F), " "),
-	case length(F2) of
-		2 -> 
-			F3 = parse_sort_asc_desc(F, tl(F2)),
-			parse_sort(Fs, [F3 | L]);
-		_ -> parse_sort(Fs, [F | L])
-	end.
-		
-
-parse_sort_asc_desc(F, ["asc"]) -> F;
-parse_sort_asc_desc(F, ["desc"]) -> F;
-parse_sort_asc_desc(_, _) -> erlang:error(invalid_sort_filter).
-	
-
 parse_limit(Limit, Offset) when Limit > 0, Offset >= 0, Limit =< ?MAX_LIMIT_API_QUERY, Offset =< ?MAX_OFFSET_API_QUERY -> {Limit, Offset};
 parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 

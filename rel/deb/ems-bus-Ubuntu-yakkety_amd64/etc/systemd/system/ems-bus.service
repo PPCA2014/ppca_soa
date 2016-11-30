@@ -1,12 +1,10 @@
 [Unit]
-Description=ems_bus
+Description=ems-bus server
 After=network.target
 
 [Service]
 Type=forking
-User=agilar
-Group=users
-ExecStart=ems-bus start
+ExecStart=/usr/lib/ems-bus/bin/ems-bus start
 
 [Install]
 WantedBy=multi-user.target

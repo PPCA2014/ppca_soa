@@ -18,7 +18,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([getConfig/0]).
+-export([getConfig/0, get_name_arq_config/0]).
 
 -define(SERVER, ?MODULE).
 
@@ -84,7 +84,7 @@ get_name_arq_config() ->
 	case init:get_argument(home) of
 		{ok, [[Home]]} -> 
 			NomeArqConfig = lists:concat([Home, "/.erlangms/", node(), ".conf"]),
-			% O arquivo no home deve existir!
+			% O arquivo no HOME do usuário deve existir!
 			case file:read_file(NomeArqConfig) of 
 				{ok, _} -> NomeArqConfig;
 				_ -> ?CONF_FILE_PATH
@@ -117,9 +117,7 @@ le_config() ->
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
-	#config{ log_file_dest 				= binary_to_list(maps:get(<<"log_file_dest">>, Json, <<"logs">>)),
-			 log_file_checkpoint		= maps:get(<<"log_file_checkpoint">>, Json, ?LOG_FILE_CHECKPOINT),
-			 cat_host_alias				= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
+	#config{ cat_host_alias				= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
 			 cat_host_search			= maps:get(<<"cat_host_search">>, Json, <<>>),							
 			 cat_node_search			= maps:get(<<"cat_node_search">>, Json, <<>>),
 			 ems_hostname 				= Hostname2,
@@ -132,9 +130,7 @@ parse_config(Json, NomeArqConfig) ->
 get_default_config() ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
-	#config{ log_file_dest 				= <<"log">>,
-			 log_file_checkpoint		= ?LOG_FILE_CHECKPOINT,
-			 cat_host_alias				= #{<<"local">> => Hostname2},
+	#config{ cat_host_alias				= #{<<"local">> => Hostname2},
 			 cat_host_search			= <<>>,							
 			 cat_node_search			= <<>>,
 			 ems_hostname 				= Hostname2,

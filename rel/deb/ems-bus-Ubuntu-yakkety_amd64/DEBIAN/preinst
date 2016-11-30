@@ -11,6 +11,10 @@
 
 if [ "$1" = "install" -o "$1" = "upgrade" ]; then
 
+  . /usr/share/debconf/confmodule
+  db_version 2.0
+  db_capb backup
+  
   # Para o serviço pre instalado
   systemctl stop ems-bus.service 2>/dev/null || true	
 

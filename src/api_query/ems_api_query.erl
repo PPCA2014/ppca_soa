@@ -8,7 +8,7 @@
 
 -module(ems_api_query).
 
--export([find/7, find_by_id/4, insert/3, update/4]).
+-export([find/7, find_by_id/4, insert/3, update/4, delete/3]).
 
 -include("../../include/ems_schema.hrl").
 
@@ -52,4 +52,4 @@ update(Id, Payload, Service, Datasource = #service_datasource{type = ConnType}) 
 			end
 	end.
 
-delete(Id, Service, Datasource = #service_datasource{type = ConnType}) -> ok.
+delete(_Id, _Service, _Datasource = #service_datasource{type = _ConnType}) -> ok.

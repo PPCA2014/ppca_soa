@@ -110,16 +110,16 @@ do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerN
 			{{error, Reason}, State}
 	end.
 
-do_stop_listener(Port, IpAddress, State) ->
-	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
-		[PidListener|_] ->
-			gen_server:call(PidListener, shutdown),
-			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
-			ems_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
-			{ok, NewState};
-		_ -> 
-			{{error, enolisten}, State}
-	end.
+%%do_stop_listener(Port, IpAddress, State) ->
+%%	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
+%%		[PidListener|_] ->
+%%			gen_server:call(PidListener, shutdown),
+%%			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
+%%			ems_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
+%%			{ok, NewState};
+%%		_ -> 
+%%			{{error, enolisten}, State}
+%%	end.
 	
 parse_tcp_listen_address(ListenAddress) ->
 	lists:map(fun(IP) -> 
@@ -131,9 +131,6 @@ parse_allowed_address(AllowedAddress) ->
 	lists:map(fun(IP) -> 
 					ems_http_util:mask_ipaddress_to_tuple(IP)
 			  end, AllowedAddress).
-
-parse_keepalive(Keepalive) ->
-	ems_util:binary_to_bool(Keepalive).
 
 parse_tcp_port(<<Port/binary>>) -> 
 	parse_tcp_port(binary_to_list(Port));		

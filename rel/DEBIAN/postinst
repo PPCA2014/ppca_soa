@@ -24,14 +24,15 @@ if [ "$1" = "configure" ]; then
   if ! dpkg-statoverride --list /usr/lib/ems-bus/bin/ems-bus > /dev/null 2>&1; then
     chmod 4511 /usr/lib/ems-bus/bin/ems-bus
   fi
+  
+  
 fi
 
 
 
 # Install and start the new service scripts.
-systemctl daemon-reload  > /dev/null 2>&1 || true
-systemctl enable ems-bus.service  > /dev/null 2>&1 || true
-systemctl daemon-reload  > /dev/null 2>&1 || true
-systemctl start ems-bus.service  > /dev/null 2>&1 || true
+systemctl enable ems-bus.service > /dev/null 2>&1 || true
+systemctl daemon-reload > /dev/null 2>&1 || true
+systemctl start ems-bus.service > /dev/null 2>&1 || true
 
 exit 0

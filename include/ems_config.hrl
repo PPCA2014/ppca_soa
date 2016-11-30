@@ -113,9 +113,7 @@
 
 
 %  Definição para o arquivo de configuração
--record(config, {log_file_dest,					%% Caminho para a pasta dos logs do barramento
-				 log_file_checkpoint,			%% De quanto em quanto tempo será descarregado os buffers do módulo msbus_logger (DEFAULT 6 segundos)
-				 cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
+-record(config, {cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,				%% Lista de hosts para pesquisar os serviços
 				 cat_node_search,				%% Lista de nodes para pesquisar os serviços
 				 ems_hostname,					%% Nome da maquina onde o barramento está sendo executado

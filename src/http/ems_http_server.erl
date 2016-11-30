@@ -47,8 +47,8 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(Service = #service{name = Name, 
-						properties = Props}) ->
+init(#service{name = Name, 
+			  properties = Props}) ->
  	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Props, [<<"127.0.0.1">>])),
  	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Props, [])),
  	ServerName = binary_to_list(Name),
@@ -58,7 +58,7 @@ init(Service = #service{name = Name,
 		tcp_allowed_address = AllowedAddress,
 		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
 		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, 2301)),
-		tcp_keepalive = parse_keepalive(maps:get(<<"tcp_keepalive">>, Props, true)),
+		tcp_keepalive = maps:get(<<"tcp_keepalive">>, Props, true),
 		tcp_nodelay = ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Props, true)),
 		tcp_accept_timeout = maps:get(<<"tcp_accept_timeout">>, Props, 30000),
 		tcp_backlog = maps:get(<<"tcp_backlog">>, Props, 128),
@@ -119,16 +119,16 @@ do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerN
 			{{error, Reason}, State}
 	end.
 
-do_stop_listener(Port, IpAddress, State) ->
-	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
-		[PidListener|_] ->
-			gen_server:call(PidListener, shutdown),
-			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
-			ems_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
-			{ok, NewState};
-		_ -> 
-			{{error, enolisten}, State}
-	end.
+%%do_stop_listener(Port, IpAddress, State) ->
+%%	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
+%%		[PidListener|_] ->
+%%			gen_server:call(PidListener, shutdown),
+%%			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
+%%			ems_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
+%%			{ok, NewState};
+%%		_ -> 
+%%			{{error, enolisten}, State}
+%%	end.
 	
 parse_tcp_listen_address(ListenAddress) ->
 	lists:map(fun(IP) -> 
@@ -141,9 +141,6 @@ parse_allowed_address(AllowedAddress) ->
 					ems_http_util:mask_ipaddress_to_tuple(IP)
 			  end, AllowedAddress).
 
-parse_keepalive(Keepalive) ->
-	ems_util:binary_to_bool(Keepalive).
-
 parse_tcp_port(<<Port/binary>>) -> 
 	parse_tcp_port(binary_to_list(Port));		
 parse_tcp_port(Port) when is_list(Port) -> 
@@ -154,13 +151,6 @@ parse_tcp_port(Port) when is_integer(Port) ->
 		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
 	end.
 	
-parse_max_http_worker(<<Value/binary>>) -> 
-	parse_max_http_worker(binary_to_list(Value));
-parse_max_http_worker(Value) -> 
-	case ems_consist:is_range_valido(Value, 1, ?MAX_HTTP_WORKER_RANGE) of
-		true -> Value;
-		false -> erlang:error("Parameter tcp_max_http_worker invalid.")
-	end.
 
 	
 	

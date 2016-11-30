@@ -45,7 +45,7 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 					find_by_id -> do_find_by_id(Request, Datasource2);
 					insert -> do_insert(Request, Datasource2);
 					update -> do_update(Request, Datasource2);
-					delete -> do_update(Request, Datasource2)
+					delete -> do_delete(Request, Datasource2)
 				end,
 				ems_db:release_connection(Datasource2),
 				case Result of
