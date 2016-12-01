@@ -1,12 +1,12 @@
 Package: ems-bus
 Source: ems-bus
-Version: 1.0.7-Debian~jessie
+Version: 1.0.7-Debian-jessie
 Architecture: amd64
-Depends: procps, libc6, libncurses5, libssl1.0.0 | libssl1.0.2, libgcc1, libstdc++6, libwxbase2.8-0 | libwxbase3.0-0 | libwxbase3.0-0v5, libwxgtk2.8-0 | libwxgtk3.0-0 | libwxgtk3.0-0v5, libsctp1, unixodbc, tdsodbc, freetds-common, odbcinst1debian2, odbcinst, libcppdb-sqlite3-0,  libodbc1, libiodbc2, libcppdb-odbc0 
+Depends: procps, libc6, libncurses5, libssl1.0.0 | libssl1.0.2, libgcc1, libstdc++6, unixodbc, tdsodbc, freetds-common, odbcinst1debian2, odbcinst, libcppdb-sqlite3-0,  libodbc1, libiodbc2, libcppdb-odbc0, libltdl7, libcppdb0 
 Maintainer: ErlangMS Team <evertonagilar@gmail.com>
 Section: contrib/misc
 Priority: extra
-Recommends:  curl
+Recommends:  
 Suggests: default-jre-headless | java2-runtime-headless | java1-runtime-headless | java2-runtime | java1-runtime
 Conflicts: ems-bus
 Replaces: ems-bus
