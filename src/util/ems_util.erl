@@ -243,8 +243,6 @@ binary_to_bool(true) -> true;
 binary_to_bool(false) -> false;
 binary_to_bool(<<"true">>) -> true;
 binary_to_bool(<<"false">>) -> false;
-binary_to_bool(<<true>>) -> true;
-binary_to_bool(<<false>>) -> false;
 binary_to_bool(<<"1">>) -> true;
 binary_to_bool(<<"0">>) -> false;
 binary_to_bool(<<1>>) -> true;

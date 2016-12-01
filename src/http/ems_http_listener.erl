@@ -43,8 +43,8 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({IpAddress, 
-	  TcpConfig = #tcp_config{tcp_port = Port,
+init({_IpAddress, 
+	  _TcpConfig = #tcp_config{tcp_port = Port,
 							  tcp_is_ssl = IsSsl,
 							  tcp_ssl = Ssl},
 	  ListenerName}) ->
@@ -73,11 +73,8 @@ init({IpAddress,
 	
 		
 		
-handle_cast(shutdown, State=#state{lsocket = undefined}) ->
-    {stop, normal, State};
-    
-handle_cast(shutdown, State=#state{lsocket = LSocket}) ->
-    {stop, normal, State#state{lsocket = undefined}}.
+handle_cast(shutdown, State) ->
+    {stop, normal, State}.
 
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
