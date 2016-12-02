@@ -1,7 +1,30 @@
-#!/bin/sh
+#!/bin/bash
 #
-# build msbus with rebar
-# author Everton de Vargas Agilar <<evertonagilar@gmail.com>>
+# Autor: Everton de Vargas Agilar
 #
-rm -Rf Mnesia*
-tools/rebar/rebar get-deps compile
+# Objetivo: Faz o build do projeto.
+#
+# Modo de usar: 
+#
+#    $ ./build.sh
+#
+#
+#
+## Histórico de modificações do software:
+#
+# Data       |  Quem           |  Mensagem  
+# -----------------------------------------------------------------------------------------------------
+# 10/11/2015  Everton Agilar     Release inicial do script de release
+#
+#
+#
+#
+#
+#
+#
+########################################################################################################
+
+rm -Rf priv/log
+rm -Rf priv/db
+rm -Rf log
+tools/rebar/rebar clean get-deps compile
