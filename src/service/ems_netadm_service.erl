@@ -14,18 +14,18 @@
   
 names(Request) -> 
 	ContentData = case net_adm:names() of
-		{ok, Names} -> Names;
+		{ok, Names} -> ems_util:json_encode(Names);
 		Error -> Error
 	end,
 	{ok, Request#request{code = 200, 
-						 response_data = ems_schema:to_json(ContentData)}
+						 response_data = ContentData}
 	}.
 
 world(Request) -> 
 	try
 		ContentData = [ atom_to_list(R) || R <- net_adm:world() ],
 		{ok, Request#request{code = 200, 
-							 response_data = ems_schema:to_json(ContentData)}
+							 response_data = ems_util:json_encode(ContentData)}
 		}
 	catch 
 		_Exception:_Reason -> 
