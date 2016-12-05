@@ -38,6 +38,7 @@ dispatch_request(Request = #request{type = "GET",
 dispatch_request(Request) -> lookup_request(Request).
 	
 lookup_request(Request = #request{url = Url}) -> 
+	?DEBUG("Lookup request ~p.", [Request]),
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
 			case ems_auth_user:autentica(Service, Request) of
@@ -93,7 +94,9 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 	% Qual node vamos selecionar
 	Node = lists:nth(Index2, HostList),
 	% Este node está vivo? Temos que rotear para um node existente
-	case net_adm:ping(Node) of
+	Ping = net_adm:ping(Node),
+	?DEBUG("Ping ~p: ~p.", [Node, Ping]),
+	case Ping of
 		pong -> {ok, Node};
 		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.

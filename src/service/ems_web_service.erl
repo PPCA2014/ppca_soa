@@ -52,6 +52,7 @@ execute(Request = #request{rid = Rid,
 	case Host == '' of
 		true ->	
 			ems_logger:info("Send msg to ~p.", [ServName]),
+			?DEBUG("Exec: apply(~p, ~p, [~p])", [Module, Function, Request]),
 			apply(Module, Function, [Request]);
 		false ->
 			WebService = ems_pool:checkout(ems_web_service),
@@ -123,4 +124,5 @@ do_execute_remote(#request{rid = Rid,
 										    function_name = FunctionName, 
 										    module = Module}}) ->
 	Msg = {{Rid, Uri, Type, ParamsUrl, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
+	?DEBUG("Msg send to ~p: ~p.", [{Module, Node}, Msg]),
 	{Module, Node} ! Msg.

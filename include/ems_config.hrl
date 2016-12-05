@@ -6,9 +6,20 @@
 %% @copyright ErlangMS Team
 %%********************************************************************
 
-%-ifndef(PRINT).
-%-define(PRINT(Var), io:format("DEBUG: ~p", [??Var, Var])).
-%-endif.
+-ifdef(debug).
+	-define(DEBUG(Msg), io:format("DEBUG: ~p\n", [Msg])).
+	-define(DEBUG(Msg, Params), io:format( "DEBUG: " ++ Msg ++ "\n", Params)).
+-else.
+	-define(DEBUG(Msg), ok).
+	-define(DEBUG(Msg, Params), ok).
+-endif.
+
+-ifdef(native_json).
+	-define(JSON_LIB, jiffy).
+-else.
+	-define(JSON_LIB, jesse).
+-endif.
+
 
 % Tamanho máximo do payload do POST. Por default é 1M
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).

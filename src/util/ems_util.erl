@@ -10,6 +10,8 @@
 
 -compile(export_all).
 
+-include("../../include/ems_config.hrl").
+
 -export([sleep/1,
 		 timestamp_str/0,
 		 json_encode/1,
@@ -143,14 +145,14 @@ item_to_binary(I) -> iolist_to_binary(I).
 json_encode([]) -> <<>>;
 json_encode(T) when is_tuple(T) ->
 	L = tuple_to_binlist(T),
-	jiffy:encode(L);
+	?JSON_LIB:encode(L);
 json_encode(L) when is_list(L) ->
 	case io_lib:printable_list(L) of
 		true -> L2 = iolist_to_binary(L);
 		false -> L2 = list_to_binlist(L)
 	end,
-	jiffy:encode(L2);
-json_encode(Value)-> jiffy:encode(Value).
+	?JSON_LIB:encode(L2);
+json_encode(Value)-> ?JSON_LIB:encode(Value).
 
 
 json_decode_as_map_file(FileName) ->
@@ -166,7 +168,7 @@ json_decode_as_map(JSON) ->
 		Dados1 = binary_to_list(JSON),
 		Dados2 = lists:flatten(re:replace(Dados1, "[\t\r\n]", "", [global, {return,list}])),
 		Dados3 = list_to_binary(Dados2),
-		Result = jiffy:decode(Dados3, [return_maps]),
+		Result = ?JSON_LIB:decode(Dados3, [return_maps]),
 		{ok, Result}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -180,7 +182,7 @@ json_decode(JSON) ->
 			utf8 -> JSON;
 			_ -> erlang:raise(einvalid_json_encoding)
 		end,
-		T = jiffy:decode(JSON2),
+		T = ?JSON_LIB:decode(JSON2),
 		{ok, element(1, T)}
 	catch
 		_Exception:Reason -> {error, Reason}
