@@ -17,7 +17,7 @@
 -ifdef(native_json).
 	-define(JSON_LIB, jiffy).
 -else.
-	-define(JSON_LIB, jesse).
+	-define(JSON_LIB, jsx).
 -endif.
 
 

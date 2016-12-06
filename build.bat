@@ -1,2 +1,1 @@
-del Mnesia*
-tools/rebar/rebar get-deps compile
+tools/rebar/rebar get-deps clean compile --config rebar_win.config

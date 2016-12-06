@@ -23,7 +23,6 @@
 					json_rec,
 					jsx,
 					poolboy,
-					jiffy,
 					mochiweb,
 					oauth2
                  ]},
