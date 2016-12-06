@@ -37,7 +37,7 @@ world(Request) ->
 hostfile(Request) -> 
 	ContentData = net_adm:host_file(),
 	{ok, Request#request{code = 200, 
-						 response_data = ems_schema:to_json(ContentData)}
+						 response_data = ems_util:json_encode(ContentData)}
 	}.
 
 hostname(Request) -> 
