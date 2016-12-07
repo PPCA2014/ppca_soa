@@ -10,6 +10,8 @@
 ##       unconditionally?
 
 LOG="/var/log/ems-bus.log"
+USER_EMS_BUS=erlangms
+GROUP_EMS_BUS=erlangms
 
 # defaults
 [ -r /etc/default/ems-bus ] && . /etc/default/ems-bus
@@ -17,21 +19,41 @@ LOG="/var/log/ems-bus.log"
 
 if [ "$1" = "configure" ]; then
 
-  # create users groups
-  addgroup --system erlangms > /dev/null 2>&1 || true
+  # create users and groups
+  groupadd --system  $GROUP_EMS_BUS
+  useradd -g $GROUP_EMS_BUS --no-create-home --system --home-dir /usr/lib/ems-bus/ --shell /sbin/bash --comment "User do barramento Erlangms ems-bus" $USER_EMS_BUS
+
+  # change owners
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /usr/lib/ems-bus
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /etc/ems-bus
+  chown -f $USER_EMS_BUS:$GROUP_EMS_BUS /usr/bin/ems-bus
+
 
   # The starters need to be Suid root.
   if ! dpkg-statoverride --list /usr/lib/ems-bus/bin/ems-bus > /dev/null 2>&1; then
-    chmod 4511 /usr/lib/ems-bus/bin/ems-bus
+    chmod 4777 /usr/lib/ems-bus/bin/ems-bus
   fi
+  # The starters need to be Suid root para Erts.
+  for ExecutableErts in `find /usr/lib/ems-bus/erts-*/bin/`; do
+    if ! dpkg-statoverride --list $ExecutableErts > /dev/null 2>&1; then
+      chmod 4511 $ExecutableErts
+    fi
+  done
+  
+  # Cria a pasta /var/log/ems-bus
+  mkdir -p /var/log/ems-bus
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus
+
+  # systemd
+  chown -hf  $USER_EMS_BUS:$GROUP_EMS_BUS /etc/systemd/system/ems-bus.service
+  systemctl enable ems-bus.service  > /dev/null 2>&1 || true
+  systemctl daemon-reload  > /dev/null 2>&1 || true
+  
+  
 fi
 
 
 
-# Install and start the new service scripts.
-systemctl daemon-reload  > /dev/null 2>&1 || true
-systemctl enable ems-bus.service  > /dev/null 2>&1 || true
-systemctl daemon-reload  > /dev/null 2>&1 || true
 systemctl start ems-bus.service  > /dev/null 2>&1 || true
 
 exit 0

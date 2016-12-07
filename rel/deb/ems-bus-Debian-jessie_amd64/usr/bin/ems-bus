@@ -17,8 +17,5 @@
 #
 ########################################################################################################
 
-# Executar a partir do diretório do próprio script
-CURRENT_DIR=$(dirname $0)
-cd $CURRENT_DIR
-
-../lib/ems-bus/bin/ems-bus $1
+cd /usr/lib/ems-bus/bin
+./ems-bus $1

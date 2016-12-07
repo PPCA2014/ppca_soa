@@ -1,0 +1,13 @@
+[Unit]
+Description=Barramento Erlangms
+After=network.target
+
+[Service]
+Type=forking
+User=erlangms
+Group=erlangms
+WorkingDirectory=/usr/lib/ems-bus
+ExecStart=/usr/lib/ems-bus/bin/ems-bus start
+
+[Install]
+WantedBy=multi-user.target
