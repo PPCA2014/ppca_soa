@@ -127,7 +127,12 @@ for SKEL_DEB_PACKAGE in `find ./deb/* -maxdepth 0 -type d`; do
 	# Log -> /var/log/ems-bus
 	ln -s /var/log/ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus/priv/log
 	
-
+	# Copia os scripts padrão para o pacote
+	cp -f deb/postinst $SKEL_DEB_PACKAGE/DEBIAN
+	cp -f deb/postrm $SKEL_DEB_PACKAGE/DEBIAN
+	cp -f deb/preinst $SKEL_DEB_PACKAGE/DEBIAN
+	cp -f deb/prerm $SKEL_DEB_PACKAGE/DEBIAN
+	
 	# Atualiza a versão no arquivo DEBIAN/control 
 	sed -ri "s/Version: .{6}(.*$)/Version: $VERSION_RELEASE-\1/" $SKEL_DEB_PACKAGE/DEBIAN/control
 	dpkg-deb -b $SKEL_DEB_PACKAGE deb || die "Falha ao gerar o pacote $SKEL_DEB_PACKAGE com dpkg-deb!"
@@ -141,6 +146,10 @@ done
 for SKEL_DEB_PACKAGE in `find ./deb/* -maxdepth 0 -type d`; do
 	rm -Rf $SKEL_DEB_PACKAGE/usr/lib/ems-bus
 	rm -Rf $SKEL_DEB_PACKAGE/etc/ems-bus
+	rm -f $SKEL_DEB_PACKAGE/DEBIAN/postinst
+	rm -f $SKEL_DEB_PACKAGE/DEBIAN/postrm
+	rm -f $SKEL_DEB_PACKAGE/DEBIAN/preinst
+	rm -f $SKEL_DEB_PACKAGE/DEBIAN/prerm
 done
 
 
