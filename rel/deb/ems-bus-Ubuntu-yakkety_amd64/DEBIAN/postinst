@@ -9,7 +9,7 @@
 ## @todo Do we really gain anything from not just executing everything
 ##       unconditionally?
 
-LOG="/var/log/ems-bus.log"
+LOG="/var/log/ems-bus/ems-bus.log"
 USER_EMS_BUS=erlangms
 GROUP_EMS_BUS=erlangms
 
@@ -19,14 +19,26 @@ GROUP_EMS_BUS=erlangms
 
 if [ "$1" = "configure" ]; then
 
+  # database and log path
+  mkdir -p /usr/lib/ems-bus/priv/db > /dev/null 2>&1
+  mkdir -p /var/log/ems-bus > /dev/null 2>&1
+
   # create users and groups
   groupadd --system  $GROUP_EMS_BUS
-  useradd -g $GROUP_EMS_BUS --no-create-home --system --home-dir /usr/lib/ems-bus/ --shell /sbin/bash --comment "User do barramento Erlangms ems-bus" $USER_EMS_BUS
+  password="ems123456"
+  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
+  password_crypt="wtjesSqm/.ytY"
+  useradd -g $GROUP_EMS_BUS --no-create-home --system \
+						    --home-dir /usr/lib/ems-bus/ \
+						    --shell /sbin/bash \
+						    --password password_crypt \
+						    --comment "User do barramento Erlangms ems-bus" $USER_EMS_BUS
 
   # change owners
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /usr/lib/ems-bus
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /etc/ems-bus
   chown -f $USER_EMS_BUS:$GROUP_EMS_BUS /usr/bin/ems-bus
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus
 
 
   # The starters need to be Suid root.
