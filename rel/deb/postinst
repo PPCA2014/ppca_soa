@@ -25,13 +25,13 @@ if [ "$1" = "configure" ]; then
 
   # create users and groups
   groupadd --system  $GROUP_EMS_BUS
-  password="ems123456"
+  password="admin"
   #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
-  password_crypt="wtjesSqm/.ytY"
+  password_crypt="wtdgpkEyPdF1A"
   useradd -g $GROUP_EMS_BUS --no-create-home --system \
 						    --home-dir /usr/lib/ems-bus/ \
-						    --shell /sbin/bash \
-						    --password password_crypt \
+						    --shell /bin/bash \
+						    --password $password_crypt \
 						    --comment "User do barramento Erlangms ems-bus" $USER_EMS_BUS
 
   # change owners
