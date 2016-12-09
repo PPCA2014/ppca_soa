@@ -11,11 +11,13 @@
 -include("../include/ems_config.hrl").
 
 %%% API
--export([start/0, stop/0]).
+-export([start/0, start/1, stop/0]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+start(_) -> start().
 
 start() -> 
     application:start(asn1),

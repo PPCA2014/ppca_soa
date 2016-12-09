@@ -123,7 +123,7 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 		0 ->
 			case ems_odbc_pool_worker:start_link(Datasource) of
 				{ok, WorkerPid} ->
-					ems_logger:info("New odbc connection: ~s.", [Connection]),
+					?DEBUG("New odbc connection: ~s.", [Connection]),
 					PidModuleRef = erlang:monitor(process, PidModule),
 					Datasource2 = Datasource#service_datasource{owner = WorkerPid, 
 																pid_module = PidModule,
@@ -155,9 +155,9 @@ do_release_connection(Datasource = #service_datasource{connection = Connection,
 			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 														   pid_module_ref = undefined}, Pool),
 			erlang:put(PoolName, Pool2),
-			io:format("release odbc...\n");
+			?DEBUG("release odbc...");
 		false -> 
-			io:format("shutdown odbc...\n"),
+			?DEBUG("shutdown odbc..."),
 			gen_server:call(Owner, shutdown)
 	end.
 

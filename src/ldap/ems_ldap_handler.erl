@@ -45,7 +45,7 @@ loop(Socket, Transport, State) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
 			LdapMessage = decode_ldap_message(Data),
-			io:format("Ldap msg is ~p\n", [LdapMessage]),
+			?DEBUG("Ldap msg is ~p\n", [LdapMessage]),
 			MessageID = LdapMessage#'LDAPMessage'.messageID,
 			Result = handle_request(LdapMessage, State),
 			case Result of
@@ -194,7 +194,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 				true -> 
 					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
 						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
-							io:format("user ~p\n", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
+							?DEBUG("user ~p\n", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
 							UserRecord2 = {format_user_field(UsuId),
 										   format_user_field(UsuNome),
 										   format_user_field(UsuCpf),

@@ -425,7 +425,7 @@ parse_node_service(List) -> List.
 parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
 parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
 	ListHost = case net_adm:host_file() of
-		{error, _Reason} -> [localhost];
+		{error, _Reason} -> [list_to_atom(net_adm:localhost())];
 		Hosts -> Hosts
 	end,
 	case erlang:is_list(Node) of
