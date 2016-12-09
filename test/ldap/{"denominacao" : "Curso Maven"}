@@ -1,8 +1,0 @@
-HTTP/1.1 400 Bad Request
-cache-control: no-cache
-content-length: 163
-content-type: application/json; charset=utf-8
-date: Fri, 09 Dec 2016 12:31:45 GMT
-ems_node: CursoFacade_node01@CPD-DES-374405
-server: ErlangMS-1.0.7
-
