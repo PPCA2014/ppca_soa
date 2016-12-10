@@ -7,8 +7,8 @@
 %%********************************************************************
 
 -ifdef(debug).
-	-define(DEBUG(Msg), io:format("DEBUG: ~p\n", [Msg])).
-	-define(DEBUG(Msg, Params), io:format( "DEBUG: " ++ Msg ++ "\n", Params)).
+	-define(DEBUG(Msg), io:format("DEBUG ~p\n", [Msg])).
+	-define(DEBUG(Msg, Params), io:format( "DEBUG " ++ Msg ++ "\n", Params)).
 -else.
 	-define(DEBUG(Msg), ok).
 	-define(DEBUG(Msg, Params), ok).
@@ -25,7 +25,7 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, io_lib:format(<<"ErlangMS-~s">>, [case application:get_key(ems_bus, vsn) of 
+-define(SERVER_NAME, io_lib:format(<<"ems-bus-~s">>, [case application:get_key(ems_bus, vsn) of 
 																{ok, Version} -> Version;
 																undefined -> "1.0.0"
 														end])).

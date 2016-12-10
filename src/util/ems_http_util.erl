@@ -146,7 +146,7 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
-		Url2 = binary_to_list(cowboy_req:path(CowboyReq)),
+		Url2 = string:to_lower(binary_to_list(cowboy_req:path(CowboyReq))),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),

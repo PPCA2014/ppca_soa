@@ -44,28 +44,41 @@
 hashsym_and_params(S) when is_binary(S) -> hashsym_and_params(binary_to_list(S), 1, 0, []);
 hashsym_and_params(S) -> hashsym_and_params(S, 1, 0, []).
 
-hashsym_and_params([], _Idx, Hash, Params) -> {Hash, maps:from_list(Params)};
-hashsym_and_params([H|_] = L, Idx, Hash, Params) when H >= 48 andalso H =< 57 -> 
+hashsym_and_params([], _Idx, Hash, Params) -> 
+	{Hash, maps:from_list(Params)};
+hashsym_and_params([H|[N|_] = L], Idx, Hash, Params) when H == 47 andalso N >= 48 andalso N =< 57 -> 
 	{L2, P} = hashsym_and_params_id(L, 0),
 	P2 = case Idx of
 			1 -> {<<"id">>, P};
 			_ -> {list_to_binary("id_" ++ erlang:integer_to_list(Idx)), P}
 		 end,
-	hashsym_and_params(L2, Idx+1, Hash, [P2 | Params]);
-hashsym_and_params([H|T], Idx, Hash, Params) -> hashsym_and_params(T, Idx, (Hash + H) bsl 1, Params).
+	hashsym_and_params(L2, Idx+1, (Hash + 1) bsl 1, [P2 | Params]);
+hashsym_and_params([H|[N|_]], _Idx, _Hash, _Params) when H == 47 andalso N == 45 -> 
+	throw(einvalid_id_object_negative);
+hashsym_and_params([H|L], Idx, Hash, Params) when H == 47 -> % Ascii /
+	hashsym_and_params(L, Idx, Hash, Params);
+hashsym_and_params([H|T], Idx, Hash, Params) when (H >= 97 andalso H =< 122)  % Ascii a até z
+												 orelse H == 95 % Ascii _
+												 orelse (H >= 45 andalso H =< 57) % Ascii - até 9
+												 orelse (H >= 65 andalso H =< 90) -> % Ascii A até Z
+	hashsym_and_params(T, Idx, (Hash + H) bsl 1, Params);
+hashsym_and_params(_, _, _, _) -> throw(einvalid_url).
+												 
 
-hashsym_and_params_id([], P) -> {[], P};
+hashsym_and_params_id([], P) -> 
+	case P > 0 andalso P =< 999999999999 of
+		true -> {[], P};
+		false -> throw({einvalid_id_object, P})
+	end;
 hashsym_and_params_id([H|T], P) when H == 47 -> {T, P};
-hashsym_and_params_id([H|T], P) -> hashsym_and_params_id(T, P * 10 + H - $0).
+hashsym_and_params_id([H|T], P) when (H >= 48 andalso H =< 57) -> hashsym_and_params_id(T, P * 10 + H - $0);
+hashsym_and_params_id(L, _) -> throw({einvalid_id_object, L}).
 
 
 %% Retorna o hash da url (uso em tempo de execução)
-hashsym(S) when is_binary(S) -> hashsym(binary_to_list(S), 0);
-hashsym(S) -> hashsym(S, 0).
-
-hashsym([], Hash) -> Hash;
-hashsym([H|T], Hash) when H >= 48 andalso H =< 57 -> hashsym(T, Hash);
-hashsym([H|T], Hash) -> hashsym(T, (Hash + H) bsl 1).
+hashsym(S) -> 
+	{Hash, _} = hashsym_and_params(S),
+	Hash.
 
 
 %% Retorna o hash da url (uso no carregamento dos catálogos)	
@@ -73,8 +86,8 @@ make_rowid(S) when is_binary(S) -> make_rowid(binary_to_list(S), 0);
 make_rowid(S) -> make_rowid(S, 0).
 
 make_rowid([], Hash) -> Hash;
-make_rowid([H|T], Hash) when H == 58 -> make_rowid(make_rowid_id(T), Hash);
-make_rowid([H|T], Hash) when H >= 48 andalso H =< 57 -> make_rowid(T, Hash);
+make_rowid([H|T], Hash) when H == 47 -> make_rowid(T, Hash);
+make_rowid([H|T], Hash) when H == 58 -> make_rowid(make_rowid_id(T), (Hash + 1) bsl 1);
 make_rowid([H|T], Hash) -> make_rowid(T, (Hash + H) bsl 1).
 
 make_rowid_id([]) -> [];

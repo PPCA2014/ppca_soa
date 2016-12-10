@@ -193,7 +193,7 @@ valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
 	
 
 %% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
-parse_querystring(<<>>) -> {<<>>, 0};
+parse_querystring([]) -> {[], 0};
 parse_querystring(Querystring) -> parse_querystring_def(Querystring, [], 0).
 	
 %% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
@@ -325,7 +325,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 				{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
 		end,
-		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, <<>>)),
+		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
 		IdBin = list_to_binary(integer_to_list(Id)),
 		Page = maps:get(<<"page">>, H, undefined),
 		PageModule = compile_page_module(Page, Rowid),

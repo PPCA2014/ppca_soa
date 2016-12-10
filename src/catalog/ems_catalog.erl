@@ -168,36 +168,29 @@ processa_querystring(Service, Request) ->
 			QuerystringServico = Service#service.querystring,
 			case QuerystringUser =:= #{} of
 				true -> 
-					case QuerystringServico =:= <<>> of
+					case QuerystringServico =:= [] of
 						true -> QuerystringUser;
-						false -> valida_querystring(QuerystringServico, QuerystringUser)
+						false -> valida_querystring(QuerystringServico, QuerystringUser, [])
 					end;
 				false -> 
-					case QuerystringServico =:= <<>> of
-						true -> {error, enoent};
-						false -> valida_querystring(QuerystringServico, QuerystringUser)
+					case QuerystringServico =:= [] of
+						true -> #{};
+						false -> valida_querystring(QuerystringServico, QuerystringUser, [])
 					end
 			end
 	end.
 
-valida_querystring(QuerystringServico, QuerystringUser) ->
-	case valida_querystring(QuerystringServico, QuerystringUser, []) of
-		{ok, Querystring} -> Querystring;
-		Error -> Error
-	end.
-
-valida_querystring([], _QuerystringUser, {error, enoent} = Error) -> Error;
-valida_querystring([], _QuerystringUser, QuerystringList) ->
-	{ok, maps:from_list(QuerystringList)};
+valida_querystring([], _QuerystringUser, QuerystringList) -> maps:from_list(QuerystringList);
 valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 	%% Verifica se encontra a query na querystring do usuário
 	NomeQuery = maps:get(<<"name">>, H),
 	case maps:find(NomeQuery, QuerystringUser) of
-		{ok, Value} -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
+		{ok, Value} -> 
+			valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
 		error ->
 			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
 			case maps:get(<<"default">>, H, enoent) of
-				enoent -> {error, enoent};
+				enoent -> [];
 				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
 			end
 	end.
