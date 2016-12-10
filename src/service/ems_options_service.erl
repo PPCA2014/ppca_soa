@@ -16,9 +16,13 @@
 -export([execute/1]).
 
 execute(Request) ->
-	{ok, Request#request{code = 204,
+	{ok, Request#request{code = 200,
 						 response_data = <<>>,
-						 response_header = #{<<"cache-control">> => <<"max-age=290304000, public">>}}
+						 response_header = #{<<"cache-control">> => <<"max-age=290304000, public">>,
+											 <<"Access-Control-Allow-Origin">> => <<"*">>,
+											 <<"Access-Control-Allow-Headers">> => <<"*">>,
+											 <<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+											 }}
 	}.
 
 

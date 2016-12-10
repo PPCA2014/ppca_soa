@@ -83,7 +83,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 											<<"server">> => ?SERVER_NAME,
 											<<"content-type">> => <<"application/json; charset=utf-8">>,
-											<<"cache-control">> => <<"no-cache">>
+											<<"cache-control">> => <<"no-cache">>,
+											<<"Access-Control-Allow-Origin">> => <<"*">>,
+											<<"Access-Control-Allow-Headers">> => <<"*">>,
+											<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 										}};
 				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -93,7 +96,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 											<<"server">> => ?SERVER_NAME,
 											<<"content-type">> => MimeType,
-											<<"cache-control">> => header_cache_control(MimeType)
+											<<"cache-control">> => header_cache_control(MimeType),
+											<<"Access-Control-Allow-Origin">> => <<"*">>,
+											<<"Access-Control-Allow-Headers">> => <<"*">>,
+											<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 										}};
 				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
 					Request#request{code = HttpCode, 
@@ -115,7 +121,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
 										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>
+										<<"cache-control">> => <<"no-cache">>,
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				<<_Content/binary>> -> 
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
@@ -124,7 +133,10 @@ encode_response(Request = #request{type = Method,
 									response_header = ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
 													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, <<"application/json; charset=utf-8">>),
-													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, <<"no-cache">>)
+													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, <<"no-cache">>),
+													<<"Access-Control-Allow-Origin">> => <<"*">>,
+													<<"Access-Control-Allow-Headers">> => <<"*">>,
+													<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 												}};
 				Content when is_map(Content) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -134,7 +146,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
 										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>
+										<<"cache-control">> => <<"no-cache">>,
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				Content = [H|_] when is_map(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -144,7 +159,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
 										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>
+										<<"cache-control">> => <<"no-cache">>,
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				Content = [H|_] when is_tuple(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -154,7 +172,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
 										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>
+										<<"cache-control">> => <<"no-cache">>,
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				Content -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -163,7 +184,10 @@ encode_response(Request = #request{type = Method,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"cache-control">> => <<"no-cache">>
+										<<"cache-control">> => <<"no-cache">>,
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}}
 			end;
 		_ -> 
@@ -176,7 +200,10 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
 										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>
+										<<"cache-control">> => <<"no-cache">>,
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				_ ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -186,16 +213,23 @@ encode_response(Request = #request{type = Method,
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
 										<<"content-type">> => PageMimeType,
-										<<"cache-control">> => header_cache_control(PageMimeType)
+										<<"cache-control">> => header_cache_control(PageMimeType),
+										<<"Access-Control-Allow-Origin">> => <<"*">>,
+										<<"Access-Control-Allow-Headers">> => <<"*">>,
+										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}}
-
 			end
 	end.
 	
 
 default_http_header() ->
 	#{
-		<<"server">> => ?SERVER_NAME
+		<<"server">> => ?SERVER_NAME,
+		<<"content-type">> => <<"application/json; charset=utf-8">>,
+		<<"cache-control">> => <<"no-cache">>,
+		<<"Access-Control-Allow-Origin">> => <<"*">>,
+		<<"Access-Control-Allow-Headers">> => <<"*">>,
+		<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 	}.
 
 
