@@ -12,6 +12,9 @@
 
 -include("../../include/ems_config.hrl").
 
+-define(UNIXTIME_BASE,62167219200).
+-define(DEFAULT_DISAMBIG, prefer_standard).
+
 -export([sleep/1,
 		 timestamp_str/0,
 		 json_encode/1,
@@ -37,7 +40,8 @@
 		 get_priv_dir/0,
 		 get_working_dir/0,
 		 json_encode_table/2,
-		 json_decode_as_map_file/1]).
+		 json_decode_as_map_file/1,
+		 date_add_minute/2]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -60,7 +64,7 @@ hashsym_and_params([H|L], Idx, Hash, Params) when H == 47 -> % Ascii /
 hashsym_and_params([H|T], Idx, Hash, Params) when (H >= 97 andalso H =< 122)  % Ascii a até z
 												 orelse H == 95 % Ascii _
 												 orelse (H >= 45 andalso H =< 57) % Ascii - até 9
-												 orelse (H >= 65 andalso H =< 90) -> % Ascii A até Z
+												 orelse (H >= 64 andalso H =< 90) -> % Ascii @ até Z
 	hashsym_and_params(T, Idx, (Hash + H) bsl 1, Params);
 hashsym_and_params(_, _, _, _) -> throw(einvalid_url).
 												 
@@ -451,4 +455,8 @@ check_encoding_bin(Bin) when is_binary(Bin) ->
 	    latin1
     end.
 
+date_add_minute(Timestamp, Minutes) ->
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Minutes * 60).
+
+        
 

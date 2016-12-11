@@ -49,7 +49,9 @@ stop() ->
 execute(Request = #request{url = Url,
 						   if_modified_since = IfModifiedSinceReq, 
 						   if_none_match = IfNoneMatchReq,
-						   timestamp = {{Year,Month,Day},{Hour,Min,Secs}}}) ->
+						   timestamp = Timestamp,
+						   service = #service{cache_control = Cache_Control,
+											  expires = ExpiresMinute}}) ->
 	FileName = ?STATIC_FILE_PATH ++ Url,
 	case file_info(FileName) of
 		{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
@@ -61,28 +63,28 @@ execute(Request = #request{url = Url,
 			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
 			ETag = generate_etag(FSize, MTime),
 			LastModified = cowboy_clock:rfc1123(MTime),
-			Expires = cowboy_clock:rfc1123({{Year+1,Month,Day},{Hour,Min,Secs}}),
-			HttpHeader = generate_header(MimeType, ETag, LastModified, Expires),
+			ExpireDate = ems_util:date_add_minute(Timestamp, ExpiresMinute + 120), % add +120min (2h) para ser horário GMT
+			Expires = cowboy_clock:rfc1123(ExpireDate),
+			HttpHeader = generate_header(MimeType, ETag, LastModified, Expires, Cache_Control),
 			case ETag == IfNoneMatchReq orelse LastModified == IfModifiedSinceReq of
 				true -> {ok, Request#request{code = 304, 
+											 etag = ETag,
 											 response_data = <<>>, 
 											 response_header = HttpHeader}
 						 };
 				false ->
-					ems_cache:get(static_file_cache, Request#request.service#service.result_cache, FileName, 
-						fun() -> 
-							case file:read_file(FileName) of
-								{ok, FileData} -> {ok, Request#request{code = 200, 
-																	   response_data = FileData, 
-																	   response_header = HttpHeader}
-												   };
-								{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
-																				 reason = Reason,
-																				 response_data = Err, 
-																				 response_header = error_http_header()}
-														 }
-							end
-						end)
+					case file:read_file(FileName) of
+						{ok, FileData} -> {ok, Request#request{code = 200, 
+															   etag = ETag,
+															   response_data = FileData, 
+															   response_header = HttpHeader}
+										   };
+						{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
+																		 reason = Reason,
+																		 response_data = Err, 
+																		 response_header = error_http_header()}
+												 }
+					end
 			end
 	end.
 
@@ -92,7 +94,6 @@ execute(Request = #request{url = Url,
 %%====================================================================
  
 init(_Args) ->
-    create_shared_cache(),
     {ok, #state{}}.
 
     
@@ -131,10 +132,10 @@ file_info(FileName) ->
 	end.
 	
 
-generate_header(MimeType, ETag, LastModified, Expires) ->
+generate_header(MimeType, ETag, LastModified, Expires, Cache_Control) ->
 	#{
 		<<"content-type">> => MimeType,
-		<<"cache-control">> => <<"max-age=290304000, public">>,
+		<<"cache-control">> => Cache_Control,
 		<<"etag">> => ETag,
 		<<"last-modified">> => LastModified,
 		<<"expires">> => Expires
@@ -150,9 +151,3 @@ error_http_header() ->
 
 generate_etag(FSize, MTime) -> integer_to_binary(erlang:phash2({FSize, MTime}, 16#ffffffff)).
 
-create_shared_cache() ->
-	try
-		ems_cache:new(static_file_cache)
-	catch
-		_Exception:_Reason ->  ok
-	end.

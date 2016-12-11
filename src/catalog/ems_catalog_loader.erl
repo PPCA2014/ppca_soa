@@ -276,7 +276,7 @@ parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	EtsCat2 = ems_util:list_to_ets(Cat2, ets_cat2, [ordered_set, 
 													  public, 
 													  {read_concurrency, true}]),
-	{EtsCat2, Cat3, Cat4, CatK};
+	{EtsCat2, lists:reverse(Cat3), Cat4, CatK};
 	
 parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
@@ -304,6 +304,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
 		Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
 		Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
+		Cache_Control = maps:get(<<"cache_control">>, H, ?DEFAULT_CACHE_CONTROL),
+		ExpiresMinute = maps:get(<<"expires_minute">>, H, 60),
 		valida_lang(Lang),
 		valida_name_service(Name),
 		valida_type_service(Type),
@@ -333,7 +335,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										 Type, Apikey, Comment, Version, Owner, 
 										 Async, Host, Result_Cache, Authentication, Node, Lang,
 										 Datasource, Debug, SchemaIn, SchemaOut, 
-										 Page, Timeout, Middleware),
+										 Page, Timeout, Middleware, Cache_Control, ExpiresMinute),
 		case UseRE of
 			true -> 
 				Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -347,7 +349,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										   Authentication, Node, Lang,
 										   Datasource, Debug, SchemaIn, SchemaOut, 
 										   PoolSize, PoolMax, H, Page, 
-										   PageModule, Timeout, Middleware),
+										   PageModule, Timeout, 
+										   Middleware, Cache_Control, ExpiresMinute),
 				case Type of
 					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -364,7 +367,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 										Authentication, Node, Lang,
 										Datasource, Debug, SchemaIn, SchemaOut, 
 										PoolSize, PoolMax, H, Page, 
-										PageModule, Timeout, Middleware),
+										PageModule, Timeout, 
+										Middleware, Cache_Control, ExpiresMinute),
 				case Type of
 					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -450,7 +454,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			   Page, PageModule, Timeout, Middleware) ->
+			   Page, PageModule, Timeout, 
+			   Middleware, Cache_Control, ExpiresMinute) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -489,7 +494,9 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    pool_max = PoolMax,
 			    timeout = Timeout,
 			    middleware = Middleware,
-			    properties = Properties
+			    properties = Properties,
+			    cache_control = Cache_Control,
+			    expires = ExpiresMinute
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
@@ -497,7 +504,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang, Datasource, 
 			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			Page, PageModule, Timeout, Middleware) ->
+			Page, PageModule, Timeout, 
+			Middleware, Cache_Control, ExpiresMinute) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -533,13 +541,16 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    pool_max = PoolMax,
 			    timeout = Timeout,
 			    middleware = Middleware,
-			    properties = Properties
+			    properties = Properties,
+			    cache_control = Cache_Control,
+			    expires = ExpiresMinute
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, _Datasource, 
-				  Debug, SchemaIn, SchemaOut, Page, Timeout, Middleware) ->
+				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
+				  Middleware, Cache_Control, ExpiresMinute) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -561,7 +572,9 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"schema_out">> => SchemaOut,
 			    <<"timeout">> => Timeout,
 			    <<"middleware">> => Middleware,
-			    <<"lang">> => Lang},
+   			    <<"cache_control">> => Cache_Control,
+			    <<"expires">> => ExpiresMinute,
+				<<"lang">> => Lang},
 	Service.
 
 

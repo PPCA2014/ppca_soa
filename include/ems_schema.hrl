@@ -115,7 +115,9 @@
 					pool_size :: non_neg_integer(),
 					pool_max :: non_neg_integer(),
 					properties :: map(),
-					timeout :: non_neg_integer()
+					timeout :: non_neg_integer(),
+					expires :: non_neg_integer(),
+					cache_control :: string()
 				}).
 
 
