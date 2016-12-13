@@ -62,12 +62,12 @@ execute(Request = #request{rid = Rid,
 				{Code, RidRemote, {ok, ResponseData}} when RidRemote == Rid -> 
 					?DEBUG("Msg rec: ~p.", [{Code, RidRemote, {ok, ResponseData}}]),
 					Reply = {ok, Request#request{code = Code,
-												 response_header = #{<<"ems_node">> => erlang:atom_to_binary(Node, utf8)},
+												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
 												 response_data = ResponseData}};
 				{Code, RidRemote, ResponseData} when RidRemote == Rid -> 
 					?DEBUG("Msg rec: ~p.", [{Code, RidRemote, ResponseData}]),
 					Reply = {ok, Request#request{code = Code,
-												 response_header = #{<<"ems_node">> => erlang:atom_to_binary(Node, utf8)},
+												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
 												 response_data = ResponseData}};
 				Msg -> io:format("a msg eh ~p\n", [Msg]), Reply = []
 			end,
