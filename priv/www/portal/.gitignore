@@ -17,4 +17,3 @@ _build/**
 rel/**
 deps/**
 .DS_Store*
-node_modules/**
