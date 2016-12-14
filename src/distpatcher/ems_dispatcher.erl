@@ -69,30 +69,35 @@ lookup_request(Request = #request{url = Url}) ->
 
 
 get_work_node('', _, _, _, _) -> {ok, node()};
-get_work_node([], HostList, HostNames, ModuleName, 1) -> 
-	get_work_node(HostList, HostList, HostNames, ModuleName, 2);
-get_work_node([], _, _, _, 2) -> {error, eunavailable_service};
+get_work_node([], _, _, _, _) -> {error, eunavailable_service};
 get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) -> 
-	%% Localiza a entrada do módulo na tabela hash
-	case ets:lookup(ctrl_node_dispatch, ModuleName) of
-		[] -> 
-			% não encontrou, vamos selecionar o índice do primeiro node
-			Index = 1;
-		[{_, Idx}] -> 
-			% encontrou um node que foi utilizado anteriormente, vamos usar o próximo
-			ets:delete(ctrl_node_dispatch, ModuleName),
-			Index = Idx+1
+	QtdHosts = length(HostList),
+	case QtdHosts == 1 of
+		true -> Node = hd(HostList);
+		false ->
+			% ========= faz round robin ===========
+			%% Localiza a entrada do módulo na tabela hash
+			case ets:lookup(ctrl_node_dispatch, ModuleName) of
+				[] -> 
+					% não encontrou, vamos selecionar o primeiro host mas o próximo será o segundo
+					Index = 2,
+					Node = hd(HostList);
+				[{_, Idx}] -> 
+					% Se o idx não existe pega o primeiro e o próximo será o segundo
+					case Idx > QtdHosts of
+						true -> 
+							Index = 2,
+							Node = hd(HostList);
+						false -> 
+							Node = lists:nth(Idx, HostList),
+							Index = Idx + 1
+					end
+			end,
+			% Inserimos na tabela hash os dados de controle
+			ets:insert(ctrl_node_dispatch, {ModuleName, Index})
 	end,
-	% Pegamos o primeiro node quando Index maior que o tamanho da lista de nodes disponíveis
-	case Index > length(HostList) of
-		true -> Index2 = 1;
-		false -> Index2 = Index
-	end,
-	% Inserimos na tabela hash os dados de controle
-	ets:insert(ctrl_node_dispatch, {ModuleName, Index2}),
 
-	% Qual node vamos selecionar
-	Node = lists:nth(Index2, HostList),
+	
 	% Este node está vivo? Temos que rotear para um node existente
 	Ping = net_adm:ping(Node),
 	?DEBUG("Ping ~p: ~p.", [Node, Ping]),
