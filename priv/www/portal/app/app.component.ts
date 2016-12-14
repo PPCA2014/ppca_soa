@@ -3,7 +3,7 @@ import {NgFor, NgSwitch, NgSwitchWhen, NgSwitchDefault} from '@angular/common';
 
 @Component({
     selector: 'my-app'
-	directives:[NgFor, NgSwitch, NgSwitchWhen, NgSwitchDefault]
+	directives : [NgFor, NgSwitch, NgSwitchWhen, NgSwitchDefault]
 	template: `
 			<navigator></navigator>
 	    `
