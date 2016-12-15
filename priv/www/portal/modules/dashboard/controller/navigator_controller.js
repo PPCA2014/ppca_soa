@@ -20,6 +20,7 @@ var NavigatorController = (function () {
             "items": [] };
         this.current = [];
         this.current_page = 1;
+        this.breadcrumb = null;
     }
     NavigatorController.prototype.ngOnInit = function () {
         var _this = this;

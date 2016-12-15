@@ -16,6 +16,7 @@
 
 
 init(CowboyReq, Opts) ->
+	%?DEBUG("Cowboy req: ~p\n", [CowboyReq]),
 	case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
 		{ok, Request = #request{type = Method,
 								url_hash = UrlHash,
@@ -88,9 +89,9 @@ encode_response(Request = #request{type = Method,
 											<<"cache-control">> => <<"no-cache">>,
 											<<"ems-catalog">> => ServiceName,
 											<<"ems-owner">> => ServiceOwner,
-											<<"Access-Control-Allow-Origin">> => <<"*">>,
-											<<"Access-Control-Allow-Headers">> => <<"*">>,
-											<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+											<<"access-control-allow-origin">> => <<"*">>,
+											<<"access-control-allow-headers">> => <<"*">>,
+											<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 										}};
 				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -103,9 +104,9 @@ encode_response(Request = #request{type = Method,
 											<<"cache-control">> => header_cache_control(MimeType),
 											<<"ems-catalog">> => ServiceName,
 											<<"ems-owner">> => ServiceOwner,
-											<<"Access-Control-Allow-Origin">> => <<"*">>,
-											<<"Access-Control-Allow-Headers">> => <<"*">>,
-											<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+											<<"access-control-allow-origin">> => <<"*">>,
+											<<"access-control-allow-headers">> => <<"*">>,
+											<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 										}};
 				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
 					Request#request{code = HttpCode, 
@@ -130,9 +131,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				<<_Content/binary>> -> 
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
@@ -144,9 +145,9 @@ encode_response(Request = #request{type = Method,
 													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, <<"no-cache">>),
 													<<"ems-catalog">> => ServiceName,
 													<<"ems-owner">> => ServiceOwner,
-													<<"Access-Control-Allow-Origin">> => <<"*">>,
-													<<"Access-Control-Allow-Headers">> => <<"*">>,
-													<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+													<<"access-control-allow-origin">> => <<"*">>,
+													<<"access-control-allow-headers">> => <<"*">>,
+													<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 												}};
 				Content when is_map(Content) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -159,9 +160,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				Content = [H|_] when is_map(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -174,9 +175,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				Content = [H|_] when is_tuple(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -189,9 +190,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				Content -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -203,9 +204,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}}
 			end;
 		_ -> 
@@ -221,9 +222,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}};
 				_ ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -236,9 +237,9 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => header_cache_control(PageMimeType),
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"Access-Control-Allow-Origin">> => <<"*">>,
-										<<"Access-Control-Allow-Headers">> => <<"*">>,
-										<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => <<"*">>,
+										<<"access-control-allow-headers">> => <<"*">>,
+										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 									}}
 			end
 	end.
@@ -249,9 +250,9 @@ default_http_header() ->
 		<<"server">> => ?SERVER_NAME,
 		<<"content-type">> => <<"application/json; charset=utf-8">>,
 		<<"cache-control">> => <<"no-cache">>,
-		<<"Access-Control-Allow-Origin">> => <<"*">>,
-		<<"Access-Control-Allow-Headers">> => <<"*">>,
-		<<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+		<<"access-control-allow-origin">> => <<"*">>,
+		<<"access-control-allow-headers">> => <<"*">>,
+		<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
 	}.
 
 

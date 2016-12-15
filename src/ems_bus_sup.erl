@@ -48,9 +48,9 @@ init([]) ->
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 	
 
-start_process([Module, Function, Args]) ->
-	Reply = apply(Module, Function, [Args]),
-	ems_logger:info("Start ~p.", [Module]),
+start_process([Module, Function, Service = #service{name = WorkerName}]) ->
+	Reply = apply(Module, Function, [Service]),
+	ems_logger:info("Start ~s.", [binary_to_list(WorkerName)]),
 	Reply.
 	
 start_process_sup([Module, Function, Args = [[_,

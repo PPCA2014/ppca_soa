@@ -15,7 +15,10 @@ export class NavigatorController {
 						"items": []};
 	public current = [];
 	public current_page = 1;
-	constructor(private sitemapService: SitemapService) {}
+	private breadcrumb = null;
+	constructor(private sitemapService: SitemapService) {
+		
+	}
 
 	ngOnInit() {
 		console.log("sitemap...");
