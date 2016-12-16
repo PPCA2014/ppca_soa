@@ -13,7 +13,7 @@ import { Sobre } from '../modules/dashboard/controller/sobre'
     FormsModule,
     HttpModule
   ],
-  declarations: [ AppComponent, NavigatorController, Sobre ],
-  bootstrap: [ AppComponent, NavigatorController ]
+  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoController ],
+  bootstrap: [ AppComponent, NavigatorController, CatalogoController ]
 })
 export class AppModule { }

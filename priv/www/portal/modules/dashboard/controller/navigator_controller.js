@@ -9,10 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require("@angular/core");
+var core_2 = require("@angular/core");
 var sitemap_service_1 = require("../service/sitemap_service");
 var NavigatorController = (function () {
-    function NavigatorController(sitemapService) {
+    function NavigatorController(sitemapService, componentResolver) {
         this.sitemapService = sitemapService;
+        this.componentResolver = componentResolver;
         this.sitemap = { "name": "dashboard",
             "title": "Dashboard",
             "url": "/portal/dashboard",
@@ -20,6 +22,7 @@ var NavigatorController = (function () {
             "items": [] };
         this.current = [];
         this.current_page = 1;
+        this.current_url = undefined;
         this.breadcrumb = null;
     }
     NavigatorController.prototype.ngOnInit = function () {
@@ -34,6 +37,10 @@ var NavigatorController = (function () {
     NavigatorController.prototype.go = function (item) {
         this.current = item;
         this.breadcrumb = this.get_breadcrumb(this.current);
+        if (item.url != undefined) {
+            this.current_page = 3;
+            this.current_url = item.url;
+        }
     };
     NavigatorController.prototype.get_breadcrumb = function (item) {
         return this.make_breadcrumb(item, []);
@@ -56,7 +63,8 @@ NavigatorController = __decorate([
         providers: [sitemap_service_1.SitemapService],
         templateUrl: 'modules/dashboard/web/navigator.html'
     }),
-    __metadata("design:paramtypes", [sitemap_service_1.SitemapService])
+    __metadata("design:paramtypes", [sitemap_service_1.SitemapService, typeof (_a = typeof core_2.ComponentResolver !== "undefined" && core_2.ComponentResolver) === "function" && _a || Object])
 ], NavigatorController);
 exports.NavigatorController = NavigatorController;
+var _a;
 //# sourceMappingURL=navigator_controller.js.map

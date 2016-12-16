@@ -3,15 +3,15 @@
 	"title": "Dashboard",
 	"url": "/portal/dashboard",
 	"image_url": "modules/dashboard/img/pedidos.png",
-	"left_menu" : [{
+	"left_menu": [{
 		"name": "principal",
 		"title": "Principal",
 		"url": "1"
-		}, {
+	}, {
 		"name": "sobre",
 		"title": "Sobre",
 		"url": "2"
-		}],
+	}],
 	"items": [{
 		"name": "aplicativos",
 		"title": "Aplicativos",
@@ -38,6 +38,11 @@
 			"url": "/portal/dashboard/meu_portal/aplicativos/siger",
 			"image_url": "modules/dashboard/img/relatorios.png"
 		}]
+	}, {
+		"name": "servicos",
+		"title": "Serviços",
+		"url": "/portal/modules/catalogo/catalogo.html",
+		"image_url": "modules/dashboard/img/item.png"
 	}, {
 		"name": "configuracoes",
 		"title": "Configurações",
