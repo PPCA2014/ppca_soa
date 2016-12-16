@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require("@angular/core");
-var sitemap_service_js_1 = require("../service/sitemap_service.js");
+var sitemap_service_1 = require("../service/sitemap_service");
 var NavigatorController = (function () {
     function NavigatorController(sitemapService) {
         this.sitemapService = sitemapService;
@@ -53,10 +53,10 @@ var NavigatorController = (function () {
 NavigatorController = __decorate([
     core_1.Component({
         selector: 'navigator',
-        providers: [sitemap_service_js_1.SitemapService],
+        providers: [sitemap_service_1.SitemapService],
         templateUrl: 'modules/dashboard/web/navigator.html'
     }),
-    __metadata("design:paramtypes", [sitemap_service_js_1.SitemapService])
+    __metadata("design:paramtypes", [sitemap_service_1.SitemapService])
 ], NavigatorController);
 exports.NavigatorController = NavigatorController;
 //# sourceMappingURL=navigator_controller.js.map

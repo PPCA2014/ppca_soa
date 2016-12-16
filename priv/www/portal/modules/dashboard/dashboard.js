@@ -22,8 +22,7 @@ DashboardModule = __decorate([
         imports: [
             platform_browser_1.BrowserModule,
             forms_1.FormsModule,
-            http_1.HttpModule,
-            http_1.JsonpModule // if used
+            http_1.HttpModule
         ],
         declarations: [],
         bootstrap: []

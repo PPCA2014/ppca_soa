@@ -13,8 +13,8 @@ var platform_browser_1 = require("@angular/platform-browser");
 var forms_1 = require("@angular/forms");
 var http_1 = require("@angular/http");
 var app_component_1 = require("./app.component");
-var navigator_controller_js_1 = require("../modules/dashboard/controller/navigator_controller.js");
-var sobre_js_1 = require("../modules/dashboard/controller/sobre.js");
+var navigator_controller_1 = require("../modules/dashboard/controller/navigator_controller");
+var sobre_1 = require("../modules/dashboard/controller/sobre");
 var AppModule = (function () {
     function AppModule() {
     }
@@ -25,11 +25,10 @@ AppModule = __decorate([
         imports: [
             platform_browser_1.BrowserModule,
             forms_1.FormsModule,
-            http_1.HttpModule,
-            http_1.JsonpModule // if used
+            http_1.HttpModule
         ],
-        declarations: [app_component_1.AppComponent, navigator_controller_js_1.NavigatorController, sobre_js_1.Sobre],
-        bootstrap: [app_component_1.AppComponent, navigator_controller_js_1.NavigatorController]
+        declarations: [app_component_1.AppComponent, navigator_controller_1.NavigatorController, sobre_1.Sobre],
+        bootstrap: [app_component_1.AppComponent, navigator_controller_1.NavigatorController]
     }),
     __metadata("design:paramtypes", [])
 ], AppModule);

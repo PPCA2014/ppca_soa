@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { SitemapService } from '../service/sitemap_service.js';
+import { SitemapService } from '../service/sitemap_service';
 
 
 @Component({
@@ -8,14 +8,14 @@ import { SitemapService } from '../service/sitemap_service.js';
 	templateUrl: 'modules/dashboard/web/navigator.html'
 })
 export class NavigatorController { 
-	public sitemap = { "name": "dashboard",
-					   "title": "Dashboard",
-						"url": "/portal/dashboard",
-						"image_url": "modules/dashboard/img/pedidos.png",
-						"items": []};
-	public current = [];
-	public current_page = 1;
-	private breadcrumb = null;
+	public sitemap : any = { "name": "dashboard",
+						     "title": "Dashboard",
+							 "url": "/portal/dashboard",
+							 "image_url": "modules/dashboard/img/pedidos.png",
+							 "items": []};
+	public current : any = [];
+	public current_page : any = 1;
+	private breadcrumb : any = null;
 	constructor(private sitemapService: SitemapService) {
 		
 	}
@@ -30,16 +30,16 @@ export class NavigatorController {
 		});
     }
   	
-	go(item){
+	go(item : any){
 		this.current = item;
 		this.breadcrumb = this.get_breadcrumb(this.current);
 	}
 	
-	private get_breadcrumb(item){
+	private get_breadcrumb(item : any){
 		return this.make_breadcrumb(item, []);
 	}
 	
-	private make_breadcrumb(item, result){
+	private make_breadcrumb(item : any, result : any){
 		if (item.owner != null){
 			this.make_breadcrumb(item.owner, result);
 		}		
@@ -47,7 +47,7 @@ export class NavigatorController {
 		return result;
 	}
 	
-	setCurrentPage(page){
+	setCurrentPage(page : any){
 		this.current_page = parseInt(page);
 	}
 

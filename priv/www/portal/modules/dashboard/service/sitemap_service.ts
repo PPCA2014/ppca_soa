@@ -15,17 +15,17 @@ export class SitemapService {
 	getSitemap() { 
 		return this.http.get("/portal/sitemap.json")
 			.map((res) => { 
-				var sitemap = res.json();
+				var sitemap : any = res.json();
 				this.make_pointers(null, sitemap);
 				return sitemap;
 			});
 	}
   
-	make_pointers(owner, item){
+	make_pointers(owner : any, item : any){
 		item.owner = owner;
 		if (item.items != null){
 			for (var i in item.items){
-				var sub_item = item.items[i];
+				var sub_item : any = item.items[i];
 				this.make_pointers(item, sub_item);
 			}
 		}
