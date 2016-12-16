@@ -1,0 +1,1333 @@
+INFO 15/12/2016 13:37:22  Loading server ems-bus-1.0.7...
+INFO 15/12/2016 13:37:22  Start ems_logger.
+INFO 15/12/2016 13:37:22  Start ems_https_server.
+INFO 15/12/2016 13:37:22  Start ems_http_server.
+INFO 15/12/2016 13:37:22  Start ems_ldap_server.
+INFO 15/12/2016 13:37:22  Start ems_eventmgr.
+INFO 15/12/2016 13:37:22  Start ems_cache.
+INFO 15/12/2016 13:37:22  Start ems_request.
+INFO 15/12/2016 13:37:22  Start ems_health_service.
+INFO 15/12/2016 13:37:22  Start ems_static_file_service.
+INFO 15/12/2016 13:37:22  Start ems_catalog.
+INFO 15/12/2016 13:37:22  Start ems_web_service with 48 workers (Max 80)
+INFO 15/12/2016 13:37:22  Start ems_odbc_pool.
+INFO 15/12/2016 13:37:22  Hosts in the cluster: [note]
+INFO 15/12/2016 13:37:22  Server ems-bus-1.0.7 started in 495ms.
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/index.html HTTP/2 {
+	RID: 1481816320123760713
+	Accept: <<"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2040534218">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/modules/dashboard/css/fpc_concat.css HTTP/2 {
+	RID: 1481816320201730208
+	Accept: <<"text/css,*/*;q=0.1">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1910142975">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/core-js/client/shim.min.js HTTP/2 {
+	RID: 1481816320203356494
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4062975281">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/zone.js/dist/zone.js HTTP/2 {
+	RID: 1481816320204209715
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4202106370">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/reflect-metadata/Reflect.js HTTP/2 {
+	RID: 1481816320208776784
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"916433582">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/systemjs/dist/system.src.js HTTP/2 {
+	RID: 1481816320215947012
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3860950987">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/systemjs.config.js HTTP/2 {
+	RID: 1481816320216152583
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1404805008">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/app/main.js HTTP/2 {
+	RID: 1481816320429614889
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3136066924">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (1ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/platform-browser-dynamic/bundles/platform-browser-dynamic.umd.js HTTP/2 {
+	RID: 1481816320495548225
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1395926837">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/app/app.module.js HTTP/2 {
+	RID: 1481816320496046975
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"578724060">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/compiler/bundles/compiler.umd.js HTTP/2 {
+	RID: 1481816320534747419
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"520348851">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/core/bundles/core.umd.js HTTP/2 {
+	RID: 1481816320535706400
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1608909775">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/platform-browser/bundles/platform-browser.umd.js HTTP/2 {
+	RID: 1481816320537304845
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2745907351">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/modules/dashboard/controller/navigator_controller.js HTTP/2 {
+	RID: 1481816320561589204
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"90483772">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/forms/bundles/forms.umd.js HTTP/2 {
+	RID: 1481816320560942689
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1408448396">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/http/bundles/http.umd.js HTTP/2 {
+	RID: 1481816320561216877
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2192403517">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (10ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_favicon_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/modules/dashboard/controller/sobre.js HTTP/2 {
+	RID: 1481816320561940944
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1051392186">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (11ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/app/app.component.js HTTP/2 {
+	RID: 1481816320562506600
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1793883471">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (11ms)
+}
+INFO 15/12/2016 13:38:40  GET /favicon.ico HTTP/2 {
+	RID: 1481816320570503141
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_favicon_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: undefined
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (10ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/Subject.js HTTP/2 {
+	RID: 1481816320744578192
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1015060324">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/Observable.js HTTP/2 {
+	RID: 1481816320745927162
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3582223449">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/modules/dashboard/service/sitemap_service.js HTTP/2 {
+	RID: 1481816320754634844
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1214776159">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (1ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/@angular/common/bundles/common.umd.js HTTP/2 {
+	RID: 1481816320779449441
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3430907150">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/operator/toPromise.js HTTP/2 {
+	RID: 1481816320819040505
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2273306377">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/observable/fromPromise.js HTTP/2 {
+	RID: 1481816320823486773
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3179330747">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/Subscriber.js HTTP/2 {
+	RID: 1481816320877861064
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"975736005">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/Subscription.js HTTP/2 {
+	RID: 1481816320878434306
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4056398674">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (6ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/ObjectUnsubscribedError.js HTTP/2 {
+	RID: 1481816320879583425
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1320592253">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/SubjectSubscription.js HTTP/2 {
+	RID: 1481816320881532889
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3885356478">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/symbol/rxSubscriber.js HTTP/2 {
+	RID: 1481816320881891982
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2101954714">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/root.js HTTP/2 {
+	RID: 1481816320901847768
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4045952917">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/toSubscriber.js HTTP/2 {
+	RID: 1481816320902189551
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1844297251">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (8ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/symbol/observable.js HTTP/2 {
+	RID: 1481816320905592623
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3823342560">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/add/operator/map.js HTTP/2 {
+	RID: 1481816320910356941
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1112081325">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/observable/PromiseObservable.js HTTP/2 {
+	RID: 1481816320942118026
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3914095579">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/isFunction.js HTTP/2 {
+	RID: 1481816320962459744
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3110253926">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/Observer.js HTTP/2 {
+	RID: 1481816320962700075
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4243186642">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/isArray.js HTTP/2 {
+	RID: 1481816320974282930
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1055231932">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/isObject.js HTTP/2 {
+	RID: 1481816320974662910
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1877679392">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/errorObject.js HTTP/2 {
+	RID: 1481816320975995565
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3195893840">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (6ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/tryCatch.js HTTP/2 {
+	RID: 1481816320974977357
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1813775682">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (7ms)
+}
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/util/UnsubscriptionError.js HTTP/2 {
+	RID: 1481816320978183878
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3271991733">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (7ms)
+}
+INFO 15/12/2016 13:38:40  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:40  GET /portal/node_modules/rxjs/operator/map.js HTTP/2 {
+	RID: 1481816321019165290
+	Accept: <<"application/x-es-module, */*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2933809658">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:41  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:41  GET /portal/modules/dashboard/web/navigator.html HTTP/2 {
+	RID: 1481816321185708736
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1630969742">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:41  GET /portal/modules/dashboard/web/sobre.html HTTP/2 {
+	RID: 1481816321185930682
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4097013927">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:41  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:41  GET /portal/sitemap.json HTTP/2 {
+	RID: 1481816321403423469
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1813186841">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:41  GET /portal/sitemap.json HTTP/2 {
+	RID: 1481816321430384406
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<>>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: true  <<RID: 1481816321403423469>>
+	Cache-Control: undefined
+	ETag: undefined
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: undefined
+	Node: undefined
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:38:41  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:41  GET /portal/modules/dashboard/fonts/glyphicons-halflings-regular.woff2 HTTP/2 {
+	RID: 1481816321442175298
+	Accept: <<"*/*">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1808951398">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:38:41  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:41  GET /portal/modules/dashboard/img/item.png HTTP/2 {
+	RID: 1481816321533767039
+	Accept: <<"image/webp,image/*,*/*;q=0.8">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3829657562">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:38:48  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:38:48  GET /portal/modules/dashboard/img/pedidos.png HTTP/2 {
+	RID: 1481816328588445645
+	Accept: <<"image/webp,image/*,*/*;q=0.8">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1714746649">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (8ms)
+}
+INFO 15/12/2016 13:38:48  GET /portal/modules/dashboard/img/relatorios.png HTTP/2 {
+	RID: 1481816328589070629
+	Accept: <<"image/webp,image/*,*/*;q=0.8">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3945354586">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (8ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/modules/dashboard/css/fpc_concat.css HTTP/2 {
+	RID: 1481816428249496783
+	Accept: <<"text/css,*/*;q=0.1">>
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1910142975">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (1ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/core-js/client/shim.min.js.map HTTP/2 {
+	RID: 1481816428385767796
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"2168026916">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/reflect-metadata/Reflect.js.map HTTP/2 {
+	RID: 1481816428397475259
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1693725487">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/Subject.js.map HTTP/2 {
+	RID: 1481816428411043629
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3722701198">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/Observable.js.map HTTP/2 {
+	RID: 1481816428412892754
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1806382776">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/util/toSubscriber.js.map HTTP/2 {
+	RID: 1481816428418561925
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3854823700">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/Subscriber.js.map HTTP/2 {
+	RID: 1481816428420496454
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1461046805">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/util/isFunction.js.map HTTP/2 {
+	RID: 1481816428421109086
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"135284629">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (6ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/Subscription.js.map HTTP/2 {
+	RID: 1481816428423249306
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3440572256">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/util/isObject.js.map HTTP/2 {
+	RID: 1481816428427831148
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"562957471">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/util/tryCatch.js.map HTTP/2 {
+	RID: 1481816428433087623
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"914503143">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/util/UnsubscriptionError.js.map HTTP/2 {
+	RID: 1481816428435172299
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3161879619">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (5ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/Observer.js.map HTTP/2 {
+	RID: 1481816428435550160
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4104116897">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/symbol/observable.js.map HTTP/2 {
+	RID: 1481816428436696182
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3892776054">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/util/ObjectUnsubscribedError.js.map HTTP/2 {
+	RID: 1481816428441911407
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3674034178">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (2ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/SubjectSubscription.js.map HTTP/2 {
+	RID: 1481816428442183696
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1185940317">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/app/app.module.js.map HTTP/2 {
+	RID: 1481816428447404762
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"4145105861">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (4ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/operator/toPromise.js.map HTTP/2 {
+	RID: 1481816428447699269
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"122290718">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (3ms)
+}
+INFO 15/12/2016 13:40:28  Send msg to <<"ems_static_file_service:execute">>.
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/observable/PromiseObservable.js.map HTTP/2 {
+	RID: 1481816428452804928
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"542521580">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (22ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/app/app.component.js.map HTTP/2 {
+	RID: 1481816428453209423
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1603912201">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (23ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/modules/dashboard/controller/navigator_controller.js.map HTTP/2 {
+	RID: 1481816428453879253
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"869177261">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (22ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/node_modules/rxjs/operator/map.js.map HTTP/2 {
+	RID: 1481816428456256706
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3435954628">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (21ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/modules/dashboard/service/sitemap_service.js.map HTTP/2 {
+	RID: 1481816428455431780
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"3203777500">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (23ms)
+}
+INFO 15/12/2016 13:40:28  GET /portal/modules/dashboard/controller/sobre.js.map HTTP/2 {
+	RID: 1481816428456524093
+	Accept: undefined
+	Host: <<"localhost">>
+	Service: <<"ems_static_file_service:execute">>
+	Params: #{}
+	Query: #{}
+	Payload: <<>>
+	Result-Cache: false
+	Cache-Control: undefined
+	ETag: <<"1088785602">>
+	If-Modified-Since: undefined
+	If-None-Match: undefined
+	Authorization: undefined   User: anonimo
+	Node: emsbus@note
+	Status: 200 <<ok>> (21ms)
+}
