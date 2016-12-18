@@ -8,26 +8,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var core_1 = require("@angular/core");
-var platform_browser_1 = require("@angular/platform-browser");
-var http_1 = require("@angular/http");
+var core_1 = require('@angular/core');
+var platform_browser_1 = require('@angular/platform-browser');
+var http_1 = require('@angular/http');
 var forms_1 = require("@angular/forms");
 var DashboardModule = (function () {
     function DashboardModule() {
     }
+    DashboardModule = __decorate([
+        core_1.NgModule({
+            imports: [
+                platform_browser_1.BrowserModule,
+                forms_1.FormsModule,
+                http_1.HttpModule
+            ],
+            declarations: [],
+            bootstrap: []
+        }), 
+        __metadata('design:paramtypes', [])
+    ], DashboardModule);
     return DashboardModule;
 }());
-DashboardModule = __decorate([
-    core_1.NgModule({
-        imports: [
-            platform_browser_1.BrowserModule,
-            forms_1.FormsModule,
-            http_1.HttpModule
-        ],
-        declarations: [],
-        bootstrap: []
-    }),
-    __metadata("design:paramtypes", [])
-], DashboardModule);
 exports.DashboardModule = DashboardModule;
 //# sourceMappingURL=dashboard.js.map

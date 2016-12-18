@@ -6,14 +6,14 @@ import { Component } from '@angular/core';
 	templateUrl: 'modules/catalogo/catalogo.html'
 })
 export class CatalogoController { 
+  	
 	constructor() {
 		
 	}
-
-	ngOnInit() {
-		console.log("loading catalogo...");
-    }
   	
+	ngOnInit() {
+		
+    }
 
 }
 

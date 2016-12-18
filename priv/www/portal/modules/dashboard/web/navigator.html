@@ -14,31 +14,36 @@
 	<div id="fpc_menu" class="navbar-collapse collapse">
 	  <ul id="barra_nav" class="nav navbar-nav">
 			<li *ngFor="let item of sitemap.left_menu">
-				<a  (click)="setCurrentPage(item.url)" style="cursor:pointer">{{ item.title }}</a>
+				<a  (click)="go(item)" style="cursor:pointer">{{ item.title }}</a>
 			</li>
 	  </ul>
 	  <ul class="nav navbar-nav navbar-right">
-		<li><a href="fpc.views.fpc_logout"><span class="glyphicon glyphicon-off"></span> Logout</a></li>
+			<li *ngFor="let item of sitemap.right_menu">
+				<a  (click)="go(item)" style="cursor:pointer">{{ item.title }}</a>
+			</li>
 	  </ul>
 	</div>
   </div>
 </div>
 <div id="painel_conteudo" class="container">
+		<div id="f_breadcrumb" *ngIf="current.breadcrumb">
+			<ol class="breadcrumb">
+				<li><a href="/portal/index.html"><i class="glyphicon glyphicon-home"></i></a></li>
+				<li *ngFor="let item of breadcrumb" (click)="go(item)">{{ item.title }}</li>
+			</ol>
+		</div>
 
-		<div [ngSwitch]="current_page">
-		  <template [ngSwitchCase]="2">
+		<div [ngSwitch]="current.name">
+		  <template [ngSwitchCase]="'sobre'">
 				<sobre></sobre>
 		  </template>
-		  <template [ngSwitchCase]="3">
-				
+		  <template [ngSwitchCase]="'servicos'">
+				<catalogo></catalogo>
+		  </template>
+		  <template [ngSwitchCase]="'login'">
+				<login></login>
 		  </template>
 		  <template ngSwitchDefault>
-			<div id="f_breadcrumb">
-				<ol class="breadcrumb">
-					<li><a href="/portal/index.html"><i class="glyphicon glyphicon-home"></i></a></li>
-					<li *ngFor="let item of breadcrumb" (click)="go(item)">{{ item.title }}</li>
-				</ol>
-			</div>
 			<div class="bs-docs-section">
 				<div class="bs-glyphicons">
 					<ul class="bs-glyphicons-list">

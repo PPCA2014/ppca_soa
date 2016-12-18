@@ -1,21 +1,25 @@
 {
 	"name": "dashboard",
-	"title": "Dashboard",
-	"url": "/portal/dashboard",
+	"title": "Principal",
 	"image_url": "modules/dashboard/img/pedidos.png",
 	"left_menu": [{
 		"name": "principal",
-		"title": "Principal",
-		"url": "1"
+		"title": "Principal"
 	}, {
 		"name": "sobre",
 		"title": "Sobre",
-		"url": "2"
+		"component" : "<sobre></sobre>",
+		"breadcrumb" : false
+	}],
+	"right_menu": [{
+		"name": "login",
+		"title": "Entrar",
+		"component" : "<login></login>",
+		"breadcrumb" : false
 	}],
 	"items": [{
 		"name": "aplicativos",
 		"title": "Aplicativos",
-		"url": "/portal/dashboard/meu_portal/aplicativos",
 		"image_url": "modules/dashboard/img/item.png",
 		"items": [{
 			"name": "simar",
@@ -41,12 +45,12 @@
 	}, {
 		"name": "servicos",
 		"title": "Serviços",
-		"url": "/portal/modules/catalogo/catalogo.html",
+		"component" : "<catalogo></catalogo>",
 		"image_url": "modules/dashboard/img/item.png"
 	}, {
 		"name": "configuracoes",
 		"title": "Configurações",
-		"url": "/portal/dashboard/meu_portal/configuracoes",
+		"component" : "<configuracoes></configuracoes>",
 		"image_url": "modules/dashboard/img/item.png"
 	}]
 }

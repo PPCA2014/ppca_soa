@@ -23,6 +23,10 @@ export class SitemapService {
   
 	make_pointers(owner : any, item : any){
 		item.owner = owner;
+		// Por default, sempre mostra o breadcrumb, mesmo se não definido o atributo no sitemap
+		if (item.breadcrumb == undefined){
+			item.breadcrumb = true;
+		}
 		if (item.items != null){
 			for (var i in item.items){
 				var sub_item : any = item.items[i];

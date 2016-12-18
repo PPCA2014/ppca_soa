@@ -8,10 +8,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var core_1 = require("@angular/core");
-var http_1 = require("@angular/http");
+var core_1 = require('@angular/core');
+var http_1 = require('@angular/http');
 // Import RxJs required methods
-require("rxjs/add/operator/map");
+require('rxjs/add/operator/map');
 var SitemapService = (function () {
     function SitemapService(http) {
         this.http = http;
@@ -27,6 +27,9 @@ var SitemapService = (function () {
     };
     SitemapService.prototype.make_pointers = function (owner, item) {
         item.owner = owner;
+        if (item.breadcrumb == undefined) {
+            item.breadcrumb = true;
+        }
         if (item.items != null) {
             for (var i in item.items) {
                 var sub_item = item.items[i];
@@ -34,11 +37,11 @@ var SitemapService = (function () {
             }
         }
     };
+    SitemapService = __decorate([
+        core_1.Injectable(), 
+        __metadata('design:paramtypes', [http_1.Http])
+    ], SitemapService);
     return SitemapService;
 }());
-SitemapService = __decorate([
-    core_1.Injectable(),
-    __metadata("design:paramtypes", [http_1.Http])
-], SitemapService);
 exports.SitemapService = SitemapService;
 //# sourceMappingURL=sitemap_service.js.map

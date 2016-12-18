@@ -8,13 +8,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var core_1 = require("@angular/core");
-var core_2 = require("@angular/core");
-var sitemap_service_1 = require("../service/sitemap_service");
+var core_1 = require('@angular/core');
+var sitemap_service_1 = require('../service/sitemap_service');
 var NavigatorController = (function () {
-    function NavigatorController(sitemapService, componentResolver) {
+    function NavigatorController(sitemapService) {
         this.sitemapService = sitemapService;
-        this.componentResolver = componentResolver;
         this.sitemap = { "name": "dashboard",
             "title": "Dashboard",
             "url": "/portal/dashboard",
@@ -35,12 +33,18 @@ var NavigatorController = (function () {
         });
     };
     NavigatorController.prototype.go = function (item) {
-        this.current = item;
-        this.breadcrumb = this.get_breadcrumb(this.current);
-        if (item.url != undefined) {
-            this.current_page = 3;
-            this.current_url = item.url;
+        if (item.items == undefined) {
+            if (item.component == undefined || item.component == "") {
+                this.current = this.sitemap;
+            }
+            else {
+                this.current = item;
+            }
         }
+        else {
+            this.current = item;
+        }
+        this.breadcrumb = this.get_breadcrumb(this.current);
     };
     NavigatorController.prototype.get_breadcrumb = function (item) {
         return this.make_breadcrumb(item, []);
@@ -55,16 +59,15 @@ var NavigatorController = (function () {
     NavigatorController.prototype.setCurrentPage = function (page) {
         this.current_page = parseInt(page);
     };
+    NavigatorController = __decorate([
+        core_1.Component({
+            selector: 'navigator',
+            providers: [sitemap_service_1.SitemapService],
+            templateUrl: 'modules/dashboard/web/navigator.html'
+        }), 
+        __metadata('design:paramtypes', [sitemap_service_1.SitemapService])
+    ], NavigatorController);
     return NavigatorController;
 }());
-NavigatorController = __decorate([
-    core_1.Component({
-        selector: 'navigator',
-        providers: [sitemap_service_1.SitemapService],
-        templateUrl: 'modules/dashboard/web/navigator.html'
-    }),
-    __metadata("design:paramtypes", [sitemap_service_1.SitemapService, typeof (_a = typeof core_2.ComponentResolver !== "undefined" && core_2.ComponentResolver) === "function" && _a || Object])
-], NavigatorController);
 exports.NavigatorController = NavigatorController;
-var _a;
 //# sourceMappingURL=navigator_controller.js.map
