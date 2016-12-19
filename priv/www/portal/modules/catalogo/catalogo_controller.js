@@ -9,18 +9,51 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require('@angular/core');
+var http_1 = require('@angular/http');
 var CatalogoController = (function () {
-    function CatalogoController() {
+    function CatalogoController(http) {
+        this.http = http;
+        this.operacao = "pesquisa";
+        this.ult_operacao = "pesquisa";
+        this.owner = "";
+        this.filterQuery = "";
+        this.rowsOnPage = 10;
+        this.sortBy = "email";
+        this.sortOrder = "asc";
+        this.sortByWordLength = function (a) {
+            return a.city.length;
+        };
     }
     CatalogoController.prototype.ngOnInit = function () {
+    };
+    CatalogoController.prototype.toInt = function (num) {
+        return +num;
+    };
+    CatalogoController.prototype.voltar = function () {
+        this.operacao = this.ult_operacao;
+        this.ult_operacao = "pesquisa";
+    };
+    CatalogoController.prototype.pesquisar = function () {
+        var _this = this;
+        this.ult_operacao = this.operacao;
+        this.operacao = "listagem";
+        this.http.get("/catalog")
+            .subscribe(function (data) {
+            setTimeout(function () {
+                _this.data = data.json();
+            }, 1000);
+        });
+    };
+    CatalogoController.prototype.novo = function () {
+        this.ult_operacao = this.operacao;
+        this.operacao = "edicao";
     };
     CatalogoController = __decorate([
         core_1.Component({
             selector: 'catalogo',
-            providers: [],
             templateUrl: 'modules/catalogo/catalogo.html'
         }), 
-        __metadata('design:paramtypes', [])
+        __metadata('design:paramtypes', [http_1.Http])
     ], CatalogoController);
     return CatalogoController;
 }());

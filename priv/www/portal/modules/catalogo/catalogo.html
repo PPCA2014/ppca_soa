@@ -1,73 +1,153 @@
+<div class="container-fluid">
+	
+	<div id="f_botoes" style="height:32px">
+		<div id="barra_botao">
+			<button id="btn_pesquisar" type="button" class="btn btn-default btn-xs" (click)="pesquisar()" *ngIf="operacao=='pesquisa'">
+				<i class="glyphicon glyphicon-search"></i>Pesquisar
+			</button>
+			<button id="btn_novo" type="button" class="btn btn-default btn-xs" (click)="novo()" *ngIf="operacao=='pesquisa' || operacao=='listagem'"> 
+				<i class="glyphicon glyphicon-plus"></i>Novo Serviço
+			</button>
+			<button id="btn_editar" type="button" class="btn btn-default btn-xs" *ngIf="operacao=='listagem'">
+				<i class="glyphicon glyphicon-pencil"></i>Editar 
+			</button>
+			<button id="btn_salvar" type="button" class="btn btn-default btn-xs" *ngIf="operacao=='edicao'">
+				<i class="glyphicon glyphicon-floppy-disk"></i>Salvar
+			</button>
+			<button id="btn_cancelar" type="button" class="btn btn-default btn-xs" *ngIf="operacao=='edicao'">
+				<i class="glyphicon glyphicon-remove"></i>Cancelar
+			</button>
+			<button id="btn_excluir" style="display:none" class="btn btn-default btn-xs" type="button" *ngIf="operacao=='listagem' || operacao=='edicao'">
+				<i class="glyphicon glyphicon-trash"></i>Excluir 
+			</button>
+		</div>
+		
+		
+		<div id="f_botoes_esq"  style="float: right;">
+			<button id="btn_nova_pesquisa" style="" type="button" class="btn btn-default btn-xs" (click)="voltar()" *ngIf="operacao!='pesquisa'">
+				<i class="glyphicon glyphicon-chevron-left"></i>Voltar
+			</button>
+		</div>
+	</div>
 
-		<select onchange="filtra_catalogo(value)">
-		  <option value="todos">Todos os serviços</option>
-		  <option value="msbus">ErlangMS</option>
-		  <option value="sae">Sae</option>
-		  <option value="sitab">Sitab</option>
-		  <option value="pessoa">Pessoa</option>
-		  <option value="sigra">Sigra</option>
-		  <option value="autenticacao">Autenticacao</option>
-		  <option value="questionario">Questionario</option>
-		  <option value="www">www</option>
-		</select>
+    <hr id="sep_breadcrumb">
 
-		<table class="table-striped " id="table" style="text-align: left; display: none">
+	<form id="f_filtro" name="f_filtro" role="form" *ngIf="operacao=='pesquisa'">
+	   <div id="filtro_pesquisa" style="display: block;">
+		  <div class="form-inline">
+			 <div class="form-group">
+				<label class="control-label" for="f_1334351">Código</label><input id="f_1334351" data-field="codigo" class="form-control" type="text" maxlength="60" data-type="numero" value="" data-value="" data-required="" data-auto-increment="" data-no-editable="" style="width: 120px; background-color: white;">
+			 </div>
+			 <span class="fpc_nl"></span>
+			 <div class="form-group">
+				<label class="control-label" for="f_1334352">Cód. Barra</label><input id="f_1334352" data-field="cod_barra" class="form-control" type="text" maxlength="13" style="text-transform: uppercase; width: 110px; background-color: white;" value="" data-value="" data-required="" data-type="text" data-caixa-alta="">
+			 </div>
+			 <span class="fpc_nl"></span>
+			 <div class="form-group">
+				<label class="control-label" for="f_1334353">Nome</label><input id="f_1334353" data-field="nome" class="form-control" type="text" maxlength="70" style="width: 300px; background-color: white;" value="" data-value="" data-required="" data-type="text">
+			 </div>
+			 <span class="fpc_nl"></span>
+			 <div class="form-group">
+				<label class="control-label">Listar os serviços de </label>
+				<select id="f_owner" name="f_owner" class="input-sm" [(ngModel)]="owner">
+					<option [ngValue]="all">Todos os serviços disponíveis</option>
+					<option [ngValue]="emsbus">Barramento</option>
+					<option [ngValue]="sae">Sae</option>
+					<option [ngValue]="www">www</option>
+				</select>
+			 </div>
+		  </div>
+	   </div>
+	</form>
+        
+	<div class="panel panel-default" *ngIf="operacao=='listagem'">
+		<table id="f_dados_pesquisa" class="table table-striped" [mfData]="data" #mf="mfDataTable" [mfRowsOnPage]="10">
 			<thead>
 				<tr>
-					<th data-field='publisher'>Registro</th>
-					<th data-field="name">Nome</th>
-					<th data-field="comment">Comentário</th>
-					<th data-field="owner">Proprietário</th>
-				</tr>
+					<th style="width: 25px">Seleção</th>
+					<th style="width: 370px">
+						<mfDefaultSorter by="url">Url</mfDefaultSorter>
+					</th>
+					<th style="width: 350px">
+						<mfDefaultSorter by="comment">Descrição</mfDefaultSorter>
+					</th>
+					<th style="width: 70px">
+						<mfDefaultSorter by="owner">Dono</mfDefaultSorter>
+					</th>
+					<th style="width: 50px">
+						<mfDefaultSorter by="type">Tipo</mfDefaultSorter>
+					</th>
 			</thead>
+			<tbody>
+				<tr *ngFor="let item of mf.data">
+					<td class="text-center">
+						<input class='fpc-option-grid' type='radio' name='f_id' value="{{ item.id }}" /> 
+					</td>
+					<td>{{ item.url }}</td>
+					<td>{{ item.comment }}</td>
+					<td>{{ item.owner }}</td>
+					<td>{{ item.type }}</td>
+				</tr>
+			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan="4">
+						<mfBootstrapPaginator [rowsOnPageSet]="[10,15,50,100]"></mfBootstrapPaginator>
+					</td>
+				</tr>
+			</tfoot>
 		</table>
+	</div>
 	
-	<script src="static/js/fpc_concat.js"></script>
-	<script src="static/js/bootstrap-table.min.js"></script>
-
-<script>
-//<![CDATA[ 
-	alert("ok");
-	$('#table').hide();
-	$(window)
-		.load(
-			function() {
-				$.getJSON("/catalogo",
-							function(data) {
-								$.each(data,  function(i, val) {
-													var txt = "<span class='glyphicon glyphicon-folder-open' style='color:green'></span> Detalhar";
-													var txt1 = "<a style='height:32px' href='detalhar_catalogo.html?id="  ;
-													url = txt1
-															+ val.id
-															+ "' class='btn'>" + txt
-															+ "</a>";
-													val.publisher = url;
-												});
-								$('#table').bootstrapTable({
-									data : data
-								});
-							});
-				$('#table').show();
-				$('#painel_table').show();
-			});
-			
-			
-	function filtra_catalogo(value){
-		if (value === "todos"){
-			$('#table tr').each(function() { 
-				this.hidden = false;
-			});
-		}else{
-			$('#table tr').each(function() { 
-				if (this.rowIndex == 0 || this.cells[3].textContent === value){
-					this.hidden = false;
-				}else{
-					this.hidden = true;
-				}
-			});
-		}
-	}
 	
-//]]>	
-</script>
-
+	<form id="f_edicao" *ngIf="operacao=='edicao'">
+	   <div class="form-inline">
+		  <!--  monta abas -->
+		  <ul id="id_tab_registro" class="nav nav-tabs" role="tablist">
+			 <li class="nav-item">
+				<a class="nav-link active" id="id_htab_1" href="#id_tab_1" data-toggle="tab" role="tab">Principal</a>
+			 </li>
+			 <li class="nav-item">
+				<a class="nav-link" id="id_htab_2" href="#id_tab_2" data-toggle="tab" role="tab">Schema JSON dos dados</a>
+			 </li>
+			 <li class="nav-item">
+				<a class="nav-link" id="id_htab_3" href="#id_tab_3" data-toggle="tab" role="tab">Controle de cabeçalho</a>
+			 </li>
+		  </ul>
+		  <!--  monta conteúdo das abas -->
+		  <div class="tab-content">
+			 <div class="tab-pane active" id="id_tab_1" role="tabpanel">
+				<div class="form-group">
+				   <label class="control-label" for="f_url" style="font-weight: bold;">Url do serviço</label>
+				   <input id="f_url" class="form-control" type="text" maxlength="250" data-type="numero" value="" data-required="" data-auto-increment="" data-no-editable="" style="width: 380px; background-color: white;">
+				</div>
+				<span class="fpc_nl"></span>
+				<div class="form-group">
+				   <label class="control-label" for="f_comment">Informações sobre o serviço</label>
+				   <input id="f_comment" class="form-control" type="text" maxlength="1000" data-type="numero" value="" style="background-color: white;">
+				</div>
+				<span class="fpc_nl"></span>
+			 </div>
+			 <div class="tab-pane" id="id_tab_2" role="tabpanel">
+				<div class="form-group">
+				   <label class="control-label" for="f_schema_in" style="font-weight: bold;">Schema de entrada</label>
+				   <input id="f_schema_in" class="form-control" type="text" maxlength="70" style="width: 300px; background-color: white;" value="" data-required="" data-type="text">
+				</div>
+				<span class="fpc_nl"></span>
+				<div class="form-group">
+				   <label class="control-label" for="f_schema_out" style="font-weight: bold;">Schema de saída</label>
+				   <input id="f_schema_out" class="form-control" type="text" maxlength="70" style="width: 300px; background-color: white;" value="" data-required="" data-type="text">
+				</div>
+				<span class="fpc_nl"></span>
+			 </div>
+			 <div class="tab-pane" id="id_tab_3" role="tabpanel">
+				<div class="form-group">
+				   <label class="control-label" for="f_cache-control" style="font-weight: bold;">Cache-Control da resposta</label>
+				   <input id="f_cache-control" class="form-control" type="text" maxlength="70" style="width: 300px; background-color: white;" value="" data-required="" data-type="text">
+				</div>
+			 </div>
+		  </div>
+	   </div>
+	</form>	
+	
+</div>

@@ -28,11 +28,13 @@
     "angular-in-memory-web-api": "~0.2.1",
     "angular2-datatable": "^0.5.2",
     "core-js": "^2.4.1",
-    "ng2-smart-table": "^0.4.0-5",
     "reflect-metadata": "^0.1.8",
     "rxjs": "5.0.0-rc.4",
     "systemjs": "0.19.40",
-    "zone.js": "^0.7.2"
+    "zone.js": "^0.7.2",
+    "bootstrap" : "4.0.0-alpha.5",
+    "@ng-bootstrap/ng-bootstrap" : "1.0.0-alpha.14"
+    
   },
   "devDependencies": {
     "concurrently": "^3.1.0",

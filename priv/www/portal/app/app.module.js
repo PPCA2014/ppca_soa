@@ -17,6 +17,8 @@ var navigator_controller_1 = require('../modules/dashboard/controller/navigator_
 var sobre_1 = require('../modules/dashboard/controller/sobre');
 var catalogo_controller_1 = require('../modules/catalogo/catalogo_controller');
 var login_component_1 = require('../modules/login/login_component');
+var angular2_datatable_1 = require('angular2-datatable');
+//import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 var AppModule = (function () {
     function AppModule() {
     }
@@ -25,8 +27,8 @@ var AppModule = (function () {
             imports: [
                 platform_browser_1.BrowserModule,
                 forms_1.FormsModule,
-                http_1.HttpModule
-            ],
+                http_1.HttpModule,
+                angular2_datatable_1.DataTableModule],
             declarations: [app_component_1.AppComponent, navigator_controller_1.NavigatorController, sobre_1.Sobre, catalogo_controller_1.CatalogoController, login_component_1.LoginComponent],
             bootstrap: [app_component_1.AppComponent, navigator_controller_1.NavigatorController]
         }), 

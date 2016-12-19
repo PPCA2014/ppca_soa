@@ -1,6 +1,6 @@
 import { NgModule }      from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import {FormsModule} from "@angular/forms";
+import { FormsModule } from "@angular/forms";
 import { HttpModule, JsonpModule } from '@angular/http';
 
 import { AppComponent }  from './app.component';
@@ -8,13 +8,18 @@ import { NavigatorController } from '../modules/dashboard/controller/navigator_c
 import { Sobre } from '../modules/dashboard/controller/sobre';
 import { CatalogoController } from '../modules/catalogo/catalogo_controller';
 import { LoginComponent } from '../modules/login/login_component';
+import { DataTableModule } from 'angular2-datatable';
+
+
+//import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+
 
 @NgModule({
   imports: [
     BrowserModule,
     FormsModule,
-    HttpModule
-  ],
+    HttpModule,
+    DataTableModule],
   declarations: [ AppComponent, NavigatorController, Sobre, CatalogoController, LoginComponent ],
   bootstrap: [ AppComponent, NavigatorController ]
 })

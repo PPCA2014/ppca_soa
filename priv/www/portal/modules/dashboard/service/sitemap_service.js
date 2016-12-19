@@ -27,6 +27,7 @@ var SitemapService = (function () {
     };
     SitemapService.prototype.make_pointers = function (owner, item) {
         item.owner = owner;
+        // Por default, sempre mostra o breadcrumb, mesmo se não definido o atributo no sitemap
         if (item.breadcrumb == undefined) {
             item.breadcrumb = true;
         }
