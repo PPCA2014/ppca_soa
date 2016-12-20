@@ -238,5 +238,11 @@ generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName,
 generate_dynamic_query(_, _, _) -> erlang:error(einvalid_id_object).
 	
 
+generate_dynamic_delete(Id, #service_datasource{table_name = TableName, 
+												primary_key = PrimaryKey}) ->
+	Params = [{sql_integer, [Id]}],
+	SqlSmnt = lists:flatten(io_lib:format("delete from ~s where ~s = ?", [TableName, PrimaryKey])),
+	{ok, {SqlSmnt, Params}}.
+
 
 

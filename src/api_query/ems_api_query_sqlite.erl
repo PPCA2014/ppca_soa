@@ -8,22 +8,22 @@
 
 -module(ems_api_query_sqlite).
 
--export([find/7, find_by_id/4]).
+-export([find/6, find_by_id/3]).
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
 
-find(FilterJson, Fields, Limit, Offset, Sort, Datasource, Debug) ->
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource) ->
 	case generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource, Debug);
+		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource);
 		{error, Reason} -> {error, Reason}
 	end.
 
 
-find_by_id(Id, Fields, Datasource, Debug) ->
+find_by_id(Id, Fields, Datasource) ->
 	case generate_dynamic_query(Id, Fields, Datasource) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource, Debug);
+		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource);
 		{error, Reason} -> {error, Reason}
 	end.
 
@@ -210,7 +210,6 @@ generate_dynamic_query(FilterJson, Fields, #service_datasource{table_name = Tabl
 	SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
 	SqlSmnt = lists:flatten(io_lib:format("select ~s from ~s ~s ~s ~s", [FieldsSmnt, TableName, FilterSmnt, SortSmnt, LimitSmnt])),
-	%io:format("sql is ~p\n", [SqlSmnt]),
 	{ok, {SqlSmnt, Params}}.
 
 
@@ -221,11 +220,9 @@ generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, p
 	{ok, {SqlSmnt, Params}}.
 
 
-execute_dynamic_query(Sql, _, _, true) -> 
-	Result = list_to_binary(io_lib:format("{\"sql\" : ~p}", [Sql])), 
-	{ok, Result};
-execute_dynamic_query(Sql, Params, Datasource, false) ->
+execute_dynamic_query(Sql, Params, Datasource) ->
 	try
+		?DEBUG("SQL exec: ~s", [Sql]),
 		case ems_odbc_pool:param_query(Datasource, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
 				Objects = ems_util:json_encode_table(Fields, Records),
@@ -234,7 +231,6 @@ execute_dynamic_query(Sql, Params, Datasource, false) ->
 		end
 	catch
 		_Exception:Reason2 -> 
-			io:format("aqui2 ~p\n", [Reason2]),
 			{error, Reason2}
 	end.
 

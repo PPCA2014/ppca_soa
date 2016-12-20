@@ -8,12 +8,12 @@
 
 -module(ems_api_query_mnesia).
 
--export([find/7, find_by_id/4, insert/3, update/4]).
+-export([find/6, find_by_id/3, insert/3, update/4, delete/3]).
 
 -include("../../include/ems_schema.hrl").
 
 
-find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}, _Debug) ->
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
 			TableName2 = list_to_atom(TableName),
@@ -24,7 +24,7 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 	end.
 
 
-find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName}, _Debug) ->
+find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(Id, Fields, Datasource) of
 		{ok, FieldList} -> 
 			TableName2 = list_to_atom(TableName),
@@ -54,14 +54,12 @@ insert(Payload, Service = #service{schema_in = Schema}, #service_datasource{tabl
 
 
 update(Id, Payload, Service = #service{schema_in = Schema}, #service_datasource{table_name = TableNameStr}) -> 
-	io:format("servic is ~p\n", [Service]),
 	TableName = list_to_atom(TableNameStr),
 	case ems_db:get(TableName, Id) of
 		{ok, Record} ->
 			Record2 = ems_schema:to_record(Payload, Record),  %% copia os dados do payload para o Record
 			case ems_api_query_validator:validate(Record2, Schema) of
 				ok -> 
-					io:format("onvalidate update ~p\n", [Record2]),
 					case onvalidate(update, Record2, Service) of
 						ok ->
 							case ems_db:update(Record2) of
@@ -76,6 +74,15 @@ update(Id, Payload, Service = #service{schema_in = Schema}, #service_datasource{
 			end;
 		Error -> Error
 	end.
+
+
+delete(Id, _Service, #service_datasource{table_name = TableNameStr}) -> 
+	TableName = list_to_atom(TableNameStr),
+	case ems_db:delete(TableName, Id) of
+		ok -> {ok, <<"{\"ok\", true}">>};
+		Error -> ems_util:json_encode(Error)
+	end.
+
 
 onvalidate(_, _, #service{middleware = undefined}) -> ok;
 onvalidate(Operation, Record, #service{middleware = Middleware}) ->

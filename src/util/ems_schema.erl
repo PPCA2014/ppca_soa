@@ -15,7 +15,7 @@
 
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1]).
 
--export_records([user, catalog_schema, schema_type, produto]).
+-export_records([user, catalog_schema, schema_type, produto, service]).
 
 
 % to_record
@@ -187,13 +187,16 @@ json_field_strip_and_escape(Value) ->
 	end.
 
 
+new(service) -> #service{};
+new(catalog) -> #service{};
 new(catalog_schema) -> #catalog_schema{};
 new(user) -> #user{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
 new(_) -> erlang:error(einvalid_type).
 
-
+new_(service) -> #service{_ = '_'};
+new_(catalog) -> #service{_ = '_'};
 new_(catalog_schema) -> #catalog_schema{_ = '_'};
 new_(user) -> #catalog_schema{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).

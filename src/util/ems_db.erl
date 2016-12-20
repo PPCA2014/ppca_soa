@@ -69,6 +69,11 @@ create_database(Nodes) ->
 	 							  {disc_copies, Nodes},
 								  {attributes, record_info(fields, produto)}]),
 
+    mnesia:create_table(service, [{type, set},
+	 							  {disc_copies, Nodes},
+								  {attributes, record_info(fields, service)}]),
+
+
 	ok.
 
 
@@ -335,7 +340,7 @@ filter(Tab, []) ->
 	   end,
 	mnesia:activity(transaction, F);
 filter(Tab, [{F1, "==", V1}]) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fields =  mnesia:table_info(Tab, attributes),
 	Fld1 = field_index(F1, Fields, 2),
 	Fun = fun() -> 
 				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])) 
@@ -380,7 +385,7 @@ filter_with_limit(Tab, [], Limit, Offset) ->
 	   end,
 	mnesia:activity(transaction, F);
 filter_with_limit(Tab, [{F1, "==", V1}], Limit, Offset) ->
-	Fields =  mnesia:table_info(catalog_schema, attributes),
+	Fields =  mnesia:table_info(Tab, attributes),
 	Fld1 = field_index(F1, Fields, 2),
 	Fun = fun() -> 
 				Records = qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])),

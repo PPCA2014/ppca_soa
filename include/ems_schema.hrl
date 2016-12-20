@@ -78,9 +78,8 @@
 							 max_pool_size :: non_neg_integer()
 							}).
 
--record(service, {
+-record(service, {  id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
 					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
-					id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
 					name :: string(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço
 					type :: string(),							%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
@@ -96,7 +95,7 @@
 					comment :: string(), 						%% Comentário sobre o que o contrato oferece em termos de serviço
 					version :: string(), 						%% Versão do contrato do serviço
 					owner :: string(),  						%% Quem é o proprietário pelo serviço
-					async :: boolean(), 						%% Indica se o serviço será processado em segundo plano (chamada assíncrona)
+					async = false :: boolean(),					%% Indica se o serviço será processado em segundo plano (chamada assíncrona)
 					querystring :: string(),  					%% Definição da querystring para o contrato do serviço
 					qtd_querystring_req :: non_neg_integer(), 	%% Indica quantas querystrings são obrigatórias
 					host :: atom(),  							%% Atom do host onde está o módulo do serviço que vai processar a requisição
