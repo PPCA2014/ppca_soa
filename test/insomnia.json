@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 1,
-  "__export_date": "2016-12-20T17:13:11.270Z",
+  "__export_date": "2016-12-21T19:11:43.118Z",
   "__export_source": "insomnia.chrome.app:v2.7.0",
   "items": [
     {
@@ -91,7 +91,7 @@
     {
       "_type": "request_group",
       "_id": "grp_1482237576946",
-      "name": "catalog",
+      "name": "services catalog",
       "environments": {},
       "requests": [
         {
@@ -118,7 +118,7 @@
           "_id": "req_1482237628800",
           "url": "http://localhost:2301/catalog",
           "method": "POST",
-          "body": "{\n\t\"name\" : \"/teste/pessoa/:id\",\n\t\"comment\": \"Pessoa\",\n\t\"owner\": \"teste\",\n\t\"version\": \"1.0.0\",\n\t\"service\" : \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/teste/pessoa/:id\",\n\t\"type\": \"GET\",\n\t\"lang\" : \"java\",\n    \"debug\" : false,\n    \"authentication\" : \"basic\"\n}",
+          "body": "{\n\t\"name\" : \"/teste/pessoa2/:id\",\n\t\"comment\": \"Pessoa\",\n\t\"owner\": \"teste\",\n\t\"version\": \"1.0.0\",\n\t\"service\" : \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/teste/pessoa2/:id\",\n\t\"type\": \"GET\",\n\t\"lang\" : \"java\",\n    \"debug\" : false,\n    \"authentication\" : \"basic\"\n}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -348,6 +348,128 @@
             "panel_width": 0.5
           },
           "name": "Alterar json schema do serviço"
+        }
+      ]
+    },
+    {
+      "_type": "request_group",
+      "_id": "grp_1482337539226",
+      "name": "service owner",
+      "environments": {},
+      "requests": [
+        {
+          "_type": "request",
+          "_id": "req_1482337539227",
+          "url": "http://localhost:2301/catalog/owner",
+          "method": "GET",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Lista os owners do catálogo"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482342138118",
+          "url": "http://localhost:2301/catalog/schema",
+          "method": "POST",
+          "body": "{\n\t\"name\": \"service_owner\",\n\t\"description\": \"service_owner schema.\",\n\t\"json_schema\": {\n\t\t\"$schema\": \"http://json-schema.org/draft-04/schema#\",\n\t\t\"type\": \"object\",\n\t\t\"title\": \"service owner schema\",\n\t\t\"properties\": {\n\t\t\t\"id\": {\n\t\t\t\t\"type\": \"integer\",\n\t\t\t\t\"description\": \"owner id\"\n\t\t\t},\n\t\t\t\"name\": {\n\t\t\t\t\"type\": \"string\",\n\t\t\t\t\"maxLength\": 8,\n\t\t\t\t\"minLength\": 3\n\t\t\t},\n\t\t\t\"title\": {\n\t\t\t\t\"type\": \"string\",\n\t\t\t\t\"maxLength\": 100\n\t\t\t},\n\t\t\t\"comment\": {\n\t\t\t\t\"type\": \"string\",\n\t\t\t\t\"maxLength\": 1000\n\t\t\t}\n\t\t},\n\t\t\"required\": [\n\t\t\t\"name\", \"title\"\n\t\t]\n\t}\n}\n",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Incluir json schema owner"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482342520912",
+          "url": "http://localhost:2301/catalog/schema/3",
+          "method": "PUT",
+          "body": "{\n\t\"name\": \"service_owner\",\n\t\"description\": \"service_owner schema.\",\n\t\"json_schema\": {\n\t\t\"$schema\": \"http://json-schema.org/draft-04/schema#\",\n\t\t\"type\": \"object\",\n\t\t\"title\": \"service owner schema\",\n\t\t\"properties\": {\n\t\t\t\"id\": {\n\t\t\t\t\"type\": \"integer\",\n\t\t\t\t\"description\": \"owner id\"\n\t\t\t},\n\t\t\t\"name\": {\n\t\t\t\t\"type\": \"string\",\n\t\t\t\t\"maxLength\": 30,\n\t\t\t\t\"minLength\": 3\n\t\t\t},\n\t\t\t\"title\": {\n\t\t\t\t\"type\": \"string\",\n\t\t\t\t\"maxLength\": 100\n\t\t\t},\n\t\t\t\"comment\": {\n\t\t\t\t\"type\": \"string\",\n\t\t\t\t\"maxLength\": 1000\n\t\t\t}\n\t\t},\n\t\t\"required\": [\n\t\t\t\"name\", \"title\"\n\t\t]\n\t}\n}\n",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Alterar json schema owner"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482343110148",
+          "url": "http://localhost:2301/catalog/owner",
+          "method": "POST",
+          "body": "{\"name\" : \"sitab\", \n \"title\" : \"Sistema de Tabelas\", \n \"comment\" : \"sitab...\"\n    \n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Incluir owner"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482342387863",
+          "url": "http://localhost:2301/catalog/owner/1",
+          "method": "PUT",
+          "body": "{\"name\" : \"ems-bus\", \n \"title\" : \"Barramento de serviços\", \n \"comment\" : \"Web-services do barramento ems-bus\"\n    \n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Alterar owner"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482343054651",
+          "url": "http://localhost:2301/catalog/owner/6",
+          "method": "DELETE",
+          "body": "{\"name\" : \"ems-bus\", \n \"title\" : \"Barramento de serviços\", \n \"comment\" : \"Web-services do barramento ems-bus\"\n    \n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Remover owner"
         }
       ]
     }
