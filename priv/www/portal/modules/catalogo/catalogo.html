@@ -36,16 +36,17 @@
 	   <div id="filtro_pesquisa" style="display: block;">
 		  <div class="form-inline">
 			 <div class="form-group">
-				<label class="control-label" for="f_1334351">Código</label><input id="f_1334351" data-field="codigo" class="form-control" type="text" maxlength="60" data-type="numero" value="" data-value="" data-required="" data-auto-increment="" data-no-editable="" style="width: 120px; background-color: white;">
+				<label class="control-label" for="f_url">URL do serviço</label>
+				<input id="f_url" data-field="codigo" class="form-control" type="text" maxlength="300" data-type="numero" value="" style="width: 300px">
 			 </div>
 			 <span class="fpc_nl"></span>
-			 <div class="form-group">
-				<label class="control-label" for="f_1334352">Cód. Barra</label><input id="f_1334352" data-field="cod_barra" class="form-control" type="text" maxlength="13" style="text-transform: uppercase; width: 110px; background-color: white;" value="" data-value="" data-required="" data-type="text" data-caixa-alta="">
-			 </div>
-			 <span class="fpc_nl"></span>
-			 <div class="form-group">
-				<label class="control-label" for="f_1334353">Nome</label><input id="f_1334353" data-field="nome" class="form-control" type="text" maxlength="70" style="width: 300px; background-color: white;" value="" data-value="" data-required="" data-type="text">
-			 </div>
+			 <div class="form-group" style="width: 500px">
+				<label>Tipo de serviço</label>
+				<label><input type="radio" name="optradio">GET</label>
+				<label><input type="radio" name="optradio">POST</label>
+				<label><input type="radio" name="optradio">PUT</label>			 
+				<label><input type="radio" name="optradio">DELETE</label>			 
+			</div>
 			 <span class="fpc_nl"></span>
 			 <div class="form-group">
 				<label class="control-label">Listar os serviços de </label>

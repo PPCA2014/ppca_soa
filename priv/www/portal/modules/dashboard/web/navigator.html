@@ -8,7 +8,7 @@
 		<span class="icon-bar"></span>
 	  </button>
 	  <a id="nome_sistema" class="navbar-brand" href="#">
-		 <strong>{{ sitemap.title }}</strong>
+		 <span class="fpc_titulo_app">{{ sitemap.title }}</span>
 	  </a>
 	</div>
 	<div id="fpc_menu" class="navbar-collapse collapse">
@@ -37,7 +37,7 @@
 		  <template [ngSwitchCase]="'sobre'">
 				<sobre></sobre>
 		  </template>
-		  <template [ngSwitchCase]="'servicos'">
+		  <template [ngSwitchCase]="'catalogo'">
 				<catalogo></catalogo>
 		  </template>
 		  <template [ngSwitchCase]="'login'">
@@ -48,9 +48,9 @@
 				<div class="bs-glyphicons">
 					<ul class="bs-glyphicons-list">
 						  <li *ngFor="let item of current.items" (click)="go(item)">
-								<img src="{{ item.image_url }}" />
+								<img src="{{ item.image_url }}" width="96" height="62" />
 								<span class="glyphicon-class">
-									<strong>{{ item.title }}</strong>
+									<label class="fpc_titulo_item_dashboard">{{ item.title }}</label>
 								</span>
 						  </li>
 					</ul>

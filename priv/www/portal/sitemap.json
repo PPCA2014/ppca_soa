@@ -1,6 +1,6 @@
 {
 	"name": "dashboard",
-	"title": "Principal",
+	"title": "ERLANGMS",
 	"image_url": "modules/dashboard/img/pedidos.png",
 	"left_menu": [{
 		"name": "principal",
@@ -20,7 +20,7 @@
 	"items": [{
 		"name": "aplicativos",
 		"title": "Aplicativos",
-		"image_url": "modules/dashboard/img/item.png",
+		"image_url": "modules/dashboard/img/aplicativo.png",
 		"items": [{
 			"name": "simar",
 			"title": "SIMAR",
@@ -43,14 +43,32 @@
 			"image_url": "modules/dashboard/img/relatorios.png"
 		}]
 	}, {
-		"name": "servicos",
+		"name": "gestao_servicos",
 		"title": "Serviços",
-		"component" : "<catalogo></catalogo>",
-		"image_url": "modules/dashboard/img/item.png"
-	}, {
+		"image_url": "modules/dashboard/img/api.png",
+		"items" : [
+			{"name": "schemas",
+			"title": "Definição dos Schemas de Dados",
+			"component" : "<catalogo></catalogo>",
+			"image_url": "modules/dashboard/img/schema.png"
+			},
+			{"name": "catalogo",
+			"title": "Manutenção dos Catalogos de Serviços",
+			"component" : "<catalogo></catalogo>",
+			"image_url": "modules/dashboard/img/webservice.png"
+			}
+		]
+	}, 
+	{
+		"name": "analytics",
+		"title": "Analytics",
+		"component" : "<analytics></analytics>",
+		"image_url": "modules/dashboard/img/analytics.png"
+	},	
+	{
 		"name": "configuracoes",
 		"title": "Configurações",
 		"component" : "<configuracoes></configuracoes>",
-		"image_url": "modules/dashboard/img/item.png"
+		"image_url": "modules/dashboard/img/config.png"
 	}]
 }

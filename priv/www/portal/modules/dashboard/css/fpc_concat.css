@@ -944,6 +944,9 @@ legend {
 	height: 25px;
 	margin-top: 0;
 	margin-bottom: 12px;
+	font-size:12px;
+	color: #337ab7;
+	
 }
 
 .breadcrumb>li {
@@ -1687,10 +1690,13 @@ body {
 .bs-glyphicons li {
     background-color: #f8f8f8;
     cursor: pointer;
+    width: 30%;
+    height: 30%;
 }
 
 .bs-glyphicons li:hover {
 	background-color: #e7e7e7;
+	border: 1px #e7e7e1 solid;
 }
 
 #footer {
@@ -1902,4 +1908,22 @@ tr > td
 	padding: 0 12px;
 	color: #777; 
 	content: "\2192\00a0";
+}
+
+.fpc_titulo_item_dashboard{
+			  margin-top: 6px;
+			  font-family: arial, sans-serif;
+			  font-weight: 800;
+			  font-size:12px;
+			  color: #337ab7;
+			  letter-spacing: 0.095em;
+			  width:176px;
+}
+
+
+.fpc_titulo_app {
+	text-align:center; 
+	font-weight: 600; 
+	font-size: 22px;
+	font-family: 'Myriad Pro','Lucida Grande','Lucida Sans Unicode','Lucida Sans',Geneva,Verdana,sans-serif; 
 }
