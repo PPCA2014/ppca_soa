@@ -74,6 +74,11 @@ create_database(Nodes) ->
 								  {attributes, record_info(fields, service)}]),
 
 
+    mnesia:create_table(service_owner, [{type, set},
+	 							  {disc_copies, Nodes},
+								  {attributes, record_info(fields, service_owner)}]),
+
+
 	ok.
 
 

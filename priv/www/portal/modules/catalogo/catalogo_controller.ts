@@ -16,8 +16,16 @@ export class CatalogoController {
     public rowsOnPage : number = 10;
     public sortBy : string = "email";
     public sortOrder : string = "asc";
+    public lista_owners : any = null;
 
     constructor(private http: Http) {
+		// busca os owners
+        this.http.get("/catalog/owner")
+            .subscribe((data)=> {
+                setTimeout(()=> {
+                    this.lista_owners = data.json();
+                }, 1000);
+            });
     }
 
     ngOnInit(): void {

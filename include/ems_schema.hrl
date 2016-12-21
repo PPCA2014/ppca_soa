@@ -78,6 +78,14 @@
 							 max_pool_size :: non_neg_integer()
 							}).
 
+
+-record(service_owner, {  id :: non_neg_integer(),
+						   name :: string(),
+						   title :: string(),
+						   comment :: string()
+						}).
+
+
 -record(service, {  id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
 					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
 					name :: string(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)

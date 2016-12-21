@@ -12,6 +12,7 @@ var core_1 = require('@angular/core');
 var http_1 = require('@angular/http');
 var CatalogoController = (function () {
     function CatalogoController(http) {
+        var _this = this;
         this.http = http;
         this.operacao = "pesquisa";
         this.ult_operacao = "pesquisa";
@@ -20,9 +21,17 @@ var CatalogoController = (function () {
         this.rowsOnPage = 10;
         this.sortBy = "email";
         this.sortOrder = "asc";
+        this.lista_owners = null;
         this.sortByWordLength = function (a) {
             return a.city.length;
         };
+        // busca os owners
+        this.http.get("/catalog/owner")
+            .subscribe(function (data) {
+            setTimeout(function () {
+                _this.lista_owners = data.json();
+            }, 1000);
+        });
     }
     CatalogoController.prototype.ngOnInit = function () {
     };
