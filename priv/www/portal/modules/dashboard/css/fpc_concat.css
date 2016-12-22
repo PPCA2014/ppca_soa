@@ -1927,3 +1927,10 @@ tr > td
 	font-size: 22px;
 	font-family: 'Myriad Pro','Lucida Grande','Lucida Sans Unicode','Lucida Sans',Geneva,Verdana,sans-serif; 
 }
+
+.input-group.date .input-group-addon span {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;	
+	height: 24px;
+}

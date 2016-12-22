@@ -414,6 +414,7 @@ var fpc = {
 		// A configuração a realizada apenas uma vez por campo
 		var list_fields = $.makeArray(document.querySelectorAll('[data-type'));
 		var qtd_fields = list_fields.length;
+		var doc=document;
 		if (qtd_fields > 0) {
 			var jdoc = $(document); 
 			for (var i = 0, len = qtd_fields; i < len; i++){
@@ -435,12 +436,74 @@ var fpc = {
 							  }
 							  this.somenteDecimal(input);
 						}
-						else if (data_type === "date" || data_type === "data"){
-							  $(input).mask("99/99/9999");
-							  dat.type = "date";
-							  input.setAttribute("size", 12);
-							  input.style.width="100px";
+						else if (data_type === "date" || data_type === "datetime" || data_type === "year"){
 							  this.somenteData(input);
+							  var input_ant=input.previousElementSibling;
+							  var parent_input=input.parentNode;
+
+							  //if (input_ant != undefined && input.previousElementSibling.classList.contains("form-group")){
+							  if (parent_input != undefined && parent_input.classList.contains("form-group")){
+								  var new_form_group=false;
+								  var form_group=parent_input;
+								  form_group.classList.remove("form-group");
+							  }else{
+								  var new_form_group=true;
+								  var form_group=doc.createElement("div");
+							  }
+
+							  form_group.classList.add("input-group");
+							  form_group.classList.add("date");
+							  
+							  // Cria a span para o botão do calendário
+							  var span_input_group=doc.createElement("span");
+							  span_input_group.classList.add("input-group-addon");
+							  span_input_group.style.top = "10px";
+							  var span_input_glyphicon=doc.createElement("span");
+							  span_input_glyphicon.classList.add("glyphicon");
+							  span_input_glyphicon.classList.add("glyphicon-calendar");
+							  span_input_group.appendChild(span_input_glyphicon);
+							  form_group.appendChild(span_input_group);
+							  
+							  if (new_form_group){
+								form_group.appendChild(input);
+								parent_input.appendChild(form_group);
+							  }
+							  
+							  switch (data_type) {
+								  case "date" :
+		  							  $(input).mask("99/99/9999");
+									  input.style.width="80px";
+									  $(form_group).datetimepicker({
+											language:  'pt-BR',
+											format: 'dd/mm/yyyy',
+											weekStart: 1,
+											todayBtn:  1,
+											autoclose: 1,
+											todayHighlight: 1,
+											startView: 2,
+											minView: 2,
+											forceParse: 0
+										}); 
+										break;
+									case "datetime" :
+										$(input).mask("99/99/9999 99:99");
+									    input.style.width="110px";
+										$(form_group).datetimepicker({
+											language:  'pt-BR',
+											format: 'dd/mm/yyyy hh:m',
+											weekStart: 1,
+											todayBtn:  1,
+											autoclose: 1,
+											todayHighlight: 1,
+											startView: 2,
+											minView: 2,
+											forceParse: 0,
+											showMeridian: 1
+										});		
+										break
+								}
+										
+
 						}else if (data_type === "text"){
 							  if (dat.caixaAlta != undefined){
 								  this.somenteCaixaAlta(input);
@@ -1263,6 +1326,6 @@ $(this).ready(function(){
 
 	// Registra uma thread para configurar os inputs a cada 1 segundo
 	setTimeout(function(){
-		setInterval(function(){ fpc.configFields() }, 1000);
-	}, 3000);
+		setInterval(function(){ fpc.configFields() }, 300);
+	}, 4000);
 });
