@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var http_1 = require('@angular/http');
+var catalogo_1 = require('./catalogo');
 var CatalogoController = (function () {
     function CatalogoController(http) {
         var _this = this;
@@ -22,6 +23,7 @@ var CatalogoController = (function () {
         this.sortBy = "email";
         this.sortOrder = "asc";
         this.lista_owners = null;
+        this.model = new catalogo_1.Catalogo();
         this.sortByWordLength = function (a) {
             return a.city.length;
         };

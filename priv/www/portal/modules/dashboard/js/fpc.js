@@ -16,13 +16,6 @@ function FpcError(message, url, params) {
 FpcError.prototype = Error.prototype;
 
 
-class FpcCrudController {
-		constructor(){
-			this.about = "Controller for cruds";
-	} 
-};
-  
-
 var fpc = {
     csrftoken : "",
     lazyFields : null,
@@ -210,54 +203,6 @@ var fpc = {
        }
     },
 
-    consultar : function (ts, lookup){
-    	document.getElementById("f_dialog").dataset.lookup = lookup;
-    	fpc.getJSON('/fpc.views.fpc_consultar', { ts : ts }
-			).done(function(msg) {
-				var doc = document;
-				var param = msg.params[0]; 
-				var template = param.template;
-				var dlg = $("#f_dialog"); 
-				dlg.html(template);
-				$("#janela_modal").drags({ "handle" : "#header_modal"});
-				fpcDataTable.forceRefresh = true;
-				doc.getElementById("btn_abrir_dialog").click();
-				$(doc.getElementById("btn_close_consulta")).on("click", function(){
-					var dlg = doc.getElementById("f_dialog");
-			   		dlg.removeAttribute("data-lookup");
-			   		$(dlg).empty();
-				})
-			});
-    	
-    },
-    
-    login : function login(){
-    	var doc = document;
-		var f_login = doc.getElementById("f_login");
-		var user = fpc.getObject(f_login);
-    	fpc.postUrl("/fpc.views.fpc_login", user);
-    },
-
-   	retornaRegistroConsulta : function (){
-   		var doc = document;
-   		var dat = doc.getElementById("dados_pesquisa_consulta").dataset; 
-   		var lookup_key = dat.id;
-   		if (lookup_key === ""){
-   			alert('Selecione um registro primeiro!');
-   			return;
-   		}
-   		var dlg = doc.getElementById("f_dialog");
-   		var lookup = doc.getElementById(dlg.dataset.lookup);
-   		lookup.dataset.key = lookup_key;
-   		lookup.value = dat.value;
-   		doc.getElementById("btn_close_consulta").click();
-   	},
-  	
-   	selecionaRegistroConsultaEvent : function selecionaRegistroConsultaEvent(id){
-		document.getElementById("dados_pesquisa").dataset.id = id;
-	},
-    
-        
     getCookie : function (name) {
         var doc = document;
     	var cookieValue = null;
@@ -424,75 +369,6 @@ var fpc = {
     },
 
    
-    fieldChanged : function (field){
-    	$(field).on("change", function() {
-    		if (fpc.isFieldChanged(this) || this.type == "radio"){
-    			if (this.dataset.default != undefined && this.value === ""){
-    				this.value = this.dataset.default;
-    			}
-    			this.dataset.dirty = true;
-    			
-    			var operacao = document.getElementById("barra_botao").dataset.tipo;
-    			var field_name = this.dataset.field;
-    			 
-        		// sincroniza campos com o mesmo field (não para radio)
-    			if (this.type != "radio"){
-	    			var list_fields = $.makeArray(this.form.querySelectorAll('[data-field]'));
-					for (var i = 0, len = list_fields.length; i < len; i++){
-						var field = list_fields[i];
-	    				if (field != this && field.dataset.field === field_name){
-	    					field.value = this.value;
-	    					field.dataset.dirty = true;
-	    				}
-	    			}
-    			}
-    			
-    			// dispara o evento onchange no servidor e depois onchange no cliente
-    			if (this.dataset.onChange != undefined){
-    				fpc.fieldChangedServer(this, operacao);
-    		    }else{
-    		    	fpc.fieldChangedClient(this, operacao);
-    		    }
-    		}
-		});
-    },
-    
-    fieldChangedClient : function(field, operacao){
-		var doc = document;
-		var form = field.form;
-		if (form.dataset.jsclass == undefined){
-			form = doc.querySelectorAll('[data-jsclass]')[0];
-		}
-    	if (form != undefined){
-    		var js_class = form.dataset.jsclass;
-			this.fireOnChange(js_class, field, operacao);
-		}
-    },
-
-    fieldChangedServer : function (field, operacao){
-    	var doc = document;
-    	var dat = doc.getElementById("dados_pesquisa").dataset;
-		var f_cadastro = doc.getElementById("f_cadastro");
-		var s_form = fpc.serializeForm(f_cadastro);
-    	doc.body.style.cursor = "wait"; 
-		fpc.getJSON("/fpc.views.fpc_field_onchange", { ts : dat.ts, 
-		 											   id : dat.id, 
-													   form : s_form,
-													   field : field.dataset.field,
-													   field_id : field.id,
-													   operacao : operacao}
-		).done(function (msg) {
-			var doc = document;
-			doc.body.style.cursor = "default"; 
-			var param = msg.params[0];
-			var field = doc.getElementById(param.field_id);
-			var operacao = param.operacao;
-			var update_fields = param.update_values;
-			fpc.updateFields(field.form, update_fields);
-			fpc.fieldChangedClient(field, operacao);
-        });
-    },
-
     updateFields : function(form, update_fields){
     	if (form != undefined && update_fields != undefined){
 	    	try{
@@ -532,356 +408,74 @@ var fpc = {
     	}
     },
     
-    resetFields : function(form){
-    	if (form != undefined){
-	    	var list_fields = $.makeArray(form.querySelectorAll('[data-field]'));
-			for (var i = 0, len = list_fields.length; i < len; i++){
-				var field = list_fields[i];
-				field.dataset.value = fpc.getFieldValue(field);
-				if (field.dataset.dirty != undefined){
-					field.removeAttribute("data-dirty"); 
-				}
-			}
-    	}
-    },
-
-    fireOnReadyEvent : function(field, operacao){
-		var controller = fpc.findController();
-		if (controller != undefined && controller.onready != undefined){
-			try{
-				controller.onready(field, operacao);
-			}catch (e){
-				fpc.mensagem("Erro no evento onready do campo " + field + ". " + e + ".", "erro");
-			}
-		}
-    },
-    
-    fireOnGetFiltroPesquisa : function(controller, filtro_atual){
-		if (controller != undefined && controller.ongetfiltropesquisa != undefined){
-			try{
-				return controller.ongetfiltropesquisa(filtro_atual);
-			}catch (e){
-				fpc.mensagem("Erro no evento ongetfiltropesquisa:" + e + ".", "erro");
-			}
-		}else{
-			return filtro_atual;
-		}
-    },
-    
-    fireOnChange : function(js_class, field, operacao){
-		if (js_class != undefined && field != undefined){
-			var controller = fpc.findController(js_class);
-			if (controller != undefined && controller.onchange != undefined){
-				try{
-					controller.onchange(field, operacao);
-				}catch (e){
-					fpc.mensagem("Erro no evento onchange do campo " + field + ". " + e + ".", "erro");
-				}
-			}
-		}
-    },
-
-    fireOnFormatObject : function(obj, controller){
-		if (obj != undefined){
-	    	if (controller == undefined){
-				var controller = fpc.findController(js_class);
-			}
-			if (controller != undefined && controller.on_format_object != undefined){
-				try{
-					controller.on_format_object(obj);
-				}catch (e){
-					fpc.mensagem("Erro na formatação dos campos do objeto (no evento on_format_object). " + e + ".", "erro");
-				}
-			}
-		}
-    },
-    
-    fireOnFormatCellDataTable : function(field, type, value, row, col, html_row, controller){
-    	if (field != undefined && value != undefined){ 
-	    	if (controller == undefined){
-				var controller = fpc.findController(js_class);
-			}
-			if (controller != undefined && controller.on_format_cell_datable != undefined){
-				try{
-					return controller.on_format_cell_datable(field, type, value, row, col, html_row);
-				}catch (e){
-					fpc.mensagem("Erro na formatação dos dados ("+ value + ") do campo "+ field + " da grid (no evento on_format_cell_datable). " + e + ".", "erro");
-				}
-			}
-			return value;
-    	}else{
-    		return "";
-    	}
-    },    
-
-    fireOnOpenForm : function(js_class, response){
-    	if (js_class != undefined){
-			var controller = fpc.findController(js_class);
-			if (controller != undefined && controller.on_open_form != undefined){
-				try{
-					controller.on_open_form(response);
-				}catch (e){
-					fpc.mensagem("Erro ao abrir formulário (no evento on_open_form). " + e + ".", "erro");
-				}
-			}
-    	}
-    },
-    
-    fireOnRenderLazyField : function(field){
-		var controller = fpc.findController();
-		if (controller != undefined && controller.on_render_lazy_field != undefined){
-			try{
-				controller.on_render_lazy_field(field);
-			}catch (e){
-				fpc.mensagem("Erro ao renderizar campo lazy (no evento on_render_lazy_field). " + e + ".", "erro");
-			}
-		}
-    },
-
-    findController : function(js_class){
-		var doc = document;
-		try{
-			if (js_class == undefined){
-	    		var f_state = doc.getElementById("f_state");
-	    		if (f_state != undefined){
-	    			var js_class = f_state.dataset.jsclass;
-	    		}
-			}
-	    	if (js_class != undefined && js_class.length > 4){
-				var js_var = js_class.substr(0,1).toLowerCase() + js_class.substr(1); 
-				var js_obj = window[js_var];
-				if (js_obj == undefined){
-					js_var = js_class.substr(0,1).toLowerCase() + js_class.substr(1,js_class.length-5) + "Controller";
-					var js_obj = window[js_var];
-					if (js_obj == undefined){
-						var js_obj = window[js_class];
+    configFields : function(){
+		// Pesquisa todos os campos com a tag data-type 
+		// mas que ainda não foram configuradas pela biblioteca fpc
+		// A configuração a realizada apenas uma vez por campo
+		var list_fields = $.makeArray(document.querySelectorAll('[data-type'));
+		var qtd_fields = list_fields.length;
+		if (qtd_fields > 0) {
+			var jdoc = $(document); 
+			for (var i = 0, len = qtd_fields; i < len; i++){
+				var input = list_fields[i];
+				if (input.type != undefined){
+					var dat = input.dataset;
+					var data_type = dat.type;
+					if (!dat.fpc && data_type != undefined){
+						input.style.backgroundColor="white";
+						dat.fpc=true;
+						if (data_type === "number"){
+								dat.type = "number";
+								this.somenteNumeros(input);
+						} 
+						else if (data_type === "decimal") {
+							  dat.type = "decimal";
+							  if (dat.decimalPlaces == undefined){
+								  dat.decimalPlaces = 2;
+							  }
+							  this.somenteDecimal(input);
+						}
+						else if (data_type === "date" || data_type === "data"){
+							  $(input).mask("99/99/9999");
+							  dat.type = "date";
+							  input.setAttribute("size", 12);
+							  input.style.width="100px";
+							  this.somenteData(input);
+						}else if (data_type === "text"){
+							  if (dat.caixaAlta != undefined){
+								  this.somenteCaixaAlta(input);
+							  }
+							  if (dat.mascara != undefined){
+								  $(input).mask(dat.mascara, {placeholder: dat.mascaraPlaceholder});
+							  }
+						}else if (data_type === "combobox" || 
+							      data_type === "dropdown" || 
+								  data_type === "select"){
+							  dat.type = "combobox";
+						}
+						  
+						if (dat.noEditable != undefined){
+							input.setAttribute("readonly", "readonly");
+							input.style.backgroundColor="LightYellow";
+						}
+			
+						if (dat.noInsertable != undefined){
+							input.setAttribute("readonly", "readonly");
+							input.style.backgroundColor="LightYellow";
+						}
+					  
+						var label = fpc.getLabelFromField(input);
+						if (label != undefined){
+							if (dat.required != undefined){
+								label.style.fontWeight="bold";
+							}else{
+								label.style.fontWeight="";
+							}
+						}
 					}
 				}
-				return js_obj;
 			}
-		}catch (e){
-			fpc.mensagem("Erro ao localizar controller do formulário. " + e + ".", "erro");
-			return undefined;
 		}
-    },
-    
-    findBaseController : function(js_class){
-		var doc = document;
-		try{
-			if (js_class == undefined){
-	    		var f_state = doc.getElementById("f_state");
-	    		if (f_state != undefined){
-	    			var js_class = f_state.dataset.jsclassBase;
-	    		}
-			}
-	    	if (js_class != undefined && js_class.length > 4){
-				var js_var = js_class.substr(0,1).toLowerCase() + js_class.substr(1); 
-				var js_obj = window[js_var];
-				if (js_obj == undefined){
-					js_var = js_class.substr(0,1).toLowerCase() + js_class.substr(1,js_class.length-5) + "Controller";
-					var js_obj = window[js_var];
-					if (js_obj == undefined){
-						var js_obj = window[js_class];
-					}
-				}
-				return js_obj;
-			}
-		}catch (e){
-			fpc.mensagem("Erro ao localizar controller do formulário. " + e + ".", "erro");
-			return undefined;
-		}
-    },
-    
-    checkRenderLazyFields : function(){
-    	var lazyFields = fpc.lazyFields;
-    	if (lazyFields != null){
-	    	var jwin = $(window);
-	    	var heightWin = jwin.scrollTop() + jwin.height();
-	    	for (var i = 0, j = 0, len = lazyFields.length; i < len; i++){
-	    		var field = lazyFields[i-j];
-	    		if (field.dataset.lazy != undefined){
-		    		var jfield = $(field);
-	    			if (heightWin >= jfield.position().top && jfield.is(':visible')){
-	    				field.removeAttribute("data-lazy");
-	    				lazyFields.splice(i, 1);
-	    				++j;
-	    				fpc.fireOnRenderLazyField(field);
-	    				//fpc.renderLazyField(field);
-	    			}
-	    		}
-	    	}
-	    	if (lazyFields.length == 0){
-	    		fpc.lazyFields = null;
-	    		$(document).off("scroll", fpc.checkRenderLazyFields);
-	    	}
-    	}
-    	
-    },
-    
-    
-    renderLazyField : function(field){
-    	var doc = document;
-    	var dat = doc.getElementById("dados_pesquisa").dataset;
-		var f_cadastro = doc.getElementById("f_cadastro");
-		var s_form = fpc.serializeForm(f_cadastro);
-		var operacao = doc.getElementById("barra_botao").dataset.tipo;
-    	doc.body.style.cursor = "wait"; 
-		fpc.getJSON("/fpc.views.fpc_lazy_field", { ts : dat.ts, 
-												 id : dat.id, 
-												 form : s_form,
-												 field : field.dataset.field,
-												 field_id : field.id,
-												 operacao : operacao}
-		).done(function (msg) {
-			var doc = document;
-			doc.body.style.cursor = "default"; 
-			var param = msg.params[0];
-			var field = doc.getElementById(param.field_id);
-			var operacao = param.operacao;
-			var content = param.content;
-			$(field).html(content);  
-        });
-    },
-    
-    configFields : function(form, operacao){
-		var list_fields = $.makeArray(form.querySelectorAll('[data-type]'));
-        if (operacao === "edicao" || operacao === "update" || operacao === "put"){
-        	operacao = "put";
-        }else if (operacao === "novo" || operacao === "insert" || operacao === "post"){
-        	operacao = "post";
-        }
-        var jdoc = $(document); 
-
-        // Inicializa a lista de campos lazy e remove o handler scroll 
-        fpc.lazyFields = new Array();
-        jdoc.off('scroll', fpc.checkCheckRenderLazyFields);
-
-        // Configura cada field conforme seu tipo (data-type) 
-        for (var i = 0, len = list_fields.length; i < len; i++){
-        	var input = list_fields[i];
-            if (input.type != undefined){
-	        	try{
-		        	var dat = input.dataset;
-		            var data_type = dat.type;
-		            input.style.backgroundColor="white";
-		            if (data_type != undefined && data_type !== null){
-			              data_type = data_type.toLowerCase();
-			              if (data_type === "numero"  || 
-			            	  data_type === "number"  || 
-			            	  data_type === "integer" || 
-			            	  data_type === "int"){
-			            	  	dat.type = "numero";
-				 	         	this.somenteNumeros(input);
-			              } 
-			              else if (data_type === "decimal"  || 
-			            		   data_type === "money"    || 
-			            		   data_type === "currency" || 
-			            		   data_type === "real"     || 
-			            		   data_type === "double") {
-			            	  dat.type = "decimal";
-			        	  	  this.somenteDecimal(input);
-			              }
-			              else if (data_type === "data" || data_type === "date"){
-			            	  $(input).mask("99/99/9999");
-			            	  dat.type = "data";
-			            	  input.setAttribute("size", 12);
-			            	  this.somenteData(input);
-			              }else if (data_type === "text"    || 
-			            		  	data_type === "texto"   || 
-			            		  	data_type === "string"  ||
-			            		  	data_type === "char"){
-			            	  dat.type = "text";
-			            	  if (dat.caixaAlta != undefined){
-			            		  this.somenteCaixaAlta(input);
-			            	  }
-			            	  if (dat.mascara != undefined){
-			            		  $(input).mask(dat.mascara, {placeholder: dat.mascaraPlaceholder});
-			            	  }
-			              }else if (data_type === "combobox" || 
-			            		  	data_type === "dropdown" || 
-			            		  	data_type === "select"){
-			            	  dat.type = "combobox";
-			              } else if (data_type === "grid"){
-			            	  
-			              }
-		            } 
-		
-		           if (dat.lazy != undefined){
-		        	  fpc.lazyFields.push(input);
-		           }
-		          
-		           if (operacao === "put" && dat.noEditable != undefined){
-		            	input.setAttribute("readonly", "readonly");
-		            	input.style.backgroundColor="LightYellow";
-		           }
-		
-		           if (operacao === "post" && dat.noInsertable != undefined){
-		            	input.setAttribute("readonly", "readonly");
-		          	    input.style.backgroundColor="LightYellow";
-		           }
-		          
-	           	  fpc.fireOnReadyEvent(input, operacao);
-		
-	        	  var label = fpc.getLabelFromField(input);
-	           	  if (label != undefined){
-	        	      label.style.fontWeight="";
-	        	  }
-	           	  if (dat.required != undefined && (operacao == "post" || operacao == "putt")){
-		        	  if (label != undefined){
-		        	      label.style.fontWeight="bold";
-		        	  }
-		           }
-		          
-		           this.fieldChanged(input);
-	
-	            }catch (e){
-					fpc.mensagem("Erro ao configurar campo " + input.id + " (no metodo configFields). " + e + ".", "erro");
-				}
-            }
-        }
-
-        // Configura datatimepicker
-        $('.form_datetime').datetimepicker({
-        	language: 'pt-BR',
-            weekStart: 1,
-            todayBtn:  1,
-    		autoclose: 1,
-    		todayHighlight: 1,
-    		startView: 2,
-    		forceParse: 0,
-            showMeridian: 1
-        });
-    	$('.form_date').datetimepicker({
-            language:  'pt-BR',
-            weekStart: 1,
-            todayBtn:  1,
-    		autoclose: 1,
-    		todayHighlight: 1,
-    		startView: 2,
-    		minView: 2,
-    		forceParse: 0
-        });
-    	$('.form_time').datetimepicker({
-            language:  'pt-BR',
-            weekStart: 1,
-            todayBtn:  1,
-    		autoclose: 1,
-    		todayHighlight: 1,
-    		startView: 1,
-    		minView: 0,
-    		maxView: 1,
-    		forceParse: 0
-        });
-
-    	
-    	// Se existe algum campo lazy devemos monitorar quando carrega-lo
-    	if (fpc.lazyFields.length > 0){
-    		fpc.checkRenderLazyFields();
-            jdoc.on('scroll', fpc.checkRenderLazyFields);
-    	}else{
-    		fpc.lazyFields = null;
-    	}
-    	
     },
     
     getLabelFromField : function(field){
@@ -1176,102 +770,6 @@ var fpc = {
     	return result;
     },
 
-    exibeMenu : function exibeMenu(sistema){
-    	fpc.getJSON("/fpc.views.fpc_exibe_menu", { sistema: sistema })
-    		.done(function(msg) {
-			  var doc = document;
-			  var param = msg.params[0]; 
-			  var template = param.template;
-			  var barra_nav = doc.getElementById("barra_nav");
-			  $(barra_nav).html(template);
-			  doc.getElementById("nome_sistema").textContent = param.nome_sistema;
-			  $(doc.getElementById("painel_conteudo")).html('<h4 class="text-center">'+ param.nome_sistema + '<br><small>CPD</small><h4>');
-			});
-	},
-    
-    exibeAjaxTab : function exibeAjaxTab(h_tab, ts, urlOrTemplate, id_tab){
-    	if (h_tab.dataset.ajax != undefined){
-    		return;
-    	}
-    	var doc = document;
-    	doc.body.style.cursor = "wait"; 
-
-    	var url = "/fpc.views.fpc_exibe_ajax_tab";
-    	var operacao = doc.getElementById("barra_botao").dataset.tipo;
-		var f_cadastro = doc.getElementById("f_cadastro");
-		var s_form = fpc.serializeForm(f_cadastro);
-		var id_obj = doc.getElementById("dados_pesquisa").dataset.id;
-
-    	fpc.getJSON(url, { ts : ts, 
-    		  			   id_tab : id_tab, 
-    					   h_tab : h_tab.id, 
-    					   id_obj : id_obj, 
-    					   template : urlOrTemplate, 
-    					   operacao : operacao, 
-    					   form : s_form }
-			).done(function(msg) {
-				var doc = document;
-				doc.body.style.cursor = "default"; 
-				var param = msg.params[0]; 
-				var template = param.template;
-				var id_tab = doc.getElementById(param.id_tab);
-				var h_tab = doc.getElementById(param.h_tab);
-				$(id_tab).html(template);
-				h_tab.dataset.ajax = true;
-		    });			
-    },
-    
-    refreshCurrentTab : function(){
-    	var h_tab_a = $("#id_tab_registro li[class='active'").children().first(); 
-    	h_tab_a[0].removeAttribute("data-ajax");
-    	h_tab_a.click();    	
-    },
-    
-    execTs : function execTs(ts){
-    	this.exibeForm('/fpc.views.fpc_executa_transacao', { ts : ts });
-    },
-
-    exibeForm : function exibeForm(url, params){
-		fpc.getJSON(url, params
-			).done(function(msg) {
-				var doc = document;
-				var param = msg.params[0]; 
-				var template = param.template;
-				var ts_id = param.ts;
-				var tipoTs = param.tipoTs;
-				var operacao = param.operacao;
-				var isPage = param.isPage;
-				var jpainel_conteudo = $("#painel_conteudo");
-				jpainel_conteudo.html(template);
-				if (!isPage){
-					jpainel_conteudo.find("form").each(function(){ 
-						fpc.configFields(this, operacao); 
-					}); 
-					$(function () {
-				 	      $('#id_tab_registro a:first').tab('show');
-				 	      var dat = document.body.dataset;
-				 	      var f_state = doc.getElementById("f_state");
-				 	      dat.ts = ts_id;
-				 	      dat.tipoTs = tipoTs;
-				 	      if (f_state != undefined){
-							 var js_class = f_state.dataset.jsclass;
-							 var js_class_base = f_state.dataset.jsclassBase;
-							 if (js_class_base != undefined && js_class_base === "FpcCrud"){
-								fpc.montaBarraBotao("pesquisa"); 
-							 }
-							 if (js_class != undefined){
-								fpc.fireOnOpenForm(js_class, msg);		
-							 }
-				 	      }
-					});
-				}else{
-					System.import('app/main')
-				        .then(null, console.error.bind(console));
-
-				}
-			});
-    },
-   
     mensagem : function mensagem(msg, tipo){
 		var alerta = $("#alerta");
     	if (alerta != undefined) {
@@ -1380,221 +878,6 @@ var fpc = {
    		$("#alerta").css("display", "none");
    	},
    	
-   	montaBarraBotao : function montaBarraBotao(tipo, param){
-   		var doc = document;
-   		var btnEditar = $("#btn_editar");
-   		var btnVoltaLista = $("#btn_volta_lista");
-   		var btnNovaPesquisa = $("#btn_nova_pesquisa");
-   		var btnImprimir = $("#btn_imprimir");
-   		var btnCancelar = $("#btn_cancelar");
-   		var btnExcluir = $("#btn_excluir");
-   		var btnExportar = $("#btn_exportar");
-   		var btnPesquisar = $("#btn_pesquisar");
-   		var btnNovo = $("#btn_novo");
-   		var btnSalvar = $("#btn_salvar");
-   		var btnVisualizar = $("#btn_visualizar");
-   		var ts_id = doc.getElementById("dados_pesquisa").dataset.ts;
-   		
-   		btnVisualizar.hide();
-   		
-   		if (tipo === "pesquisa"){
-   				btnVoltaLista.hide();
-	   			btnSalvar.hide();
-	   		   	btnNovaPesquisa.hide();
-	   			btnImprimir.hide();
-	   			btnEditar.hide();
-	   			btnCancelar.hide();
-	   			btnExcluir.hide();
-	   			btnExportar.hide();
-	   			btnPesquisar.show();
-	   			btnNovo.show();
-	   			btnNovo[0].setAttribute("onclick", "fpc.novo('"+ ts_id + "', true)");
-   		}
-	   	else if (tipo === "consulta"){
-			btnVoltaLista.hide();
-   		   	btnNovaPesquisa.hide();
-   			btnPesquisar.show();
-   		}else if (tipo === "lista"){
-   	   			btnPesquisar.hide();
-	   			btnSalvar.hide();
-	   			btnVoltaLista.hide();
-	   			btnImprimir.hide();
-	   			btnCancelar.hide();
-	   			btnExcluir.show();
-	   			btnNovaPesquisa.show();
-	   			btnNovo.show();
-	   			btnEditar.show();
-	   			btnExportar.show();
-	   			btnNovo[0].setAttribute("onclick", "fpc.novo('"+ ts_id + "', false)");
-   		}else if (tipo === "edicao"){
-		  		btnNovaPesquisa.hide();
-				btnPesquisar.hide();
-				btnNovo.hide();
-	   			btnImprimir.show();
-	   			btnExcluir.show();
-	   			btnExportar.hide();
-	   			btnEditar.hide();
-	   			btnVoltaLista.show();
-				btnSalvar.show();
-	   			btnCancelar.show();
-   		}else if (tipo === "novo"){
-		  		btnNovaPesquisa.hide();
-				btnPesquisar.hide();
-				btnNovo.hide();
-	   			btnImprimir.hide();
-	   			btnExcluir.hide();
-	   			btnExportar.hide();
-	   			// param = inclusao_direta
-	   			if (param === true){
-	   				btnNovaPesquisa.show();
-	   			}else{
-	   				btnVoltaLista.show();	
-	   			}
-				btnSalvar.show();
-	   			btnCancelar.show();
-	   			btnEditar.hide();
-   		}
-   		
-   		var divBarraBotao = doc.getElementById("barra_botao");
-   		var dat = divBarraBotao.dataset;
-   		var perm = dat.perm;
-   		if (perm[0] === "0"){
-   			btnEditar.hide();
-   			if (perm[3] === "1"){
-   				if (tipo === "lista"){
-   					btnVisualizar.show();
-   				}
-   				if (tipo === "edicao" || tipo === "novo"){
-   					btnSalvar.hide();
-   					btnCancelar.hide();
-   				}
-   			}
-   		}
-   		if (perm[1] === "0"){
-   			btnNovo.hide();
-   		}
-   		if (perm[2] === "0"){
-   			btnExcluir.hide();
-   		}
-   		dat.tipo = tipo;
-   	},
-   	
-   	montaBarraBotaoConsulta : function montaBarraBotaoConsulta(tipo){
-   		var btnNovaPesquisa = $("#btn_nova_pesquisa_consulta");
-   		var btnPesquisar = $("#btn_pesquisar_consulta");
-   		var btnRetornar = $("#btn_retornar_consulta");
-   		
-	   	if (tipo === "pesquisa"){
-   		   	btnNovaPesquisa.hide();
-   			btnRetornar.hide();
-   		   	btnPesquisar.show();
-   		}else if (tipo === "lista"){
-   	   		btnPesquisar.hide();
-	   		btnNovaPesquisa.show();
-	   		btnRetornar.show();
-   		}
-   		
-   	},
-   	
-   	novaPesquisa : function (){
-   		var doc = document;
-   		var dadosPesquisa = doc.getElementById("dados_pesquisa"); 
-   		dadosPesquisa.style.display = "none";
-   		dadosPesquisa.dataset.id = "";
-   		doc.getElementById("filtro_pesquisa").style.display = "block";
-   		doc.getElementById("f_cadastro").style.display = "none";
-		fpc.montaBarraBotao("pesquisa");
-		fpc.mensagem("", "");
-   	},
-   	
-   	novaConsulta : function (){
-   		var doc = document;
-   		doc.getElementById("dados_pesquisa_consulta").style.display = "none";
-		doc.getElementById("filtro_pesquisa_consulta").style.display = "block";
-		fpc.montaBarraBotaoConsulta("pesquisa");
-		fpc.mensagem("", "");
-   	},
-
-   	voltarParaLista : function (){
-   		var doc = document;
-   		var dat = dados_pesquisa.dataset;
-   		if (dat.ult_id !== "" && dat.id === ""){
-   			dat.id = dat.ult_id;
-   			dat.ult_id = "";
-   		}
-   		doc.getElementById("dados_pesquisa").style.display = "block";
-		doc.getElementById("f_cadastro").style.display = "none";
-		fpc.montaBarraBotao("lista");
-		fpc.mensagem("", "");
-   	},
-
-   	voltarParaListaConsulta : function (){
-   		var doc = document;
-   		doc.getElementById("dados_pesquisa").style.display = "block";
-		doc.getElementById("f_cadastro").style.display = "none";
-		fpc.montaBarraBotaoConsulta("lista");
-		fpc.mensagem("", "");
-   	},
-
-   	novo : function (ts, inclusao_direta){
-   		fpc.getJSON("/fpc.views.fpc_novo_cadastro", {ts : ts}
-			).done(function(msg) {
-				var doc = document;
-				var param = msg.params[0]; 
-				var update_fields = param.update_values;
-				var template = param.template;
-				var f_cadastro = doc.getElementById("f_cadastro");
-				f_cadastro.innerHTML = template;
-				fpc.updateFields(f_cadastro, update_fields);
-				fpc.resetFields(f_cadastro);
-				f_cadastro.style.display = "block";
-				doc.getElementById("dados_pesquisa").style.display = "none";
-				doc.getElementById("filtro_pesquisa").style.display = "none";
-				fpc.montaBarraBotao("novo", inclusao_direta);
-				fpc.configFields(f_cadastro, "novo");
-				$(function () {
-			 	      $('#id_tab_registro a:first').tab('show'); // focu na primeira aba após renderizar
-			 	      var dados_pesquisa = document.getElementById("dados_pesquisa");
-			 	      var dat = dados_pesquisa.dataset; 
-			 	      dat.ult_id = dat.id;
-			 	      dat.id = "";
-				});
-				  
-			});
-   	},
-   	
-   	editar : function (){
-   		var dados_pesquisa = document.getElementById("dados_pesquisa");
-   		if (dados_pesquisa.dataset.id === ""){
-   			alert('Selecione um registro primeiro!');
-   			return;
-   		}
-
-   		fpc.getJSON("/fpc.views.fpc_manter_cadastro", {ts : dados_pesquisa.dataset.ts, 
-   													   id : dados_pesquisa.dataset.id}
-			).done(function(msg) {
-				var doc = document;
-				var param = msg.params[0]; 
-				var update_fields = param.update_values;
-				var template = param.template;
-				var f_cadastro = document.getElementById("f_cadastro");
-				$(f_cadastro).html(template);
-				$("#dados_pesquisa").css("display", "none");
-				$("#filtro_pesquisa").css("display", "none");
-				$(f_cadastro).css("display", "block");
-				fpc.montaBarraBotao("edicao");
-				fpc.configFields(f_cadastro, "edicao");
-				$(function () {
-					// seta o focu na primeira aba após renderizar 
-  		 	        $('#id_tab_registro a:first').tab('show');
-		 	        fpc.updateFields(f_cadastro, update_fields);
-					fpc.resetFields(f_cadastro);
-
-				});
-				  
-			});
-   		
-   	},
    	
    	updateGrid : function(obj_id, grid_dados){
 		// Atualiza a linha do registro selecionado na grid sem fazer request
@@ -1637,134 +920,6 @@ var fpc = {
 		}
    	},
    	
-   	excluir : function(){
-   		var doc = document;
-   		var divDadosPesquisa = document.getElementById("dados_pesquisa");
-   		var dat = divDadosPesquisa.dataset;
-   		var obj_id = dat.id;
-		var f_state = doc.getElementById("f_state");
-		var  service_url = f_state.dataset.serviceUrl;
-
-		if (obj_id === "" || obj_id === "undefined"){
-   			alert('Selecione um registro primeiro!');
-   		}
-
-		if (confirm("Confirma a exclusão?")){
-			if (service_url != "" && service_url != undefined){
-				service_url += "/" + obj_id;
-				var params = {};
-			}else{
-				service_url = "/fpc.views.fpc_excluir_cadastro";
-				var params = { ts : dat.ts, 
-						   	   id : obj_id};			
-			}
-			
-			fpc.callRest(service_url, params, "DELETE" 
-				).done(function (msg) {
-						var doc = document;
-						if (msg.tipo === "erro" || msg.erro != undefined){
-							fpc.mensagem(msg.message, "erro");
-						}else{
-							fpc.mensagem("Registro excluído com sucesso!", "info");
-						}
-				}).fail(function( jqxhr, textStatus, error ){
-					fpc.mensagem(error, "error");        
-			});
-		}
-		
-   	},
-   	
-   	salvar : function (){
-   		var doc = document;
-   		var divDadosPesquisa = document.getElementById("dados_pesquisa");
-   		var dat = divDadosPesquisa.dataset;
-   		var obj_id = dat.id;
-
-   		if (obj_id === "undefined" || obj_id === ""){
-   			obj_id = undefined;
-   		}
-
-   		var is_edicao = (obj_id != undefined);
-   		var obj = fpc.getObject(f_cadastro, !is_edicao);
-
-		// limpa as mensagens anteriores
-   		fpc.mensagem("");
-
-   		if (obj == undefined){
-   			fpc.mensagem("Nenhuma alteração realizada no cadastro para salvar.", "info");
-   			return;
-		}
-
-   		if (this.validaForm(f_cadastro)){
-   			var f_state = doc.getElementById("f_state");
-   			var  service_url = f_state.dataset.serviceUrl;
-   			var obj = JSON.stringify(obj);
-			var metodo = "GET";
-
-   			if (service_url != "" && service_url != undefined){
-   				var params = obj;
-   				// Eh uma edição se possui id
-   				if (is_edicao){
-   					service_url += "/" + obj_id;
-   					metodo = "PUT";
-   				}else{
-					metodo = "POST";
-				}
-   			}else{
-   				service_url = "/fpc.views.fpc_salvar_cadastro";
-   				var params = { ts : dat.ts, 
-   							   id : obj_id, 
-   							   form : obj };
-   			}
-   			
-   			fpc.callRest(service_url, params, metodo 
-				).done(function (msg) {
-						var doc = document;
-						if (msg.tipo === "erro" || msg.erro != undefined){
-							fpc.mensagem(msg.message, "erro");
-						}else{
-							if (msg.tipo == undefined){
-								var update_fields = msg;
-								var obj_id = msg.id; 
-							}else{
-								var param = msg.params[0]; 
-								var update_fields = param.update_values;
-								var obj_id = param.id; 
-							}
-							var divDadosPesquisa = doc.getElementById("dados_pesquisa");
-							var is_insert = divDadosPesquisa.dataset.id == ""
-							divDadosPesquisa.dataset.id = obj_id;
-							fpc.updateFields(f_cadastro, update_fields);
-							fpc.resetFields(f_cadastro);
-							fpc.configFields(f_cadastro, "edicao");
-							
-							if (msg.message != undefined){
-								fpc.mensagem(msg.message, "info");
-							}else{
-								fpc.mensagem("Registro salvo com sucesso!", "info");
-							}
-							
-							// Força o focus para a primeira aba
-							$('#id_tab_registro a:first').tab('show');
-
-							// Atualiza a grid da pesquisa
-							if (param != undefined && param.grid_dados != undefined){
-								var grid_dados = JSON.parse(param.grid_dados);
-								if (grid_dados != undefined){
-									if (is_insert){
-										fpc.updateGrid("", grid_dados);	
-									}else{
-										fpc.updateGrid(obj_id, grid_dados);
-									}
-								}
-							}
-						}
-				}).fail(function( jqxhr, textStatus, error ){
-					fpc.mensagem(error, "error");        
-			});  
-		}
-   	},
-
     pesquisar : function (ts, is_consulta){
 		var doc = document;
     	var frmFiltro = is_consulta ? doc.getElementById("filtro_consulta") : doc.getElementById("filtro");
@@ -2099,11 +1254,15 @@ $.fn.dataTable.pipeline = function ( opts ) {
 /////////////////////  	ready  	///////////////////////
 
 $(this).ready(function(){
-  fpc.csrftoken = fpc.getCookie('csrftoken');
-  $(document).ajaxSend(function(event, xhr, settings) {
+	fpc.csrftoken = fpc.getCookie('csrftoken');
+	$(document).ajaxSend(function(event, xhr, settings) {
         xhr.setRequestHeader("X-CSRFToken", fpc.csrftoken);
         xhr.setRequestHeader("Accept", "application/json,application/zip");
         xhr.setRequestHeader ("Authorization", "Basic " + btoa(fpc.username + ":" + fpc.password));
  	});
-	setInterval(function(){ fpc.configFields(document, "edicao") }, 1000);
+
+	// Registra uma thread para configurar os inputs a cada 1 segundo
+	setTimeout(function(){
+		setInterval(function(){ fpc.configFields() }, 1000);
+	}, 3000);
 });

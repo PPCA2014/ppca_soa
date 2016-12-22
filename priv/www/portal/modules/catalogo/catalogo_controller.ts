@@ -1,5 +1,7 @@
 import {Component} from '@angular/core';
 import { Http, Response, Headers, RequestOptions } from '@angular/http';
+import { Catalogo } from './catalogo';
+
  
 @Component({
     selector: 'catalogo',
@@ -17,6 +19,7 @@ export class CatalogoController {
     public sortBy : string = "email";
     public sortOrder : string = "asc";
     public lista_owners : any = null;
+    public model : Catalogo = new Catalogo();
 
     constructor(private http: Http) {
 		// busca os owners

@@ -35,10 +35,28 @@
 	<form id="f_filtro" name="f_filtro" role="form" *ngIf="operacao=='pesquisa'" >
 	   <div id="filtro_pesquisa" style="display: block;">
 		  <div class="form-inline">
+				<div class='input-group date'>
+					<input type='text' class="form-control" />
+					<span class="input-group-addon">
+						<span class="glyphicon glyphicon-calendar"></span>
+					</span>
+				</div>
+
 			 <div class="form-group">
 				<label class="control-label" for="f_url">URL do serviço</label>
-				<input id="f_url" class="form-control" type="text" pattern="\d*" maxlength="300" data-type="numero" value="" style="width: 300px">
+				<input id="f_url" name="f_url" class="form-control" type="text" maxlength="300" [(ngModel)]="model.url" style="width: 300px">
+				<input id="f_url2" name="f_url2" class="form-control" type="text" maxlength="300" data-type="number" [(ngModel)]="model.url" style="width: 300px">
+				<input id="f_url3" name="f_url3" class="form-control" type="text" maxlength="300" data-type="decimal" value="" style="width: 300px">
+				<input id="f_url4" class="form-control" type="text" maxlength="300" data-type="decimal" data-decimal-places="4" value="" style="width: 300px">
+				<input id="f_url5" class="form-control" type="text" maxlength="300" data-type="date" value="" style="width: 300px">
 				<input type="text" name="Phone Number" pattern="[0-9]{10}" title="Phone number">
+				<div class='input-group date' id='datetimepicker1'>
+                    <input type='text' class="form-control" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+                </div>
+                
 			 </div>
 			 <span class="fpc_nl"></span>
 			 <div class="form-group" style="width: 500px">
