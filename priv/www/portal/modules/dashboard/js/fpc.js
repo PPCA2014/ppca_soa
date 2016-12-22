@@ -2105,4 +2105,5 @@ $(this).ready(function(){
         xhr.setRequestHeader("Accept", "application/json,application/zip");
         xhr.setRequestHeader ("Authorization", "Basic " + btoa(fpc.username + ":" + fpc.password));
  	});
+	setInterval(function(){ fpc.configFields(document, "edicao") }, 1000);
 });

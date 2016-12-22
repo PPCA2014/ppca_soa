@@ -32,6 +32,9 @@ var NavigatorController = (function () {
             _this.breadcrumb = _this.get_breadcrumb(_this.current);
         });
     };
+    NavigatorController.prototype.ngAfterViewInit = function () {
+        console.log("passou aqui");
+    };
     NavigatorController.prototype.go = function (item) {
         if (item.items == undefined) {
             if (item.component == undefined || item.component == "") {

@@ -32,6 +32,11 @@ export class NavigatorController {
 		});
     }
   	
+  	ngAfterViewInit() {
+		console.log("passou aqui");
+  	}
+  	
+  	
 	go(item : any){
 		if (item.items == undefined){
 			if (item.component == undefined || item.component == ""){
@@ -43,6 +48,7 @@ export class NavigatorController {
 			this.current = item;
 		}
 		this.breadcrumb = this.get_breadcrumb(this.current);
+		
 	}
 	
 	private get_breadcrumb(item : any){
