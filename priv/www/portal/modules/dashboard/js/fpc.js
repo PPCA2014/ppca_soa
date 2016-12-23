@@ -457,10 +457,15 @@ var fpc = {
 							  // Cria a span para o botão do calendário
 							  var span_input_group=doc.createElement("span");
 							  span_input_group.classList.add("input-group-addon");
-							  span_input_group.style.top = "10px";
+							  //span_input_group.classList.add("btn"); 
+							  //span_input_group.classList.add("btn-default"); 
+							  //span_input_group.classList.add("btn-xs"); 
+							  //span_input_group.style.height = "10px";
+							  //span_input_group.style.min_height = "10px";
 							  var span_input_glyphicon=doc.createElement("span");
 							  span_input_glyphicon.classList.add("glyphicon");
 							  span_input_glyphicon.classList.add("glyphicon-calendar");
+							  //span_input_glyphicon.style.height = "10px";
 							  span_input_group.appendChild(span_input_glyphicon);
 							  form_group.appendChild(span_input_group);
 							  
@@ -490,7 +495,7 @@ var fpc = {
 									    input.style.width="110px";
 										$(form_group).datetimepicker({
 											language:  'pt-BR',
-											format: 'dd/mm/yyyy hh:m',
+											format: 'dd/mm/yyyy hh:ii',
 											weekStart: 1,
 											todayBtn:  1,
 											autoclose: 1,
@@ -1325,7 +1330,7 @@ $(this).ready(function(){
  	});
 
 	// Registra uma thread para configurar os inputs a cada 1 segundo
-	setTimeout(function(){
-		setInterval(function(){ fpc.configFields() }, 300);
-	}, 4000);
+	//setTimeout(function(){
+	//	setInterval(function(){ fpc.configFields() }, 3000);
+	//}, 4000);
 });

@@ -1,0 +1,1 @@
+{"__symbolic":"module","version":1,"metadata":{},"exports":[{"from":"./overlay.directives","export":["OverlayTarget","OverlayDialogBoundary","DefaultOverlayTarget"]},{"from":"./overlay.component","export":["ModalOverlay","EmbedComponentConfig"]},{"from":"./overlay.service","export":["Overlay"]}]}

@@ -34,8 +34,10 @@
       'angular2-datatable': 'npm:angular2-datatable',
       'lodash': 'npm:lodash/lodash.js',
       
-      '@ng-bootstrap/ng-bootstrap': 'node_modules/@ng-bootstrap/ng-bootstrap/bundles/ng-bootstrap.js'
-
+      'angular2-modal': 'npm:angular2-modal/bundles/angular2-modal.umd.js',
+      'angular2-modal/plugins/bootstrap': 'npm:angular2-modal'
+      
+      
       
     },
     // packages tells the System loader how to load when no filename and/or no extension
@@ -57,7 +59,17 @@
       'angular2-datatable': {
 		  main: './index.js',
 		  defaultExtension: 'js'
+	  },
+	  'angular2-modal': { 
+		 defaultExtension: 'js', 
+	  },
+	  'angular2-modal/plugins/bootstrap': { 
+		 defaultExtension: 'js', 
+		 main: 'bundles/angular2-modal.bootstrap.umd.js' 
 	  }
-    }
+    },
+    
+  
+  
   });
 })(this);

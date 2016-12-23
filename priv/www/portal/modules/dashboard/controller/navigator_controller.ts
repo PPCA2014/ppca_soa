@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { SitemapService } from '../service/sitemap_service';
 
+
+interface fpc {
+    configFields: Function;
+}
+
+declare var fpc: fpc;
 
 @Component({
 	selector: 'navigator',
@@ -18,17 +24,15 @@ export class NavigatorController {
 	public current_url : string = undefined;
 	private breadcrumb : any = null;
 	
-	constructor(private sitemapService: SitemapService) {
+	constructor(private sitemapService: SitemapService, private _ngZone: NgZone) {
 		
 	}
 
 	ngOnInit() {
-		console.log("sitemap...");
 		this.sitemapService.getSitemap().subscribe(res => {
 				this.sitemap = res;
 				this.current = this.sitemap;
 				this.breadcrumb = this.get_breadcrumb(this.current);
-
 		});
     }
   	
@@ -47,7 +51,16 @@ export class NavigatorController {
 		}else{
 			this.current = item;
 		}
-		this.breadcrumb = this.get_breadcrumb(this.current);
+		
+		// Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
+		this._ngZone.onMicrotaskEmpty
+		  .subscribe(() => {
+				this._ngZone.run(() => {
+					this._ngZone.run(() => { 		
+						fpc.configFields(); 
+					});
+				});
+		  });
 		
 	}
 	

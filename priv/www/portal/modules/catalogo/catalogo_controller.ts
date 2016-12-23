@@ -1,11 +1,17 @@
-import {Component} from '@angular/core';
+import { Component, ViewContainerRef, ViewEncapsulation } from '@angular/core';
+import { Overlay, overlayConfigFactory } from 'angular2-modal';
+import { Modal, BSModalContext } from 'angular2-modal/plugins/bootstrap';
+import { CustomModalContext, CustomModal } from './exemplos_url_servico_component';
+
 import { Http, Response, Headers, RequestOptions } from '@angular/http';
+
 import { Catalogo } from './catalogo';
 
  
 @Component({
     selector: 'catalogo',
-    templateUrl: 'modules/catalogo/catalogo.html'
+    templateUrl: 'modules/catalogo/catalogo.html',
+    providers: [Modal]
 })
  
 export class CatalogoController { 
@@ -21,7 +27,9 @@ export class CatalogoController {
     public lista_owners : any = null;
     public model : Catalogo = new Catalogo();
 
-    constructor(private http: Http) {
+    constructor(private http: Http, public modal: Modal, vcRef: ViewContainerRef) {
+		modal.overlay.defaultViewContainer = vcRef;
+
 		// busca os owners
         this.http.get("/catalog/owner")
             .subscribe((data)=> {
@@ -63,6 +71,12 @@ export class CatalogoController {
 		this.operacao = "edicao";
 		
 	}
+	
+	
+  	
+	openCustom() {
+		return this.modal.open(CustomModal,  overlayConfigFactory({ num1: 2, num2: 3 }, BSModalContext));
+	}	
     
 }
 

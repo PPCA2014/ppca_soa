@@ -35,6 +35,24 @@
 	<form id="f_filtro" name="f_filtro" role="form" *ngIf="operacao=='pesquisa'" >
 	   <div id="filtro_pesquisa" style="display: block;">
 		  <div class="form-inline">
+			 <div class="form-group, col-xs-12, col-sm-6, col-md-12, col-lg-12, col-xl-12">
+				<label class="control-label">Tipo de serviço</label>
+				<label><input type="radio" name="optradio">GET</label>
+				<label><input type="radio" name="optradio">POST</label>
+				<label><input type="radio" name="optradio">PUT</label>			 
+				<label><input type="radio" name="optradio">DELETE</label>			 
+			 </div>
+
+			 <span class="fpc_nl"></span>
+
+			 <div class="form-group, col-xs-12, col-sm-2, col-md-2, col-lg-2, col-xl-2">
+				<label class="control-label" for="f_url">URL do serviço</label>
+				<input id="f_url" name="f_url" class="form-control" type="text" maxlength="300" [(ngModel)]="model.url">
+				<small class="text-muted">
+				  A URL deve ter o seguinte formato: modulo/serviço/:id
+				</small>
+			 </div>
+
 			<div class='form-group'>
 				<label class="control-label" for="teste">teste</label>
 				<input type='text' data-type="date" fpc-type="date" class="form-control" />
@@ -49,25 +67,16 @@
 
 			<span class="fpc_nl"></span>
 
-			 <div class="form-group">
-				<label class="control-label" for="f_url">URL do serviço</label>
-				<input id="f_url" name="f_url" class="form-control" type="text" maxlength="300" [(ngModel)]="model.url" style="width: 300px">
-			 </div>
 			 <span class="fpc_nl"></span>
-			 <div class="form-group" style="width: 500px">
-				<label>Tipo de serviço</label>
-				<label><input type="radio" name="optradio">GET</label>
-				<label><input type="radio" name="optradio">POST</label>
-				<label><input type="radio" name="optradio">PUT</label>			 
-				<label><input type="radio" name="optradio">DELETE</label>			 
-			 </div>
-			 <span class="fpc_nl"></span>
-			 <div class="form-group">
+			 <div class="form-group, col-xs-12, col-sm-6, col-md-12, col-lg-12, col-xl-12">
 				<label class="control-label">Listar os serviços de </label>
 				<select id="f_owner" name="f_owner" class="input-sm" [(ngModel)]="owner">
 					<option *ngFor="let item of lista_owners"  value="{{ item.id }}">{{ item.name }} - {{ item.title }}</option>
 				</select>
 			 </div>
+			 
+			 <h2>Custom Modal example:</h2>
+			 <button (click)="openCustom()">Custom Modal</button>
 		  </div>
 	   </div>
 	</form>

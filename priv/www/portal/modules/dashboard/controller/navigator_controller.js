@@ -11,8 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var core_1 = require('@angular/core');
 var sitemap_service_1 = require('../service/sitemap_service');
 var NavigatorController = (function () {
-    function NavigatorController(sitemapService) {
+    function NavigatorController(sitemapService, _ngZone) {
         this.sitemapService = sitemapService;
+        this._ngZone = _ngZone;
         this.sitemap = { "name": "dashboard",
             "title": "Dashboard",
             "url": "/portal/dashboard",
@@ -25,7 +26,6 @@ var NavigatorController = (function () {
     }
     NavigatorController.prototype.ngOnInit = function () {
         var _this = this;
-        console.log("sitemap...");
         this.sitemapService.getSitemap().subscribe(function (res) {
             _this.sitemap = res;
             _this.current = _this.sitemap;
@@ -36,6 +36,7 @@ var NavigatorController = (function () {
         console.log("passou aqui");
     };
     NavigatorController.prototype.go = function (item) {
+        var _this = this;
         if (item.items == undefined) {
             if (item.component == undefined || item.component == "") {
                 this.current = this.sitemap;
@@ -47,7 +48,15 @@ var NavigatorController = (function () {
         else {
             this.current = item;
         }
-        this.breadcrumb = this.get_breadcrumb(this.current);
+        // Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
+        this._ngZone.onMicrotaskEmpty
+            .subscribe(function () {
+            _this._ngZone.run(function () {
+                _this._ngZone.run(function () {
+                    fpc.configFields();
+                });
+            });
+        });
     };
     NavigatorController.prototype.get_breadcrumb = function (item) {
         return this.make_breadcrumb(item, []);
@@ -68,7 +77,7 @@ var NavigatorController = (function () {
             providers: [sitemap_service_1.SitemapService],
             templateUrl: 'modules/dashboard/web/navigator.html'
         }), 
-        __metadata('design:paramtypes', [sitemap_service_1.SitemapService])
+        __metadata('design:paramtypes', [sitemap_service_1.SitemapService, core_1.NgZone])
     ], NavigatorController);
     return NavigatorController;
 }());

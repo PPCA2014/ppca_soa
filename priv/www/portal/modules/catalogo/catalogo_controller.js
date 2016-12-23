@@ -9,12 +9,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require('@angular/core');
+var angular2_modal_1 = require('angular2-modal');
+var bootstrap_1 = require('angular2-modal/plugins/bootstrap');
+var exemplos_url_servico_component_1 = require('./exemplos_url_servico_component');
 var http_1 = require('@angular/http');
 var catalogo_1 = require('./catalogo');
 var CatalogoController = (function () {
-    function CatalogoController(http) {
+    function CatalogoController(http, modal, vcRef) {
         var _this = this;
         this.http = http;
+        this.modal = modal;
         this.operacao = "pesquisa";
         this.ult_operacao = "pesquisa";
         this.owner = "";
@@ -27,6 +31,7 @@ var CatalogoController = (function () {
         this.sortByWordLength = function (a) {
             return a.city.length;
         };
+        modal.overlay.defaultViewContainer = vcRef;
         // busca os owners
         this.http.get("/catalog/owner")
             .subscribe(function (data) {
@@ -59,12 +64,16 @@ var CatalogoController = (function () {
         this.ult_operacao = this.operacao;
         this.operacao = "edicao";
     };
+    CatalogoController.prototype.openCustom = function () {
+        return this.modal.open(exemplos_url_servico_component_1.CustomModal, angular2_modal_1.overlayConfigFactory({ num1: 2, num2: 3 }, bootstrap_1.BSModalContext));
+    };
     CatalogoController = __decorate([
         core_1.Component({
             selector: 'catalogo',
-            templateUrl: 'modules/catalogo/catalogo.html'
+            templateUrl: 'modules/catalogo/catalogo.html',
+            providers: [bootstrap_1.Modal]
         }), 
-        __metadata('design:paramtypes', [http_1.Http])
+        __metadata('design:paramtypes', [http_1.Http, bootstrap_1.Modal, core_1.ViewContainerRef])
     ], CatalogoController);
     return CatalogoController;
 }());

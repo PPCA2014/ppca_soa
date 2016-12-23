@@ -10,8 +10,11 @@ import { CatalogoController } from '../modules/catalogo/catalogo_controller';
 import { LoginComponent } from '../modules/login/login_component';
 import { DataTableModule } from 'angular2-datatable';
 
+import { ModalModule } from 'angular2-modal';
+import { BootstrapModalModule } from 'angular2-modal/plugins/bootstrap';
+import { CustomModal } from '../modules/catalogo/exemplos_url_servico_component';
 
-//import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+
 
 
 @NgModule({
@@ -19,8 +22,15 @@ import { DataTableModule } from 'angular2-datatable';
     BrowserModule,
     FormsModule,
     HttpModule,
-    DataTableModule],
-  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoController, LoginComponent ],
-  bootstrap: [ AppComponent, NavigatorController ]
+    DataTableModule,
+    ModalModule.forRoot(),
+    BootstrapModalModule],
+  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoController, LoginComponent, CustomModal ],
+  bootstrap: [ AppComponent, NavigatorController ],
+
+  // IMPORTANT: 
+  // Since 'AdditionCalculateWindow' is never explicitly used (in a template)
+  // we must tell angular about it.
+  entryComponents: [ CustomModal ]
 })
 export class AppModule { }

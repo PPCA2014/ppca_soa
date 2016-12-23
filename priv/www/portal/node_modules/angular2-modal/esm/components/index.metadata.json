@@ -1,0 +1,1 @@
+{"__symbolic":"module","version":1,"metadata":{},"exports":[{"from":"./swap-component.directive","export":["SwapComponentDirective"]},{"from":"./base-dynamic-component","export":["BaseDynamicComponent"]},{"from":"./css-backdrop","export":["CSSBackdrop"]},{"from":"./css-dialog-container","export":["CSSDialogContainer"]}]}
