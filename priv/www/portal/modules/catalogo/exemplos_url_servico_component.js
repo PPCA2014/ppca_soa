@@ -24,9 +24,6 @@ var CustomModalContext = (function (_super) {
     return CustomModalContext;
 }(bootstrap_1.BSModalContext));
 exports.CustomModalContext = CustomModalContext;
-/**
- * A Sample of how simple it is to create a new window, with its own injects.
- */
 var CustomModal = (function () {
     function CustomModal(dialog) {
         this.dialog = dialog;
@@ -34,23 +31,19 @@ var CustomModal = (function () {
         this.wrongAnswer = true;
         dialog.setCloseGuard(this);
     }
-    CustomModal.prototype.onKeyUp = function (value) {
-        this.wrongAnswer = value != 5;
-        this.dialog.close();
-    };
     CustomModal.prototype.beforeDismiss = function () {
         return true;
     };
     CustomModal.prototype.beforeClose = function () {
-        return this.wrongAnswer;
+        return false;
+    };
+    CustomModal.prototype.close = function () {
+        this.dialog.close();
     };
     CustomModal = __decorate([
         core_1.Component({
             selector: 'modal-content',
-            styles: ["\n        .custom-modal-container {\n            padding: 15px;\n        }\n\n        .custom-modal-header {\n            background-color: #219161;\n            color: #fff;\n            -webkit-box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.75);\n            -moz-box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.75);\n            box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.75);\n            margin-top: -15px;\n            margin-bottom: 40px;\n        }\n    "],
-            //TODO: [ngClass] here on purpose, no real use, just to show how to workaround ng2 issue #4330.
-            // Remove when solved.
-            /* tslint:disable */ template: "\n        <div class=\"container-fluid custom-modal-container\">\n            <div class=\"row custom-modal-header\">\n                <div class=\"col-sm-12\">\n                    <h1>A Custom modal design</h1>\n                </div>\n            </div>\n            <div class=\"row\" [ngClass]=\"{'myclass' : shouldUseMyClass}\">\n                <div class=\"col-xs-12\">\n                    <div class=\"jumbotron\">\n                        <h1>Do the math to quit:</h1>\n                        <p class=\"lead\">I received an injection of the number <strong>{{context.num1}}</strong> and the number <strong>{{context.num2}}</strong></p>\n                        <span>What is the sum?</span>\n                         <input class=\"form-control\" type=\"text\" #answer (keyup)=\"onKeyUp(answer.value)\" autofocus>\n                    </div>\n                </div>\n            </div>\n        </div>"
+            templateUrl: 'modules/catalogo/exemplos_url.html',
         }), 
         __metadata('design:paramtypes', [angular2_modal_1.DialogRef])
     ], CustomModal);

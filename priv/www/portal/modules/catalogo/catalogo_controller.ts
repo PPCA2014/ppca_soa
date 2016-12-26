@@ -74,8 +74,8 @@ export class CatalogoController {
 	
 	
   	
-	openCustom() {
-		return this.modal.open(CustomModal,  overlayConfigFactory({ num1: 2, num2: 3 }, BSModalContext));
+	openDialogExemplos() {
+		return this.modal.open(CustomModal,  overlayConfigFactory({  }, BSModalContext));
 	}	
     
 }

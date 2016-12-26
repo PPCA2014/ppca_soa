@@ -138,17 +138,51 @@
 		  <!--  monta conteúdo das abas -->
 		  <div class="tab-content">
 			 <div class="tab-pane active" id="id_tab_1" role="tabpanel">
-				<div class="form-group">
-				   <label class="control-label" for="f_url" style="font-weight: bold;">Url do serviço</label>
-				   <input id="f_url" class="form-control" type="text" maxlength="250" data-type="numero" value="" data-required="" data-auto-increment="" data-no-editable="" style="width: 380px; background-color: white;">
+
+				<div class="form-group, col-xs-12, col-sm-6, col-md-12, col-lg-12, col-xl-12">
+					<label class="control-label">Tipo de serviço</label>
+					<label><input type="radio" name="optradio" [(ngModel)]="model.type">GET</label>
+					<label><input type="radio" name="optradio" [(ngModel)]="model.type">POST</label>
+					<label><input type="radio" name="optradio" [(ngModel)]="model.type">PUT</label>			 
+					<label><input type="radio" name="optradio" [(ngModel)]="model.type">DELETE</label>			 
 				</div>
+
 				<span class="fpc_nl"></span>
-				<div class="form-group">
-				   <label class="control-label" for="f_comment">Informações sobre o serviço</label>
-				   <input id="f_comment" class="form-control" type="text" maxlength="1000" data-type="numero" value="" style="background-color: white;">
+
+				<div class="form-group, col-xs-4, col-sm-2, col-md-2, col-lg-2, col-xl-2">
+					<label class="control-label" for="f_url">Versão do serviço</label> 
+					<input id="f_version" name="f_version" class="form-control" placeholder="  .  .  " data-type="text" type="text" maxlength="12" [(ngModel)]="model.version">
+					<small class="text-muted">
+					  Formato: x.y.z. Exemplo: 1.0.0
+					</small>
 				</div>
+
 				<span class="fpc_nl"></span>
+
+				<div class="form-group, col-xs-12, col-sm-2, col-md-2, col-lg-2, col-xl-2">
+					<label class="control-label" for="f_url">URL do serviço</label>
+					<input id="f_url" name="f_url" class="form-control" type="text" maxlength="300" [(ngModel)]="model.url" style="width: 380px">
+					<small class="text-muted">
+					  Recomenda-se o formato: modulo/serviço/:id. <a (click)="openDialogExemplos()">Exemplos</a>.
+					</small>
+				</div>
+
+				<span class="fpc_nl"></span>
+
+				 <div class="form-group, col-xs-12, col-sm-6, col-md-12, col-lg-12, col-xl-12">
+					<label class="control-label">Dono do serviço </label>
+					<select id="f_owner" name="f_owner" class="input-sm" [(ngModel)]="model.owner">
+						<option *ngFor="let item of lista_owners"  value="{{ item.id }}">{{ item.name }} - {{ item.title }}</option>
+					</select>
+				 </div>
+				
+				<div class="form-group">
+				   <label class="control-label" for="f_comment">Sobre o serviço</label>
+				   <textarea id="f_comment" name="f_comment" class="form-control" rows="3" cols="120" required maxlength="1000" [(ngModel)]="model.comment"></textarea>
+				</div>
+
 			 </div>
+			 
 			 <div class="tab-pane" id="id_tab_2" role="tabpanel">
 				<div class="form-group">
 				   <label class="control-label" for="f_schema_in" style="font-weight: bold;">Schema de entrada</label>

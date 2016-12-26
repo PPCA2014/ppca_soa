@@ -64,8 +64,8 @@ var CatalogoController = (function () {
         this.ult_operacao = this.operacao;
         this.operacao = "edicao";
     };
-    CatalogoController.prototype.openCustom = function () {
-        return this.modal.open(exemplos_url_servico_component_1.CustomModal, angular2_modal_1.overlayConfigFactory({ num1: 2, num2: 3 }, bootstrap_1.BSModalContext));
+    CatalogoController.prototype.openDialogExemplos = function () {
+        return this.modal.open(exemplos_url_servico_component_1.CustomModal, angular2_modal_1.overlayConfigFactory({}, bootstrap_1.BSModalContext));
     };
     CatalogoController = __decorate([
         core_1.Component({

@@ -436,7 +436,7 @@ var fpc = {
 							  }
 							  this.somenteDecimal(input);
 						}
-						else if (data_type === "date" || data_type === "datetime" || data_type === "year"){
+						else if (data_type === "date" || data_type === "datetime"){
 							  this.somenteData(input);
 							  var input_ant=input.previousElementSibling;
 							  var parent_input=input.parentNode;
