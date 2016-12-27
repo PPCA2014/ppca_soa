@@ -839,16 +839,10 @@ var fpc = {
     },
 
     mensagem : function mensagem(msg, tipo){
-		var alerta = $("#alerta");
+		var	 alerta = $("#f_alert");
     	if (alerta != undefined) {
 			if (msg != undefined && msg !== "") {
 				var msg_text = "";
-				
-				// Cria a tag do alerta se necessário
-				if (alerta.length === 0){
-					$("#sep_breadcrumb").after("<div id='alerta' style='display:none'/>");
-					alerta = $("#alerta");
-				}
 	
 				// adiciona todas as mensagens na tag alerta
 				if (msg instanceof Array){
@@ -908,8 +902,9 @@ var fpc = {
 				
 				alerta.css("display", "block");
 	            $('html, body').animate({
-	                scrollTop: $("#painel_conteudo").offset().top-80}, 700);
-				$("#f_cadastro").one("change", function(event){
+						scrollTop: 1
+	                }, 700);
+				$(document).one("change", function(){
 					fpc.mensagem("");
 				});
 				
@@ -918,7 +913,7 @@ var fpc = {
 	   		else
 	   		{
 				if (alerta.length > 0){
-					alerta.remove();
+					alerta.html("<div id='f_alert' style='display:none'/>");
 	   			}
 				return "";
 	   		}

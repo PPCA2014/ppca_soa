@@ -1074,17 +1074,6 @@ body {
 }
 
 
-/* alerta  */
-
-#alerta {
-	padding: 0 0 0 10px;
-	min-height: 24px;
-}
-
-#alerta span {
-	display: block;
-	font-size: 12px;
-}
 
 
 
@@ -1236,4 +1225,15 @@ a {
 }
         
 
+/* alerta  */
+
+#f_alert {
+	padding: 0 0 0 10px;
+	min-height: 24px;
+}
+
+#f_alert span {
+	display: block;
+	font-size: 12px;
+}
 
