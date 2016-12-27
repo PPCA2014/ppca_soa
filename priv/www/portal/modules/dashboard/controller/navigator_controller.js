@@ -48,6 +48,7 @@ var NavigatorController = (function () {
         else {
             this.current = item;
         }
+        this.breadcrumb = this.make_breadcrumb(this.current, []);
         // Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
         this._ngZone.onMicrotaskEmpty
             .subscribe(function () {
@@ -65,7 +66,9 @@ var NavigatorController = (function () {
         if (item.owner != null) {
             this.make_breadcrumb(item.owner, result);
         }
-        result.push(item);
+        if (item.name != "dashboard") {
+            result.push(item);
+        }
         return result;
     };
     NavigatorController.prototype.setCurrentPage = function (page) {

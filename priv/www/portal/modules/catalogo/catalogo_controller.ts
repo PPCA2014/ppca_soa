@@ -30,6 +30,11 @@ export class CatalogoController {
     public owner_list : any = null;
     public language_list : any = [{"name" : "erlang", "title" : "Linguagem Erlang"}, {"name" : "java", "title" : "Linguagem Java"}];
     public authentication_list : any = [{"name" : "", "title" : "Sem autenticação"}, {"name" : "basic", "title" : "Protocolo HTTP Basic"}, {"name" : "oauth", "title" : "Protocolo Oauth 2.0"}];
+    public type_list : any = [{name : "GET", title : "Obter (verbo HTTP GET)"},
+							  {name : "POST", title : "Incluir (verbo HTTP POST)"},
+							  {name : "PUT", title : "Alterar (verbo HTTP PUT)"},
+							  {name : "DELETE", title : "Excluir (DELETE)"}
+							 ];
     public model : Catalogo = new Catalogo();
 
     constructor(private http: Http, public modal: Modal, vcRef: ViewContainerRef) {

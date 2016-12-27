@@ -1,10 +1,11 @@
 {
 	"name": "dashboard",
-	"title": "ERLANGMS",
+	"title": "UnB Kylix",
 	"image_url": "modules/dashboard/img/pedidos.png",
 	"left_menu": [{
 		"name": "principal",
-		"title": "Principal"
+		"title": "Dashboard",
+		"breadcrumb" : false
 	}, {
 		"name": "sobre",
 		"title": "Sobre",

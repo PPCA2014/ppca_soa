@@ -28,7 +28,7 @@
 <div id="painel_conteudo" class="container">
 		<div id="f_breadcrumb" *ngIf="current.breadcrumb">
 			<ol class="breadcrumb">
-				<li><a href="/portal/index.html"><i class="glyphicon glyphicon-home"></i></a></li>
+				<li *ngIf="current != sitemap"><a href="#" (click)="go(sitemap)"><i class="glyphicon glyphicon-home"></i></a></li>
 				<li *ngFor="let item of breadcrumb" (click)="go(item)">{{ item.title }}</li>
 			</ol>
 		</div>

@@ -138,11 +138,10 @@
 			 <div class="tab-pane active" id="id_tab_1" role="tabpanel">
 
 				<div class="form-group, col-xs-12, col-sm-6, col-md-12, col-lg-12, col-xl-12">
-					<label class="control-label">Tipo de serviço</label>
-					<label><input type="radio" name="optradio" [(ngModel)]="model.type">GET</label>
-					<label><input type="radio" name="optradio" [(ngModel)]="model.type">POST</label>
-					<label><input type="radio" name="optradio" [(ngModel)]="model.type">PUT</label>			 
-					<label><input type="radio" name="optradio" [(ngModel)]="model.type">DELETE</label>			 
+					<label class="control-label">Tipo de serviço Restful</label>
+					<select id="f_type" name="f_type" class="input-sm" [(ngModel)]="model.type" style="width: 190px">
+						<option *ngFor="let item of type_list"  value="{{ item.name }}">{{ item.title }}</option>
+					</select>
 				</div>
 
 				<span class="fpc_nl"></span>
@@ -169,7 +168,7 @@
 
 				 <div class="form-group, col-xs-12, col-sm-6, col-md-12, col-lg-12, col-xl-12">
 					<label class="control-label">Dono do serviço </label>
-					<select id="f_owner" name="f_owner" class="input-sm" [(ngModel)]="model.owner" style="width: 150px">
+					<select id="f_owner" name="f_owner" class="input-sm" [(ngModel)]="model.owner" style="width: 210px">
 						<option *ngFor="let item of owner_list"  value="{{ item.id }}">{{ item.name }} - {{ item.title }}</option>
 					</select>
 				 </div>

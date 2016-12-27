@@ -32,6 +32,11 @@ var CatalogoController = (function () {
         this.owner_list = null;
         this.language_list = [{ "name": "erlang", "title": "Linguagem Erlang" }, { "name": "java", "title": "Linguagem Java" }];
         this.authentication_list = [{ "name": "", "title": "Sem autenticação" }, { "name": "basic", "title": "Protocolo HTTP Basic" }, { "name": "oauth", "title": "Protocolo Oauth 2.0" }];
+        this.type_list = [{ name: "GET", title: "Obter (verbo HTTP GET)" },
+            { name: "POST", title: "Incluir (verbo HTTP POST)" },
+            { name: "PUT", title: "Alterar (verbo HTTP PUT)" },
+            { name: "DELETE", title: "Excluir (DELETE)" }
+        ];
         this.model = new catalogo_1.Catalogo();
         this.sortByWordLength = function (a) {
             return a.city.length;

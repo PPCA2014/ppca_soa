@@ -22,7 +22,7 @@ export class NavigatorController {
 	public current : any = [];
 	public current_page : number = 1;
 	public current_url : string = undefined;
-	private breadcrumb : any = null;
+	public breadcrumb : any = null;
 	
 	constructor(private sitemapService: SitemapService, private _ngZone: NgZone) {
 		
@@ -51,7 +51,9 @@ export class NavigatorController {
 		}else{
 			this.current = item;
 		}
-		
+	
+		this.breadcrumb = this.make_breadcrumb(this.current, []);
+			
 		// Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
 		this._ngZone.onMicrotaskEmpty
 		  .subscribe(() => {
@@ -72,7 +74,9 @@ export class NavigatorController {
 		if (item.owner != null){
 			this.make_breadcrumb(item.owner, result);
 		}		
-		result.push(item);
+		if (item.name != "dashboard"){
+			result.push(item);
+		}
 		return result;
 	}
 	
