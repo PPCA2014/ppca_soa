@@ -41,13 +41,16 @@ insert(Payload, Service = #service{schema_in = Schema}, #service_datasource{tabl
 			Record = ems_schema:to_record(Payload, list_to_atom(TableName)),
 			case onvalidate(insert, Record, Service) of
 				ok ->
+					io:format("aqui0\n"),
 					case ems_db:insert(Record) of
 						{ok, Result} -> 
 							ResultJson = ems_schema:to_json(Result),
 							{ok, ResultJson};
 						Error -> Error
 					end;
-				Error2 -> Error2
+				Error2 -> 
+					io:format("aqui1 ~p\n", [Error2]),
+					Error2
 			end;
 		Error -> Error
 	end.
