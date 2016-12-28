@@ -7,7 +7,12 @@ import { Observable } from 'rxjs/Observable';
 
 import { Catalogo } from './catalogo';
 
- 
+interface fpc {
+    mensagem: Function;
+}
+
+declare var fpc: fpc;
+
 @Component({
     selector: 'catalogo',
     templateUrl: 'modules/catalogo/catalogo.html',
@@ -42,6 +47,7 @@ export class CatalogoController {
 
 		// busca os owners
         this.http.get(this.catalogoOwnerUrl)
+			.catch(this.handleError)
             .subscribe((data)=> {
                 setTimeout(()=> {
                     this.owner_list = data.json();
@@ -69,6 +75,7 @@ export class CatalogoController {
 		this.ult_operacao = this.operacao;
 		this.operacao = "listagem";
         this.http.get(this.catalogoUrl)
+            .catch(this.handleError)
             .subscribe((data)=> {
                 setTimeout(()=> {
                     this.data = data.json();
@@ -87,14 +94,13 @@ export class CatalogoController {
 	}	
 
 	private handleError(error: Response | any) {
-		  // In a real world app, we might use a remote logging infrastructure
 		  let errMsg: string;
 		  if (error instanceof Response) {
-			const body = error.json() || '';
-			const err = body.error || JSON.stringify(body);
-			errMsg = `${error.status} - ${error.statusText || ''} ${err}`;
+				const body = error.json() || '';
+				fpc.mensagem(body);
+				errMsg = body;
 		  } else {
-			errMsg = error.message ? error.message : error.toString();
+				errMsg = error.message ? error.message : error.toString();
 		  }
 		  console.error(errMsg);
 		  return Observable.throw(errMsg);

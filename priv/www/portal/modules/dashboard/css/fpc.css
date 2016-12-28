@@ -1229,6 +1229,7 @@ a {
 
 #f_alert {
 	padding: 0 0 0 10px;
+	margin-bottom:5px;
 	min-height: 24px;
 }
 

@@ -854,8 +854,33 @@ var fpc = {
 						alerta.append(unescape(msg_text));
 					}
 				}else if (msg instanceof Object){
-					var message = msg.message;
-					if (message != undefined){
+					var err = msg.error;
+					if (err != undefined){
+						if (err instanceof Object){
+							msg_text = err.reason || err.message;
+							if (err.schema != undefined && err.schema.required != undefined && err.schema.required instanceof Array){
+								msg_text += ": " + err.schema.required.toString()
+							}
+							msg_text = '<span><i class="glyphicon glyphicon-remove" style="color: #a94442;"/>' + msg_text + '</span>';
+						}else{
+							if (err === "validation" && msg.message != undefined){
+								if (msg.message instanceof Array){
+									var errors = msg.message; 
+									for (var i in errors){
+										var str_temp = '<i class="glyphicon glyphicon-remove" style="color: #a94442;"/>' + errors[i];
+										msg_text += "<span>"+ str_temp + "</span>";
+									}
+								}else{
+									msg_text = msg.message;
+									msg_text = '<span><i class="glyphicon glyphicon-remove" style="color: #a94442;"/>' + msg_text + '</span>';
+								}
+							}else{
+								msg_text = "Ocorreu o seguinte erro: " + err;
+								msg_text = '<span><i class="glyphicon glyphicon-remove" style="color: #a94442;"/>' + msg_text + '</span>';
+							}
+						}
+					}else if (msg.message != undefined){
+						var message = msg.message;
 						var msg_text = '<span><i class="glyphicon glyphicon-remove" style="color: #a94442;"/>' + message + '</span>';
 					}else{
 						var warnings = msg.warnings; 
@@ -901,10 +926,13 @@ var fpc = {
 				
 				
 				alerta.css("display", "block");
-	            $('html, body').animate({
+	            $("html, body").animate({
 						scrollTop: 1
 	                }, 700);
 				$(document).one("change", function(){
+					fpc.mensagem("");
+				});
+				$("button").one("click", function(){
 					fpc.mensagem("");
 				});
 				
@@ -913,7 +941,9 @@ var fpc = {
 	   		else
 	   		{
 				if (alerta.length > 0){
-					alerta.html("<div id='f_alert' style='display:none'/>");
+					alerta.hide("fast", function(){
+						alerta.html("<div id='f_alert' style='display:none'/>");	
+					});
 	   			}
 				return "";
 	   		}

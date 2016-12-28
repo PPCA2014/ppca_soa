@@ -44,6 +44,7 @@ var CatalogoController = (function () {
         modal.overlay.defaultViewContainer = vcRef;
         // busca os owners
         this.http.get(this.catalogoOwnerUrl)
+            .catch(this.handleError)
             .subscribe(function (data) {
             setTimeout(function () {
                 _this.owner_list = data.json();
@@ -64,6 +65,7 @@ var CatalogoController = (function () {
         this.ult_operacao = this.operacao;
         this.operacao = "listagem";
         this.http.get(this.catalogoUrl)
+            .catch(this.handleError)
             .subscribe(function (data) {
             setTimeout(function () {
                 _this.data = data.json();
@@ -78,12 +80,11 @@ var CatalogoController = (function () {
         return this.modal.open(exemplos_url_servico_component_1.CustomModal, angular2_modal_1.overlayConfigFactory({}, bootstrap_1.BSModalContext));
     };
     CatalogoController.prototype.handleError = function (error) {
-        // In a real world app, we might use a remote logging infrastructure
         var errMsg;
         if (error instanceof http_1.Response) {
             var body = error.json() || '';
-            var err = body.error || JSON.stringify(body);
-            errMsg = error.status + " - " + (error.statusText || '') + " " + err;
+            fpc.mensagem(body);
+            errMsg = body;
         }
         else {
             errMsg = error.message ? error.message : error.toString();
