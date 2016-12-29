@@ -20,6 +20,7 @@ var CatalogoController = (function () {
         var _this = this;
         this.http = http;
         this.modal = modal;
+        this.loading = false;
         this.catalogoUrl = "/catalog";
         this.catalogoOwnerUrl = "/catalog/owner";
         this.operacao = "pesquisa";
@@ -30,8 +31,11 @@ var CatalogoController = (function () {
         this.sortBy = "email";
         this.sortOrder = "asc";
         this.owner_list = null;
-        this.language_list = [{ "name": "erlang", "title": "Linguagem Erlang" }, { "name": "java", "title": "Linguagem Java" }];
-        this.authentication_list = [{ "name": "", "title": "Sem autenticação" }, { "name": "basic", "title": "Protocolo HTTP Basic" }, { "name": "oauth", "title": "Protocolo Oauth 2.0" }];
+        this.language_list = [{ "name": "erlang", "title": "Linguagem Erlang" },
+            { "name": "java", "title": "Linguagem Java" }];
+        this.authentication_list = [{ "name": "", "title": "Sem autenticação" },
+            { "name": "basic", "title": "Protocolo HTTP Basic" },
+            { "name": "oauth", "title": "Protocolo Oauth 2.0" }];
         this.type_list = [{ name: "GET", title: "Obter (verbo HTTP GET)" },
             { name: "POST", title: "Incluir (verbo HTTP POST)" },
             { name: "PUT", title: "Alterar (verbo HTTP PUT)" },
@@ -62,13 +66,19 @@ var CatalogoController = (function () {
     };
     CatalogoController.prototype.pesquisar = function () {
         var _this = this;
+        this.loading = true;
         this.ult_operacao = this.operacao;
         this.operacao = "listagem";
-        this.http.get(this.catalogoUrl)
+        var filter = "{}";
+        var limit = 100;
+        var offset = 1;
+        var url = this.catalogoUrl + "?filter=\"" + filter + "\"&limit=" + limit + "&offset=" + offset;
+        this.http.get(url)
             .catch(this.handleError)
             .subscribe(function (data) {
             setTimeout(function () {
                 _this.data = data.json();
+                _this.loading = false;
             }, 1000);
         });
     };

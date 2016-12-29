@@ -1,4 +1,4 @@
-<div class="container-fluid">
+
 	
 	<div id="f_botoes" style="height:32px">
 		<div id="barra_botao">
@@ -24,13 +24,11 @@
 		
 		
 		<div id="f_botoes_esq"  style="float: right;">
-			<button id="btn_nova_pesquisa" style="" type="button" class="btn btn-default btn-xs" (click)="voltar()" *ngIf="operacao!='pesquisa'">
+			<button id="btn_voltar" style="" type="button" class="btn btn-default btn-xs" (click)="voltar()" *ngIf="operacao!='pesquisa'">
 				<i class="glyphicon glyphicon-chevron-left"></i>Voltar
 			</button>
 		</div>
 	</div>
-
-    <hr id="sep_breadcrumb">
 
 	<div id="f_alert" style="display:none"></div>
 
@@ -82,7 +80,8 @@
 	</form>
         
 	<div class="panel panel-default" *ngIf="operacao=='listagem'">
-		<table id="f_dados_pesquisa" class="table table-striped" [mfData]="data" #mf="mfDataTable" [mfRowsOnPage]="10">
+		
+		<table id="f_dados_pesquisa" class="table table-striped" [mfData]="data | dataFilter : filterQuery" #mf="mfDataTable" [mfRowsOnPage]="10">
 			<thead>
 				<tr>
 					<th style="width: 25px">Seleção</th>
@@ -240,4 +239,3 @@
 	   </div>
 	</form>	
 	
-</div>

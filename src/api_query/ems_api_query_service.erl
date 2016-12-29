@@ -48,7 +48,6 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 					delete -> do_delete(Request, Datasource2)
 				end,
 				ems_db:release_connection(Datasource2),
-				io:format("Result is ~p\n", [Result]),
 				case Result of
 					{ok, JsonData} ->
 						{ok, Request#request{code = 200,

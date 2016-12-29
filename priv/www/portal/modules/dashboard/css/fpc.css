@@ -229,11 +229,6 @@ legend {
 	cursor: pointer;
 }
 
-#sep_breadcrumb {
-	height: 1px;
-	margin: 5px 0  8px 0;
-}
-
 #filtro {
 	margin-top: 5px;
 }
@@ -1171,6 +1166,7 @@ tr > td
 			  color: #337ab7;
 			  letter-spacing: 0.095em;
 			  width:176px;
+			  cursor: pointer;
 }
 
 
@@ -1238,3 +1234,19 @@ a {
 	font-size: 12px;
 }
 
+.fpc_spinner {
+  border: 6px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 6px solid #3498db;
+  width: 16px;
+  height: 16px;
+  -webkit-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+  float: right;
+  margin-top: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

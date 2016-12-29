@@ -21,6 +21,7 @@ declare var fpc: fpc;
 
 export class CatalogoController { 
 	
+	private loading: boolean = false;
 	private catalogoUrl = "/catalog";
 	private catalogoOwnerUrl = "/catalog/owner";
 	public operacao : string = "pesquisa";
@@ -33,8 +34,11 @@ export class CatalogoController {
     public sortBy : string = "email";
     public sortOrder : string = "asc";
     public owner_list : any = null;
-    public language_list : any = [{"name" : "erlang", "title" : "Linguagem Erlang"}, {"name" : "java", "title" : "Linguagem Java"}];
-    public authentication_list : any = [{"name" : "", "title" : "Sem autenticação"}, {"name" : "basic", "title" : "Protocolo HTTP Basic"}, {"name" : "oauth", "title" : "Protocolo Oauth 2.0"}];
+    public language_list : any = [{"name" : "erlang", "title" : "Linguagem Erlang"}, 
+								  {"name" : "java", "title" : "Linguagem Java"}];
+    public authentication_list : any = [{"name" : "", "title" : "Sem autenticação"}, 
+										{"name" : "basic", "title" : "Protocolo HTTP Basic"}, 
+										{"name" : "oauth", "title" : "Protocolo Oauth 2.0"}];
     public type_list : any = [{name : "GET", title : "Obter (verbo HTTP GET)"},
 							  {name : "POST", title : "Incluir (verbo HTTP POST)"},
 							  {name : "PUT", title : "Alterar (verbo HTTP PUT)"},
@@ -71,14 +75,22 @@ export class CatalogoController {
 			this.ult_operacao = "pesquisa";
 	}
     
-    public pesquisar(){
+    public pesquisar(){	
+		this.loading = true;
 		this.ult_operacao = this.operacao;
 		this.operacao = "listagem";
-        this.http.get(this.catalogoUrl)
+
+		const filter = "{}";
+		const limit = 100;
+		const offset = 1;
+		const url = `${this.catalogoUrl}?filter="${filter}"&limit=${limit}&offset=${offset}`;
+
+        this.http.get(url)
             .catch(this.handleError)
             .subscribe((data)=> {
                 setTimeout(()=> {
                     this.data = data.json();
+                    this.loading = false;
                 }, 1000);
             });
 	}
