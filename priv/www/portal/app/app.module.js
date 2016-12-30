@@ -22,6 +22,7 @@ var sobre_1 = require('../modules/dashboard/controller/sobre');
 var catalogo_controller_1 = require('../modules/catalogo/catalogo_controller');
 var login_component_1 = require('../modules/login/login_component');
 var datatable_filter_pipe_1 = require('../modules/dashboard/controller/datatable_filter_pipe');
+var pager_service_1 = require('../modules/dashboard/service/pager_service');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -36,6 +37,9 @@ var AppModule = (function () {
                 bootstrap_1.BootstrapModalModule],
             declarations: [app_component_1.AppComponent, navigator_controller_1.NavigatorController, sobre_1.Sobre, catalogo_controller_1.CatalogoController, login_component_1.LoginComponent, exemplos_url_servico_component_1.CustomModal, datatable_filter_pipe_1.DataTableFilterPipe],
             bootstrap: [app_component_1.AppComponent, navigator_controller_1.NavigatorController],
+            providers: [
+                pager_service_1.PagerService
+            ],
             // IMPORTANT: 
             // Since 'AdditionCalculateWindow' is never explicitly used (in a template)
             // we must tell angular about it.

@@ -81,7 +81,9 @@
         
 	<div class="panel panel-default" *ngIf="operacao=='listagem'">
 		
-		<table id="f_dados_pesquisa" class="table table-striped" [mfData]="data | dataFilter : filterQuery" #mf="mfDataTable" [mfRowsOnPage]="10">
+		<table id="f_dados_pesquisa" class="table table-striped"
+									[mfData]="data | dataFilter : filterQuery" #mf="mfDataTable" 
+									[mfRowsOnPage]="10">
 			<thead>
 				<tr>
 					<th style="width: 25px">Seleção</th>
@@ -117,6 +119,30 @@
 				</tr>
 			</tfoot>
 		</table>
+		
+			<!-- items being paged -->
+            <div *ngFor="let item of pagedItems">{{item.name}}</div>
+
+            <!-- pager -->
+            <ul *ngIf="pager.pages && pager.pages.length" class="pagination">
+                <li [ngClass]="{disabled:pager.currentPage === 1}">
+                    <a (click)="setPage(1)">First</a>
+                </li>
+                <li [ngClass]="{disabled:pager.currentPage === 1}">
+                    <a (click)="setPage(pager.currentPage - 1)">Previous</a>
+                </li>
+                <li *ngFor="let page of pager.pages" [ngClass]="{active:pager.currentPage === page}">
+                    <a (click)="setPage(page)">{{page}}</a>
+                </li>
+                <li [ngClass]="{disabled:pager.currentPage === pager.totalPages}">
+                    <a (click)="setPage(pager.currentPage + 1)">Next</a>
+                </li>
+                <li [ngClass]="{disabled:pager.currentPage === pager.totalPages}">
+                    <a (click)="setPage(pager.totalPages)">Last</a>
+                </li>
+            </ul>
+            
+            		
 	</div>
 	
 	

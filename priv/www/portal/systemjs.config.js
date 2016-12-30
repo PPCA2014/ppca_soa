@@ -35,7 +35,8 @@
       'lodash': 'npm:lodash/lodash.js',
       
       'angular2-modal': 'npm:angular2-modal/bundles/angular2-modal.umd.js',
-      'angular2-modal/plugins/bootstrap': 'npm:angular2-modal'
+      'angular2-modal/plugins/bootstrap': 'npm:angular2-modal',
+      'underscore': 'npm:underscore'
       
       
       
@@ -66,7 +67,12 @@
 	  'angular2-modal/plugins/bootstrap': { 
 		 defaultExtension: 'js', 
 		 main: 'bundles/angular2-modal.bootstrap.umd.js' 
-	  }
+	  },
+	  'underscore': { 
+		 main: './underscore.js',
+		 defaultExtension: 'js'
+	  },
+	  
     },
     
   

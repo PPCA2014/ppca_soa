@@ -15,7 +15,7 @@ import { CatalogoController } from '../modules/catalogo/catalogo_controller';
 import { LoginComponent } from '../modules/login/login_component';
 import { DataTableFilterPipe } from '../modules/dashboard/controller/datatable_filter_pipe';
 
-
+import { PagerService } from '../modules/dashboard/service/pager_service';
 
 
 @NgModule({
@@ -23,11 +23,15 @@ import { DataTableFilterPipe } from '../modules/dashboard/controller/datatable_f
     BrowserModule,
     FormsModule,
     HttpModule,
-    DataTableModule,
+    DataTableModule, 
     ModalModule.forRoot(),
     BootstrapModalModule],
   declarations: [ AppComponent, NavigatorController, Sobre, CatalogoController, LoginComponent, CustomModal, DataTableFilterPipe ],
   bootstrap: [ AppComponent, NavigatorController ],
+
+  providers: [
+        PagerService
+    ],
 
   // IMPORTANT: 
   // Since 'AdditionCalculateWindow' is never explicitly used (in a template)

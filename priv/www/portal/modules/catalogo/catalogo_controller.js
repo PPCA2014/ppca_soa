@@ -14,12 +14,15 @@ var bootstrap_1 = require('angular2-modal/plugins/bootstrap');
 var exemplos_url_servico_component_1 = require('./exemplos_url_servico_component');
 var http_1 = require('@angular/http');
 var Observable_1 = require('rxjs/Observable');
+var angular2_datatable_1 = require("angular2-datatable");
 var catalogo_1 = require('./catalogo');
+var pager_service_1 = require('../dashboard/service/pager_service');
 var CatalogoController = (function () {
-    function CatalogoController(http, modal, vcRef) {
+    function CatalogoController(http, modal, vcRef, pagerService) {
         var _this = this;
         this.http = http;
         this.modal = modal;
+        this.pagerService = pagerService;
         this.loading = false;
         this.catalogoUrl = "/catalog";
         this.catalogoOwnerUrl = "/catalog/owner";
@@ -42,8 +45,13 @@ var CatalogoController = (function () {
             { name: "DELETE", title: "Excluir (DELETE)" }
         ];
         this.model = new catalogo_1.Catalogo();
+        // pager object
+        this.pager = {};
         this.sortByWordLength = function (a) {
             return a.city.length;
+        };
+        this.onPageChangeSubscriber = function (event) {
+            alert("ok");
         };
         modal.overlay.defaultViewContainer = vcRef;
         // busca os owners
@@ -56,6 +64,8 @@ var CatalogoController = (function () {
         });
     }
     CatalogoController.prototype.ngOnInit = function () {
+    };
+    CatalogoController.prototype.ngAfterViewInit = function () {
     };
     CatalogoController.prototype.toInt = function (num) {
         return +num;
@@ -77,6 +87,10 @@ var CatalogoController = (function () {
             .catch(this.handleError)
             .subscribe(function (data) {
             setTimeout(function () {
+                // set items to json response
+                _this.allItems = data.json();
+                // initialize to page 1
+                _this.setPage(1);
                 _this.data = data.json();
                 _this.loading = false;
             }, 1000);
@@ -117,13 +131,26 @@ var CatalogoController = (function () {
             .catch(this.handleError)
             .subscribe(function (cat) { return _this.data.push(cat); }, function (error) { return _this.errorMessage = error; });
     };
+    CatalogoController.prototype.setPage = function (page) {
+        if (page < 1 || page > this.pager.totalPages) {
+            return;
+        }
+        // get pager object from service
+        this.pager = this.pagerService.getPager(this.allItems.length, page);
+        // get current page of items
+        this.pagedItems = this.allItems.slice(this.pager.startIndex, this.pager.endIndex + 1);
+    };
+    __decorate([
+        core_1.Input("mfTable"), 
+        __metadata('design:type', angular2_datatable_1.DataTable)
+    ], CatalogoController.prototype, "mfTable", void 0);
     CatalogoController = __decorate([
         core_1.Component({
             selector: 'catalogo',
             templateUrl: 'modules/catalogo/catalogo.html',
             providers: [bootstrap_1.Modal]
         }), 
-        __metadata('design:paramtypes', [http_1.Http, bootstrap_1.Modal, core_1.ViewContainerRef])
+        __metadata('design:paramtypes', [http_1.Http, bootstrap_1.Modal, core_1.ViewContainerRef, pager_service_1.PagerService])
     ], CatalogoController);
     return CatalogoController;
 }());

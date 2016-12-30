@@ -1,11 +1,16 @@
-import { Component, ViewContainerRef, ViewEncapsulation } from '@angular/core';
+import { Component, ViewContainerRef, ViewEncapsulation, Input, ViewChild, Optional } from '@angular/core';
 import { Overlay, overlayConfigFactory } from 'angular2-modal';
 import { Modal, BSModalContext } from 'angular2-modal/plugins/bootstrap';
 import { CustomModalContext, CustomModal } from './exemplos_url_servico_component';
 import { Http, Response, Headers, RequestOptions } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
+import { DataTable } from "angular2-datatable";
 
 import { Catalogo } from './catalogo';
+
+import * as _ from 'underscore';
+
+import { PagerService } from '../dashboard/service/pager_service';
 
 interface fpc {
     mensagem: Function;
@@ -21,6 +26,7 @@ declare var fpc: fpc;
 
 export class CatalogoController { 
 	
+	@Input("mfTable") mfTable: DataTable;
 	private loading: boolean = false;
 	private catalogoUrl = "/catalog";
 	private catalogoOwnerUrl = "/catalog/owner";
@@ -46,7 +52,16 @@ export class CatalogoController {
 							 ];
     public model : Catalogo = new Catalogo();
 
-    constructor(private http: Http, public modal: Modal, vcRef: ViewContainerRef) {
+ // array of all items to be paged
+    private allItems: any[];
+
+    // pager object
+    pager: any = {};
+
+    // paged items
+    pagedItems: any[];
+
+    constructor(private http: Http, public modal: Modal, vcRef: ViewContainerRef, private pagerService: PagerService) {
 		modal.overlay.defaultViewContainer = vcRef;
 
 		// busca os owners
@@ -60,7 +75,12 @@ export class CatalogoController {
     }
 
     ngOnInit(): void {
+		
     }
+    
+    ngAfterViewInit(){
+		
+	}
 
     public toInt(num: string) {
         return +num;
@@ -89,6 +109,13 @@ export class CatalogoController {
             .catch(this.handleError)
             .subscribe((data)=> {
                 setTimeout(()=> {
+					
+					 // set items to json response
+					this.allItems = data.json();
+
+					// initialize to page 1
+					this.setPage(1);
+					
                     this.data = data.json();
                     this.loading = false;
                 }, 1000);
@@ -138,7 +165,21 @@ export class CatalogoController {
 						
 	}
 	
+	private onPageChangeSubscriber = (event: any)=> {
+        alert("ok");
+    };
 	
+	setPage(page: number) {
+        if (page < 1 || page > this.pager.totalPages) {
+            return;
+        }
+
+        // get pager object from service
+        this.pager = this.pagerService.getPager(this.allItems.length, page);
+
+        // get current page of items
+        this.pagedItems = this.allItems.slice(this.pager.startIndex, this.pager.endIndex + 1);
+    }	
     
 }
 
