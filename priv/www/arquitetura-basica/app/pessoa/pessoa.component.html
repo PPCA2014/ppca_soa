@@ -1,0 +1,50 @@
+<nav class="navbar navbar-inverse subir">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">{{brand}}</a>
+    </div>
+    <div id="navbar" class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li><a [routerLink]="['/']"> <h4>Home</h4></a></li>
+        <li class="active"><a [routerLink]="['/pessoa']"><h4>Cadastro Pessoa</h4></a></li>
+        <li ><a [routerLink]="['/pessoa/lista']"><h4>Lista de Pessoas</h4></a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container">
+  <div class="row">
+    <div class="col-sm-3"></div>
+    <div class="col-sm-6">
+      <div  [hidden]="submitted">
+        <h1>Cadastro de Pessoas</h1>
+        <form (ngSubmit)="onSubmit()" #pessoaForm="ngForm">
+          <div class="form-group">
+            <label for="nome">Nome</label>
+            <input type="text" class="form-control" id="nome"
+                   required
+                   [(ngModel)]="model.nome" name="nome"
+                   #nome="ngModel" >
+            <div [hidden]="nome.valid || nome.pristine"
+                 class="alert alert-danger">
+              O nome é obrigatório
+            </div>
+          </div>
+           <span [hidden]="!hidden">
+             <button type="submit" class="btn btn-primary" [disabled]="!pessoaForm.form.valid">Salvar</button>
+           </span>
+          <span [hidden]="hidden">
+            <button type="button" class="btn btn-primary" (click)="editar()" [disabled]="!pessoaForm.form.valid">Editar</button>
+          </span>
+          <br/><br/>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

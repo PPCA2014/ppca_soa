@@ -1,0 +1,20 @@
+{
+  "itens": [
+    {
+      "name": "cadastro de pessoas",
+      "url": "/pessoa"
+    },
+    {
+      "name": "lista de pessoas",
+      "url": "/pessoa/lista"
+    },
+    {
+      "name":"formulario",
+      "url":"/formulario"
+    },
+    {
+      "name": "home",
+      "url": "/"
+    }
+  ]
+}

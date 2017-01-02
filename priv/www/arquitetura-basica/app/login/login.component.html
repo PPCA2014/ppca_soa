@@ -1,0 +1,19 @@
+<h4 class="cor-azul">Login</h4>
+<hr/>
+  <form (ngSubmit)="login()" #loginForm="ngForm" >
+    <div class="form-group">
+      <label>Login: </label>
+      <input type="text" class="form-control"
+             required [(ngModel)]="model.username" id="login"
+             name="login" placeholder="Digite seu login"/>
+      <br/>
+      <label>Senha: </label>
+      <input type="password" class="form-control"
+             required [(ngModel)]="model.password" id="senha"
+             name="senha" placeholder="Digite sua senha"/>
+      <br/>
+      <div class="alinhar-direita">
+         <input  type="submit" name="login" class="login loginmodal-submit btn btn-default" value="Confirmar"/>
+      </div>
+    </div>
+  </form>

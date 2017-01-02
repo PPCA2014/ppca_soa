@@ -1,0 +1,51 @@
+<div class="container">
+  <div class="row">
+    <div class="col-sm-9">
+      <div class="panel-group" id="accordion">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4 class="panel-title">
+              <a data-toggle="collapse" data-parent="#accordion" href="#collapse1">
+                Sistema 1</a>
+            </h4>
+          </div>
+          <div id="collapse1" class="panel-collapse collapse">
+            <div class="panel-body">
+              <a [routerLink]="['formulario']"><h4>Sistema Formulário</h4></a>
+            </div>
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4 class="panel-title">
+              <a data-toggle="collapse" data-parent="#accordion" href="#collapse2">
+                Sistema 2</a>
+            </h4>
+          </div>
+          <div id="collapse2" class="panel-collapse collapse">
+            <div class="panel-body">
+              <a [routerLink]="['pessoa']"><h4>Cadastro de Pessoas</h4></a>
+            </div>
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4 class="panel-title">
+              <a data-toggle="collapse" data-parent="#accordion" href="#collapse3">
+                Sistema 3</a>
+            </h4>
+          </div>
+          <div id="collapse3" class="panel-collapse collapse">
+            <div class="panel-body">Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+              sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+              minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+              commodo consequat.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-3 margin">
+      <app-login></app-login>
+    </div>
+  </div>
+</div>
