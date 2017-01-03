@@ -33,7 +33,8 @@ export class AuthenticationService extends DefaultHeaders {
         if (token) {
           this.token = token;
           localStorage.setItem('currentUser', JSON.stringify(response.json()));
-          this.periodicIncrement();
+          let sessionTime = JSON.parse(localStorage.getItem('currentUser'));
+          this.periodicIncrement(sessionTime.expires_in);
           return true;
         } else {
           return false;
@@ -41,12 +42,11 @@ export class AuthenticationService extends DefaultHeaders {
       });
   }
 
-  periodicIncrement(): void {
+  periodicIncrement(sessionTime:number): void {
     this.cancelPeriodicIncrement();
-    this.time = 180000;
+    this.time = sessionTime * 1000;
     this.intervalId = setInterval(() => {
       if(this.time == 0){
-        this.cancelPeriodicIncrement();
         this.logout();
         return 0;
       }
@@ -66,7 +66,7 @@ export class AuthenticationService extends DefaultHeaders {
 
 
   getSitemap() {
-    return this.http.get('menu.json')
+    return this.http.get('/arquitetura-basica/menu.json')
       .map((res) => {
         var sitemap = res.json();
          sessionStorage.setItem('menu',JSON.stringify(sitemap));
@@ -75,9 +75,10 @@ export class AuthenticationService extends DefaultHeaders {
   }
 
   logout(): void {
+    this.cancelPeriodicIncrement();
     this.token = null;
     localStorage.removeItem('currentUser');
-    this.route.navigate(['/']);
+    this.route.navigate(['']);
   }
 
 }
