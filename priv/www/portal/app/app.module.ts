@@ -1,21 +1,20 @@
 import { NgModule }      from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from "@angular/forms";
-import { HttpModule, JsonpModule } from '@angular/http';
+import { HttpModule } from '@angular/http';
+
+import { NavigatorController, PagerService, Sobre } from './dashboard/main';
 
 import { AppComponent }  from './app.component';
 import { DataTableModule } from 'angular2-datatable';
 import { ModalModule } from 'angular2-modal';
 import { BootstrapModalModule } from 'angular2-modal/plugins/bootstrap';
-import { CustomModal } from '../modules/catalogo/exemplos_url_servico_component';
 
-import { NavigatorController } from '../modules/dashboard/controller/navigator_controller';
-import { Sobre } from '../modules/dashboard/controller/sobre';
-import { CatalogoController } from '../modules/catalogo/catalogo_controller';
-import { LoginComponent } from '../modules/login/login_component';
-import { DataTableFilterPipe } from '../modules/dashboard/controller/datatable_filter_pipe';
+import { CustomModal } from './catalogo/exemplos_url_servico.component';
+import { CatalogoComponent } from './catalogo/catalogo.controller';
+import { LoginComponent } from './login/login.component';
+import { DataTableFilterPipe } from './dashboard/datatable/datatable_filter.pipe';
 
-import { PagerService } from '../modules/dashboard/service/pager_service';
 
 
 @NgModule({
@@ -26,14 +25,11 @@ import { PagerService } from '../modules/dashboard/service/pager_service';
     DataTableModule, 
     ModalModule.forRoot(),
     BootstrapModalModule],
-  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoController, LoginComponent, CustomModal, DataTableFilterPipe ],
+  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoComponent, LoginComponent, CustomModal, DataTableFilterPipe ],
   bootstrap: [ AppComponent, NavigatorController ],
+  providers: [ PagerService ],
 
-  providers: [
-        PagerService
-    ],
-
-  // IMPORTANT: 
+  // IMPORTANT:
   // Since 'AdditionCalculateWindow' is never explicitly used (in a template)
   // we must tell angular about it.
   entryComponents: [ CustomModal ]

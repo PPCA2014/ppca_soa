@@ -34,7 +34,11 @@
     "rxjs": "5.0.0-rc.4",
     "systemjs": "0.19.40",
     "underscore": "^1.8.3",
-    "zone.js": "^0.7.2"
+    "zone.js": "^0.7.2",
+    "bootstrap" : "~3.3.7",
+    "jquery" : "^3.1.1",
+    "jquery.maskedinput": "^1.4.1",
+    "tether" : "^1.4.0"
   },
   "devDependencies": {
     "concurrently": "^3.1.0",

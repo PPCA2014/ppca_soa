@@ -1,7 +1,7 @@
 {
 	"name": "dashboard",
-	"title": "UnB Kylix",
-	"image_url": "modules/dashboard/img/pedidos.png",
+	"title": "ERLANGMS",
+	"image_url": "app/dashboard/img/pedidos.png",
 	"left_menu": [{
 		"name": "principal",
 		"title": "Dashboard",
@@ -21,42 +21,42 @@
 	"items": [{
 		"name": "aplicativos",
 		"title": "Aplicativos",
-		"image_url": "modules/dashboard/img/aplicativo.png",
+		"image_url": "app/dashboard/img/aplicativo.png",
 		"items": [{
 			"name": "simar",
 			"title": "SIMAR",
 			"url": "/portal/modules/simar/index.html",
-			"image_url": "modules/dashboard/img/pedidos.png"
+			"image_url": "app/dashboard/img/pedidos.png"
 		}, {
 			"name": "sitab",
 			"title": "SITAB",
 			"url": "/portal/dashboard/meu_portal/aplicativos/sitab",
-			"image_url": "modules/dashboard/img/item.png"
+			"image_url": "app/dashboard/img/item.png"
 		}, {
 			"name": "siconv",
 			"title": "SICONV",
 			"url": "/portal/modules/siconv",
-			"image_url": "modules/dashboard/img/item.png"
+			"image_url": "app/dashboard/img/item.png"
 		}, {
 			"name": "siger",
 			"title": "SIGER",
 			"url": "/portal/dashboard/meu_portal/aplicativos/siger",
-			"image_url": "modules/dashboard/img/relatorios.png"
+			"image_url": "app/dashboard/img/relatorios.png"
 		}]
 	}, {
 		"name": "gestao_servicos",
 		"title": "Serviços",
-		"image_url": "modules/dashboard/img/api.png",
+		"image_url": "app/dashboard/img/api.png",
 		"items" : [
 			{"name": "schemas",
 			"title": "Definição dos Schemas de Dados",
 			"component" : "<catalogo></catalogo>",
-			"image_url": "modules/dashboard/img/schema.png"
+			"image_url": "app/dashboard/img/schema.png"
 			},
 			{"name": "catalogo",
 			"title": "Manutenção dos Catalogos de Serviços",
 			"component" : "<catalogo></catalogo>",
-			"image_url": "modules/dashboard/img/webservice.png"
+			"image_url": "app/dashboard/img/webservice.png"
 			}
 		]
 	}, 
@@ -64,12 +64,12 @@
 		"name": "analytics",
 		"title": "Analytics",
 		"component" : "<analytics></analytics>",
-		"image_url": "modules/dashboard/img/analytics.png"
+		"image_url": "app/dashboard/img/analytics.png"
 	},	
 	{
 		"name": "configuracoes",
 		"title": "Configurações",
 		"component" : "<configuracoes></configuracoes>",
-		"image_url": "modules/dashboard/img/config.png"
+		"image_url": "app/dashboard/img/config.png"
 	}]
 }
