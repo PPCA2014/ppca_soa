@@ -18,11 +18,12 @@ var angular2_datatable_1 = require("angular2-datatable");
 var catalogo_1 = require('./catalogo');
 var main_1 = require('../dashboard/main');
 var CatalogoComponent = (function () {
-    function CatalogoComponent(http, modal, vcRef, pagerService) {
+    function CatalogoComponent(http, modal, vcRef, pagerService, rest) {
         var _this = this;
         this.http = http;
         this.modal = modal;
         this.pagerService = pagerService;
+        this.rest = rest;
         this.loading = false;
         this.catalogoUrl = "/catalog";
         this.catalogoOwnerUrl = "/catalog/owner";
@@ -66,6 +67,7 @@ var CatalogoComponent = (function () {
     CatalogoComponent.prototype.ngOnInit = function () {
     };
     CatalogoComponent.prototype.ngAfterViewInit = function () {
+        var cat = this.rest.from("/catalog");
     };
     CatalogoComponent.prototype.toInt = function (num) {
         return +num;
@@ -150,9 +152,9 @@ var CatalogoComponent = (function () {
             templateUrl: 'app/catalogo/catalogo.html',
             providers: [bootstrap_1.Modal]
         }), 
-        __metadata('design:paramtypes', [http_1.Http, bootstrap_1.Modal, core_1.ViewContainerRef, main_1.PagerService])
+        __metadata('design:paramtypes', [http_1.Http, bootstrap_1.Modal, core_1.ViewContainerRef, main_1.PagerService, main_1.EmsRestClient])
     ], CatalogoComponent);
     return CatalogoComponent;
 }());
 exports.CatalogoComponent = CatalogoComponent;
-//# sourceMappingURL=catalogo.controller.js.map
+//# sourceMappingURL=catalogo.component.js.map

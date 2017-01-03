@@ -10,7 +10,7 @@ import { Catalogo } from './catalogo';
 
 import * as _ from 'underscore';
 
-import { PagerService } from '../dashboard/main';
+import { PagerService, EmsRestClient } from '../dashboard/main';
 
 
 interface fpc {
@@ -61,7 +61,11 @@ export class CatalogoComponent {
     // paged items
     pagedItems: any[];
 
-    constructor(private http: Http, public modal: Modal, vcRef: ViewContainerRef, private pagerService: PagerService) {
+    constructor(private http: Http,
+				public modal: Modal,
+				vcRef: ViewContainerRef,
+				private pagerService: PagerService,
+				private rest: EmsRestClient) {
 		modal.overlay.defaultViewContainer = vcRef;
 
 		// busca os owners
@@ -79,7 +83,8 @@ export class CatalogoComponent {
     }
     
     ngAfterViewInit(){
-		
+		let cat = this.rest.from("/catalog");
+
 	}
 
     public toInt(num: string) {
