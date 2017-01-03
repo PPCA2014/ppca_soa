@@ -12,17 +12,15 @@ var core_1 = require('@angular/core');
 var platform_browser_1 = require('@angular/platform-browser');
 var forms_1 = require("@angular/forms");
 var http_1 = require('@angular/http');
+var main_1 = require('./dashboard/main');
 var app_component_1 = require('./app.component');
 var angular2_datatable_1 = require('angular2-datatable');
 var angular2_modal_1 = require('angular2-modal');
 var bootstrap_1 = require('angular2-modal/plugins/bootstrap');
-var exemplos_url_servico_component_1 = require('../modules/catalogo/exemplos_url_servico_component');
-var navigator_controller_1 = require('../modules/dashboard/controller/navigator_controller');
-var sobre_1 = require('../modules/dashboard/controller/sobre');
-var catalogo_controller_1 = require('../modules/catalogo/catalogo_controller');
-var login_component_1 = require('../modules/login/login_component');
-var datatable_filter_pipe_1 = require('../modules/dashboard/controller/datatable_filter_pipe');
-var pager_service_1 = require('../modules/dashboard/service/pager_service');
+var exemplos_url_servico_component_1 = require('./catalogo/exemplos_url_servico_component');
+var catalogo_controller_1 = require('./catalogo/catalogo_controller');
+var login_component_1 = require('./login/login_component');
+var datatable_filter_pipe_1 = require('./dashboard/controller/datatable_filter_pipe');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -35,12 +33,10 @@ var AppModule = (function () {
                 angular2_datatable_1.DataTableModule,
                 angular2_modal_1.ModalModule.forRoot(),
                 bootstrap_1.BootstrapModalModule],
-            declarations: [app_component_1.AppComponent, navigator_controller_1.NavigatorController, sobre_1.Sobre, catalogo_controller_1.CatalogoController, login_component_1.LoginComponent, exemplos_url_servico_component_1.CustomModal, datatable_filter_pipe_1.DataTableFilterPipe],
-            bootstrap: [app_component_1.AppComponent, navigator_controller_1.NavigatorController],
-            providers: [
-                pager_service_1.PagerService
-            ],
-            // IMPORTANT: 
+            declarations: [app_component_1.AppComponent, main_1.NavigatorController, main_1.Sobre, catalogo_controller_1.CatalogoController, login_component_1.LoginComponent, exemplos_url_servico_component_1.CustomModal, datatable_filter_pipe_1.DataTableFilterPipe],
+            bootstrap: [app_component_1.AppComponent, main_1.NavigatorController],
+            providers: [main_1.PagerService],
+            // IMPORTANT:
             // Since 'AdditionCalculateWindow' is never explicitly used (in a template)
             // we must tell angular about it.
             entryComponents: [exemplos_url_servico_component_1.CustomModal]

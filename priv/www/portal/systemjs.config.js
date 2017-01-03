@@ -13,8 +13,6 @@
       // our app is within the app folder
       app: 'app',
       
-
-
       // angular bundles
       '@angular/core': 'npm:@angular/core/bundles/core.umd.js',
       '@angular/common': 'npm:@angular/common/bundles/common.umd.js',
@@ -29,15 +27,14 @@
       // other libraries
       'rxjs':                      'npm:rxjs',
       'angular-in-memory-web-api': 'npm:angular-in-memory-web-api',
-      'modules':                   'modules',
-      
       'angular2-datatable': 'npm:angular2-datatable',
       'lodash': 'npm:lodash/lodash.js',
-      
       'angular2-modal': 'npm:angular2-modal/bundles/angular2-modal.umd.js',
       'angular2-modal/plugins/bootstrap': 'npm:angular2-modal',
-      'underscore': 'npm:underscore'
+      'underscore': 'npm:underscore',
       
+      // my libraries
+      'dashboard':                 'app/dashboard/main.js'
       
       
     },
@@ -45,9 +42,6 @@
     packages: {
       app: {
         main: './main.js',
-        defaultExtension: 'js'
-      },
-      modules: {
         defaultExtension: 'js'
       },
       rxjs: {
@@ -70,6 +64,9 @@
 	  },
 	  'underscore': { 
 		 main: './underscore.js',
+		 defaultExtension: 'js'
+	  },
+	  'dashboard': {
 		 defaultExtension: 'js'
 	  },
 	  
