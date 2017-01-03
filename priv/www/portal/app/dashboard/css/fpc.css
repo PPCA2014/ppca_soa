@@ -769,55 +769,6 @@ html>body #panel-south-south_c {
 }
 
 
-.fpc-img-chrome {
-	display: inline-block;
-}
-
-.fpc-img-firefox {
-	display: inline-block;
-}
-
-.fpc-img-ie {
-	display: inline-block;
-}
-
-.fpc-img-estoque {
-	display: block;
-	margin-left:auto;
-	margin-right:auto;
-}
-
-.fpc-img-notafiscal {
-	display: block;
-	margin-left:auto;
-	margin-right:auto;
-}
-
-.fpc-img-financeiro {
-	display: block;
-	margin-left:auto;
-	margin-right:auto;
-}
-
-.fpc-img-clientes {
-	display: block;
-	margin-left:auto;
-	margin-right:auto;
-}
-
-.fpc-img-relatorios {
-	display: block;
-	margin-left:auto;
-	margin-right:auto;
-}
-
-.fpc-img-agenda {
-	display: block;
-	margin-left:auto;
-	margin-right:auto;
-}
-
-
 
 
 /* Caixa de diálogo modal */
@@ -1191,62 +1142,10 @@ tr > td
 
 
 small, small {
-    font-size: 100%;
-   	margin: 2px 4px 2px 5px;
-
+	font-size: 100%;
+	margin: 2px 4px 2px 5px;
 }
 
-label + label {
-	margin: 0;
-}
-
-a {
-	cursor: pointer;
-}
-
-.custom-modal-container {
-    padding: 15px;
-}
-
-.custom-modal-header {
-	background-color: #a7acaf;
-	margin-top: -15px;
-	margin-bottom: 40px;
-}
-
-.fpc-top-bar {
-			    background: -moz-linear-gradient(center top , rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)) repeat scroll 0% 0% #C4C4C4;
-			    color: #333;
-				font-size: 14px;
-}
-        
-
-/* alerta  */
-
-#f_alert {
-	padding: 0 0 0 10px;
-	margin-bottom:5px;
-	min-height: 24px;
-}
-
-#f_alert span {
-	display: block;
-	font-size: 12px;
-}
-
-.fpc_spinner {
-  border: 6px solid #f3f3f3;
-  border-radius: 50%;
-  border-top: 6px solid #3498db;
-  width: 16px;
-  height: 16px;
-  -webkit-animation: spin 2s linear infinite;
-  animation: spin 2s linear infinite;
-  float: right;
-  margin-top: 8px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.fpc-img{
+	display: inline-block;
 }
