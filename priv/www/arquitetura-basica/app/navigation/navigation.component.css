@@ -29,18 +29,6 @@ li > a:hover, li > a:focus {
   background-color: #003366;
 }
 
-.topo{
-  height: 62px;
-  margin: 0 auto;
-  background-color: #003366;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-content: stretch;
-  align-items: flex-start;
-
-}
 
 .sistema {
   text-align: center;
@@ -53,3 +41,10 @@ li > a:hover, li > a:focus {
   align-self: auto;
   text-align: center;
 }
+
+@media screen and (max-width : 765px) {
+  .sistema {
+      margin-left: 30px;
+  }
+}
+

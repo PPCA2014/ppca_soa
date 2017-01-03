@@ -21,7 +21,7 @@ export class LoginComponent implements OnInit {
     private authenticationService: AuthenticationService) { }
 
   ngOnInit() {
-    this.authenticationService.logout();
+    
   }
 
   login() {
@@ -32,7 +32,8 @@ export class LoginComponent implements OnInit {
           this.authenticationService.getSitemap().subscribe(resp=>{
             console.log('resposta do siteMap');
           });
-          this.authenticationService.periodicIncrement();
+          let sessionTime = JSON.parse(localStorage.getItem('currentUser'));
+          this.authenticationService.periodicIncrement(sessionTime.expires_in);
           this.router.navigate(['/']);
         } else {
           this.error = 'Nome do usuário incorreto!';

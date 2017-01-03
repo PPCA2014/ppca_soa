@@ -7,7 +7,7 @@ import {AuthenticationService} from "../_services/authentication.service";
   styleUrls: ['app/navigation/navigation.component.css']
 })
 export class NavigationComponent implements OnInit {
-  
+
   constructor(private authenticationService: AuthenticationService) { }
 
   ngOnInit() {
@@ -16,6 +16,14 @@ export class NavigationComponent implements OnInit {
 
   logout(){
     this.authenticationService.logout();
+  }
+
+  verificarUsuarioLogado(){
+    if (localStorage.getItem('currentUser')){
+      return true;
+    }else {
+      return false;
+    }
   }
 
 

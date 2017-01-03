@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router, CanActivate } from '@angular/router';
 import { Http } from '@angular/http';
-import { Observable } from 'rxjs/Rx';
 import {AuthenticationService} from "../_services/authentication.service";
 
 @Injectable()
@@ -17,7 +16,7 @@ export class AuthGuard implements CanActivate {
       //mudar para verificar a presença do token
       let usuario = JSON.parse(localStorage.getItem('currentUser'));
       if (usuario){
-        this.authenticationService.periodicIncrement();
+        this.authenticationService.periodicIncrement(usuario.expires_in);
         return true;
       } else {
         this.router.navigate(['erro']);
