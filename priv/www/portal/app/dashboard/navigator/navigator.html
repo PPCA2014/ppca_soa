@@ -51,7 +51,8 @@
 				<div class="bs-glyphicons">
 					<ul class="bs-glyphicons-list">
 						  <li *ngFor="let item of current.items" (click)="go(item)">
-								<img src="{{ item.image_url }}" width="68" height="48" />
+							  	<img src="{{ item.image_url }}" width="68" height="48" *ngIf="item.image_url" />
+							  	<img class="{{ item.image_class }}" width="68" height="48" *ngIf="item.image_class" />
 								<span class="glyphicon-class">
 									<label class="fpc_titulo_item_dashboard">{{ item.title }}</label>
 								</span>

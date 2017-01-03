@@ -1,0 +1,277 @@
+/* glue: 0.11.1 hash: 367c6b6eab */
+        .fpc-img-pessoas,
+.fpc-img-catalogo,
+.fpc-img-ajaxloading,
+.fpc-img-logo,
+.fpc-img-brasil,
+.fpc-img-estoque,
+.fpc-img-agenda,
+.fpc-img-schema,
+.fpc-img-pedidos,
+.fpc-img-config,
+.fpc-img-autenticacao,
+.fpc-img-relatorios,
+.fpc-img-notafiscal,
+.fpc-img-webservice,
+.fpc-img-financeiro,
+.fpc-img-clientes,
+.fpc-img-aplicativo,
+.fpc-img-api,
+.fpc-img-analytics,
+.fpc-img-item,
+.fpc-img-search,
+.fpc-img-loading,
+.fpc-img-ie,
+.fpc-img-firefox,
+.fpc-img-chrome,
+.fpc-img-reset,
+.fpc-img-normal,
+.fpc-img-diminuir,
+.fpc-img-diminui,
+.fpc-img-aumentar,
+.fpc-img-aumenta,
+.fpc-img-altocontraste,
+.fpc-img-barra-brasil {
+            background-image: url('fpc_img.png');
+            background-repeat: no-repeat;
+        }
+        
+        .fpc-img-pessoas {
+            background-position: 0 0;
+            width: 473px;
+            height: 406px;
+        }
+        
+        .fpc-img-catalogo {
+            background-position: -473px 0;
+            width: 225px;
+            height: 225px;
+        }
+        
+        .fpc-img-ajaxloading {
+            background-position: -473px -225px;
+            width: 220px;
+            height: 19px;
+        }
+        
+        .fpc-img-logo {
+            background-position: -473px -244px;
+            width: 121px;
+            height: 34px;
+        }
+        
+        .fpc-img-brasil {
+            background-position: -473px -278px;
+            width: 108px;
+            height: 24px;
+        }
+        
+        .fpc-img-estoque {
+            background-position: -473px -302px;
+            width: 72px;
+            height: 72px;
+        }
+        
+        .fpc-img-agenda {
+            background-position: -545px -302px;
+            width: 70px;
+            height: 56px;
+        }
+        
+        .fpc-img-schema {
+            background-position: -615px -302px;
+            width: 68px;
+            height: 50px;
+        }
+        
+        .fpc-img-pedidos {
+            background-position: 0 -406px;
+            width: 68px;
+            height: 57px;
+        }
+        
+        .fpc-img-config {
+            background-position: 0 -463px;
+            width: 68px;
+            height: 68px;
+        }
+        
+        .fpc-img-autenticacao {
+            background-position: -68px -406px;
+            width: 68px;
+            height: 57px;
+        }
+        
+        .fpc-img-relatorios {
+            background-position: -68px -463px;
+            width: 64px;
+            height: 65px;
+        }
+        
+        .fpc-img-notafiscal {
+            background-position: -136px -406px;
+            width: 65px;
+            height: 55px;
+        }
+        
+        .fpc-img-webservice {
+            background-position: -132px -463px;
+            width: 63px;
+            height: 63px;
+        }
+        
+        .fpc-img-financeiro {
+            background-position: -201px -406px;
+            width: 63px;
+            height: 50px;
+        }
+        
+        .fpc-img-clientes {
+            background-position: -264px -406px;
+            width: 63px;
+            height: 50px;
+        }
+        
+        .fpc-img-aplicativo {
+            background-position: -195px -463px;
+            width: 63px;
+            height: 63px;
+        }
+        
+        .fpc-img-api {
+            background-position: -258px -463px;
+            width: 63px;
+            height: 63px;
+        }
+        
+        .fpc-img-analytics {
+            background-position: -321px -463px;
+            width: 62px;
+            height: 55px;
+        }
+        
+        .fpc-img-item {
+            background-position: -383px -463px;
+            width: 52px;
+            height: 51px;
+        }
+        
+        .fpc-img-search {
+            background-position: -594px -244px;
+            width: 32px;
+            height: 31px;
+        }
+        
+        .fpc-img-loading {
+            background-position: -626px -244px;
+            width: 31px;
+            height: 31px;
+        }
+        
+        .fpc-img-ie {
+            background-position: -657px -244px;
+            width: 24px;
+            height: 23px;
+        }
+        
+        .fpc-img-firefox {
+            background-position: -581px -278px;
+            width: 24px;
+            height: 23px;
+        }
+        
+        .fpc-img-chrome {
+            background-position: -605px -278px;
+            width: 22px;
+            height: 22px;
+        }
+        
+        .fpc-img-reset {
+            background-position: -681px -244px;
+            width: 16px;
+            height: 10px;
+        }
+        
+        .fpc-img-normal {
+            background-position: -681px -254px;
+            width: 16px;
+            height: 10px;
+        }
+        
+        .fpc-img-diminuir {
+            background-position: -627px -278px;
+            width: 16px;
+            height: 10px;
+        }
+        
+        .fpc-img-diminui {
+            background-position: -643px -278px;
+            width: 16px;
+            height: 10px;
+        }
+        
+        .fpc-img-aumentar {
+            background-position: -659px -278px;
+            width: 16px;
+            height: 10px;
+        }
+        
+        .fpc-img-aumenta {
+            background-position: -675px -278px;
+            width: 16px;
+            height: 10px;
+        }
+        
+        .fpc-img-altocontraste {
+            background-position: -627px -288px;
+            width: 11px;
+            height: 11px;
+        }
+        
+        .fpc-img-barra-brasil {
+            background-position: -693px -225px;
+            width: 1px;
+            height: 2px;
+        }
+        
+        @media screen and (-webkit-min-device-pixel-ratio: 1.0), screen and (min--moz-device-pixel-ratio: 1.0), screen and (-o-min-device-pixel-ratio: 100/100), screen and (min-device-pixel-ratio: 1.0), screen and (min-resolution: 1.0dppx) {
+            .fpc-img-pessoas,
+    .fpc-img-catalogo,
+    .fpc-img-ajaxloading,
+    .fpc-img-logo,
+    .fpc-img-brasil,
+    .fpc-img-estoque,
+    .fpc-img-agenda,
+    .fpc-img-schema,
+    .fpc-img-pedidos,
+    .fpc-img-config,
+    .fpc-img-autenticacao,
+    .fpc-img-relatorios,
+    .fpc-img-notafiscal,
+    .fpc-img-webservice,
+    .fpc-img-financeiro,
+    .fpc-img-clientes,
+    .fpc-img-aplicativo,
+    .fpc-img-api,
+    .fpc-img-analytics,
+    .fpc-img-item,
+    .fpc-img-search,
+    .fpc-img-loading,
+    .fpc-img-ie,
+    .fpc-img-firefox,
+    .fpc-img-chrome,
+    .fpc-img-reset,
+    .fpc-img-normal,
+    .fpc-img-diminuir,
+    .fpc-img-diminui,
+    .fpc-img-aumentar,
+    .fpc-img-aumenta,
+    .fpc-img-altocontraste,
+    .fpc-img-barra-brasil {
+                background-image: url('fpc_img.png');
+                -webkit-background-size: 698px 531px;
+                -moz-background-size: 698px 531px;
+                background-size: 698px 531px;
+            }
+        }
+        

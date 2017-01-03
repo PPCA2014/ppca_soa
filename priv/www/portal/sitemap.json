@@ -21,7 +21,7 @@
 	"items": [{
 		"name": "aplicativos",
 		"title": "Aplicativos",
-		"image_url": "app/dashboard/img/aplicativo.png",
+		"image_class": "fpc-img-aplicativo",
 		"items": [{
 			"name": "simar",
 			"title": "SIMAR",
@@ -31,12 +31,12 @@
 			"name": "sitab",
 			"title": "SITAB",
 			"url": "/portal/dashboard/meu_portal/aplicativos/sitab",
-			"image_url": "app/dashboard/img/item.png"
+			"image_class": "fpc-img-item"
 		}, {
 			"name": "siconv",
 			"title": "SICONV",
 			"url": "/portal/modules/siconv",
-			"image_url": "app/dashboard/img/item.png"
+			"image_class": "fpc-img-item"
 		}, {
 			"name": "siger",
 			"title": "SIGER",
@@ -46,17 +46,17 @@
 	}, {
 		"name": "gestao_servicos",
 		"title": "Serviços",
-		"image_url": "app/dashboard/img/api.png",
+		"image_class": "fpc-img-api",
 		"items" : [
 			{"name": "schemas",
 			"title": "Definição dos Schemas de Dados",
 			"component" : "<catalogo></catalogo>",
-			"image_url": "app/dashboard/img/schema.png"
+			"image_class": "fpc-img-schema"
 			},
 			{"name": "catalogo",
 			"title": "Manutenção dos Catalogos de Serviços",
 			"component" : "<catalogo></catalogo>",
-			"image_url": "app/dashboard/img/webservice.png"
+			"image_class": "fpc-img-webservice"
 			}
 		]
 	}, 
@@ -64,12 +64,12 @@
 		"name": "analytics",
 		"title": "Analytics",
 		"component" : "<analytics></analytics>",
-		"image_url": "app/dashboard/img/analytics.png"
+		"image_class": "fpc-img-analytics"
 	},	
 	{
 		"name": "configuracoes",
 		"title": "Configurações",
 		"component" : "<configuracoes></configuracoes>",
-		"image_url": "app/dashboard/img/config.png"
+		"image_class": "fpc-img-config"
 	}]
 }
