@@ -7,11 +7,11 @@
             <div class="sistema">
             </div>
           </div>
-          <div class="col-sm-2">
+          <div class="col-sm-2" *ngIf="verificarUsuarioLogado()">
             <div class="login"> <h5 style="color: #FFFFFF;" class="login"> Seja vem vindo! <br/>
               <a class="cor-branca" (click)="logout()">Logout</a></h5> </div>
           </div>
-          <div class="col-sm-2">
+          <div class="col-sm-2" *ngIf="verificarUsuarioLogado()">
             <div class="login"><h5 class="cor-branca login">Tempo de sessão </h5></div>
             <p class="cor-branca" style="text-align: center;">{{this.authenticationService.time | date:"mm:ss"}}</p>
           </div>
