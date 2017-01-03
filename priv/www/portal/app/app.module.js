@@ -17,10 +17,10 @@ var app_component_1 = require('./app.component');
 var angular2_datatable_1 = require('angular2-datatable');
 var angular2_modal_1 = require('angular2-modal');
 var bootstrap_1 = require('angular2-modal/plugins/bootstrap');
-var exemplos_url_servico_component_1 = require('./catalogo/exemplos_url_servico_component');
-var catalogo_controller_1 = require('./catalogo/catalogo_controller');
-var login_component_1 = require('./login/login_component');
-var datatable_filter_pipe_1 = require('./dashboard/controller/datatable_filter_pipe');
+var exemplos_url_servico_component_1 = require('./catalogo/exemplos_url_servico.component');
+var catalogo_controller_1 = require('./catalogo/catalogo.controller');
+var login_component_1 = require('./login/login.component');
+var datatable_filter_pipe_1 = require('./dashboard/datatable/datatable_filter.pipe');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -33,7 +33,7 @@ var AppModule = (function () {
                 angular2_datatable_1.DataTableModule,
                 angular2_modal_1.ModalModule.forRoot(),
                 bootstrap_1.BootstrapModalModule],
-            declarations: [app_component_1.AppComponent, main_1.NavigatorController, main_1.Sobre, catalogo_controller_1.CatalogoController, login_component_1.LoginComponent, exemplos_url_servico_component_1.CustomModal, datatable_filter_pipe_1.DataTableFilterPipe],
+            declarations: [app_component_1.AppComponent, main_1.NavigatorController, main_1.Sobre, catalogo_controller_1.CatalogoComponent, login_component_1.LoginComponent, exemplos_url_servico_component_1.CustomModal, datatable_filter_pipe_1.DataTableFilterPipe],
             bootstrap: [app_component_1.AppComponent, main_1.NavigatorController],
             providers: [main_1.PagerService],
             // IMPORTANT:

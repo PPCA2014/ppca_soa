@@ -1,7 +1,7 @@
 import { Component, ViewContainerRef, ViewEncapsulation, Input, ViewChild, Optional } from '@angular/core';
 import { Overlay, overlayConfigFactory } from 'angular2-modal';
 import { Modal, BSModalContext } from 'angular2-modal/plugins/bootstrap';
-import { CustomModalContext, CustomModal } from './exemplos_url_servico_component';
+import { CustomModalContext, CustomModal } from './exemplos_url_servico.component';
 import { Http, Response, Headers, RequestOptions } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { DataTable } from "angular2-datatable";
@@ -24,8 +24,7 @@ declare var fpc: fpc;
     templateUrl: 'app/catalogo/catalogo.html',
     providers: [Modal]
 })
-
-export class CatalogoController { 
+export class CatalogoComponent {
 	
 	@Input("mfTable") mfTable: DataTable;
 	private loading: boolean = false;

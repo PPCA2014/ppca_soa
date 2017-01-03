@@ -1,4 +1,4 @@
-export { NavigatorController } from './controller/navigator_controller';
-export { Sobre } from './controller/sobre';
-export { DataTableFilterPipe } from './controller/datatable_filter_pipe';
-export { PagerService } from './service/pager_service';
+export { NavigatorController } from './navigator/navigator.component';
+export { Sobre } from './sobre/sobre.component';
+export { DataTableFilterPipe } from './datatable/datatable_filter.pipe';
+export { PagerService } from './paginator/pager.service';

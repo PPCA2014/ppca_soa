@@ -1,5 +1,5 @@
 import { Component, NgZone } from '@angular/core';
-import { SitemapService } from '../service/sitemap_service';
+import { SitemapService } from '../sitemap/sitemap.service';
 
 
 interface fpc {
@@ -11,7 +11,7 @@ declare var fpc: fpc;
 @Component({
 	selector: 'navigator',
 	providers: [SitemapService],
-	templateUrl: 'app/dashboard/web/navigator.html'
+	templateUrl: 'app/dashboard/navigator/navigator.html'
 })
 export class NavigatorController { 
 	public sitemap : any = { "name": "dashboard",
