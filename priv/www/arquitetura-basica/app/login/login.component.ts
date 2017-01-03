@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import {AuthenticationService} from "../_services/authentication.service";
+import {NavigationComponent} from "../navigation/navigation.component";
 
 
 @Component({
@@ -31,6 +32,7 @@ export class LoginComponent implements OnInit {
           this.authenticationService.getSitemap().subscribe(resp=>{
             console.log('resposta do siteMap');
           });
+          this.authenticationService.periodicIncrement();
           this.router.navigate(['/']);
         } else {
           this.error = 'Nome do usuário incorreto!';

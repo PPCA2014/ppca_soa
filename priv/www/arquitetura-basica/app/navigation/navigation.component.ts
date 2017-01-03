@@ -7,14 +7,16 @@ import {AuthenticationService} from "../_services/authentication.service";
   styleUrls: ['app/navigation/navigation.component.css']
 })
 export class NavigationComponent implements OnInit {
-
+  
   constructor(private authenticationService: AuthenticationService) { }
 
   ngOnInit() {
+
   }
 
   logout(){
     this.authenticationService.logout();
   }
+
 
 }
