@@ -17,16 +17,15 @@ export class AuthGuard implements CanActivate {
       //mudar para verificar a presença do token
       let usuario = JSON.parse(localStorage.getItem('currentUser'));
       if (usuario){
-        let time = Observable.timer(300000);
-        time.subscribe(resultado=> {
-          this.authenticationService.logout();
-        });
-
+        this.authenticationService.periodicIncrement();
         return true;
       } else {
         this.router.navigate(['erro']);
         return false;
       }
+    }else {
+      this.router.navigate(['erro']);
+      return false;
     }
   }
 }

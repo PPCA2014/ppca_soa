@@ -13,6 +13,9 @@ export class AuthenticationService extends DefaultHeaders {
 
   public headers: Headers;
 
+  public time: number = 0;
+  intervalId: any = null;
+
 
   constructor(private http: Http, private route: Router, private options: RequestOptions) {
     super();
@@ -30,12 +33,37 @@ export class AuthenticationService extends DefaultHeaders {
         if (token) {
           this.token = token;
           localStorage.setItem('currentUser', JSON.stringify(response.json()));
+          this.periodicIncrement();
           return true;
         } else {
           return false;
         }
       });
   }
+
+  periodicIncrement(): void {
+    this.cancelPeriodicIncrement();
+    this.time = 180000;
+    this.intervalId = setInterval(() => {
+      if(this.time == 0){
+        this.cancelPeriodicIncrement();
+        this.logout();
+        return 0;
+      }
+      this.time = this.time - 1000;
+      return this.time;
+    }, 1000);
+
+  };
+
+  cancelPeriodicIncrement(): void {
+    if (this.intervalId != null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+      this.time = 0;
+    }
+  };
+
 
   getSitemap() {
     return this.http.get('menu.json')
