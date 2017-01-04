@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 1,
-  "__export_date": "2017-01-04T16:56:45.944Z",
+  "__export_date": "2017-01-04T19:06:38.181Z",
   "__export_source": "insomnia.chrome.app:v2.7.0",
   "items": [
     {
@@ -539,7 +539,7 @@
         {
           "_type": "request",
           "_id": "req_1483547722244",
-          "url": "http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&&username=johndoe&password=A3ddj3w",
+          "url": "http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&username=johndoe&password=A3ddj3w",
           "method": "GET",
           "body": "{}",
           "headers": [],
@@ -554,6 +554,25 @@
             "panel_width": 0.5
           },
           "name": "Autorizar o usuário tela login"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483549231784",
+          "url": "http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&username=johndoe&password=A3ddj3w&secret=qwer&code=DVwXc3KBJQkk3ETifcGpgqrxXEDByXwA",
+          "method": "POST",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Após autorização, receber o token"
         }
       ]
     }
