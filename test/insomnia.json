@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 1,
-  "__export_date": "2017-01-03T22:52:23.691Z",
+  "__export_date": "2017-01-04T16:56:45.944Z",
   "__export_source": "insomnia.chrome.app:v2.7.0",
   "items": [
     {
@@ -15,7 +15,7 @@
           "_id": "req_1481632553770",
           "url": "http://localhost:2301/aula1/pessoa",
           "method": "POST",
-          "body": "{\"denominacao\" :  \"\"}",
+          "body": "{\"denominacao\" :  \"Joao da silva\"}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -85,25 +85,6 @@
             "panel_width": 0.5
           },
           "name": "Listar pessoas"
-        },
-        {
-          "_type": "request",
-          "_id": "req_1482945643203",
-          "url": "http://localhost:2301/aula1/curso",
-          "method": "POST",
-          "body": "{\"denominacao\" :  \"\"}",
-          "headers": [],
-          "params": [],
-          "authentication": {
-            "_type": "basic",
-            "username": "",
-            "password": ""
-          },
-          "__insomnia": {
-            "format": "json",
-            "panel_width": 0.5
-          },
-          "name": "cadastrar curso"
         }
       ]
     },
@@ -137,7 +118,7 @@
           "_id": "req_1482237628800",
           "url": "http://localhost:2301/catalog",
           "method": "POST",
-          "body": "{\n\t\"name\" : \"/aula/pessoa122222/:id\",\n\t\"comment\": \"Pessoa\",\n\t\"owner\": \"teste\",\n\t\"version\": \"1.0.0\",\n\t\"service\" : \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/aula/pessoa122222/:id\",\n\t\"type\": \"GET\",\n\t\"lang\" : \"java\",\n    \"debug\" : false,\n    \"authentication\" : \"basic\"\n}",
+          "body": "{\n\t\"name\" : \"/teste/pessoas/:id\",\n\t\"comment\": \"Pessoa\",\n\t\"owner\": \"teste\",\n\t\"version\": \"1.0.0\",\n\t\"service\" : \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/teste/pessoas/:id\",\n\t\"type\": \"GET\",\n\t\"lang\" : \"java\",\n    \"debug\" : false,\n    \"authentication\" : \"basic\"\n}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -226,25 +207,6 @@
             "panel_width": 0.5
           },
           "name": "Alterar um serviço"
-        },
-        {
-          "_type": "request",
-          "_id": "req_1482855459521",
-          "url": "http://localhost:2301/catalog",
-          "method": "POST",
-          "body": "{\n\t\"lang\": \"erlang\",\n\t\"version\": \"1.0.0\",\n\t\"owner\": \"2\",\n\t\"service\": \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/teste12341234asddd2\",\n\t\"comment\": \"fdgdf\",\n\t\"authentication\": \"basic\",\n\t\"name\": \"/teste12341234sdfasdfdd2\",\n    \"debug\" : false,\n    \"type\" : \"POST\"\n\t\n\t\n}\n",
-          "headers": [],
-          "params": [],
-          "authentication": {
-            "_type": "basic",
-            "username": "",
-            "password": ""
-          },
-          "__insomnia": {
-            "format": "json",
-            "panel_width": 0.5
-          },
-          "name": "Incluir serviço frontend"
         }
       ]
     },
@@ -354,7 +316,7 @@
           "_id": "req_1482247814795",
           "url": "http://localhost:2301/catalog/schema",
           "method": "POST",
-          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"required\": [\n\t\t\t\"name\", \"comment\", \"owner\", \"version\", \"service\", \"url\", \"type\", \"lang\", \"authentication\"\n\t\t],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\",\n          \"default\" : \"1.0.0\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        }\n      }  \n    }\n}\n",
+          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\",\n          \"default\": \"\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"datasource\": {\n          \"type\": \"object\",\n          \"title\": \"Datasource of service if necessary.\",\n          \"description\": \"Datasource of service if necessary: odbc or csvfile\",\n          \"properties\": {\n            \"connection\": {\n              \"type\": \"string\",\n              \"title\": \"Connection string of odbc datasource.\",\n              \"description\": \"Connection string of odbc datasource.\",\n              \"default\": \"\",\n              \"pattern\": \"^(((DSN|UID|PWD)=[a-zA-Z0-9]{1,30});)+$\"\n            },\n            \"csvfile\": {\n              \"type\": \"string\",\n              \"title\": \"Name of csv file.\",\n              \"description\": \"Name of csv file.\",\n              \"default\": \"\",\n              \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_]*.[Cc][Ss][Cv]$\"\n            },\n            \"table_name\": {\n              \"type\": \"string\",\n              \"title\": \"Table_name of datasource.\",\n              \"description\": \"Table_name of datasource.\",\n              \"default\": \"\",\n              \"pattern\": \"^[a-zA-Z_][a-zA-Z0-9_]{1,30}$\"\n            },\n            \"primary_key\": {\n              \"type\": \"string\",\n              \"title\": \"Primary key of datasource.\",\n              \"description\": \"Primary key of datasource.\",\n              \"default\": \"\",\n              \"pattern\": \"^[a-zA-Z_][a-zA-Z0-9_]{1,30}$\"\n            }\n          },\n          \"oneOf\": [\n            {\n              \"required\": [\n                \"connection\",\n                \"table_name\",\n                \"primary_key\"\n              ]\n            },\n            {\n              \"required\": [\n                \"csvfile\",\n                \"table_name\",\n                \"primary_key\"\n              ]\n            }\n          ]\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java|net)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        },\n        \"querystring\": {\n          \"type\": \"object\",\n          \"title\": \"Querystring of service.\",\n          \"description\": \"Querystring of service.\",\n          \"properties\": {\n            \"filter\": {\n              \"type\": \"string\",\n              \"title\": \"Filter query.\",\n              \"description\": \"Enter the json filter to query the objects.\",\n              \"default\": \"\",\n              \"format\": \"json\"\n            },\n            \"fields\": {\n              \"type\": \"string\",\n              \"title\": \"Fields of querystring.\",\n              \"description\": \"Fields that will be returned instead of the entire object.\",\n              \"default\": \"\",\n              \"pattern\": \"^([a-zA-Z][a-zA-Z0-9_]{1,29})((, *)|(,?$))\"\n            },\n            \"limit_ini\": {\n              \"type\": \"integer\",\n              \"title\": \"Initial pager to query data.\",\n              \"description\": \"Initial pager to query data.\",\n              \"minimum\": 1,\n              \"maximum\": 9999,\n              \"default\": 1,\n              \"required\": [\n                \"minimum\",\n                \"maximum\"\n              ]\n            },\n            \"limit_offset\": {\n              \"type\": \"integer\",\n              \"title\": \"Pager offset to query data.\",\n              \"description\": \"Pager offset to query data.\",\n              \"minimum\": 1,\n              \"maximum\": 9999,\n              \"default\": 100,\n              \"required\": [\n                \"minimum\",\n                \"maximum\"\n              ]\n            },\n            \"sort\": {\n              \"type\": \"string\",\n              \"title\": \"Sort objects by their fields.\",\n              \"description\": \"You can sort the objects by their fields.\",\n              \"pattern\": \"^([a-zA-Z][a-zA-Z0-9_]{1,29}) (asc|desc)((, *)|(,?$))\"\n            }\n          },\n          \"required\": []\n        }\n      },\n      \"oneOf\": [\n        {\n          \"required\": [\n            \"name\",\n            \"service\",\n            \"url\",\n            \"type\",\n            \"lang\"\n          ]\n        }\n      ]\n    }\n\n}\n",
           "headers": [],
           "params": [],
           "authentication": {
@@ -371,9 +333,9 @@
         {
           "_type": "request",
           "_id": "req_1482248243183",
-          "url": "http://localhost:2301/catalog/schema/2",
+          "url": "http://localhost:2301/catalog/schema/3",
           "method": "PUT",
-          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"required\": [\n\t\t\t\"name\", \"comment\", \"owner\", \"version\", \"service\", \"url\", \"type\", \"lang\", \"authentication\"\n\t\t],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\",\n          \"default\" : \"1.0.0\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        }\n      }  \n    }\n\n}\n",
+          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\",\n          \"default\": \"\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java|net)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        }\n      }  \n    }\n\n}\n",
           "headers": [],
           "params": [],
           "authentication": {
@@ -457,7 +419,7 @@
           "_id": "req_1482343110148",
           "url": "http://localhost:2301/catalog/owner",
           "method": "POST",
-          "body": "{\"name\" : \"ems-bus\", \n \"title\" : \"Barramento\", \n \"comment\" : \"barramento\"\n    \n}",
+          "body": "{\"name\" : \"simar\", \n \"title\" : \"Sistema de materiais\", \n \"comment\" : \"simar...\"\n    \n}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -508,6 +470,90 @@
             "panel_width": 0.5
           },
           "name": "Remover owner"
+        }
+      ]
+    },
+    {
+      "_type": "request_group",
+      "_id": "grp_1483539934645",
+      "name": "OAuth2",
+      "environments": {},
+      "requests": [
+        {
+          "_type": "request",
+          "_id": "req_1483543191870",
+          "url": "http://127.0.0.1:2301/authorize?grant_type=password&username=johndoe&password=A3ddj3w",
+          "method": "POST",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Autenticar usuário"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483545035080",
+          "url": "http://127.0.0.1:2301/authorize?grant_type=client_credentials&client_id=s6BhdRkqt3&secret=qwer",
+          "method": "POST",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Autenticar cliente"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483545514009",
+          "url": "http://127.0.0.1:2301/authorize?response_type=code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html",
+          "method": "GET",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Autenticar por código"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483547722244",
+          "url": "http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&&username=johndoe&password=A3ddj3w",
+          "method": "GET",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Autorizar o usuário tela login"
         }
       ]
     }
