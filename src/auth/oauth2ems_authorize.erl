@@ -26,10 +26,8 @@ execute(Request = #request{type = Type}) ->
 				authorization_request2(Request);				
              _ -> {error, invalid_request}
 	end,  
-	io:format("result is ~p\n", [Result]),
 	case Result of
 		{ok, ResponseData} ->
-			io:format("prop list to json ~p\n", [ResponseData]),
 			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
 			{ok, Request#request{code = 200, 
 								 response_data = ResponseData2}
@@ -118,8 +116,7 @@ issue_token(Error) ->
     
 issue_code({ok, Auth}) ->
 	Response = oauth2:issue_code(Auth, []),
-	%io:format("-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\nAuth: ~p\n-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+",[Response]),
-	oauth2_response:to_proplist(Response);
+	{ok, oauth2_response:to_proplist(Response)};
 issue_code(Error) ->
     Error.
 

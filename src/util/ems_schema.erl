@@ -165,7 +165,6 @@ to_value(Data = {{_,_,_},{_,_,_}}) ->
 to_value([<<Key/binary>>, <<Value/binary>>]) -> 
 	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
-	io:format("aqui1\n"),
 	case io_lib:printable_list(Value) of 
 		true ->	json_field_strip_and_escape(ems_util:utf8_list_to_string(Value));
 		_ -> to_json(list_to_tuple(Value))
@@ -192,7 +191,6 @@ json_field_strip_and_escape(Value) ->
 
 prop_list_to_json(PropList) -> 
 	Result = to_json_rec(PropList, []),
-	io:format("ress is ~p\n\n", [Result]),
 	iolist_to_binary([<<"{"/utf8>>, Result, <<"}"/utf8>>]).
 	
 

@@ -7,7 +7,7 @@
 onvalidate(Operation, Produto = #produto{price = Price}) ->
 	case unique(Operation, Produto) of
 		true ->
-			case Price > 100 of
+			case Price > 99999 of
 				true -> {error, {preco_invalido, Price}};
 				_ -> ok
 			end;
