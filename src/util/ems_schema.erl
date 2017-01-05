@@ -13,7 +13,7 @@
 
 -include("../include/ems_schema.hrl").
 
--export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1]).
+-export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
 -export_records([user, catalog_schema, schema_type, produto, service, service_owner]).
 
@@ -129,7 +129,8 @@ to_json(Record) when is_tuple(Record)->
 	ListTuple = to_list(Record),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
 to_json(List) when is_list(List) -> 
-	iolist_to_binary([<<"["/utf8>>, to_json_list(List, []), <<"]"/utf8>>]).
+	iolist_to_binary([<<"["/utf8>>, to_json_list(List, []), <<"]"/utf8>>]);
+to_json(List) when is_binary(List) -> List.
 
 	
 to_json_rec([], L) -> lists:reverse(L);
@@ -164,12 +165,14 @@ to_value(Data = {{_,_,_},{_,_,_}}) ->
 to_value([<<Key/binary>>, <<Value/binary>>]) -> 
 	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
+	io:format("aqui1\n"),
 	case io_lib:printable_list(Value) of 
 		true ->	json_field_strip_and_escape(ems_util:utf8_list_to_string(Value));
 		_ -> to_json(list_to_tuple(Value))
 	end;
 to_value(Value) when is_map(Value) ->
 	ems_util:json_encode(Value);
+to_value(Value) when is_tuple(Value) ->	to_json(Value);
 to_value(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
 
@@ -186,6 +189,12 @@ json_field_strip_and_escape(Value) ->
 			[<<"\""/utf8>>, ValueEscaped, <<"\""/utf8>>]
 	end.
 
+
+prop_list_to_json(PropList) -> 
+	Result = to_json_rec(PropList, []),
+	io:format("ress is ~p\n\n", [Result]),
+	iolist_to_binary([<<"{"/utf8>>, Result, <<"}"/utf8>>]).
+	
 
 new(service) -> #service{};
 new(catalog) -> #service{};
