@@ -3,14 +3,16 @@ import {HomeRoutes} from "./home/home.routes";
 import {FormRoute} from "./form/form.routes";
 import {PessoaRoute} from "./pessoa/pessoa.routes";
 import {ErroRoute} from "./erro/erro.routes";
-import {AppComponent} from "./app.component";
+import {QuestaoRoute} from "./questao/questao.routes";
+import { ModuleWithProviders} from '@angular/core';
 
 
 const appRoutes: Routes = [
   ...HomeRoutes,
   ...FormRoute,
   ...PessoaRoute,
-  ...ErroRoute
+  ...ErroRoute,
+  ...QuestaoRoute
 ];
 
 export const appRoutingProviders: any[] = [

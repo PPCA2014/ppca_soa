@@ -18,6 +18,8 @@ import {ListaComponent} from "./pessoa/lista/lista.component";
 import { ErroComponent } from './erro/erro.component';
 import {RodapeComponent} from "./rodape/rodape.component";
 import {DefaultHeaders} from "./_headers/default.headers";
+import {QuestaoComponent} from "./questao/questao.component";
+import {QuestaoService} from "./questao/questao.service";
 
 
 @NgModule({
@@ -30,7 +32,8 @@ import {DefaultHeaders} from "./_headers/default.headers";
     PessoaComponent,
     ListaComponent,
     ErroComponent,
-    RodapeComponent
+    RodapeComponent,
+    QuestaoComponent
   ],
   imports: [
     HttpModule,
@@ -38,7 +41,7 @@ import {DefaultHeaders} from "./_headers/default.headers";
     FormsModule,
     routing
   ],
-  providers: [appRoutingProviders, AuthGuard, AuthenticationService,UserService,PessoaService,
+  providers: [appRoutingProviders, AuthGuard, AuthenticationService,UserService,PessoaService,QuestaoService,
     {
       provide: XSRFStrategy,
       useValue: new CookieXSRFStrategy('csrftoken', 'X-CSRF-Token')

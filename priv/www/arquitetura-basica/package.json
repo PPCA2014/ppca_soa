@@ -1,7 +1,9 @@
 {
-  "name": "angular-quickstart",
-  "version": "1.0.0",
-  "description": "QuickStart package.json from the documentation, supplemented with testing support",
+  "name": "arquitetura-basica",
+  "version": "1.0.1",
+  "description": "Arquitetura básica de segunraça",
+  "main": "index.js",
+  "typings": "seguranca.d.ts",
   "scripts": {
     "start": "tsc && concurrently \"tsc -w\" \"lite-server\" ",
     "e2e": "tsc && concurrently \"http-server -s\" \"protractor protractor.config.js\" --kill-others --success first",
@@ -14,7 +16,7 @@
     "tsc:w": "tsc -w"
   },
   "keywords": [],
-  "author": "",
+  "author": "Remato Carauta Ribeiro",
   "license": "MIT",
   "dependencies": {
     "@angular/common": "~2.3.0",
@@ -25,20 +27,18 @@
     "@angular/platform-browser": "~2.3.0",
     "@angular/platform-browser-dynamic": "~2.3.0",
     "@angular/router": "~3.3.0",
-
     "systemjs": "0.19.40",
     "core-js": "^2.4.1",
     "reflect-metadata": "^0.1.8",
     "rxjs": "5.0.0-rc.4",
     "zone.js": "^0.7.2",
-    "bootstrap" : "~3.3.7",
-    "jquery" : "^3.1.1"
+    "bootstrap": "~3.3.7",
+    "jquery": "^3.1.1"
   },
   "devDependencies": {
     "concurrently": "^3.1.0",
     "lite-server": "^2.2.2",
     "typescript": "~2.0.10",
-
     "canonical-path": "0.0.2",
     "http-server": "^0.9.0",
     "tslint": "^3.15.1",
@@ -51,10 +51,10 @@
     "karma-jasmine-html-reporter": "^0.2.2",
     "protractor": "~4.0.13",
     "rimraf": "^2.5.4",
-
     "@types/node": "^6.0.46",
     "@types/jasmine": "^2.5.36",
     "@types/selenium-webdriver": "^2.53.33"
   },
-  "repository": {}
+  "repository": {},
+  "main": "karma-test-shim.js"
 }

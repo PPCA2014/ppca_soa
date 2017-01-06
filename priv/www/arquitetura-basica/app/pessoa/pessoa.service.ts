@@ -45,6 +45,6 @@ export class PessoaService extends DefaultHeaders{
       .map((response: Response) => response.json())
 
   }
-  
+
 
 }
