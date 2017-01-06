@@ -112,17 +112,35 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
-do_param_query(Sql, Params, Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef,
-																			 connection = Connection}}) ->
+do_param_query(Sql, Params, Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																						  connection = Connection}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
+			{error, timeout} ->
+				?DEBUG("odbc query timeout. Reconecting..."),
+				io:format("aqui1\n\n"),
+				% O erro pode ter perda de conexão. Reconecta e tenta novamente
+				case do_connect(Datasource) of
+					{ok, Datasource2} ->
+						case odbc:param_query(Datasource2#service_datasource.conn_ref, Sql, Params, Timeout) of
+							{error, Reason} -> 
+								ems_logger:error("ODBC query_query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
+								{error, Reason};
+							Result -> Result
+						end;
+					Error -> 
+						io:format("aqui2\n\n"),
+						Error
+				end;
 			{error, Reason} -> 
-				ems_logger:error("ODBC query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
+				io:format("aqu3\n\n"),
+				ems_logger:error("ODBC query_query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
 				{error, Reason};
 			Result -> Result
 		end
 	catch
 		_Exception:Reason2 -> 
+			io:format("aqui4\n\n"),
 			ems_logger:error("ODBC query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
 			{error, eodbc_connection_fail}
 	end.

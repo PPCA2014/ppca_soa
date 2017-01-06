@@ -18,11 +18,7 @@
 execute(Request) ->
 	{ok, Request#request{code = 200,
 						 response_data = <<>>,
-						 response_header = #{<<"cache-control">> => <<"max-age=290304000, public">>,
-											 <<"Access-Control-Allow-Origin">> => <<"*">>,
-											 <<"Access-Control-Allow-Headers">> => <<"*">>,
-											 <<"Access-Control-Allow-Methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
-											 }}
+						 response_header = #{<<"cache-control">> => <<"max-age=290304000, public">>}}
 	}.
 
 

@@ -16,7 +16,7 @@
 autentica(UserLogin, UserPassword, Datasource) ->
 	try
 		PasswordUserCrypto = criptografia(UserPassword),
-		?DEBUG("Ldap autenticar ~p ~p\n", [UserLogin, PasswordUserCrypto]),
+		?DEBUG("Ldap autentica ~p ~p.", [UserLogin, PasswordUserCrypto]),
 		case ems_db:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				Params = [{{sql_varchar, 100}, [binary_to_list(UserLogin)]},
@@ -39,7 +39,7 @@ autentica(UserLogin, UserPassword, Datasource) ->
 
 find_user_by_login(UserLogin, Datasource) ->
 	try
-		?DEBUG("Ldap find user ~p\n", [UserLogin]),
+		?DEBUG("Ldap find user by login ~p.", [UserLogin]),
 		case ems_db:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				Params = [{{sql_varchar, 100}, [binary_to_list(UserLogin)]}],
