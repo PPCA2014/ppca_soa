@@ -50,7 +50,7 @@ get_connection(Datasource = #service_datasource{rowid = Rowid}) ->
 					erlang:put(Rowid, Datasource2),
 					Result;
 				Error -> 
-					?DEBUG("Error get new ODBC connection: ~p.", [Error]),
+					?DEBUG("Error get new odbc connection: ~p.", [Error]),
 					Error
 			end;
 		DatasourceCache -> {ok, DatasourceCache}

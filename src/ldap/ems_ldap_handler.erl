@@ -113,8 +113,12 @@ handle_request({'LDAPMessage', _,
 				 _}, State = #state{admin = AdminLdap}) ->
 	UserLogin = UsuLoginBin,
 	case middleware_find_user_by_login(UserLogin, State) of
-		{error, _Reason} ->
+		{error, enoent} ->
 			ResultDone = make_result_done(invalidCredentials),
+			{ok, [ResultDone]};
+		{error, _Reason} ->
+			?DEBUG("middleware_find_user_by_login fail: ~p.", [_Reason]),
+			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
 		{ok, UserRecord} ->
 			ResultEntry = make_result_entry(UsuLoginBin, UserRecord, AdminLdap),
@@ -194,7 +198,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 				true -> 
 					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
 						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
-							?DEBUG("user ~p\n", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
+							?DEBUG("middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
 							UserRecord2 = {format_user_field(UsuId),
 										   format_user_field(UsuNome),
 										   format_user_field(UsuCpf),
