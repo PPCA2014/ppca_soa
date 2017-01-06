@@ -1,23 +1,14 @@
 {
-  "name": "arquitetura-basica",
-  "version": "1.0.1",
-  "description": "Arquitetura básica de segunraça",
-  "main": "index.js",
+  "name": "seguranca",
+  "version": "1.0.0",
+  "description": "sistema fornend de segurança",
+  "main": "seguranca.js",
   "typings": "seguranca.d.ts",
   "scripts": {
-    "start": "tsc && concurrently \"tsc -w\" \"lite-server\" ",
-    "e2e": "tsc && concurrently \"http-server -s\" \"protractor protractor.config.js\" --kill-others --success first",
-    "lint": "tslint ./app/**/*.ts -t verbose",
-    "lite": "lite-server",
-    "pree2e": "webdriver-manager update",
-    "test": "tsc && concurrently \"tsc -w\" \"karma start karma.conf.js\"",
-    "test-once": "tsc && karma start karma.conf.js --single-run",
-    "tsc": "tsc",
-    "tsc:w": "tsc -w"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "Remato Carauta Ribeiro",
-  "license": "MIT",
+  "author": "Renato Carauta Ribeiro",
+  "license": "ISC",
   "dependencies": {
     "@angular/common": "~2.3.0",
     "@angular/compiler": "~2.3.0",
@@ -54,7 +45,5 @@
     "@types/node": "^6.0.46",
     "@types/jasmine": "^2.5.36",
     "@types/selenium-webdriver": "^2.53.33"
-  },
-  "repository": {},
-  "main": "karma-test-shim.js"
+  }
 }
