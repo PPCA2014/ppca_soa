@@ -4,7 +4,7 @@
 	"json_schema": {
 		"$schema": "http://json-schema.org/draft-04/schema#",
 		"type": "object",
-		"title": "inteiro",
+		"title": "schema para produto",
 		"properties": {
 			"name": {
 				"type": "string",

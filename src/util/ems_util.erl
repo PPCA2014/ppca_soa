@@ -164,6 +164,7 @@ json_encode(T) when is_tuple(T) ->
 	L = tuple_to_binlist(T),
 	?JSON_LIB:encode(L);
 json_encode(L) when is_list(L) ->
+	io:format("aqui1"),
 	case io_lib:printable_list(L) of
 		true -> L2 = iolist_to_binary(L);
 		false -> L2 = list_to_binlist(L)

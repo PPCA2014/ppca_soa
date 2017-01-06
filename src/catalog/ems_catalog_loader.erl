@@ -44,16 +44,17 @@ get_catalog() ->
 		{ok, CatMestre} ->
 			CatalogoDefsPath = ?CATALOGO_PATH ++ "/",
 			%% Obtém a lista do conteúdo de todos os catálogos
-			CatDefs = lists:map(fun(M) -> 
+			CatDefs_ = lists:map(fun(M) -> 
 									NomeArq = CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M)),
-									NomeCatalogo = binary_to_list(maps:get(<<"catalog">>, M)),
 									case file:read_file(NomeArq) of
 										{ok, Arq} -> Arq;
 										{error, enoent} -> 
-											io:format("Catalog ~s not found. Filename: ~s.", [NomeCatalogo, NomeArq]),
+											ems_logger:format_warn("Attention: Catalog \"~s\" not found. Ignoring...\n", [NomeArq]),
 											<<>>
 									end
 								end, CatMestre),
+			
+			CatDefs0 = [Cat || Cat <- CatDefs_, Cat =/= <<>>],
 
 			%% Adiciona "," entre as definições de cada catálogo
 			CatDefs1 = lists:foldl(fun(X, Y) ->
@@ -61,7 +62,7 @@ get_catalog() ->
 											<<>> -> X;
 											Y2 -> iolist_to_binary([X, <<","/utf8>>, Y2])
 										end 
-									end, <<>>, CatDefs),
+									end, <<>>, CatDefs0),
 
 			%% Adiciona abertura e fechamento de lista para o parser correto do JSON
 			CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),

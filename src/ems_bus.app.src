@@ -27,7 +27,29 @@
 					oauth2
                  ]},
   {mod, { ems_bus_app, []}},
-  {env, []}
+  {env, [
+	  {oauth2, [
+			%% Default expiry_time for access_tokens unless
+			%% overridden per flow
+			{expiry_time, 3600}
+			,{backend, oauth2ems_backend}
+
+			%% Optional expiry_time override per flow
+			,{password_credentials, [
+				{expiry_time, 7200}
+			]}
+			,{client_credentials, [
+				{expiry_time, 86400}
+			]}
+			,{refresh_token, [
+				{expiry_time, 2592000} %% 30 Days
+			]}
+			,{code_grant, [
+				%% Recommended absolute expiry time from the spec
+				{expiry_time, 600}
+			]}
+		]}
+  ]}
  ]}.
 
 

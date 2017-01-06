@@ -25,7 +25,9 @@
 		 log_request/1,
 		 mode_debug/1,
 		 set_level/1,
-		 show_response/1]).
+		 show_response/1,
+		 format_warn/1, 
+		 format_warn/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -99,6 +101,10 @@ set_level(Level) ->
 
 show_response(Value) -> 
 	gen_server:cast(?SERVER, {show_response, Value}). 
+
+
+format_warn(Message) ->	io:format("\033[0;33m~s\033[0m", [Message]).
+format_warn(Message, Params) ->	io:format("\033[0;33m~s\033[0m", [io_lib:format(Message, Params)]).
 
 
 %%====================================================================
