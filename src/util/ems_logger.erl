@@ -252,7 +252,12 @@ write_msg(Tipo, Msg, State) when is_binary(Msg) ->
     write_msg(Tipo, Msg1, State);
     
 write_msg(Tipo, Msg, State = #state{level = Level})  ->
-	Msg1 = lists:concat([string:to_upper(atom_to_list(Tipo)), " ", ems_clock:local_time_str(), "  ", Msg]),
+	case Tipo of
+		info  -> Msg1 = lists:concat(["INFO ", ems_clock:local_time_str(), "  ", Msg]);
+		error -> Msg1 = lists:concat(["\033[0;31mERROR ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]);
+		warn  -> Msg1 = lists:concat(["\033[0;33mWARN ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]);
+		debug -> Msg1 = lists:concat(["\033[0;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"])
+	end,
 	UltMsg = erlang:get(ult_msg),
 	case UltMsg == undefined orelse UltMsg =/= Msg1 of
 		true ->

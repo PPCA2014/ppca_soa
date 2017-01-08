@@ -28,7 +28,7 @@ export class CatalogoComponent {
 	
 	@Input("mfTable") mfTable: DataTable;
 	private loading: boolean = false;
-	private catalogoUrl = "/catalog";
+	private catalogoUrl = "/auth/user";
 	private catalogoOwnerUrl = "/catalog/owner";
 	public operacao : string = "pesquisa";
 	public ult_operacao : string = "pesquisa";

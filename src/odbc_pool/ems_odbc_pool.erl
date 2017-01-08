@@ -50,7 +50,7 @@ get_connection(Datasource = #service_datasource{rowid = Rowid}) ->
 					erlang:put(Rowid, Datasource2),
 					Result;
 				Error -> 
-					?DEBUG("Error get new odbc connection: ~p.", [Error]),
+					?DEBUG("Fail get new odbc connection: ~p.", [Error]),
 					Error
 			end;
 		DatasourceCache -> {ok, DatasourceCache}
@@ -134,7 +134,7 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 					erlang:put(PidModuleRef, Datasource2),
 					{ok, Datasource2};
 				_ -> 
-					{error, enoent}
+					{error, eunavailable_odbc_connection}
 			end;
 		_ -> 
 			{{value, Datasource2}, Pool2} = queue:out(Pool),

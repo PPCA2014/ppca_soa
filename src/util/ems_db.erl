@@ -42,6 +42,7 @@ create_database(Nodes) ->
 
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
+							   {index, [#user.login]},
 							   {attributes, record_info(fields, user)}]),
 
     mnesia:create_table(sequence, [{type, set},

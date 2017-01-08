@@ -426,6 +426,7 @@ json_encode_table(Fields, Records) ->
 	Result.
 
 
+utf8_list_to_string(null) -> "";
 utf8_list_to_string(Value) ->
 	try
 		case check_encoding_bin(list_to_binary(Value)) of

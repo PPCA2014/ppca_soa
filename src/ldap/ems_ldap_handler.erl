@@ -190,6 +190,18 @@ middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware,
 			error, {Reason, Middleware}}
 	end.
 
+middleware_find_user_by_login(UserLogin, #state{middleware = undefined}) ->
+	case ems_user:find_by_login(UserLogin) of
+		{ok, _User = #user{codigo = UsuId, name = UsuNome, cpf = UsuCpf, email = UsuEmail, password = UsuSenha}} ->
+			?DEBUG("ems_user:find_by_login user: ~p.", [_User]),
+			UserRecord2 = {format_user_field(UsuId),
+						   format_user_field(UsuNome),
+						   format_user_field(UsuCpf),
+						   format_user_field(UsuEmail),
+						   format_user_field(UsuSenha)}, 
+			{ok, UserRecord2};
+		Error -> Error
+	end;
 middleware_find_user_by_login(UserLogin, #state{middleware = Middleware, 
 												datasource = Datasource}) ->
 	case code:ensure_loaded(Middleware) of
@@ -217,6 +229,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 format_user_field(null) -> <<"">>;
 format_user_field([]) -> <<"">>;
 format_user_field(Number) when is_integer(Number) -> list_to_binary(integer_to_list(Number));
-format_user_field(Text) -> list_to_binary(string:strip(Text)).
+format_user_field(Text) when is_list(Text) -> list_to_binary(string:strip(Text));
+format_user_field(Text) when is_binary(Text) -> Text.
 	
 
