@@ -53,16 +53,9 @@ find_by_username_and_password(Username, Password) ->
 find_by_login(Login) when is_list(Login) ->	
 	find_by_login(list_to_binary(Login));
 find_by_login(Login) ->
-	Query = fun() ->
-		  qlc:e(
-			 qlc:q([R || R <- mnesia:table(user), 
-						 R#user.login == Login])
-		  )
-	   end,
-	case mnesia:transaction(Query) of
-		{atomic, []} -> {error, enoent};
-		{atomic, [Record|_]} -> {ok, Record};
-		{aborted, _Reason} -> {error, aborted}
+	case mnesia:dirty_index_read(user, Login, #user.login) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end.
 
 	
