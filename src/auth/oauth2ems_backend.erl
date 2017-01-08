@@ -2,15 +2,11 @@
 
 -behavior(oauth2_backend).
 
+-include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
+
 %%% API
--export([
-         start/0
-         ,stop/0
-         ,add_user/2
-         ,delete_user/1
-         ,add_client/2, add_client/3
-         ,delete_client/1
-        ]).
+-export([start/0, stop/0, add_client/2, add_client/3, delete_client/1]).
 
 -export([authenticate_username_password/3]).
 -export([authenticate_client/2]).
@@ -49,10 +45,6 @@
           redirect_uri  :: binary()
          }).
 
--record(user, {
-          username :: binary(),
-          password :: binary()
-         }).
 
 %%%===================================================================
 %%% API
@@ -64,18 +56,10 @@ start() ->
                           ets:new(Table, [named_table, public])
                   end,
                   ?TABLES),
-	add_client("s6BhdRkqt3","qwer", "http://localhost:2301/portal/index.html"),
-	add_user("johndoe","A3ddj3w").
+	add_client("s6BhdRkqt3","qwer", "http://localhost:2301/portal/index.html").
 
 stop() ->
     lists:foreach(fun ets:delete/1, ?TABLES).
-
-add_user(Username, Password) ->
-    put(?USER_TABLE, Username, #user{username = Username, password = Password}).
-
-delete_user(Username) ->
-    delete(?USER_TABLE, Username).
-
 
 
 add_client(Id, Secret, RedirectUri) ->
@@ -94,18 +78,12 @@ delete_client(Id) ->
 %%% OAuth2 backend functions
 %%%===================================================================
 
-authenticate_username_password(Username, Password, _) ->
-    case get(?USER_TABLE, Username) of
-        {ok, #user{password = UserPw}} ->
-            case Password of
-                UserPw ->
-                    {ok, {<<"user">>, Username}};
-                _ ->
-                    {error, badpass}
-            end;
-        Error = {error, notfound} ->
-            Error
-    end.
+authenticate_username_password(Login, Password, _) ->
+    case ems_user:find_by_login_and_password(Login, Password) of
+		{ok, #user{name = Username}} ->	
+			{ok, {<<"user">>, Username}};
+		Error -> Error
+	end.
 
 authenticate_client(ClientId, ClientSecret, _) ->
 	authenticate_client(ClientId, ClientSecret).

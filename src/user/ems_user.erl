@@ -12,7 +12,11 @@
 -include("../../include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
--export([get/1, insert/1, update/1, all/0, delete/1, find_by_username_and_password/2, find_by_login/1, find_by_name/1]).
+-export([get/1, insert/1, update/1, all/0, delete/1, 
+		 authenticate_login_password/2, 
+		 find_by_login/1, 
+		 find_by_name/1, 
+		 find_by_login_and_password/2]).
 
 get(Id) -> ems_db:get(user, Id).
 
@@ -35,20 +39,12 @@ delete(Id) -> ems_db:delete(user, Id).
 
 valida(_User, _Operation) -> ok.
 
-find_by_username_and_password(Username, Password) ->
-	Query = fun() ->
-		  qlc:e(
-			 qlc:q([R || R <- mnesia:table(user), 
-						 R#user.name == Username,
-						 R#user.password == Password])
-		  )
-	   end,
-	case mnesia:transaction(Query) of
-		{atomic, []} -> {error, enoent};
-		{atomic, [Record|_]} -> {ok, Record};
-		{aborted, _Reason} -> {error, aborted}
+authenticate_login_password(Login, Password) ->
+	case find_by_login(Login) of
+		{ok, #user{password = PasswordUser}} -> 
+			PasswordUser =:= ems_util:criptografia_sha1(Password);
+		_ -> false
 	end.
-
 
 find_by_login(Login) when is_list(Login) ->	
 	find_by_login(list_to_binary(Login));
@@ -58,19 +54,14 @@ find_by_login(Login) ->
 		[Record|_] -> {ok, Record}
 	end.
 
+find_by_name(Name) -> ems_db:find_first(user, [{"name", "==", Name}]).
 	
-find_by_name(Name) when is_list(Name) ->
-	find_by_name(list_to_binary(Name));
-find_by_name(Name) ->
-	Query = fun() ->
-		  qlc:e(
-			 qlc:q([R || R <- mnesia:table(user), 
-						 R#user.name == Name])
-		  )
-	   end,
-	case mnesia:transaction(Query) of
-		{atomic, []} -> {error, enoent};
-		{atomic, [Record|_]} -> {ok, Record};
-		{aborted, _Reason} -> {error, aborted}
+find_by_login_and_password(Login, Password) ->
+	case find_by_login(Login) of
+		{ok, User = #user{password = PasswordUser}} -> 
+			case PasswordUser =:= ems_util:criptografia_sha1(Password) of
+				true -> {ok, User};
+				false -> {error, enoent}
+			end;
+		_ -> {error, enoent}
 	end.
-	

@@ -460,5 +460,9 @@ check_encoding_bin(Bin) when is_binary(Bin) ->
 date_add_minute(Timestamp, Minutes) ->
     calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Minutes * 60).
 
-        
+
+% Return a encrypted password in binary format        
+criptografia_sha1(Password) when is_binary(Password) ->
+	criptografia_sha1(binary_to_list(Password));
+criptografia_sha1(Password) -> base64:encode(sha1:binstring(Password)).
 
