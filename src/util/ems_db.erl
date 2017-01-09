@@ -16,7 +16,7 @@
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
 -export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
 -export([get_connection/1, release_connection/1]).
-
+-export([get_param/1, set_param/2]).
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
@@ -77,6 +77,12 @@ create_database(Nodes) ->
     mnesia:create_table(service_owner, [{type, set},
 	 							  {disc_copies, Nodes},
 								  {attributes, record_info(fields, service_owner)}]),
+
+    mnesia:create_table(ctrl_params, [{type, set},
+									  {disc_copies, Nodes},
+									  {attributes, record_info(fields, ctrl_params)}]),
+
+
 
 	ok.
 
@@ -462,4 +468,18 @@ field_position(Field, [F|Fs], Idx) ->
 field_value(V) when is_list(V) -> list_to_binary(V);
 field_value(V) -> V.
 
+% Return a param value from crtl_params table
+get_param(ParamName) -> 
+	case mnesia:dirty_read(ctrl_params, ParamName) of
+		[] -> undefined;
+		[#ctrl_params{value = Value}] -> Value
+	end.
+	
+% Save a param value to crtl_params table
+set_param(ParamName, ParamValue) -> 
+	P = #ctrl_params{name = ParamName, value = ParamValue},
+	mnesia:dirty_write(ctrl_params, P).
+	
+	
+	
 

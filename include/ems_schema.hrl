@@ -21,6 +21,11 @@
 			   email :: string(), 
 			   password :: string()
 		}).
+
+-record(ctrl_params, {name :: string(),
+					  value
+		}).
+
 			   
 -record(request, {
 					  rid,       								%% Request ID (Identificador da requisição gerada automaticamente)
