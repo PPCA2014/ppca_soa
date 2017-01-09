@@ -42,6 +42,7 @@ create_database(Nodes) ->
 
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
+							   {index, [#user.login]},
 							   {attributes, record_info(fields, user)}]),
 
     mnesia:create_table(sequence, [{type, set},
@@ -88,17 +89,11 @@ create_database(Nodes) ->
 get(RecordType, Id) when is_list(Id) ->
 	Id2 = list_to_integer(Id),
 	get(RecordType, Id2);
-
 get(RecordType, Id) when is_number(Id) ->
-	Query = fun() ->
-		mnesia:read(RecordType, Id)
-	end,
-	case mnesia:transaction(Query) of
-		{atomic, []} -> {error, enoent};
-		{atomic, [Record|_]} -> {ok, Record};
-		{aborted, _Reason} -> {erro, aborted}
+	case mnesia:dirty_read(RecordType, Id) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end;
-
 get(_RecordType, _) -> {error, enoent}.
 
 
@@ -108,7 +103,7 @@ all(RecordType) ->
 			 qlc:q([X || X <- mnesia:table(RecordType)])
 		  )
 	   end,
-	{atomic, Records} = mnesia:transaction(Query),
+	Records = mnesia:activity(async_dirty, Query),
 	{ok, Records}.
 
 insert(Record) ->
@@ -343,29 +338,43 @@ filter(Tab, []) ->
 			 qlc:q([R || R <- mnesia:table(Tab)])
 		  )
 	   end,
-	mnesia:activity(transaction, F);
+	mnesia:activity(async_dirty, F);
 filter(Tab, [{F1, "==", V1}]) ->
 	Fields =  mnesia:table_info(Tab, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])) 
-		  end,
-	mnesia:activity(transaction, Fun);
+	Fld1 = field_position(F1, Fields, 2),
+	case field_has_index(Fld1, Tab) of
+		false ->
+			Fun = fun() -> 
+						qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])) 
+				  end,
+			mnesia:activity(async_dirty, Fun);
+		true ->
+			mnesia:dirty_index_read(Tab, field_value(V1), Fld1)
+	end;
 filter(Tab, FilterList) when is_list(FilterList) -> 
 	F = fun() ->
 			FieldsTable =  mnesia:table_info(Tab, attributes),
 			Where = string:join(lists:map(fun({F, Op, V}) ->
-												Fld = field_index(F, FieldsTable, 2),
+												Fld = field_position(F, FieldsTable, 2),
 												io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
 										  end, FilterList), ","),
 			ExprQuery = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, Where])),
 			ParsedQuery = qlc:string_to_handle(ExprQuery),
-			mnesia:activity(transaction, fun () -> qlc:eval(ParsedQuery) end)
+			mnesia:activity(async_dirty, fun () -> qlc:eval(ParsedQuery) end)
 		end,
 	ems_cache:get(ems_db_parsed_query_cache, ?LIFE_TIME_PARSED_QUERY, {Tab, FilterList}, F);
 filter(Tab, FilterTuple) when is_tuple(FilterTuple) ->
 	filter(Tab, [FilterTuple]).
 
+
+%	
+% Return true/false if field has index on mnesia table
+% Ex.: field_has_index(4, user). 
+% return true
+field_has_index(FldPos, Tab) ->
+	Indexes =  mnesia:table_info(Tab, index),
+	lists:member(FldPos, Indexes).
+	
 
 
 %	
@@ -388,25 +397,20 @@ filter_with_limit(Tab, [], Limit, Offset) ->
 			 qlc:q([R || R <- mnesia:table(Tab), element(2, R) >= Offset, element(2, R) =< Limit + Offset - 1])
 		  )
 	   end,
-	mnesia:activity(transaction, F);
-filter_with_limit(Tab, [{F1, "==", V1}], Limit, Offset) ->
-	Fields =  mnesia:table_info(Tab, attributes),
-	Fld1 = field_index(F1, Fields, 2),
-	Fun = fun() -> 
-				Records = qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])),
-				lists:sublist(Records, Offset, Limit) 
-		  end,
-	mnesia:activity(transaction, Fun);
+	mnesia:activity(async_dirty, F);
+filter_with_limit(Tab, Filter = [{_, "==", _}], Limit, Offset) ->
+	Records = filter(Tab, Filter),
+	lists:sublist(Records, Offset, Limit); 
 filter_with_limit(Tab, FilterList, Limit, Offset) when is_list(FilterList) -> 
 	F = fun() ->
 			FieldsTable =  mnesia:table_info(Tab, attributes),
 			Where = string:join(lists:map(fun({F, Op, V}) ->
-												Fld = field_index(F, FieldsTable, 2),
+												Fld = field_position(F, FieldsTable, 2),
 												io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
 										  end, FilterList), ","),
 			ExprQuery = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, Where])),
 			ParsedQuery = qlc:string_to_handle(ExprQuery),
-			mnesia:activity(transaction, fun () -> 
+			mnesia:activity(async_dirty, fun () -> 
 											Records = qlc:eval(ParsedQuery),
 											lists:sublist(Records, Offset, Limit) 
 										 end)
@@ -424,15 +428,15 @@ match(Tab, FilterList) ->
 	FieldsTable =  mnesia:table_info(Tab, attributes),
 	Record = ems_schema:new_(Tab),
 	Match = match(Tab, FilterList, FieldsTable, Record),
-	mnesia:activity(transaction, fun() -> mnesia:match_object(Match) end).
+	mnesia:activity(async_dirty, fun() -> mnesia:match_object(Match) end).
 		
 match(_, [], _, Record) -> Record;
 match(Tab, [{F, _, V}|T], FieldsTable, Record) -> 
-	Fld = field_index(F, FieldsTable, 2),
+	Fld = field_position(F, FieldsTable, 2),
 	Record2 = setelement(Fld, Record, field_value(V)),
     match(Tab, T, FieldsTable, Record2);
 match(Tab, [{F, V}|T], FieldsTable, Record) -> 
-	Fld = field_index(F, FieldsTable, 2),
+	Fld = field_position(F, FieldsTable, 2),
 	Record2 = setelement(Fld, Record, field_value(V)),
     match(Tab, T, FieldsTable, Record2).
 
@@ -446,16 +450,17 @@ select_fields(ListRecord, FieldList) ->
 	ems_schema:to_list(ListRecord, FieldList2).
 
 
-field_index(_, [], _) -> erlang:error(einvalid_field_filter);
-field_index(Field, Fields, Idx) when is_list(Field) -> 
-	field_index(list_to_atom(Field), Fields, Idx);
-field_index(Field, [F|Fs], Idx) ->
+% Return the field position on record
+field_position(_, [], _) -> erlang:error(einvalid_field_filter);
+field_position(Field, Fields, Idx) when is_list(Field) -> 
+	field_position(list_to_atom(Field), Fields, Idx);
+field_position(Field, [F|Fs], Idx) ->
 	case Field == F of
 		true -> Idx;
-		_ -> field_index(Field, Fs, Idx+1)
+		_ -> field_position(Field, Fs, Idx+1)
 	end.
 
-
+% Return the field as binary
 field_value(V) when is_list(V) -> list_to_binary(V);
 field_value(V) -> V.
 

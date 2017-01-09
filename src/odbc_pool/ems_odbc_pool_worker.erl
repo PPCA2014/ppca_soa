@@ -95,54 +95,65 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
 				{ok, Datasource2};
 			{error, {PosixError, _}} -> 
-				ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, 
-																			  ems_tcp_util:posix_error_description(PosixError)]),
+				?DEBUG("Invalid Posix odbc connection: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError)]),
 				{error, PosixError};
 			{error, Reason} -> 
-				ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, Reason]),
+				?DEBUG("Invalid odbc connection: ~s. Reason: ~p.", [Connection, Reason]),
 				{error, Reason}
 		end
 	catch 
 		_Exception:{PosixError2, _} -> 
-			ems_logger:error("Invalid ODBC connection: ~s. Reason: ~p.", [Connection, 
-																		  ems_tcp_util:posix_error_description(PosixError2)]),
+			?DEBUG("Invalid posix odbc connection exception: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError2)]),
 			{error, PosixError2}
 	end.
 
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
-do_param_query(Sql, Params, Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						  connection = Connection}}) ->
+do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																						  connection = Connection,
+																						  timeout = Timeout}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
-			{error, timeout} ->
-				?DEBUG("odbc query timeout. Reconecting..."),
-				io:format("aqui1\n\n"),
-				% O erro pode ter perda de conexão. Reconecta e tenta novamente
+			{error, connection_closed} ->
+				?DEBUG("odbc param_query connection_closed. Reconecting..."),
+				% O erro pode ser perda de conexão. Reconecta e tenta novamente
 				case do_connect(Datasource) of
 					{ok, Datasource2} ->
 						case odbc:param_query(Datasource2#service_datasource.conn_ref, Sql, Params, Timeout) of
-							{error, Reason} -> 
-								ems_logger:error("ODBC query_query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
-								{error, Reason};
+							{error, Reason1} = Error1 -> 
+								?DEBUG("ODBC param_query fail after reconecting on connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
+								Error1;
 							Result -> Result
 						end;
-					Error -> 
-						io:format("aqui2\n\n"),
-						Error
+					{error, Reason2} = Error2 -> 
+						?DEBUG("ODBC param_query reconecting fail after connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
+						Error2
 				end;
-			{error, Reason} -> 
-				io:format("aqu3\n\n"),
-				ems_logger:error("ODBC query_query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
-				{error, Reason};
+			{error, Reason3} = Error3 -> 
+				?DEBUG("ODBC param_query execute fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason3]),
+				Error3;
 			Result -> Result
 		end
 	catch
-		_Exception:Reason2 -> 
-			io:format("aqui4\n\n"),
-			ems_logger:error("ODBC query fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
-			{error, eodbc_connection_fail}
+		_:timeout -> 
+			% O erro pode ser perda de conexão. Reconecta e tenta novamente
+			?DEBUG("odbc param_query timeout connection. Reconecting..."),
+			case do_connect(Datasource) of
+				{ok, Datasource3} ->
+					case odbc:param_query(Datasource3#service_datasource.conn_ref, Sql, Params, Timeout) of
+						{error, Reason4} = Error4 -> 
+							?DEBUG("ODBC param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
+							Error4;
+						Result3 -> Result3
+					end;
+				{error, Reason5} = Error5 -> 
+					?DEBUG("ODBC param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
+					Error5
+			end;
+		_:Reason6 -> 
+			?DEBUG("ODBC param_query exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
+			{error, Reason6}
 	end.
 
     

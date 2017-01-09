@@ -26,12 +26,12 @@ autentica(Service, Request) ->
 do_basic_authorization(Request) ->
 	case Request#request.authorization /= "" of
 		true -> 
-			[Authorization|[UserNameEPassword|_]] = string:tokens(Request#request.authorization, " "),
+			[Authorization|[LoginAndPassword|_]] = string:tokens(Request#request.authorization, " "),
 			case Authorization =:= "Basic" of
 				true -> 
-					UserNameEPassword2 = base64:decode_to_string(UserNameEPassword),
-					[UserName|[Password|_]] = string:tokens(UserNameEPassword2, ":"),
-					case ems_user:call({find_by_username_and_password, list_to_binary(UserName), list_to_binary(Password)}) of
+					LoginAndPassword2 = base64:decode_to_string(LoginAndPassword),
+					[Login|[Password|_]] = string:tokens(LoginAndPassword2, ":"),
+					case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
 						{ok, User} -> {ok, User};
 						_ -> {error, no_authorization}
 					end;

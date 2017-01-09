@@ -14,9 +14,13 @@
      			  index :: non_neg_integer()}).
 
 -record(user, {id :: non_neg_integer(), 
+			   codigo :: integer(),
+			   login :: string(),
 			   name :: string(), 
+			   cpf :: string(),
 			   email :: string(), 
-			   password :: string()}).
+			   password :: string()
+		}).
 			   
 -record(request, {
 					  rid,       								%% Request ID (Identificador da requisição gerada automaticamente)
