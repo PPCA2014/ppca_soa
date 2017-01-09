@@ -24,10 +24,7 @@ export class AuthenticationService extends DefaultHeaders {
   }
 
   login(login: string, senha: string): Observable<boolean> {
-    this.headers = new Headers();
-    this.headers.append('Authorization', "Basic " + btoa(login + ":" + senha));
-    this.options.headers.set('Authorization', "Basic " + btoa(login + ":" + senha));
-    return this.http.post('http://localhost:8086/spring-oauth2-example/oauth/token?grant_type=password&username=admin&password=admin123', {headers:this.headers})
+    return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username='+login+'&password='+senha,{headers:this.headers})
       .map((response: Response) => {
         let token = response.json() && response.json();
         if (token) {

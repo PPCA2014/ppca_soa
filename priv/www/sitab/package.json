@@ -29,7 +29,9 @@
     "core-js": "^2.4.1",
     "rxjs": "5.0.1",
     "zone.js": "^0.7.4",
-    "seguranca" : "1.0.0"
+    "seguranca" : "1.0.0",
+    "bootstrap": "~3.3.7",
+    "jquery": "^3.1.1"
   },
   "devDependencies": {
     "concurrently": "^3.1.0",
