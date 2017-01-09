@@ -23,7 +23,7 @@
 
 % estado do servidor
 -record(state, {datasource,
-				mode,
+				operation,
 				update_checkpoint,
 				last_update}).
 
@@ -51,10 +51,7 @@ init(#service{datasource = Datasource,
 	LastUpdate = ems_db:get_param(<<"ems_user_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
 	State = #state{datasource = Datasource, 
-				   mode = case mnesia:table_info(user, size) of
-							 0 -> load_users;
-							 _ -> update_users
-						  end,
+				   operation = load_or_update_operation(),
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update = LastUpdate},
 	{ok, State, 2000}.
@@ -72,21 +69,35 @@ handle_info(State) ->
    {noreply, State, 1000}.
 
 handle_info(timeout, State = #state{datasource = Datasource,
-									mode = update_users,
+									operation = update_users,
 									update_checkpoint = UpdateCheckpoint,
 									last_update = LastUpdate}) ->
-   NextUpdate = calendar:local_time(),
-   update_users_from_datasource(Datasource, LastUpdate),
-   ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
-   {noreply, State#state{last_update = NextUpdate}, UpdateCheckpoint};
+	NextUpdate = calendar:local_time(),
+	case update_users_from_datasource(Datasource, LastUpdate) of
+		ok -> 
+			ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
+			State2 = State#state{last_update = NextUpdate, 
+								  operation = load_or_update_operation()},
+			{noreply, State2, UpdateCheckpoint};
+		_ -> 
+			{noreply, State, UpdateCheckpoint}
+	end;
+		
 
 handle_info(timeout, State = #state{datasource = Datasource,
-									mode = load_users,
+									operation = load_users,
 									update_checkpoint = UpdateCheckpoint}) ->
-   load_users_from_datasource(Datasource),
-   State2 = State#state{mode = update_users},
-   {noreply, State2, UpdateCheckpoint}.
-
+	NextUpdate = calendar:local_time(),
+	case load_users_from_datasource(Datasource) of
+		ok -> 
+			ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
+			State2 = State#state{operation = load_or_update_operation(),
+								 last_update = NextUpdate},
+			{noreply, State2, UpdateCheckpoint};
+		_ -> 
+			{noreply, State, UpdateCheckpoint}
+	end.
+			
 terminate(_Reason, _State) ->
     ok.
  
@@ -98,12 +109,16 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
+load_or_update_operation() ->
+	case mnesia:table_info(user, size) of
+		 0 -> load_users;
+		 _ -> update_users
+	end.
 
-load_users_from_datasource(Datasource = #service_datasource{connection = Connection}) -> 
+load_users_from_datasource(Datasource) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("Load users from datatasource: ~s.", [Connection]),
 				Result = case ems_odbc_pool:param_query(Datasource2, 
 														sql_load_users(), 
 														[], 
@@ -112,37 +127,38 @@ load_users_from_datasource(Datasource = #service_datasource{connection = Connect
 					{_, _, Records} ->
 						F = fun() ->
 							Count = insert_users(Records, 0),
-							ems_logger:info("~p load ~p users from odbc database", [?SERVER, Count])
+							ems_logger:info("~p load ~p users from database", [?SERVER, Count])
 						end,
 						mnesia:ets(F),
 						mnesia:change_table_copy_type(user, node(), disc_copies),
 						ok;
 					{error, Reason} = Error -> 
-						ems_logger:error("~p fail in load users from odbc database. Error: ~p.", [?SERVER, Reason]),
+						ems_logger:error("~p fail in load users from database. Error: ~p.", [?SERVER, Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
 				Result;
 			Error2 -> 
-				ems_logger:warn("~p has no connection to load users from odbc database.", [?SERVER]),
+				ems_logger:warn("~p has no connection to load users from database.", [?SERVER]),
 				Error2
 		end
 	catch
 		_Exception:Reason3 -> {error, Reason3}
 	end.
 
-update_users_from_datasource(Datasource = #service_datasource{connection = Connection}, LastUpdate) -> 
+update_users_from_datasource(Datasource, LastUpdate) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("Update users from datatasource: ~s.", [Connection]),
 				case LastUpdate of 
 					undefined -> 
 						Sql = sql_load_users(),
 						Params = [];
 					_ -> 
 						Sql = sql_update_users(),
-						Params = [{sql_timestamp, [LastUpdate]}]
+						{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
+						% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
+						Params = [{sql_timestamp, [{{Year, Month, Day}, {Hour, Min, 0}}]}]
 				end, 
 				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 					{_,_,[]} -> ok;
@@ -150,18 +166,18 @@ update_users_from_datasource(Datasource = #service_datasource{connection = Conne
 						%?DEBUG("Update users ~p.", [Records]),
 						F = fun() ->
 							Count = update_users(Records, 0),
-							ems_logger:info("~p update ~p users from odbc database.", [?SERVER, Count])
+							ems_logger:info("~p update ~p users from database.", [?SERVER, Count])
 						end,
 						mnesia:activity(transaction, F),
 						ok;
 					{error, Reason} = Error -> 
-						ems_logger:error("~p fail in update users from odbc database. Error: ~p.", [?SERVER, Reason]),
+						ems_logger:error("~p fail in update users from database. Error: ~p.", [?SERVER, Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
 				Result;
 			Error2 -> 
-				ems_logger:warn("~p has no connection to update users from odbc database.", [?SERVER]),
+				ems_logger:warn("~p has no connection to update users from database.", [?SERVER]),
 				Error2
 		end
 	catch

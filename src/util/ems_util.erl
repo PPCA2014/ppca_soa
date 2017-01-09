@@ -41,7 +41,8 @@
 		 get_working_dir/0,
 		 json_encode_table/2,
 		 json_decode_as_map_file/1,
-		 date_add_minute/2]).
+		 date_add_minute/2,
+		 date_add_second/2]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -460,6 +461,8 @@ check_encoding_bin(Bin) when is_binary(Bin) ->
 date_add_minute(Timestamp, Minutes) ->
     calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Minutes * 60).
 
+date_add_second(Timestamp, Seconds) ->
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Seconds).
 
 % Return a encrypted password in binary format        
 criptografia_sha1(Password) when is_binary(Password) ->
