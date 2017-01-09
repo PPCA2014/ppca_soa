@@ -104,7 +104,7 @@ load_users_from_datasource(Datasource = #service_datasource{connection = Connect
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("Load users from datatasource: ~s.", [Connection]),
-				case ems_odbc_pool:param_query(Datasource2, 
+				Result = case ems_odbc_pool:param_query(Datasource2, 
 														sql_load_users(), 
 														[], 
 														?MAX_TIME_ODBC_QUERY) of
@@ -112,17 +112,20 @@ load_users_from_datasource(Datasource = #service_datasource{connection = Connect
 					{_, _, Records} ->
 						F = fun() ->
 							Count = insert_users(Records, 0),
-							ems_logger:info("Load ~p users from datasource: ~p.", [Count, Connection])
+							ems_logger:info("~p load ~p users from odbc database", [?SERVER, Count])
 						end,
 						mnesia:ets(F),
-						mnesia:change_table_copy_type(user, node(), disc_copies);
-						%mnesia:add_table_index(user, login);
-					{error, Reason} -> 
-						ems_logger:error("Fail load users from datasource: ~p. Error: ~p.", [Connection, Reason])
+						mnesia:change_table_copy_type(user, node(), disc_copies),
+						ok;
+					{error, Reason} = Error -> 
+						ems_logger:error("~p fail in load users from odbc database. Error: ~p.", [?SERVER, Reason]),
+						Error
 				end,
-				ems_db:release_connection(Datasource2);
-			_Error -> 
-				ems_logger:warn("~p has no connection to load users from datasource.", [?SERVER])
+				ems_db:release_connection(Datasource2),
+				Result;
+			Error2 -> 
+				ems_logger:warn("~p has no connection to load users from odbc database.", [?SERVER]),
+				Error2
 		end
 	catch
 		_Exception:Reason3 -> {error, Reason3}
@@ -141,21 +144,25 @@ update_users_from_datasource(Datasource = #service_datasource{connection = Conne
 						Sql = sql_update_users(),
 						Params = [{sql_timestamp, [LastUpdate]}]
 				end, 
-				case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 					{_,_,[]} -> ok;
 					{_, _, Records} ->
 						%?DEBUG("Update users ~p.", [Records]),
 						F = fun() ->
 							Count = update_users(Records, 0),
-							ems_logger:info("Update ~p users from datasource: ~p.", [Count, Connection])
+							ems_logger:info("~p update ~p users from odbc database.", [?SERVER, Count])
 						end,
-						mnesia:activity(transaction, F);
-					{error, Reason} -> 
-						ems_logger:error("Fail update users from datasource: ~p. Error: ~p.", [Connection, Reason])
+						mnesia:activity(transaction, F),
+						ok;
+					{error, Reason} = Error -> 
+						ems_logger:error("~p fail in update users from odbc database. Error: ~p.", [?SERVER, Reason]),
+						Error
 				end,
-				ems_db:release_connection(Datasource2);
-			_Error -> 
-				ems_logger:warn("~p has no connection to update users from datasource.", [?SERVER])
+				ems_db:release_connection(Datasource2),
+				Result;
+			Error2 -> 
+				ems_logger:warn("~p has no connection to update users from odbc database.", [?SERVER]),
+				Error2
 		end
 	catch
 		_Exception:Reason3 -> {error, Reason3}

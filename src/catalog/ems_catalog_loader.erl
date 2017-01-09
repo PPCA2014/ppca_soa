@@ -42,6 +42,7 @@ list_kernel_catalog() ->
 get_catalog() -> 
 	case get_main_catalog() of
 		{ok, CatMestre} ->
+
 			CatalogoDefsPath = ?CATALOGO_PATH ++ "/",
 			%% Obtém a lista do conteúdo de todos os catálogos
 			CatDefs_ = lists:map(fun(M) -> 
@@ -53,7 +54,7 @@ get_catalog() ->
 											<<>>
 									end
 								end, CatMestre),
-			
+
 			CatDefs0 = [Cat || Cat <- CatDefs_, Cat =/= <<>>],
 
 			%% Adiciona "," entre as definições de cada catálogo
@@ -68,8 +69,10 @@ get_catalog() ->
 			CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
 
 			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
+			
 			%% Faz o parser do catálogo
 			Conf = ems_config:getConfig(),
+			
 			case parse_catalog(Cat1, [], [], [], [], 1, Conf) of
 				{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
 				Error -> Error
