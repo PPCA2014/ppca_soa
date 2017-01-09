@@ -23,7 +23,8 @@
 
 % estado do servidor
 -record(state, {datasource,
-				mode}).
+				mode,
+				update_checkpoint}).
 
 -define(SERVER, ?MODULE).
 
@@ -44,9 +45,12 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(#service{datasource = Datasource}) ->
-	State = #state{datasource = Datasource, mode = load_users},
-	{ok, State, 4000}.
+init(#service{datasource = Datasource, 
+			  properties = Props}) ->
+	State = #state{datasource = Datasource, 
+				   mode = load_users,
+				   update_checkpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT)},
+	{ok, State, 2000}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -60,15 +64,18 @@ handle_call(Msg, _From, State) ->
 handle_info(State) ->
    {noreply, State, 1000}.
 
-handle_info(timeout, State = #state{mode = update_users}) ->
-   update_users(),
-   {noreply, State, 2000};
+handle_info(timeout, State = #state{datasource = Datasource,
+									mode = update_users,
+									update_checkpoint = UpdateCheckpoint}) ->
+   update_users_from_datasource(Datasource),
+   {noreply, State, UpdateCheckpoint};
 
 handle_info(timeout, State = #state{datasource = Datasource,
-									mode = load_users}) ->
-   load_users(Datasource),
+									mode = load_users,
+									update_checkpoint = UpdateCheckpoint}) ->
+   load_users_from_datasource(Datasource),
    State2 = State#state{mode = update_users},
-   {noreply, State2, 15000}.
+   {noreply, State2, UpdateCheckpoint}.
 
 terminate(_Reason, _State) ->
     ok.
@@ -81,35 +88,68 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-update_users() -> 
-	
-	ok.
 
-load_users(Datasource = #service_datasource{connection = Connection}) -> 
+load_users_from_datasource(Datasource = #service_datasource{connection = Connection}) -> 
+	% Load users if user table is empty
+	case mnesia:table_info(user, size) of
+		0 ->
+			try
+				case ems_odbc_pool:get_connection(Datasource) of
+					{ok, Datasource2} -> 
+						?DEBUG("Load users from datatasource: ~s.", [Connection]),
+						case ems_odbc_pool:param_query(Datasource2, 
+																sql_load_users(), 
+																[], 
+																?MAX_TIME_ODBC_QUERY) of
+							{_,_,[]} -> ok;
+							{_, _, Records} ->
+								F = fun() ->
+									Count = insert_users(Records, 0),
+									ems_logger:info("Load ~p users from datasource: ~p.", [Count, Connection])
+								end,
+								mnesia:ets(F),
+								mnesia:change_table_copy_type(user, node(), disc_copies);
+								%mnesia:add_table_index(user, login);
+							{error, Reason} -> 
+								ems_logger:error("Fail load users from datasource: ~p. Error: ~p.", [Connection, Reason])
+						end,
+						ems_db:release_connection(Datasource2);
+					_Error -> 
+						ems_logger:warn("~p has no connection to load users from datasource.", [?SERVER])
+				end
+			catch
+				_Exception:Reason3 -> {error, Reason3}
+			end;
+		_ -> ok
+	end.
+
+update_users_from_datasource(Datasource = #service_datasource{connection = Connection}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
+				?DEBUG("Update users from datatasource: ~s.", [Connection]),
 				case ems_odbc_pool:param_query(Datasource2, 
-														sql_load_users(), 
+														sql_update_users(), 
 														[], 
 														?MAX_TIME_ODBC_QUERY) of
 					{_,_,[]} -> ok;
 					{_, _, Records} ->
 						F = fun() ->
-							Count = insert_users(Records, 0),
-							ems_logger:info("Load ~p users from datasource: ~p.", [Count, Connection])
+							Count = update_users(Records, 0),
+							ems_logger:info("Update ~p users from datasource: ~p.", [Count, Connection])
 						end,
 						mnesia:activity(transaction, F);
 					{error, Reason} -> 
-						ems_logger:error("Fail load users from datasource: ~p. Error: ~p.", [Connection, Reason])
+						ems_logger:error("Fail update users from datasource: ~p. Error: ~p.", [Connection, Reason])
 				end,
 				ems_db:release_connection(Datasource2);
 			_Error -> 
-				ems_logger:warn("~p has no connection to load users from datasource.", [?SERVER])
+				ems_logger:warn("~p has no connection to update users from datasource.", [?SERVER])
 		end
 	catch
 		_Exception:Reason3 -> {error, Reason3}
 	end.
+
 
 insert_users([], Count) -> Count;
 insert_users([{Codigo, Login, Name, Cpf, Email, Password}|T], Count) ->
@@ -118,12 +158,49 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password}|T], Count) ->
 				 login = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Login))),
 				 name = list_to_binary(ems_util:utf8_list_to_string(Name)),
 				 cpf = list_to_binary(ems_util:utf8_list_to_string(Cpf)),
+				 email = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Email))),
+				 password = list_to_binary(ems_util:utf8_list_to_string(Password))},
+	mnesia:dirty_write(User),
+	insert_users(T, Count+1).
+
+
+update_users([], Count) -> Count;
+update_users([{Codigo, Login, Name, Cpf, Email, Password, Situacao}|T], Count) ->
+	case ems_user:find_by_login(Login) of
+		{ok, User = #user{id = Id}} ->
+			io:format("aqui1\n"),
+			case Situacao of
+				1 -> % active
+					User2 = User#user{codigo = Codigo,
+									  login = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Login))),
+									  name = list_to_binary(ems_util:utf8_list_to_string(Name)),
+									  cpf = list_to_binary(ems_util:utf8_list_to_string(Cpf)),
+									  email = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Email))),
+									  password = list_to_binary(ems_util:utf8_list_to_string(Password))},
+					mnesia:write(User2);
+				_ -> 
+					% if inative then delete
+					mnesia:delete(Id)
+			end;
+		{error, enoent} -> 
+			io:format("aqui2\n"),
+			User = #user{id = ems_db:sequence(user),
+				 codigo = Codigo,
+				 login = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Login))),
+				 name = list_to_binary(ems_util:utf8_list_to_string(Name)),
+				 cpf = list_to_binary(ems_util:utf8_list_to_string(Cpf)),
 				 email = list_to_binary(ems_util:utf8_list_to_string(Email)),
 				 password = list_to_binary(ems_util:utf8_list_to_string(Password))},
-	mnesia:write(User),
-	insert_users(T, Count+1).
+			mnesia:write(User)
+	end,
+	update_users(T, Count+1).
 
 sql_load_users() ->	 
 	"select p.PesCodigoPessoa, rtrim(u.UsuLogin), rtrim(p.PesNome), p.PesCpf, rtrim(p.PesEmail), u.UsuSenha
-	 from BDPessoa.dbo.TB_Pessoa p join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa".
+	 from BDPessoa.dbo.TB_Pessoa p join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa
+	 where u.UsuSituacao = 1".
 
+sql_update_users() ->	 
+	"select top 10 p.PesCodigoPessoa, rtrim(u.UsuLogin), rtrim(p.PesNome), p.PesCpf, rtrim(p.PesEmail), u.UsuSenha, u.UsuSituacao
+	 from BDPessoa.dbo.TB_Pessoa p join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa
+	 where u.UsuDataTroca >= GETDATE()".

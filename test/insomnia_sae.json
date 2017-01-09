@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 1,
-  "__export_date": "2017-01-06T13:52:34.188Z",
+  "__export_date": "2017-01-09T11:31:44.587Z",
   "__export_source": "insomnia.chrome.app:v2.7.0",
   "items": [
     {
@@ -1163,7 +1163,7 @@
         {
           "_type": "request",
           "_id": "req_1483549231784",
-          "url": "http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&username=johndoe&password=A3ddj3w&secret=qwer&code=DbsIEy1FLLBE5Z6uxC2ngQmBQx5pPhgW",
+          "url": "http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&username=johndoe&password=A3ddj3w&secret=qwer&code=PRK03aTjM8fZKHhgd68fITcu5VP0VOIN",
           "method": "POST",
           "body": "{}",
           "headers": [],
@@ -1211,7 +1211,7 @@
           "_id": "req_1483630281141",
           "url": "http://localhost:2301/auth/user",
           "method": "POST",
-          "body": "{\n    \"name\" : \"Everton de Vargas Agilar\",\n    \"email\" : \"evertonagilar@gmail.com\",\n    \"password\" : \"123456\"\n}",
+          "body": "{\n    \"name\" : \"Felipe dos Santos\",\n    \"email\" : \"felipe@gmail.com\",\n    \"password\" : \"123456\"\n}",
           "headers": [],
           "params": [],
           "authentication": {

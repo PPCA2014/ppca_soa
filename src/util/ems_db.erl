@@ -37,7 +37,6 @@ create_database(Nodes) ->
 	application:set_env(mnesia, dir, ?DATABASE_PATH),
 
 	mnesia:create_schema(Nodes),
-	
 	mnesia:start(),
 
     mnesia:create_table(user, [{type, set},
@@ -78,7 +77,6 @@ create_database(Nodes) ->
     mnesia:create_table(service_owner, [{type, set},
 	 							  {disc_copies, Nodes},
 								  {attributes, record_info(fields, service_owner)}]),
-
 
 	ok.
 

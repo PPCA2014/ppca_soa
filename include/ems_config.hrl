@@ -127,6 +127,9 @@
 % Header http cache-control 24 horas
 -define(DEFAULT_CACHE_CONTROL, <<"no-cache, public">>).
 
+% Define the checkpoint to update user for ems_user_loader process
+-define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
+
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,				%% Lista de hosts para pesquisar os serviços

@@ -110,14 +110,12 @@ access_token_request(Request) ->
 
 issue_token({ok, Auth}) ->
 	Response = oauth2:issue_token(Auth, []),
-	io:format("issue_token ~p\n", [Response]),
 	{ok, oauth2_response:to_proplist(Response)};
 issue_token(Error) ->
     Error.
     
 issue_code({ok, Auth}) ->
 	Response = oauth2:issue_code(Auth, []),
-	io:format("issue_code ~p\n", [Response]),
 	{ok, oauth2_response:to_proplist(Response)};
 issue_code(Error) ->
     Error.
