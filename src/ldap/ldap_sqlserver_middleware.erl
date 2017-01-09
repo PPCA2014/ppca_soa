@@ -25,7 +25,7 @@ autentica(UserLogin, UserPassword, Datasource) ->
 														sql_autentica(), 
 														Params, 
 														?MAX_TIME_ODBC_QUERY) of
-					{_,_,[]} -> {error, enoent};
+					{_,_,[]} -> {error, invalidCredentials};
 					{_, _, _Record} -> ok;
 					Error -> Error
 				end,

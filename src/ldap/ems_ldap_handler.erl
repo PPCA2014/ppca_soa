@@ -178,8 +178,12 @@ make_result_done(ResultCode) ->
 	}.
 	
 
+middleware_autentica(UserLogin, UserPassword, #state{middleware = undefined}) ->
+	io:format("aqui0\n"),
+	ems_user:authenticate_login_password(UserLogin, UserPassword);
 middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware, 
-																  datasource = Datasource}) ->
+													 datasource = Datasource}) ->
+	io:format("aqui1\n"),
 	case code:ensure_loaded(Middleware) of
 		{module, _} ->
 			case erlang:function_exported(Middleware, autentica, 3) of

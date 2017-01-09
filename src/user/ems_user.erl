@@ -42,8 +42,11 @@ valida(_User, _Operation) -> ok.
 authenticate_login_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
-			PasswordUser =:= ems_util:criptografia_sha1(Password);
-		_ -> false
+			case PasswordUser =:= ems_util:criptografia_sha1(Password) of
+				true -> ok;
+				_ -> {error, invalidCredentials}
+			end;
+		_ -> {error, invalidCredentials}
 	end.
 
 find_by_login(Login) when is_list(Login) ->	
