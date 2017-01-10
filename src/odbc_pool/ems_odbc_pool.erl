@@ -19,7 +19,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([get_connection/1, release_connection/1, connection_pool_size/1, param_query/4]).
+-export([get_connection/1, release_connection/1, connection_pool_size/1, param_query/3, param_query/4]).
 
 -define(SERVER, ?MODULE).
 
@@ -66,6 +66,8 @@ release_connection(Datasource = #service_datasource{rowid = Rowid}) ->
 
 connection_pool_size(Datasource) -> gen_server:call(?SERVER, {get_size, Datasource}).
 
+param_query(#service_datasource{owner = Owner}, Sql, Params) ->
+	gen_server:call(Owner, {param_query, Sql, Params, undefined}).
 
 param_query(#service_datasource{owner = Owner}, Sql, Params, Timeout) ->
 	gen_server:call(Owner, {param_query, Sql, Params, Timeout}).

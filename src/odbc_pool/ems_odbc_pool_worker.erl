@@ -62,8 +62,12 @@ handle_cast(_Msg, State) ->
 	{noreply, State}.
     
 handle_call({param_query, Sql, Params, Timeout}, _From, State) ->
-	Reply = do_param_query(Sql, Params, Timeout, State),
-	{reply, Reply, State};
+	case do_param_query(Sql, Params, Timeout, State) of
+		{ok, Result, Datasource} -> 
+			{reply, Result, #state{datasource = Datasource}};
+		Error -> 
+			{reply, Error, State}
+	end;
 
 handle_call(get_datasource, _From, State) ->
 	{reply, State#state.datasource, State}.
@@ -111,8 +115,8 @@ do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) ->
 	odbc:disconnect(ConnRef).
 
 do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						  connection = Connection,
-																						  timeout = Timeout}}) ->
+																						   connection = Connection,
+																						   timeout = Timeout}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, connection_closed} ->
@@ -121,18 +125,19 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 				case do_connect(Datasource) of
 					{ok, Datasource2} ->
 						case odbc:param_query(Datasource2#service_datasource.conn_ref, Sql, Params, Timeout) of
-							{error, Reason1} = Error1 -> 
-								?DEBUG("ODBC param_query fail after reconecting on connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
-								Error1;
-							Result -> Result
+							{error, Reason1} -> 
+								ems_logger:error("ODBC param_query fail after reconecting on connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
+								{error, eodbc_connection_closed};
+							Result -> 
+								{ok, Result, Datasource2}
 						end;
-					{error, Reason2} = Error2 -> 
-						?DEBUG("ODBC param_query reconecting fail after connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
-						Error2
+					{error, Reason2} -> 
+						ems_logger:error("ODBC param_query reconecting fail after connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
+						{error, eodbc_connection_closed}
 				end;
-			{error, Reason3} = Error3 -> 
-				?DEBUG("ODBC param_query execute fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason3]),
-				Error3;
+			{error, Reason3} -> 
+				ems_logger:error("ODBC param_query execute fail: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason3]),
+				{error, eodbc_connection_closed};
 			Result -> Result
 		end
 	catch
@@ -142,18 +147,19 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 			case do_connect(Datasource) of
 				{ok, Datasource3} ->
 					case odbc:param_query(Datasource3#service_datasource.conn_ref, Sql, Params, Timeout) of
-						{error, Reason4} = Error4 -> 
-							?DEBUG("ODBC param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
-							Error4;
-						Result3 -> Result3
+						{error, Reason4} -> 
+							ems_logger:error("ODBC param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
+							{error, eodbc_connection_closed};
+						Result3 -> 
+							{ok, Result3, Datasource3}
 					end;
-				{error, Reason5} = Error5 -> 
-					?DEBUG("ODBC param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
-					Error5
+				{error, Reason5} -> 
+					ems_logger:error("ODBC param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
+					{error, eodbc_connection_closed}
 			end;
 		_:Reason6 -> 
-			?DEBUG("ODBC param_query exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
-			{error, Reason6}
+			ems_logger:error("ODBC param_query exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
+			{error, eodbc_connection_closed}
 	end.
 
     
