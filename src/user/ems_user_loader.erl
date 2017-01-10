@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_user_loader
 %% @version 1.0.0
-%% @doc Main module HTTP server
+%% @doc ems_user_loader
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -96,7 +96,11 @@ handle_info(timeout, State = #state{datasource = Datasource,
 			{noreply, State2, UpdateCheckpoint};
 		_ -> 
 			{noreply, State, UpdateCheckpoint}
-	end.
+	end;
+	
+handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
+	ems_logger:warn("~p não está conseguindo atualizar users. Reason: ~p", [?SERVER, Reason]),
+	{noreply, State, UpdateCheckpoint}.
 			
 terminate(_Reason, _State) ->
     ok.
