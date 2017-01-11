@@ -1,9 +1,4 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -17,11 +12,8 @@ var core_1 = require('@angular/core');
 var http_1 = require('@angular/http');
 var router_1 = require("@angular/router");
 require('rxjs/add/operator/map');
-var default_headers_1 = require("../_headers/default.headers");
-var AuthenticationService = (function (_super) {
-    __extends(AuthenticationService, _super);
+var AuthenticationService = (function () {
     function AuthenticationService(http, route, options) {
-        _super.call(this);
         this.http = http;
         this.route = route;
         this.options = options;
@@ -32,7 +24,7 @@ var AuthenticationService = (function (_super) {
     }
     AuthenticationService.prototype.login = function (login, senha) {
         var _this = this;
-        return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username=' + login + '&password=' + senha, { headers: this.headers })
+        return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username=' + login + '&password=' + senha, {})
             .map(function (response) {
             var token = response.json() && response.json();
             if (token) {
@@ -88,6 +80,6 @@ var AuthenticationService = (function (_super) {
         __metadata('design:paramtypes', [http_1.Http, router_1.Router, http_1.RequestOptions])
     ], AuthenticationService);
     return AuthenticationService;
-}(default_headers_1.DefaultHeaders));
+}());
 exports.AuthenticationService = AuthenticationService;
 //# sourceMappingURL=authentication.service.js.map

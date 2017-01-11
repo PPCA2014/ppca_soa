@@ -3,28 +3,25 @@ import { Http , Headers, Response, RequestOptions } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { Router } from "@angular/router";
 import 'rxjs/add/operator/map';
-import {DefaultHeaders} from "../_headers/default.headers";
+
 
 
 @Injectable()
-export class AuthenticationService extends DefaultHeaders {
+export class AuthenticationService  {
 
   public token: string;
-
-  public headers: Headers;
 
   public time: number = 0;
   intervalId: any = null;
 
 
   constructor(private http: Http, private route: Router, private options: RequestOptions) {
-    super();
     var currentUser = JSON.parse(localStorage.getItem('currentUser'));
     this.token = currentUser && currentUser.token;
   }
 
   login(login: string, senha: string): Observable<boolean> {
-    return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username='+login+'&password='+senha,{headers:this.headers})
+    return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username='+login+'&password='+senha,{})
       .map((response: Response) => {
         let token = response.json() && response.json();
         if (token) {

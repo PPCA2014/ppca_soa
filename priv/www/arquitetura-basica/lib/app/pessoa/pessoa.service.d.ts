@@ -2,8 +2,7 @@ import { Pessoa } from "./pessoa.module";
 import { Http } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { Router } from "@angular/router";
-import { DefaultHeaders } from "../_headers/default.headers";
-export declare class PessoaService extends DefaultHeaders {
+export declare class PessoaService {
     private http;
     private route;
     pessoa: Pessoa;

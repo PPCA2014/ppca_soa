@@ -1,5 +1,5 @@
-import { Headers, BaseRequestOptions } from '@angular/http';
-export declare class DefaultHeaders extends BaseRequestOptions {
-    headers: Headers;
+import { RequestOptions, RequestOptionsArgs } from '@angular/http';
+export declare class DefaultHeaders extends RequestOptions {
     constructor();
+    merge(options?: RequestOptionsArgs): RequestOptions;
 }
