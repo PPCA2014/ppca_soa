@@ -19,15 +19,19 @@ var DefaultHeaders = (function (_super) {
     __extends(DefaultHeaders, _super);
     function DefaultHeaders() {
         _super.call(this);
-        this.headers = new http_1.Headers({
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-        });
     }
+    DefaultHeaders.prototype.merge = function (options) {
+        var headers = new http_1.Headers({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' });
+        options.headers = headers;
+        var result = _super.prototype.merge.call(this, options);
+        result.merge = this.merge;
+        return result;
+    };
     DefaultHeaders = __decorate([
         core_1.Injectable(), 
         __metadata('design:paramtypes', [])
     ], DefaultHeaders);
     return DefaultHeaders;
-}(http_1.BaseRequestOptions));
+}(http_1.RequestOptions));
 exports.DefaultHeaders = DefaultHeaders;
 //# sourceMappingURL=default.headers.js.map

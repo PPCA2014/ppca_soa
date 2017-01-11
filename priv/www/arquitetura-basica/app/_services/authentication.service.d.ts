@@ -1,14 +1,12 @@
-import { Http, Headers, RequestOptions } from '@angular/http';
+import { Http, RequestOptions } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { Router } from "@angular/router";
 import 'rxjs/add/operator/map';
-import { DefaultHeaders } from "../_headers/default.headers";
-export declare class AuthenticationService extends DefaultHeaders {
+export declare class AuthenticationService {
     private http;
     private route;
     private options;
     token: string;
-    headers: Headers;
     time: number;
     intervalId: any;
     constructor(http: Http, route: Router, options: RequestOptions);

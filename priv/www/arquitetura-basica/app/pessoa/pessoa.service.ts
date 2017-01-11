@@ -6,16 +6,15 @@ import { Router } from "@angular/router";
 import {DefaultHeaders} from "../_headers/default.headers";
 
 @Injectable()
-export class PessoaService extends DefaultHeaders{
+export class PessoaService{
 
   public pessoa: Pessoa;
 
   constructor(private http: Http, private route: Router) {
-    super();
   }
 
   insert(pessoa: Pessoa): Observable<Pessoa> {
-    return this.http.post('http://localhost:2301/unb_aula/pessoa', pessoa, {headers:this.headers})
+    return this.http.post('http://localhost:2301/unb_aula/pessoa', pessoa, {})
       .map((response: Response) => {
          console.log(response.json());
         return new Pessoa().fromJSON(response.json());
@@ -23,7 +22,7 @@ export class PessoaService extends DefaultHeaders{
   }
 
   find() {
-    return this.http.get('http://localhost:2301/unb_aula/pessoa',{headers:this.headers})
+    return this.http.get('http://localhost:2301/unb_aula/pessoa',{})
       .map((response: Response) => response.json())
   }
 
@@ -33,7 +32,7 @@ export class PessoaService extends DefaultHeaders{
   }
 
   update(pessoa: Pessoa): Observable<Pessoa> {
-    return this.http.put('http://localhost:2301/unb_aula/pessoa/'+pessoa.id , pessoa,{headers:this.headers})
+    return this.http.put('http://localhost:2301/unb_aula/pessoa/'+pessoa.id , pessoa,{})
       .map((response: Response) => {
         console.log(response.json());
         return new Pessoa().fromJSON(response.json());
@@ -41,7 +40,7 @@ export class PessoaService extends DefaultHeaders{
   }
 
   delete(pessoa: Pessoa) {
-    return this.http.delete('http://localhost:2301/unb_aula/pessoa/'+pessoa.id,{headers:this.headers})
+    return this.http.delete('http://localhost:2301/unb_aula/pessoa/'+pessoa.id,{})
       .map((response: Response) => response.json())
 
   }
