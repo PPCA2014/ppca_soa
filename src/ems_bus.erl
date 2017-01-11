@@ -37,7 +37,8 @@ start() ->
 	application:start(json_rec),
 	application:start(jsx),
 	application:start(poolboy),
-	application:start(?JSON_LIB),
+	application:start(jiffy),
+	application:start(jesse),
 	application:start(mochiweb),
     application:start(oauth2),
 	application:start(ems_bus).
@@ -49,6 +50,7 @@ stop() ->
 	application:stop(json_rec),
 	application:stop(oauth2),
 	application:stop(mochiweb),
+	application:stop(jesse),
 	application:stop(?JSON_LIB),
 	application:stop(syntax_tools),
 	application:stop(xmerl),
