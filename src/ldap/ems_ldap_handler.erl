@@ -44,8 +44,8 @@ init(Ref, Socket, Transport, [#service{datasource = Datasource,
 loop(Socket, Transport, State) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
+			?DEBUG("Ldap msg is ~p\n", [Data]),
 			LdapMessage = decode_ldap_message(Data),
-			?DEBUG("Ldap msg is ~p\n", [LdapMessage]),
 			MessageID = LdapMessage#'LDAPMessage'.messageID,
 			Result = handle_request(LdapMessage, State),
 			case Result of
@@ -84,9 +84,10 @@ handle_request({'LDAPMessage', _,
 					{bindRequest, #'BindRequest'{version = _Version, 
 												 name = Name, 
 												 authentication = {_, Password}}},
-				 _}, State = #state{admin = AdminLdap, 
+				 _} = LdapMsg, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
 	 <<Cn:3/binary, _/binary>> = Name,
+	 ?DEBUG("CnValue is : ~p.", [Name]),
 	case Cn of
 		<<"cn=">> ->
 			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
@@ -98,7 +99,10 @@ handle_request({'LDAPMessage', _,
 			BindResponse = case middleware_autentica(UserLogin, Password, State) of
 				{error, _Reason} ->	make_bind_response(invalidCredentials, Name);
 				ok -> make_bind_response(success, Name)
-			end
+			end;
+		_UnknowCn -> 
+			ems_logger:warn("Invalid credentials to ldap msg with Cn ~p\n", [_UnknowCn]),
+			BindResponse = make_bind_response(invalidCredentials, Name)
 	end,
 	{ok, [BindResponse]};
 handle_request({'LDAPMessage', _,
@@ -131,7 +135,8 @@ handle_request({'LDAPMessage', _,
 	{ok, unbindRequest};
 handle_request({'LDAPMessage', _, 
 					_UnknowMsg,
-				 _}, _State) ->
+				 _} = LdapMsg, _State) ->
+	ems_logger:warn("Handle unknow ldap msg is ~p\n", [LdapMsg]),
 	{ok, unbindRequest}.
 	
 
