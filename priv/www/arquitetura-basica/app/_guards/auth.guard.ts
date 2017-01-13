@@ -13,9 +13,9 @@ export class AuthGuard implements CanActivate {
   canActivate() {
     if (localStorage.getItem('currentUser')) {
       this.menu = sessionStorage.getItem('menu');
-      //mudar para verificar a presença do token
       let usuario = JSON.parse(localStorage.getItem('currentUser'));
-      if (usuario){
+      //chamar uma url que irá validar se o token esta válido 
+      if (usuario.access_token){
         this.authenticationService.periodicIncrement(usuario.expires_in);
         return true;
       } else {
