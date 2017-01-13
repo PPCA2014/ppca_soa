@@ -26,21 +26,25 @@ export class LoginComponent implements OnInit {
 
   login() {
     this.loading = true;
-    this.authenticationService.login(this.model.username, this.model.password)
-      .subscribe(result => {
-        if (result === true) {
-          this.authenticationService.getSitemap().subscribe(resp=>{
-            console.log('resposta do siteMap');
-          });
-          let sessionTime = JSON.parse(localStorage.getItem('currentUser'));
-          this.authenticationService.periodicIncrement(sessionTime.expires_in);
-          this.router.navigate(['/']);
-        } else {
-          this.error = 'Nome do usuário incorreto!';
-          this.loading = false;
-        }
+    this.authenticationService.getUrl(this.model.username, this.model.password).subscribe(
+      result => {
+        this.authenticationService.login()
+          .subscribe(result => {
+            if (result === true) {
+              this.authenticationService.getSitemap().subscribe(resp=>{
+                console.log('resposta do siteMap');
+              });
+              let sessionTime = JSON.parse(localStorage.getItem('currentUser'));
+              this.authenticationService.periodicIncrement(sessionTime.expires_in);
+              this.router.navigate(['/']);
+            } else {
+              this.error = 'Nome do usuário incorreto!';
+              this.loading = false;
+            }
 
+          });
       });
+   
   }
 
 }
