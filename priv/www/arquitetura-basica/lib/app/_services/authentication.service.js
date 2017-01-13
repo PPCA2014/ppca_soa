@@ -24,7 +24,8 @@ var AuthenticationService = (function () {
     }
     AuthenticationService.prototype.login = function (login, senha) {
         var _this = this;
-        return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username=' + login + '&password=' + senha, {})
+        this.getUrl(login, senha);
+        return this.http.post(this.url, this.body)
             .map(function (response) {
             var token = response.json() && response.json();
             if (token) {
@@ -37,6 +38,16 @@ var AuthenticationService = (function () {
             else {
                 return false;
             }
+        });
+    };
+    AuthenticationService.prototype.getUrl = function (login, senha) {
+        var _this = this;
+        return this.http.get('seguranca/url_security.json')
+            .map(function (res) {
+            var json = res.json();
+            _this.url = json.url + '' + json.param1 + '' + login + '' + json.param2 + '' + senha;
+            _this.body = json.body;
+            return _this.url;
         });
     };
     AuthenticationService.prototype.periodicIncrement = function (sessionTime) {

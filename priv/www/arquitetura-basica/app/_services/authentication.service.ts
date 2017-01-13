@@ -14,14 +14,17 @@ export class AuthenticationService  {
   public time: number = 0;
   intervalId: any = null;
 
+  private url: string;
+  private body: string;
+
 
   constructor(private http: Http, private route: Router, private options: RequestOptions) {
     var currentUser = JSON.parse(localStorage.getItem('currentUser'));
     this.token = currentUser && currentUser.token;
   }
 
-  login(login: string, senha: string): Observable<boolean> {
-    return this.http.post('http://127.0.0.1:2301/authorize?grant_type=password&username='+login+'&password='+senha,{})
+  login(): Observable<boolean> {
+    return this.http.post(this.url,this.body)
       .map((response: Response) => {
         let token = response.json() && response.json();
         if (token) {
@@ -33,6 +36,16 @@ export class AuthenticationService  {
         } else {
           return false;
         }
+      });
+  }
+
+  getUrl(login:string, senha: string) {
+    return this.http.get('/arquitetura-basica/url_security.json')
+      .map((res) => {
+        var json = res.json();
+        this.url = json.url+''+json.param1+''+login+''+json.param2+''+senha;
+        this.body = json.body;
+        return this.url;
       });
   }
 

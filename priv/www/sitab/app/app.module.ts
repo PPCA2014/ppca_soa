@@ -13,7 +13,7 @@ import {RodapeComponent} from "seguranca";
 
 
 @NgModule({
-  imports:      [ BrowserModule, FormsModule,HttpModule, routing ],
+  imports:      [ BrowserModule, FormsModule, HttpModule, routing ],
   declarations: [ AppComponent, QuestaoComponent, HomeComponent, NavigationComponent, RodapeComponent, ErroComponent ],
   providers: [appRoutingProviders, QuestaoService, AuthenticationService, AuthGuard ],
   bootstrap: [ AppComponent ]
