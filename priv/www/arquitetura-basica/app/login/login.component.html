@@ -11,6 +11,11 @@
       <input type="password" class="form-control"
              required [(ngModel)]="model.password" id="senha"
              name="senha" placeholder="Digite sua senha"/>
+      <br/><br/>
+      <div [hidden]="error == ''"
+           class="alert alert-danger">
+          {{error}}
+      </div>
       <br/>
       <div class="alinhar-direita">
          <input  type="submit" name="login" class="login loginmodal-submit btn btn-default" value="Confirmar"/>
