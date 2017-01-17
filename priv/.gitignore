@@ -1,0 +1,7 @@
+*.conf**
+*~
+#*
+*.log
+*.dump
+/logs
+*.gz
