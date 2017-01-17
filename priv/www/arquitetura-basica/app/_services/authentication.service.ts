@@ -18,6 +18,7 @@ export class AuthenticationService  {
   private body: string;
 
 
+
   constructor(private http: Http, private route: Router, private options: RequestOptions) {
     var currentUser = JSON.parse(localStorage.getItem('currentUser'));
     this.token = currentUser && currentUser.token;

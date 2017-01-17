@@ -133,7 +133,8 @@
 					properties :: map(),
 					timeout :: non_neg_integer(),
 					expires :: non_neg_integer(),
-					cache_control :: string()
+					cache_control :: string(),
+					enable :: boolean()
 				}).
 
 

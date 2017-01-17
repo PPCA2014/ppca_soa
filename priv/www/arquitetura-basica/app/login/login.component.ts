@@ -13,7 +13,7 @@ export class LoginComponent implements OnInit {
 
   private model: any = {};
   private loading = false;
-  private error = '';
+  private error: string = '';
 
 
   constructor(
@@ -36,13 +36,14 @@ export class LoginComponent implements OnInit {
               });
               let sessionTime = JSON.parse(localStorage.getItem('currentUser'));
               this.authenticationService.periodicIncrement(sessionTime.expires_in);
+              this.error = '';
               this.router.navigate(['/']);
-            } else {
-              this.error = 'Nome do usuário incorreto!';
-              this.loading = false;
             }
-
-          });
+          },
+              err  =>  {
+                this.error = 'Usuario e/ou senha inválida';
+              }
+          );
       });
    
   }
