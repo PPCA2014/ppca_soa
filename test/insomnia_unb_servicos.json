@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 1,
-  "__export_date": "2017-01-12T18:43:49.920Z",
+  "__export_date": "2017-01-16T12:08:33.376Z",
   "__export_source": "insomnia.chrome.app:v2.7.0",
   "items": [
     {
@@ -15,7 +15,7 @@
           "_id": "req_1481632553770",
           "url": "http://localhost:2301/aula1/pessoa",
           "method": "POST",
-          "body": "{\"denominacao\" :  \"Everton de Vargas Agilar\"}",
+          "body": "{\"denominacao\" :  \"Everton Agilar\"}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -28,25 +28,6 @@
             "panel_width": 0.5
           },
           "name": "cadastrar pessoa"
-        },
-        {
-          "_type": "request",
-          "_id": "req_1481632861218",
-          "url": "http://localhost:2301/aula1/pessoa",
-          "method": "GET",
-          "body": "{}",
-          "headers": [],
-          "params": [],
-          "authentication": {
-            "_type": "basic",
-            "username": "",
-            "password": ""
-          },
-          "__insomnia": {
-            "format": "json",
-            "panel_width": 0.5
-          },
-          "name": "Listar pessoas"
         },
         {
           "_type": "request",
@@ -88,6 +69,44 @@
         },
         {
           "_type": "request",
+          "_id": "req_1481632861218",
+          "url": "http://localhost:2301/aula1/pessoa",
+          "method": "GET",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar pessoas"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482945643203",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"\"}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso"
+        },
+        {
+          "_type": "request",
           "_id": "req_1483627052185",
           "url": "http://localhost:2301/aula1/curso",
           "method": "POST",
@@ -104,25 +123,6 @@
             "panel_width": 0.5
           },
           "name": "cadastrar curso sem datas de início e fim"
-        },
-        {
-          "_type": "request",
-          "_id": "req_1483627104346",
-          "url": "http://localhost:2301/aula1/curso",
-          "method": "POST",
-          "body": "{\"denominacao\" :  \"Curso de Java Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\"\n}",
-          "headers": [],
-          "params": [],
-          "authentication": {
-            "_type": "basic",
-            "username": "",
-            "password": ""
-          },
-          "__insomnia": {
-            "format": "json",
-            "panel_width": 0.5
-          },
-          "name": "cadastrar curso corretamente"
         },
         {
           "_type": "request",
@@ -161,6 +161,215 @@
             "panel_width": 0.5
           },
           "name": "Alterar curso"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484175201555",
+          "url": "http://localhost:2301/aula1/curso?filter=\"{ \"denominacao__icontains\" : \"java\", \"ativo__isnull\" : false, \"dataFim__lt\" : \"01/01/2018\"}\"&limit=10000&offset=0",
+          "method": "GET",
+          "body": "{\"denominacao\" :  \"Curso de Java Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\",\n \"valor\" : 3850\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar os cursos ofertados em 2017"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484175227249",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Python Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Python"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483627104346",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Java Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Java"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484175241775",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de ERLANGMS Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso ERLANGMS"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484176103696",
+          "url": "http://localhost:2301/unb_aula/curso/4",
+          "method": "PUT",
+          "body": "{\n    \"ativo\" : false\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Desativar curso"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484176823079",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Javascript Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Javascript"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484229042980",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Java Básico\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"13/05/2018\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Java Básico"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484229067025",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Java com Hibernate\",\n \"dataInicio\" : \"10/01/2017\",\n \"dataFim\" : \"19/02/2017\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Java com Hibernate"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484229116487",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Javascript e Angular 2\",\n \"dataInicio\" : \"10/01/2017\",\n \"dataFim\" : \"19/02/2017\",\n \"ativo\" : false\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Javascript e Angular2"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484232978504",
+          "url": "http://localhost:2301/aula1/curso",
+          "method": "POST",
+          "body": "{\"denominacao\" :  \"Curso de Bootstrap e Java\",\n \"dataInicio\" : \"10/01/2016\",\n \"dataFim\" : \"19/02/2017\",\n \"ativo\" : true,\n \"valor\" : 439.89\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "cadastrar curso Boostrap"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484233443396",
+          "url": "http://localhost:2301/aula1/curso?filter=\"{ \"valor__e\" : 439.89 }\"",
+          "method": "GET",
+          "body": "{\"denominacao\" :  \"Curso de Java Avançado\",\n \"dataInicio\" : \"30/02/2017\",\n \"dataFim\" : \"20/03/2017\",\n \"valor\" : 3850\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar os cursos ofertados em 2017 com valor 439.89"
         }
       ]
     },
@@ -194,7 +403,7 @@
           "_id": "req_1482237628800",
           "url": "http://localhost:2301/catalog",
           "method": "POST",
-          "body": "{\n\t\"name\" : \"/teste/pessoas/:id\",\n\t\"comment\": \"Pessoa\",\n\t\"owner\": \"teste\",\n\t\"version\": \"1.0.0\",\n\t\"service\" : \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/teste/pessoas/:id\",\n\t\"type\": \"GET\",\n\t\"lang\" : \"java\",\n    \"debug\" : false,\n    \"authentication\" : \"basic\"\n}",
+          "body": "{\n\t\"name\" : \"/aula/pessoa122222/:id\",\n\t\"comment\": \"Pessoa\",\n\t\"owner\": \"teste\",\n\t\"version\": \"1.0.0\",\n\t\"service\" : \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/aula/pessoa122222/:id\",\n\t\"type\": \"GET\",\n\t\"lang\" : \"java\",\n    \"debug\" : false,\n    \"authentication\" : \"basic\"\n}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -283,6 +492,25 @@
             "panel_width": 0.5
           },
           "name": "Alterar um serviço"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1482855459521",
+          "url": "http://localhost:2301/catalog",
+          "method": "POST",
+          "body": "{\n\t\"lang\": \"erlang\",\n\t\"version\": \"1.0.0\",\n\t\"owner\": \"2\",\n\t\"service\": \"br.unb.unb_aula.facade.PessoaFacade:findById\",\n\t\"url\": \"/teste12341234asddd2\",\n\t\"comment\": \"fdgdf\",\n\t\"authentication\": \"basic\",\n\t\"name\": \"/teste12341234sdfasdfdd2\",\n    \"debug\" : false,\n    \"type\" : \"POST\"\n\t\n\t\n}\n",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Incluir serviço frontend"
         }
       ]
     },
@@ -392,7 +620,7 @@
           "_id": "req_1482247814795",
           "url": "http://localhost:2301/catalog/schema",
           "method": "POST",
-          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\",\n          \"default\": \"\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"datasource\": {\n          \"type\": \"object\",\n          \"title\": \"Datasource of service if necessary.\",\n          \"description\": \"Datasource of service if necessary: odbc or csvfile\",\n          \"properties\": {\n            \"connection\": {\n              \"type\": \"string\",\n              \"title\": \"Connection string of odbc datasource.\",\n              \"description\": \"Connection string of odbc datasource.\",\n              \"default\": \"\",\n              \"pattern\": \"^(((DSN|UID|PWD)=[a-zA-Z0-9]{1,30});)+$\"\n            },\n            \"csvfile\": {\n              \"type\": \"string\",\n              \"title\": \"Name of csv file.\",\n              \"description\": \"Name of csv file.\",\n              \"default\": \"\",\n              \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_]*.[Cc][Ss][Cv]$\"\n            },\n            \"table_name\": {\n              \"type\": \"string\",\n              \"title\": \"Table_name of datasource.\",\n              \"description\": \"Table_name of datasource.\",\n              \"default\": \"\",\n              \"pattern\": \"^[a-zA-Z_][a-zA-Z0-9_]{1,30}$\"\n            },\n            \"primary_key\": {\n              \"type\": \"string\",\n              \"title\": \"Primary key of datasource.\",\n              \"description\": \"Primary key of datasource.\",\n              \"default\": \"\",\n              \"pattern\": \"^[a-zA-Z_][a-zA-Z0-9_]{1,30}$\"\n            }\n          },\n          \"oneOf\": [\n            {\n              \"required\": [\n                \"connection\",\n                \"table_name\",\n                \"primary_key\"\n              ]\n            },\n            {\n              \"required\": [\n                \"csvfile\",\n                \"table_name\",\n                \"primary_key\"\n              ]\n            }\n          ]\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java|net)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        },\n        \"querystring\": {\n          \"type\": \"object\",\n          \"title\": \"Querystring of service.\",\n          \"description\": \"Querystring of service.\",\n          \"properties\": {\n            \"filter\": {\n              \"type\": \"string\",\n              \"title\": \"Filter query.\",\n              \"description\": \"Enter the json filter to query the objects.\",\n              \"default\": \"\",\n              \"format\": \"json\"\n            },\n            \"fields\": {\n              \"type\": \"string\",\n              \"title\": \"Fields of querystring.\",\n              \"description\": \"Fields that will be returned instead of the entire object.\",\n              \"default\": \"\",\n              \"pattern\": \"^([a-zA-Z][a-zA-Z0-9_]{1,29})((, *)|(,?$))\"\n            },\n            \"limit_ini\": {\n              \"type\": \"integer\",\n              \"title\": \"Initial pager to query data.\",\n              \"description\": \"Initial pager to query data.\",\n              \"minimum\": 1,\n              \"maximum\": 9999,\n              \"default\": 1,\n              \"required\": [\n                \"minimum\",\n                \"maximum\"\n              ]\n            },\n            \"limit_offset\": {\n              \"type\": \"integer\",\n              \"title\": \"Pager offset to query data.\",\n              \"description\": \"Pager offset to query data.\",\n              \"minimum\": 1,\n              \"maximum\": 9999,\n              \"default\": 100,\n              \"required\": [\n                \"minimum\",\n                \"maximum\"\n              ]\n            },\n            \"sort\": {\n              \"type\": \"string\",\n              \"title\": \"Sort objects by their fields.\",\n              \"description\": \"You can sort the objects by their fields.\",\n              \"pattern\": \"^([a-zA-Z][a-zA-Z0-9_]{1,29}) (asc|desc)((, *)|(,?$))\"\n            }\n          },\n          \"required\": []\n        }\n      },\n      \"oneOf\": [\n        {\n          \"required\": [\n            \"name\",\n            \"service\",\n            \"url\",\n            \"type\",\n            \"lang\"\n          ]\n        }\n      ]\n    }\n\n}\n",
+          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"required\": [\n\t\t\t\"name\", \"comment\", \"owner\", \"version\", \"service\", \"url\", \"type\", \"lang\", \"authentication\"\n\t\t],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\",\n          \"default\" : \"1.0.0\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        }\n      }  \n    }\n}\n",
           "headers": [],
           "params": [],
           "authentication": {
@@ -409,9 +637,9 @@
         {
           "_type": "request",
           "_id": "req_1482248243183",
-          "url": "http://localhost:2301/catalog/schema/3",
+          "url": "http://localhost:2301/catalog/schema/2",
           "method": "PUT",
-          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\",\n          \"default\": \"\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java|net)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        }\n      }  \n    }\n\n}\n",
+          "body": "{\n\t\"name\": \"service\",\n\t\"description\": \"service schema.\",\n\t\"json_schema\": {\n      \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n      \"type\": \"object\",\n      \"title\": \"This scheme describes the API format for ErlangMS\",\n      \"description\": \"The purpose of this is to enable eschema describe a service API with the desired attributes that are compatible with ErlangMS. Moreover, the schema may be used to validate the API developed and ensure that the format is in accordance with the rules of syntax expected.\",\n      \"required\": [\n\t\t\t\"name\", \"comment\", \"owner\", \"version\", \"service\", \"url\", \"type\", \"lang\", \"authentication\"\n\t\t],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"title\": \"The service name.\",\n          \"description\": \"The service name is used to identify the appropriate service.\"\n        },\n        \"comment\": {\n          \"type\": \"string\",\n          \"title\": \"The service comment.\",\n          \"description\": \"Enter a brief description of the service offered.\",\n          \"default\": \"\"\n        },\n        \"owner\": {\n          \"type\": \"string\",\n          \"title\": \"The owner service.\",\n          \"description\": \"Tell the owner or responsible for the service.\",\n          \"default\": \"\"\n        },\n        \"version\": {\n          \"type\": \"string\",\n          \"title\": \"Version schema.\",\n          \"pattern\": \"^[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}$\",\n          \"default\" : \"1.0.0\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"title\": \"Service schema.\",\n          \"description\": \"The class or module that implements the service. The format is: [module name]: [name of the input function]\",\n          \"pattern\": \"^[a-zA-Z][a-zA-Z0-9_.]*[:.][a-z_][a-zA-Z0-9_]*$\"\n        },\n        \"url\": {\n          \"type\": \"string\",\n          \"title\": \"Url of service.\",\n          \"description\": \"Url of service.\",\n          \"pattern\": \"^(/[^/]+)+$\"\n        },\n        \"type\": {\n          \"type\": \"string\",\n          \"title\": \"Type of service.\",\n          \"description\": \"Type of service according to the HTTP verbs.\",\n          \"pattern\": \"^(GET|POST|PUT|DELETE)$\"\n        },\n        \"public\": {\n          \"type\": \"boolean\",\n          \"title\": \"Service is public.\",\n          \"description\": \"Services that are not public services do not appear in the portal.\",\n          \"default\": true\n        },\n        \"async\": {\n          \"type\": \"boolean\",\n          \"title\": \"The service is asynchronous.\",\n          \"description\": \"The service is asynchronous.\",\n          \"default\": false\n        },\n        \"lang\": {\n          \"type\": \"string\",\n          \"title\": \"Lang service implementation.\",\n          \"description\": \"What will be the implementation language service.\",\n          \"default\": \"\",\n          \"pattern\": \"^(erlang|java)$\"\n        },\n        \"debug\": {\n          \"type\": \"boolean\",\n          \"title\": \"Debug service flag.\",\n          \"description\": \"Enables debug mode for service.\",\n          \"default\": false\n        },\n        \"authentication\": {\n          \"type\": \"string\",\n          \"title\": \"Authentication method.\",\n          \"description\": \"Authentication method used if necessary.\",\n          \"default\": \"\",\n          \"pattern\": \"^(|basic|oauth)$\"\n        }\n      }  \n    }\n\n}\n",
           "headers": [],
           "params": [],
           "authentication": {
@@ -514,7 +742,7 @@
           "_id": "req_1482343110148",
           "url": "http://localhost:2301/catalog/owner",
           "method": "POST",
-          "body": "{\"name\" : \"simar\", \n \"title\" : \"Sistema de materiais\", \n \"comment\" : \"simar...\"\n    \n}",
+          "body": "{\"name\" : \"ems-bus\", \n \"title\" : \"Barramento\", \n \"comment\" : \"barramento\"\n    \n}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -634,7 +862,7 @@
         {
           "_type": "request",
           "_id": "req_1483625015387",
-          "url": "http://localhost:2301/hackathon/pessoa?filter=\"{ \"PesNome\" : \"Felipe Evangelista dos Santos\" }\"&fields=PesCpf,PesNome",
+          "url": "http://localhost:2301/hackathon/pessoa",
           "method": "GET",
           "body": "{}",
           "headers": [],
@@ -648,7 +876,7 @@
             "format": "json",
             "panel_width": 0.5
           },
-          "name": "Pesquisar pessoa por nome"
+          "name": "Listar pessoas"
         },
         {
           "_type": "request",
@@ -691,7 +919,7 @@
         {
           "_type": "request",
           "_id": "req_1483625372890",
-          "url": "http://localhost:2301/hackathon/ofertas",
+          "url": "http://localhost:2301/hackathon/ofertas?limit=3",
           "method": "GET",
           "body": "{}",
           "headers": [],
@@ -877,8 +1105,8 @@
           "params": [],
           "authentication": {
             "_type": "basic",
-            "username": "johndoe",
-            "password": "A3ddj3w"
+            "username": "",
+            "password": ""
           },
           "__insomnia": {
             "format": "json",
@@ -1087,7 +1315,7 @@
         {
           "_type": "request",
           "_id": "req_1483543191870",
-          "url": "http://127.0.0.1:2301/authorize?grant_type=password&username=114740&password=123456",
+          "url": "http://127.0.0.1:2301/authorize?grant_type=password&username=geral&password=123456",
           "method": "POST",
           "body": "{}",
           "headers": [],
@@ -1163,7 +1391,7 @@
         {
           "_type": "request",
           "_id": "req_1483549231784",
-          "url": "http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&username=johndoe&password=A3ddj3w&secret=qwer&code=DMyeYa4qpITyQsZxIf8VZ7GWaRWlycrp",
+          "url": "http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http://localhost:2301/portal/index.html&username=johndoe&password=A3ddj3w&secret=qwer&code=yWpZqFI0e3tDEnP59j3tKskhRGbGl74w",
           "method": "POST",
           "body": "{}",
           "headers": [],
@@ -1211,7 +1439,7 @@
           "_id": "req_1483630281141",
           "url": "http://localhost:2301/auth/user",
           "method": "POST",
-          "body": "{\n    \"name\" : \"Felipe dos Santos\",\n    \"email\" : \"felipe@gmail.com\",\n    \"password\" : \"123456\"\n}",
+          "body": "{\n    \"name\" : \"Everton de Vargas Agilar\",\n    \"email\" : \"evertonagilar@gmail.com\",\n    \"password\" : \"123456\"\n}",
           "headers": [],
           "params": [],
           "authentication": {
@@ -1300,6 +1528,44 @@
             "panel_width": 0.5
           },
           "name": "Incluir johndoe"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483904672611",
+          "url": "http://localhost:2301/auth/user?limit=100&offset=1200",
+          "method": "GET",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar os usuários limit 100 offset 1200"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1483904743836",
+          "url": "http://localhost:2301/auth/user/?filter=\"{ \"login\" : \"geral\" }\"",
+          "method": "GET",
+          "body": "{}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Pesquisar login geral"
         },
         {
           "_type": "request",
@@ -1773,8 +2039,8 @@
         {
           "_type": "request",
           "_id": "req_1484246453410",
-          "url": "http://localhost:2301/pessoal/pessoa",
-          "method": "POST",
+          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"rgUf\" : \"GO\", \"sexo\" : \"2\" }\"",
+          "method": "GET",
           "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
           "headers": [],
           "params": [],
@@ -1787,12 +2053,107 @@
             "format": "json",
             "panel_width": 0.5
           },
-          "name": "Cadastrar pessoa"
+          "name": "Listar pessoas de Goais do sexo feminino"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484566398071",
+          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"rgUf__e\" : \"GO\", \"sexo\" : \"2\"  }\"&limit=1",
+          "method": "GET",
+          "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar todos os joão"
         },
         {
           "_type": "request",
           "_id": "req_1484246571713",
-          "url": "http://localhost:2301/pessoal/pessoa",
+          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"dataNascimento__gte\" : \"30/03/1983\", \"rgUf\"  : \"RS\", \"naturalidade\" : \"Santa Maria\"  }\"&limit=1&offset=2",
+          "method": "GET",
+          "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar pessoas com naturalidade Santa Maria e UF=RS"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484246592289",
+          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"autoCadastro\" : true  }\"",
+          "method": "GET",
+          "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar somente pessoas com autocadastro"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484566984189",
+          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"cpf__like\" : \"000\"  }\"&limit=10",
+          "method": "GET",
+          "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar pessoas com CPF iniciando em zero"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484567149093",
+          "url": "http://localhost:2301/pessoal/pessoa/-1",
+          "method": "GET",
+          "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
+          "headers": [],
+          "params": [],
+          "authentication": {
+            "_type": "basic",
+            "username": "",
+            "password": ""
+          },
+          "__insomnia": {
+            "format": "json",
+            "panel_width": 0.5
+          },
+          "name": "Listar pessoas pelo código"
+        },
+        {
+          "_type": "request",
+          "_id": "req_1484567470227",
+          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"dataEmissaoTituloEleitor__gte\" :  \"18/09/1983\",  \"dataEmissaoTituloEleitor__lte\" :  \"18/09/1984\" }\"",
           "method": "GET",
           "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
           "headers": [],
@@ -1807,25 +2168,6 @@
             "panel_width": 0.5
           },
           "name": "Listar pessoas"
-        },
-        {
-          "_type": "request",
-          "_id": "req_1484246592289",
-          "url": "http://localhost:2301/pessoal/pessoa?filter=\"{ \"ativo\" : \"true\"  }\"",
-          "method": "GET",
-          "body": "{\n    \"denominacao\" :  \"Everton de Vargas Agilar\"\n}",
-          "headers": [],
-          "params": [],
-          "authentication": {
-            "_type": "basic",
-            "username": "",
-            "password": ""
-          },
-          "__insomnia": {
-            "format": "json",
-            "panel_width": 0.5
-          },
-          "name": "Listar somente pessoas ativas"
         }
       ]
     }
