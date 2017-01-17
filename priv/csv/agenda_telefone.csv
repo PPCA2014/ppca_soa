@@ -1,4 +1,4 @@
-id;matricula;nome;email;telefone;telefone2;setor;ramal;admissao;local
+id;matricula;nome;cargo;email;telefone;telefone2;setor;ramal;admissao;local
 1;1094246;Ailton Soares de Oliveira;Técnico de TI;;99812-7633;;SRS/ASR;199;25/07/2016;CPD
 2;1082604;Airton Ferreira da Silva Júnior;Técnico de TI;tomjunior@unb.br;99244-2426;3388-1810;SRS/INF;11;02/06/2015;CPD
 3;1070533;Alessandro Cordeiro de Lima;Analista de TI;alessandrolima@unb.br;99112-0422;33731323;SRS/CEI;44;17/03/2014;CPD
