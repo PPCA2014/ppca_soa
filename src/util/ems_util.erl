@@ -42,7 +42,8 @@
 		 json_encode_table/2,
 		 json_decode_as_map_file/1,
 		 date_add_minute/2,
-		 date_add_second/2]).
+		 date_add_second/2,
+		 remove_quoted_str/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -216,6 +217,8 @@ hd_or_empty(_) -> [].
 
 %% @doc Retorna a string com aspas
 quote(Str) -> lists:flatten([$", Str, $"]).
+
+remove_quoted_str(Str) -> string:substr(Str, 2, length(Str)-2).
 
 
 %% @doc Boolean indicando se DateTime ocorreu no período (min, hour, day, week, year)

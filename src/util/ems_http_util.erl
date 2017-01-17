@@ -157,6 +157,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 				QuerystringMap = #{};
 			Q -> 
 				Querystring = binary_to_list(Q),
+				io:format("~s\n", [Querystring]),
 				QuerystringMap = parse_querystring([Querystring])
 		end,
 		{ok, Payload, _Req} = cowboy_req:read_body(CowboyReq),
@@ -279,10 +280,11 @@ header_cache_control(<<_MimeType/binary>>) ->
 
 parse_querystring(Q) ->
 	Q1 = httpd:parse_query(Q),
+	io:format("q1 is ~p\n", [Q1]),
 	Q2 = [{iolist_to_binary(P), 
-		   iolist_to_binary(case V of
-										[34|_] -> string:substr(V, 2, length(V)-2);
-										_  -> V
+		   list_to_binary(case V of
+										[34|_] -> ems_util:remove_quoted_str(ems_util:utf8_list_to_string(V));
+										_  -> ems_util:utf8_list_to_string(V)
 						    end)}  || {P,V} <- Q1],
 	maps:from_list(Q2).
 
