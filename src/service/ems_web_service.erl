@@ -48,7 +48,8 @@ execute(Request = #request{rid = Rid,
 						   service=#service{host=Host, 
 											service = ServName,
 											module=Module, 
-											function=Function}}) ->
+											function=Function,
+											timeout = Timeout}}) ->
 	case Host == '' of
 		true ->	
 			ems_logger:info("Send msg to ~p.", [ServName]),
@@ -60,16 +61,24 @@ execute(Request = #request{rid = Rid,
 			ems_logger:info("Send msg to ~p.", [{Module, Node}]),
 			receive 
 				{Code, RidRemote, {ok, ResponseData}} when RidRemote == Rid -> 
-					?DEBUG("Msg rec: ~p.", [{Code, RidRemote, {ok, ResponseData}}]),
+					?DEBUG("Receive msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {ok, ResponseData}}]),
 					Reply = {ok, Request#request{code = Code,
 												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
 												 response_data = ResponseData}};
 				{Code, RidRemote, ResponseData} when RidRemote == Rid -> 
-					?DEBUG("Msg rec: ~p.", [{Code, RidRemote, ResponseData}]),
+					?DEBUG("Receive msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, ResponseData}]),
 					Reply = {ok, Request#request{code = Code,
 												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
 												 response_data = ResponseData}};
-				Msg -> io:format("a msg eh ~p\n", [Msg]), Reply = []
+				Msg -> 
+					ems_logger:error("Receive incorrect message ~p\n", [Msg]), 
+					Reply = {ok, Request#request{code = 500,
+							 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
+							 response_data = {error, eincorrect_rec_message}}}
+				after Timeout ->
+					Reply = {ok, Request#request{code = 503,
+							 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
+							 response_data = {error, etimeout_service}}}
 			end,
 			ems_pool:checkin(ems_web_service, WebService),
 			Reply
@@ -126,5 +135,5 @@ do_execute_remote(#request{rid = Rid,
 										    function_name = FunctionName, 
 										    module = Module}}) ->
 	Msg = {{Rid, Uri, Type, ParamsUrl, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
-	?DEBUG("Msg send to ~p: ~p.", [{Module, Node}, Msg]),
+	?DEBUG("Send msg to ~p: ~p.", [{Module, Node}, Msg]),
 	{Module, Node} ! Msg.

@@ -302,7 +302,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
 				Result_Cache = maps:get(<<"result_cache">>, H, 0),
 				Authentication = maps:get(<<"authentication">>, H, <<>>),
-				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
+				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 				UseRE = maps:get(<<"use_re">>, H, false),
 				SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
 				SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),

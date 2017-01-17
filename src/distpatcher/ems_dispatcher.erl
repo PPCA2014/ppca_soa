@@ -26,6 +26,7 @@ dispatch_request(Request = #request{type = "GET",
 									t1 = Timestamp}) -> 
 	case ems_dispatcher_cache:lookup(UrlHash, Timestamp) of
 		{true, RequestCache} -> 
+			?DEBUG("Lookup request in cache. Request: ~p.", [RequestCache]),
 			{ok, Request#request{result_cache = true,
 								 code = RequestCache#request.code,
 								 reason = RequestCache#request.reason,
@@ -37,12 +38,16 @@ dispatch_request(Request = #request{type = "GET",
 	end;
 dispatch_request(Request) -> lookup_request(Request).
 	
-lookup_request(Request = #request{url = Url}) -> 
+lookup_request(Request = #request{type = Type,
+								  url = Url,
+								  rowid = Rowid}) -> 
 	?DEBUG("Lookup request ~p.", [Request]),
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
+			% Autenticate user request
 			case ems_auth_user:autentica(Service, Request) of
 				{ok, User} ->
+					% get a worker node to process a service	
 					case get_work_node(Service#service.host, 
 									   Service#service.host,	
 									   Service#service.host_name, 
@@ -54,7 +59,14 @@ lookup_request(Request = #request{url = Url}) ->
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
 							case ems_web_service:execute(Request2) of
-								{ok, Request3} -> {ok, Request3};
+								{ok, Request3} -> 
+									case Type =:= "POST" orelse Type =:= "PUT" orelse Type =:= "DELETE" of
+										true -> 
+											% After POST, PUT or DELETE operation, invalidate request get cache
+											ems_dispatcher_cache:invalidate(Rowid);
+										false -> ok
+									end,
+									{ok, Request3};
 								{error, Request3} -> {error, request, Request3}
 							end;
 						Error ->  Error

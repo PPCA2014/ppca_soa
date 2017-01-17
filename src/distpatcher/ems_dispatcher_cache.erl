@@ -13,7 +13,7 @@
 -include("../include/ems_http_messages.hrl").
 
 %% Client API
--export([start/0, lookup/2, add/3, lookup_options/0, add_options/1]).
+-export([start/0, lookup/2, add/3, lookup_options/0, add_options/1, invalidate/1]).
 
 start() -> 
 	ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
@@ -50,3 +50,7 @@ lookup_options() ->
 add(Rowid, Timestamp, Request) -> ets:insert(dispatcher_cache_get, {Rowid, Timestamp, Request}).
 
 add_options(Response) -> ets:insert(dispatcher_cache_options, {1, Response}).
+
+invalidate(Rowid) ->
+	?DEBUG("Invalidate request get cache after POST, PUT or DELETE operation."),
+	ets:delete(dispatcher_cache_get, Rowid).
