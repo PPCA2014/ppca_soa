@@ -284,99 +284,105 @@ parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	
 parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
-		Name = maps:get(<<"name">>, H),
-		Url2 = maps:get(<<"url">>, H),
-		Type = maps:get(<<"type">>, H, <<"GET">>),
-		valida_url_service(Url2),
-		ServiceImpl = maps:get(<<"service">>, H),
-		{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
-		Apikey = ems_util:binary_to_bool(maps:get(<<"APIkey">>, H, <<"false">>)),
-		Comment = maps:get(<<"comment">>, H, <<>>),
-		Version = maps:get(<<"version">>, H, <<"1.0.0">>),
-		Owner = maps:get(<<"owner">>, H, <<>>),
-		Async = maps:get(<<"async">>, H, false),
-		Rowid = ems_util:make_rowid(Url2),
-		Lang = maps:get(<<"lang">>, H, <<>>),
-		Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
-		Result_Cache = maps:get(<<"result_cache">>, H, 0),
-		Authentication = maps:get(<<"authentication">>, H, <<>>),
-		Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
-		UseRE = maps:get(<<"use_re">>, H, false),
-		SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
-		SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
-		PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
-		PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
-		Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
-		Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
-		Cache_Control = maps:get(<<"cache_control">>, H, ?DEFAULT_CACHE_CONTROL),
-		ExpiresMinute = maps:get(<<"expires_minute">>, H, 60),
-		valida_lang(Lang),
-		valida_name_service(Name),
-		valida_type_service(Type),
-		valida_bool(Apikey),
-		valida_bool(Async),
-		valida_length(Comment, 1000),
-		valida_length(Version, 10),
-		valida_length(Owner, 30),
-		valida_authentication(Authentication),
-		valida_bool(Debug),
-		valida_bool(UseRE),
-		case Lang of
-			<<"erlang">> -> 
-				Node = <<>>,
-				Host = '',
-				HostName = Conf#config.ems_hostname,
-				valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Apikey);
-			_ ->	
-				Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-				{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
-		end,
-		{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
-		IdBin = list_to_binary(integer_to_list(Id)),
-		Page = maps:get(<<"page">>, H, undefined),
-		PageModule = compile_page_module(Page, Rowid),
-		ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
-										 Type, Apikey, Comment, Version, Owner, 
-										 Async, Host, Result_Cache, Authentication, Node, Lang,
-										 Datasource, Debug, SchemaIn, SchemaOut, 
-										 Page, Timeout, Middleware, Cache_Control, ExpiresMinute),
-		case UseRE of
-			true -> 
-				Service = new_service_re(Rowid, IdBin, Name, Url2, 
-										   ServiceImpl,
-										   ModuleName, 
-										   ModuleNameCanonical,
-										   FunctionName, Type, Apikey, Comment, 
-										   Version, Owner, Async, 
-										   Querystring, QtdQuerystringRequired,
-										   Host, HostName, Result_Cache,
-										   Authentication, Node, Lang,
-										   Datasource, Debug, SchemaIn, SchemaOut, 
-										   PoolSize, PoolMax, H, Page, 
-										   PageModule, Timeout, 
-										   Middleware, Cache_Control, ExpiresMinute),
-				case Type of
-					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-					_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
+		Enable = maps:get(<<"enable">>, H, true),
+		case Enable of 
+			true ->
+				Name = maps:get(<<"name">>, H),
+				Url2 = maps:get(<<"url">>, H),
+				Type = maps:get(<<"type">>, H, <<"GET">>),
+				valida_url_service(Url2),
+				ServiceImpl = maps:get(<<"service">>, H),
+				{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
+				Comment = maps:get(<<"comment">>, H, <<>>),
+				Version = maps:get(<<"version">>, H, <<"1.0.0">>),
+				Owner = maps:get(<<"owner">>, H, <<>>),
+				Async = maps:get(<<"async">>, H, false),
+				Rowid = ems_util:make_rowid(Url2),
+				Lang = maps:get(<<"lang">>, H, <<>>),
+				Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
+				Result_Cache = maps:get(<<"result_cache">>, H, 0),
+				Authentication = maps:get(<<"authentication">>, H, <<>>),
+				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, <<"false">>)),
+				UseRE = maps:get(<<"use_re">>, H, false),
+				SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
+				SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
+				PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
+				PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
+				Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
+				Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
+				Cache_Control = maps:get(<<"cache_control">>, H, ?DEFAULT_CACHE_CONTROL),
+				ExpiresMinute = maps:get(<<"expires_minute">>, H, 60),
+				Public = maps:get(<<"public">>, H, true),
+				valida_lang(Lang),
+				valida_name_service(Name),
+				valida_type_service(Type),
+				valida_bool(Enable),
+				valida_bool(Async),
+				valida_length(Comment, 1000),
+				valida_length(Version, 10),
+				valida_length(Owner, 30),
+				valida_authentication(Authentication),
+				valida_bool(Debug),
+				valida_bool(UseRE),
+				case Lang of
+					<<"erlang">> -> 
+						Node = <<>>,
+						Host = '',
+						HostName = Conf#config.ems_hostname,
+						valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
+					_ ->	
+						Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
+						{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+				end,
+				{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
+				IdBin = list_to_binary(integer_to_list(Id)),
+				Page = maps:get(<<"page">>, H, undefined),
+				PageModule = compile_page_module(Page, Rowid),
+				ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
+												 Type, Enable, Comment, Version, Owner, 
+												 Async, Host, Result_Cache, Authentication, Node, Lang,
+												 Datasource, Debug, SchemaIn, SchemaOut, 
+												 Page, Timeout, Middleware, Cache_Control, ExpiresMinute, Public),
+				case UseRE of
+					true -> 
+						Service = new_service_re(Rowid, IdBin, Name, Url2, 
+												   ServiceImpl,
+												   ModuleName, 
+												   ModuleNameCanonical,
+												   FunctionName, Type, Enable, Comment, 
+												   Version, Owner, Async, 
+												   Querystring, QtdQuerystringRequired,
+												   Host, HostName, Result_Cache,
+												   Authentication, Node, Lang,
+												   Datasource, Debug, SchemaIn, SchemaOut, 
+												   PoolSize, PoolMax, H, Page, 
+												   PageModule, Timeout, 
+												   Middleware, Cache_Control, ExpiresMinute, Public),
+						case Type of
+							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
+							_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
+						end;
+					false -> 
+						Service = new_service(Rowid, IdBin, Name, Url2, 
+												ServiceImpl,
+												ModuleName,
+												ModuleNameCanonical,
+												FunctionName, Type, Enable, Comment,
+												Version, Owner, Async, 
+												Querystring, QtdQuerystringRequired,
+												Host, HostName, Result_Cache,
+												Authentication, Node, Lang,
+												Datasource, Debug, SchemaIn, SchemaOut, 
+												PoolSize, PoolMax, H, Page, 
+												PageModule, Timeout, 
+												Middleware, Cache_Control, ExpiresMinute, Public),
+						case Type of
+							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
+							_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+						end
 				end;
 			false -> 
-				Service = new_service(Rowid, IdBin, Name, Url2, 
-										ServiceImpl,
-										ModuleName,
-										ModuleNameCanonical,
-										FunctionName, Type, Apikey, Comment,
-										Version, Owner, Async, 
-										Querystring, QtdQuerystringRequired,
-										Host, HostName, Result_Cache,
-										Authentication, Node, Lang,
-										Datasource, Debug, SchemaIn, SchemaOut, 
-										PoolSize, PoolMax, H, Page, 
-										PageModule, Timeout, 
-										Middleware, Cache_Control, ExpiresMinute),
-				case Type of
-					<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-					_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
-				end
+				parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 		end
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -454,12 +460,12 @@ parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
 	
 
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
-			   Type, Apikey, Comment, Version, Owner, Async, Querystring, 
+			   Type, Enable, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authentication, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
 			   Page, PageModule, Timeout, 
-			   Middleware, Cache_Control, ExpiresMinute) ->
+			   Middleware, Cache_Control, ExpiresMinute, Public) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -475,7 +481,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    function_name = FunctionName,
 			    function = list_to_atom(FunctionName),
 			    id_re_compiled = Id_re_compiled,
-			    public = Apikey,
+			    public = Public,
 			    comment = Comment,
 			    version = Version,
 			    owner = Owner,
@@ -500,16 +506,17 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    middleware = Middleware,
 			    properties = Properties,
 			    cache_control = Cache_Control,
-			    expires = ExpiresMinute
+			    expires = ExpiresMinute,
+			    enable = Enable
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
-			Type, Apikey, Comment, Version, Owner, Async, Querystring, 
+			Type, Enable, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
 			Authentication, Node, Lang, Datasource, 
 			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
 			Page, PageModule, Timeout, 
-			Middleware, Cache_Control, ExpiresMinute) ->
+			Middleware, Cache_Control, ExpiresMinute, Public) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -522,7 +529,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    module = list_to_atom(ModuleName),
 			    function_name = FunctionName,
 			    function = list_to_atom(FunctionName),
-			    public = Apikey,
+			    public = Public,
 			    comment = Comment,
 			    version = Version,
 			    owner = Owner,
@@ -547,21 +554,22 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    middleware = Middleware,
 			    properties = Properties,
 			    cache_control = Cache_Control,
-			    expires = ExpiresMinute
+			    expires = ExpiresMinute,
+			    enable = Enable
 			}.
 
-new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
+new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authentication, Node, Lang, _Datasource, 
 				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
-				  Middleware, Cache_Control, ExpiresMinute) ->
+				  Middleware, Cache_Control, ExpiresMinute, Public) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
 				<<"type">> => Type,
 			    <<"module">> => list_to_binary(ModuleName),
 			    <<"function">> => list_to_binary(FunctionName),
-			    <<"public">> => Apikey,
+			    <<"public">> => Public,
 			    <<"comment">> => Comment,
 			    <<"version">> => Version,
 			    <<"owner">> => Owner,
@@ -578,7 +586,8 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Apikey,
 			    <<"middleware">> => Middleware,
    			    <<"cache_control">> => Cache_Control,
 			    <<"expires">> => ExpiresMinute,
-				<<"lang">> => Lang},
+				<<"lang">> => Lang,
+				<<"enable">> => Enable},
 	Service.
 
 
