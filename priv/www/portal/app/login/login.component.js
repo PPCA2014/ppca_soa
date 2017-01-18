@@ -9,10 +9,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require('@angular/core');
+var seguranca_1 = require('seguranca');
 var LoginComponent = (function () {
-    function LoginComponent() {
+    function LoginComponent(authenticationService) {
+        this.authenticationService = authenticationService;
+        this.model = {};
     }
     LoginComponent.prototype.ngOnInit = function () {
+    };
+    LoginComponent.prototype.login = function () {
+        var _this = this;
+        this.authenticationService.login('http://127.0.0.1:2301/authorize?grant_type=password&username=' + this.model.username + '&password=' + this.model.password, '')
+            .subscribe(function (result) {
+            if (result === true) {
+                var sessionTime = JSON.parse(localStorage.getItem('currentUser'));
+                _this.authenticationService.periodicIncrement(sessionTime.expires_in);
+            }
+        }, function (err) {
+            console.log("Erro!!");
+        });
     };
     LoginComponent = __decorate([
         core_1.Component({
@@ -20,7 +35,7 @@ var LoginComponent = (function () {
             providers: [],
             templateUrl: 'app/login/login.html'
         }), 
-        __metadata('design:paramtypes', [])
+        __metadata('design:paramtypes', [seguranca_1.AuthenticationService])
     ], LoginComponent);
     return LoginComponent;
 }());

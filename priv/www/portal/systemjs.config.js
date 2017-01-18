@@ -34,7 +34,8 @@
       'underscore': 'npm:underscore',
       
       // my libraries
-      'dashboard':                 'app/dashboard/main.js'
+      'dashboard':                 'app/dashboard/main.js',
+        'seguranca':                 'npm:seguranca'
       
       
     },
@@ -69,6 +70,10 @@
 	  'dashboard': {
 		 defaultExtension: 'js'
 	  },
+        seguranca: {
+            main: './seguranca.js',
+            defaultExtension: 'js'
+        }
 	  
     },
     

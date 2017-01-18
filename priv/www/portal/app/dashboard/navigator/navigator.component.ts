@@ -1,5 +1,6 @@
 import { Component, NgZone } from '@angular/core';
 import { SitemapService } from '../sitemap/sitemap.service';
+import {AuthGuard } from 'seguranca';
 
 
 interface fpc {
@@ -23,8 +24,14 @@ export class NavigatorController {
 	public current_page : number = 1;
 	public current_url : string = undefined;
 	public breadcrumb : any = null;
+	public login: any = {
+		"breadcrumb": "false",
+		"component": "<login></login>",
+		"name": "login",
+		"title": "Entrar"
+	}
 	
-	constructor(private sitemapService: SitemapService, private _ngZone: NgZone) {
+	constructor(private sitemapService: SitemapService, private _ngZone: NgZone, private authGuard:AuthGuard) {
 		
 	}
 
@@ -39,31 +46,34 @@ export class NavigatorController {
   	ngAfterViewInit() {
 
   	}
-  	
-  	
+	
 	go(item : any){
-		if (item.items == undefined){
-			if (item.component == undefined || item.component == ""){
-				this.current = this.sitemap;
-			}else{
+		if(this.authGuard.canActivate()) {
+			if (item.items == undefined) {
+				if (item.component == undefined || item.component == "") {
+					this.current = this.sitemap;
+				} else {
+					this.current = item;
+				}
+			} else {
 				this.current = item;
 			}
 		}else{
-			this.current = item;
+			this.current = this.login;
 		}
-	
+
 		this.breadcrumb = this.make_breadcrumb(this.current, []);
-			
+
 		// Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
 		this._ngZone.onMicrotaskEmpty
-		  .subscribe(() => {
+			.subscribe(() => {
 				this._ngZone.run(() => {
-					this._ngZone.run(() => { 		
-						fpc.configFields(); 
+					this._ngZone.run(() => {
+						fpc.configFields();
 					});
 				});
-		  });
-		
+			});
+
 	}
 	
 	private get_breadcrumb(item : any){

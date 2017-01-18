@@ -10,10 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var sitemap_service_1 = require('../sitemap/sitemap.service');
+var seguranca_1 = require('seguranca');
 var NavigatorController = (function () {
-    function NavigatorController(sitemapService, _ngZone) {
+    function NavigatorController(sitemapService, _ngZone, authGuard) {
         this.sitemapService = sitemapService;
         this._ngZone = _ngZone;
+        this.authGuard = authGuard;
         this.sitemap = { "name": "dashboard",
             "title": "Dashboard",
             "url": "/portal/dashboard",
@@ -23,6 +25,12 @@ var NavigatorController = (function () {
         this.current_page = 1;
         this.current_url = undefined;
         this.breadcrumb = null;
+        this.login = {
+            "breadcrumb": "false",
+            "component": "<login></login>",
+            "name": "login",
+            "title": "Entrar"
+        };
     }
     NavigatorController.prototype.ngOnInit = function () {
         var _this = this;
@@ -36,16 +44,21 @@ var NavigatorController = (function () {
     };
     NavigatorController.prototype.go = function (item) {
         var _this = this;
-        if (item.items == undefined) {
-            if (item.component == undefined || item.component == "") {
-                this.current = this.sitemap;
+        if (this.authGuard.canActivate()) {
+            if (item.items == undefined) {
+                if (item.component == undefined || item.component == "") {
+                    this.current = this.sitemap;
+                }
+                else {
+                    this.current = item;
+                }
             }
             else {
                 this.current = item;
             }
         }
         else {
-            this.current = item;
+            this.current = this.login;
         }
         this.breadcrumb = this.make_breadcrumb(this.current, []);
         // Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
@@ -79,7 +92,7 @@ var NavigatorController = (function () {
             providers: [sitemap_service_1.SitemapService],
             templateUrl: 'app/dashboard/navigator/navigator.html'
         }), 
-        __metadata('design:paramtypes', [sitemap_service_1.SitemapService, core_1.NgZone])
+        __metadata('design:paramtypes', [sitemap_service_1.SitemapService, core_1.NgZone, seguranca_1.AuthGuard])
     ], NavigatorController);
     return NavigatorController;
 }());

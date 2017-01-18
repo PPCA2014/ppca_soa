@@ -11,6 +11,8 @@ import { NavigatorController, PagerService, EmsRestClient, Sobre, DataTableFilte
 import { CustomModal } from './catalogo/exemplos_url_servico.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LoginComponent } from './login/login.component';
+import { AuthenticationService, AuthGuard, ErroComponent} from 'seguranca';
+import {routing, appRoutingProviders} from "./app.routing";
 
 
 
@@ -21,10 +23,11 @@ import { LoginComponent } from './login/login.component';
     HttpModule,
     DataTableModule, 
     ModalModule.forRoot(),
-    BootstrapModalModule],
+    BootstrapModalModule,
+  routing],
   declarations: [ AppComponent, NavigatorController, Sobre, CatalogoComponent, LoginComponent, CustomModal, DataTableFilterPipe ],
   bootstrap: [ AppComponent, NavigatorController ],
-  providers: [ PagerService, EmsRestClient ],
+  providers: [ appRoutingProviders, PagerService, EmsRestClient, AuthGuard, AuthenticationService ],
 
   // IMPORTANT:
   // Since 'AdditionCalculateWindow' is never explicitly used (in a template)
