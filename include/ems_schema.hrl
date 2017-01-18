@@ -68,7 +68,7 @@
 					  result_cache_rid,
 					  response_data,
 					  response_header = #{},
-					  url_hash
+					  req_hash
 				  }).
 
 

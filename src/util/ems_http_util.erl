@@ -146,18 +146,19 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
-		Url2 = binary_to_list(cowboy_req:path(CowboyReq)),
+		Url = cowboy_req:path(CowboyReq),
+		Url2 = binary_to_list(Url),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
-		case cowboy_req:qs(CowboyReq) of
+		QuerystringBin = cowboy_req:qs(CowboyReq),
+		case QuerystringBin of
 			<<>> -> 
 				Querystring = <<>>,
 				QuerystringMap = #{};
 			Q -> 
 				Querystring = binary_to_list(Q),
-				io:format("~s\n", [Querystring]),
 				QuerystringMap = parse_querystring([Querystring])
 		end,
 		{ok, Payload, _Req} = cowboy_req:read_body(CowboyReq),
@@ -172,7 +173,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		PayloadMap = decode_payload(Payload),
-		UrlHash = erlang:phash2(Url2),
+		ReqHash = erlang:phash2([Url, QuerystringBin, Content_Length, Content_Type]),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 		Request = #request{
 			rid = RID,
@@ -201,7 +202,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			protocol = http,
 			result_cache = false,
 			t1 = T1,
-			url_hash = UrlHash
+			req_hash = ReqHash
 		},	
 		{ok, Request}
 	catch
@@ -280,7 +281,6 @@ header_cache_control(<<_MimeType/binary>>) ->
 
 parse_querystring(Q) ->
 	Q1 = httpd:parse_query(Q),
-	io:format("q1 is ~p\n", [Q1]),
 	Q2 = [{iolist_to_binary(P), 
 		   list_to_binary(case V of
 										[34|_] -> ems_util:remove_quoted_str(ems_util:utf8_list_to_string(V));

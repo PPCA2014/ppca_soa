@@ -322,6 +322,7 @@ do_log_request(#request{protocol = ldap,
 	
 	
 do_log_request(#request{rid = RID,
+						req_hash = ReqHash,
 						protocol = http, 
 						type = Metodo,
 						url = Url,
@@ -347,11 +348,12 @@ do_log_request(#request{rid = RID,
 						node_exec = Node
 						}, 
 			  #state{show_response = ShowResponse}) ->
-	Texto =  "~s ~s ~s {\n\tRID: ~p\n\tAccept: ~p\n\tHost: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p\n\tETag: ~p\n\tIf-Modified-Since: ~p\n\tIf-None-Match: ~p\n\tAuthorization: ~p   User: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tHost: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p\n\tETag: ~p\n\tIf-Modified-Since: ~p\n\tIf-None-Match: ~p\n\tAuthorization: ~p   User: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Url, 
 								   Version, 
 								   RID,
+								   ReqHash,
 								   Accept, 
 								   Host, 
 								   case Service of undefined -> <<>>; _ -> Service#service.service end,

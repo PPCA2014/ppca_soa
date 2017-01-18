@@ -22,9 +22,9 @@ start() ->
 
 
 dispatch_request(Request = #request{type = "GET", 
-									url_hash = UrlHash, 
+									req_hash = ReqHash, 
 									t1 = Timestamp}) -> 
-	case ems_dispatcher_cache:lookup(UrlHash, Timestamp) of
+	case ems_dispatcher_cache:lookup(ReqHash, Timestamp) of
 		{true, RequestCache} -> 
 			?DEBUG("Lookup request in cache. Request: ~p.", [RequestCache]),
 			{ok, Request#request{result_cache = true,
