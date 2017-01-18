@@ -124,7 +124,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 				ems_logger:error("odbc param_query error: ~p. Reconecting...", [Reason]),
 				case do_connect(Datasource) of
 					{ok, Datasource2} ->
-						case odbc:param_query(Datasource2#service_datasource.conn_ref, Sql, Params, Timeout) of
+						case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 							{error, Reason1} -> 
 								ems_logger:error("odbc param_query fail after reconecting on connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
 								{error, eodbc_connection_closed};
@@ -135,7 +135,9 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 						ems_logger:error("odbc param_query reconecting fail after connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
 						{error, eodbc_connection_closed}
 				end;
-			Result -> Result
+			Result -> 
+				?DEBUG("Resultset query: ~p.", [Result]),
+				Result
 		end
 	catch
 		_:timeout -> 
@@ -143,7 +145,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 			?DEBUG("odbc param_query timeout connection. Reconecting..."),
 			case do_connect(Datasource) of
 				{ok, Datasource3} ->
-					case odbc:param_query(Datasource3#service_datasource.conn_ref, Sql, Params, Timeout) of
+					case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 						{error, Reason4} -> 
 							ems_logger:error("odbc param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
 							{error, eodbc_connection_closed};

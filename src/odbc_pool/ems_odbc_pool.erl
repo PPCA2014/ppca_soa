@@ -121,7 +121,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 						
-do_create_connection(Datasource = #service_datasource{connection = Connection}, PidModule) ->
+do_create_connection(Datasource = #service_datasource{connection = Connection,
+													  table_name = TableName,
+													  primary_key = PrimaryKey}, PidModule) ->
 	PoolName = "pool_" ++ Connection,
 	Pool = find_pool(PoolName),
 	case queue:len(Pool) of
@@ -141,8 +143,10 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 		_ -> 
 			{{value, Datasource2}, Pool2} = queue:out(Pool),
 			PidModuleRef = erlang:monitor(process, PidModule),
-			Datasource3 = Datasource#service_datasource{pid_module = PidModule,
-														pid_module_ref = PidModuleRef},
+			Datasource3 = Datasource2#service_datasource{pid_module = PidModule,
+														 pid_module_ref = PidModuleRef,
+														 table_name = TableName,
+														 primary_key = PrimaryKey},
 			erlang:put(PidModuleRef, Datasource3),
 			erlang:put(PoolName, Pool2),
 			{ok, Datasource3}
