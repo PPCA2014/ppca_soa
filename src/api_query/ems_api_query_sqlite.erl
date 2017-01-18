@@ -132,7 +132,7 @@ parse_value(Param, Value, "lte", sql_integer) ->
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
-format_odbc_data_type(Value, sql_varchar) -> {sql_varchar, length(Value)};
+format_odbc_data_type(Value, sql_varchar) -> {sql_varchar, length(Value)+3};
 format_odbc_data_type(_Value, sql_integer) -> sql_integer;
 format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
@@ -222,7 +222,7 @@ generate_dynamic_query(Id, Fields, #service_datasource{table_name = TableName, p
 
 execute_dynamic_query(Sql, Params, Datasource) ->
 	try
-		?DEBUG("SQL exec: ~s", [Sql]),
+		?DEBUG("SQL exec: ~s. \n\tParams: ~p.", [Sql, Params]),
 		case ems_odbc_pool:param_query(Datasource, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
 				Objects = ems_util:json_encode_table(Fields, Records),

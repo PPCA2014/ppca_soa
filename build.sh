@@ -26,5 +26,4 @@
 
 rm -Rf priv/log
 rm -Rf priv/db
-rm -Rf log
 tools/rebar/rebar clean get-deps compile
