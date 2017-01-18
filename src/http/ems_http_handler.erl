@@ -19,7 +19,7 @@ init(CowboyReq, Opts) ->
 	%?DEBUG("Cowboy req: ~p\n", [CowboyReq]),
 	case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
 		{ok, Request = #request{type = Method,
-								url_hash = UrlHash,
+								req_hash = ReqHash,
 								t1 = T1}} -> 
 			case ems_dispatcher:dispatch_request(Request) of
 				{ok, Request2 = #request{result_cache = true,
@@ -31,7 +31,7 @@ init(CowboyReq, Opts) ->
 				{ok, Request2} ->
 					Request3 = encode_response(Request2),
 					case Method == "GET" of
-						true -> ems_dispatcher_cache:add(UrlHash, T1, Request3);
+						true -> ems_dispatcher_cache:add(ReqHash, T1, Request3);
 						false -> ok
 					end,
 					Response = cowboy_req:reply(Request3#request.code, 

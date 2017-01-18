@@ -19,9 +19,9 @@ start() ->
 	ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
 	ets:new(dispatcher_cache_options, [set, named_table, public, {read_concurrency, true}]).
 
-lookup(Rowid, Timestamp2) ->
+lookup(ReqHash, Timestamp2) ->
 	try
-		case ets:lookup(dispatcher_cache_get, Rowid) of
+		case ets:lookup(dispatcher_cache_get, ReqHash) of
 			[] -> false;
 			[{_, Timestamp, _}] when Timestamp2 - Timestamp > ?TIMEOUT_DISPATCHER_CACHE -> false;
 			[{_, _, Request}] -> {true, Request}
@@ -30,7 +30,7 @@ lookup(Rowid, Timestamp2) ->
 		_Exception:_Reason ->
 			ems_logger:warn("Recriando ets dispatcher_cache_get."),
 			ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
-			lookup(Rowid, Timestamp2)
+			lookup(ReqHash, Timestamp2)
 	end.
 
 lookup_options() ->
@@ -47,10 +47,10 @@ lookup_options() ->
 	end.
 	
 
-add(Rowid, Timestamp, Request) -> ets:insert(dispatcher_cache_get, {Rowid, Timestamp, Request}).
+add(ReqHash, Timestamp, Request) -> ets:insert(dispatcher_cache_get, {ReqHash, Timestamp, Request}).
 
 add_options(Response) -> ets:insert(dispatcher_cache_options, {1, Response}).
 
-invalidate(Rowid) ->
+invalidate(ReqHash) ->
 	?DEBUG("Invalidate request get cache after POST, PUT or DELETE operation."),
-	ets:delete(dispatcher_cache_get, Rowid).
+	ets:delete(dispatcher_cache_get, ReqHash).
