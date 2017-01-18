@@ -141,8 +141,8 @@ do_create_connection(Datasource = #service_datasource{connection = Connection}, 
 		_ -> 
 			{{value, Datasource2}, Pool2} = queue:out(Pool),
 			PidModuleRef = erlang:monitor(process, PidModule),
-			Datasource3 = Datasource2#service_datasource{pid_module = PidModule,
-														 pid_module_ref = PidModuleRef},
+			Datasource3 = Datasource#service_datasource{pid_module = PidModule,
+														pid_module_ref = PidModuleRef},
 			erlang:put(PidModuleRef, Datasource3),
 			erlang:put(PoolName, Pool2),
 			{ok, Datasource3}
