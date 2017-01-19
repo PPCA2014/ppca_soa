@@ -223,7 +223,7 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 				Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
 				case Ctrl =:= [] orelse not DatabaseExist orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
 					true ->
-						Csv2SqliteCmd = lists:flatten(io_lib:format("~s '~s\' '~s' '~s' '~s'",
+						Csv2SqliteCmd = lists:flatten(io_lib:format('~s "~s" "~s" "~s" "~s"',
 																	 [?CSV2SQLITE_PATH,
 																	  ?DATABASE_SQLITE_PATH, 
 																	  TableName, 
