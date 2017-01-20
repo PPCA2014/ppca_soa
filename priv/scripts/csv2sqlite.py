@@ -80,8 +80,8 @@ class Csv2SqliteGenerator(object):
     def _do_create_table(self, field_names):
         # Remove the BOM if necessary
         FirstColumn = field_names[0]
-        if FirstColumn[0:3] == '\xef\xbb\xbf':
-            field_names[0] = FirstColumn[3:]
+        if bytes(FirstColumn[0:1], 'utf-8') == b'\xef\xbb\xbf':
+            field_names[0] = FirstColumn[1:]
         self.field_count = len(field_names)
         sql = "CREATE TABLE %s" % self.table_name
         query = '%s (%s)' % (sql, ','.join(['%s text' % field_name for field_name in field_names]))

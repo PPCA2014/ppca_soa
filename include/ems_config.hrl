@@ -100,12 +100,6 @@
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?PRIV_PATH ++ "/scripts/csv2sqlite.py"). 
 
-% Caminho do banco de dados sqlite
--define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/ems_dynamic_view.dat").	
-
-% String de conexão do banco de dados sqlite 
--define(DATABASE_SQLITE_STRING_CONNECTION, lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [?DATABASE_SQLITE_PATH]))).	
-
 % Quanto tempo uma parsed query mnesia fica em cache para reutilização (módulo ems_db)
 -define(LIFE_TIME_PARSED_QUERY, 60000 * 15). % 15 minutos
 

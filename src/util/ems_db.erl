@@ -218,14 +218,15 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 	case filelib:last_modified(FileNamePath) of
 		0 -> {error, ecsvfile_not_exist};
 		LastModified ->
-			DatabaseExist = filelib:is_file(?DATABASE_SQLITE_PATH), 
+			SqliteFile = ?DATABASE_PATH ++ "/sqlite3_" ++ TableName,
+			DatabaseExist = filelib:is_file(SqliteFile), 
 			F = fun() ->
 				Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
 				case Ctrl =:= [] orelse not DatabaseExist orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
 					true ->
 						Csv2SqliteCmd = lists:flatten(io_lib:format('~s "~s" "~s" "~s" "~s"',
 																	 [?CSV2SQLITE_PATH,
-																	  ?DATABASE_SQLITE_PATH, 
+																	  SqliteFile, 
 																	  TableName, 
 																	  FileNamePath, 
 																	  Delimiter])),
@@ -238,7 +239,8 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 				end
 			end,
 			mnesia:activity(transaction, F),
-			get_odbc_connection(Datasource#service_datasource{type = sqlite, connection = ?DATABASE_SQLITE_STRING_CONNECTION})
+			StringConnection = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [SqliteFile])),
+			get_odbc_connection(Datasource#service_datasource{type = sqlite, connection = StringConnection})
 	end.
 
 
