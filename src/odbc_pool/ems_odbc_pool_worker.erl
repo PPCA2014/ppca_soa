@@ -90,8 +90,14 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
     
-do_connect(Datasource = #service_datasource{connection = Connection, 
-											timeout = _Timeout}) -> 
+do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite}) -> 
+
+	io:format("aqui1  connection is ~p : ~p\n", [Connection, Datasource]),
+	{ok, ConnRef} = esqlite3:open(Connection),
+	Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
+	io:format("aqui2 connref is ~p : ~p\n", [ConnRef, Datasource2]),
+	{ok, Datasource2};
+do_connect(Datasource = #service_datasource{connection = Connection}) -> 
 
 	try
 		case odbc:connect(Connection, []) of
@@ -111,9 +117,19 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 			{error, PosixError2}
 	end.
 
+do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type = sqlite}}) -> 
+	esqlite3:close(ConnRef);
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
+do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																						   connection = Connection,
+																						   timeout = Timeout,
+																						   type = sqlite}}) ->
+		io:format("estou aqui  ~p \n", [Datasource]),
+		Result = esqlite3:q(Sql, ConnRef),
+		?DEBUG("Resultset query: ~p.", [Result]),
+		Result;
 do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																						   connection = Connection,
 																						   timeout = Timeout}}) ->

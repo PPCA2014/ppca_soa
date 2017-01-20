@@ -92,9 +92,10 @@ var NavigatorController = (function () {
             providers: [sitemap_service_1.SitemapService],
             templateUrl: 'app/dashboard/navigator/navigator.html'
         }), 
-        __metadata('design:paramtypes', [sitemap_service_1.SitemapService, core_1.NgZone, seguranca_1.AuthGuard])
+        __metadata('design:paramtypes', [sitemap_service_1.SitemapService, core_1.NgZone, (typeof (_a = typeof seguranca_1.AuthGuard !== 'undefined' && seguranca_1.AuthGuard) === 'function' && _a) || Object])
     ], NavigatorController);
     return NavigatorController;
+    var _a;
 }());
 exports.NavigatorController = NavigatorController;
 //# sourceMappingURL=navigator.component.js.map
