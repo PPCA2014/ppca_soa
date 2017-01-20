@@ -63,7 +63,7 @@ class Csv2SqliteGenerator(object):
                 if len(row) != self.field_count:
                     print("Linha inválida: " + str(self.csv_data.line_num))
                     continue
-                row_utf8 = [field.decode("utf-8").strip() for field in row]
+                row_utf8 = [field.strip() for field in row]
                 query = "INSERT INTO %s VALUES (%s)" % (self.table_name, ','.join(['?' for x in row]))
                 self.cursor.execute(query, row_utf8)
             self.conn.commit()
