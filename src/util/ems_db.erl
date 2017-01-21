@@ -250,7 +250,6 @@ get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Dr
 			StringConnection = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [SqliteFile])),
 			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = StringConnection});
 		<<"sqlite3">> ->
-			io:format("aqui0 ~p\n", [SqliteFile]),
 			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = SqliteFile});
 		_ -> throw({error, einvalid_driver_datasource})
 	end.

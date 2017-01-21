@@ -120,13 +120,10 @@ do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type =
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
-do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						   connection = Connection,
-																						   timeout = Timeout,
-																						   type = sqlite,
-																						   driver = <<"sqlite3">>}}) ->
-	io:format("aqui 1  ~p\n", [{Sql, Params}]),
-	Params2 = [hd(V) || {T, V} <- Params],
+do_param_query(Sql, Params, _Timeout, #state{datasource = #service_datasource{conn_ref = ConnRef,
+																			  type = sqlite,
+																			  driver = <<"sqlite3">>}}) ->
+	Params2 = [hd(V) || {_, V} <- Params],
 	case esqlite3:prepare(Sql, ConnRef) of
         {ok, Statement} ->
             ok = esqlite3:bind(Statement, Params2),
@@ -134,8 +131,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 			Fields = tuple_to_list(esqlite3:column_names(Statement)),
 			?DEBUG("Sqlite resultset query: ~p.", [Records]),
 			{selected, Fields, Records};
-        {error, Reason} ->
-            {error, eodbc_connection_closed}
+        Error -> Error
     end;
 do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																						   connection = Connection,

@@ -92,7 +92,8 @@ encode_response(Request = #request{type = Method,
 											<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 											<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 											<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -108,7 +109,8 @@ encode_response(Request = #request{type = Method,
 											<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 											<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 											<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
 					Request#request{code = HttpCode, 
@@ -136,7 +138,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				<<_Content/binary>> -> 
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
@@ -151,7 +154,8 @@ encode_response(Request = #request{type = Method,
 													<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 													<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 													<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-													<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+													<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+													<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 												}};
 				Content when is_map(Content) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -167,7 +171,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_map(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -183,7 +188,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_tuple(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -199,7 +205,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -214,7 +221,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}}
 			end;
 		_ -> 
@@ -233,7 +241,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				_ ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -249,7 +258,8 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}}
 			end
 	end.
@@ -263,7 +273,8 @@ default_http_header() ->
 		<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 		<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 		<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-		<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
+		<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+		<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 	}.
 
 
