@@ -95,7 +95,7 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Quanto tempo aguardar um serviço
--define(SERVICE_TIMEOUT, 4000). % 4 segundos
+-define(SERVICE_TIMEOUT, 15000). % 15 segundos segundos
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?PRIV_PATH ++ "/scripts/csv2sqlite.py"). 
@@ -123,6 +123,13 @@
 
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
+
+% HTTP access control (CORS) headers
+-define(ACCESS_CONTROL_ALLOW_HEADERS, <<"X-ACCESS_TOKEN", "Access-Control-Allow-Origin", "Authorization", "Origin", "x-requested-with", "Content-Type", "Content-Range", "Content-Disposition", "Content-Description">>).
+-define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).
+-define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"*">>).
+-define(ACCESS_CONTROL_ALLOW_METHODS, <<"GET, POST, PUT, DELETE, OPTIONS">>).
+
 
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]

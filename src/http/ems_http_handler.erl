@@ -16,7 +16,7 @@
 
 
 init(CowboyReq, Opts) ->
-	%?DEBUG("Cowboy req: ~p\n", [CowboyReq]),
+	?DEBUG("Http request: ~p\n", [CowboyReq]),
 	case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
 		{ok, Request = #request{type = Method,
 								req_hash = ReqHash,
@@ -89,9 +89,10 @@ encode_response(Request = #request{type = Method,
 											<<"cache-control">> => <<"no-cache">>,
 											<<"ems-catalog">> => ServiceName,
 											<<"ems-owner">> => ServiceOwner,
-											<<"access-control-allow-origin">> => <<"*">>,
-											<<"access-control-allow-headers">> => <<"*">>,
-											<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+											<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+											<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+											<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 										}};
 				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -104,9 +105,10 @@ encode_response(Request = #request{type = Method,
 											<<"cache-control">> => header_cache_control(MimeType),
 											<<"ems-catalog">> => ServiceName,
 											<<"ems-owner">> => ServiceOwner,
-											<<"access-control-allow-origin">> => <<"*">>,
-											<<"access-control-allow-headers">> => <<"*">>,
-											<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+											<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+											<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+											<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 										}};
 				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
 					Request#request{code = HttpCode, 
@@ -131,9 +133,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}};
 				<<_Content/binary>> -> 
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
@@ -145,9 +148,10 @@ encode_response(Request = #request{type = Method,
 													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, <<"no-cache">>),
 													<<"ems-catalog">> => ServiceName,
 													<<"ems-owner">> => ServiceOwner,
-													<<"access-control-allow-origin">> => <<"*">>,
-													<<"access-control-allow-headers">> => <<"*">>,
-													<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+													<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+													<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+													<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+													<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 												}};
 				Content when is_map(Content) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -160,9 +164,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}};
 				Content = [H|_] when is_map(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -175,9 +180,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}};
 				Content = [H|_] when is_tuple(H) -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -190,9 +196,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}};
 				Content -> 
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -204,9 +211,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}}
 			end;
 		_ -> 
@@ -222,9 +230,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => <<"no-cache">>,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}};
 				_ ->
 					Request#request{code = get_http_code_verb(Method, true), 
@@ -237,9 +246,10 @@ encode_response(Request = #request{type = Method,
 										<<"cache-control">> => header_cache_control(PageMimeType),
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
-										<<"access-control-allow-origin">> => <<"*">>,
-										<<"access-control-allow-headers">> => <<"*">>,
-										<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+										<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+										<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 									}}
 			end
 	end.
@@ -250,9 +260,10 @@ default_http_header() ->
 		<<"server">> => ?SERVER_NAME,
 		<<"content-type">> => <<"application/json; charset=utf-8">>,
 		<<"cache-control">> => <<"no-cache">>,
-		<<"access-control-allow-origin">> => <<"*">>,
-		<<"access-control-allow-headers">> => <<"*">>,
-		<<"access-control-allow-methods">> => <<"GET, POST, PUT, DELETE, OPTIONS">>
+		<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+		<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+		<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+		<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS
 	}.
 
 
