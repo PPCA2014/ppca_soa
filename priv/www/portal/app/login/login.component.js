@@ -35,10 +35,9 @@ var LoginComponent = (function () {
             providers: [],
             templateUrl: 'app/login/login.html'
         }), 
-        __metadata('design:paramtypes', [(typeof (_a = typeof seguranca_1.AuthenticationService !== 'undefined' && seguranca_1.AuthenticationService) === 'function' && _a) || Object])
+        __metadata('design:paramtypes', [seguranca_1.AuthenticationService])
     ], LoginComponent);
     return LoginComponent;
-    var _a;
 }());
 exports.LoginComponent = LoginComponent;
 //# sourceMappingURL=login.component.js.map

@@ -125,7 +125,8 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 																						   timeout = Timeout,
 																						   type = sqlite,
 																						   driver = <<"sqlite3">>}}) ->
-	Params2 = [V || {T, V} <- Params],
+	io:format("aqui 1  ~p\n", [{Sql, Params}]),
+	Params2 = [hd(V) || {T, V} <- Params],
 	case esqlite3:prepare(Sql, ConnRef) of
         {ok, Statement} ->
             ok = esqlite3:bind(Statement, Params2),
