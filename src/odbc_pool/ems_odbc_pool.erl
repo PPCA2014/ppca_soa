@@ -42,10 +42,8 @@ stop() ->
  
  
 get_connection(Datasource) ->
-	io:format("aqui3s\n"),
 	case gen_server:call(?SERVER, {create_connection, Datasource}) of
 		{ok, Datasource2} = Result ->
-			io:format("aqui5 ~p\n", [Datasource2]),
 			?DEBUG("Get odbc connection: ~p.", [Datasource2]),
 			Result;
 		Error -> 
@@ -124,7 +122,6 @@ do_create_connection(Datasource = #service_datasource{connection = Connection,
 	Pool = find_pool(PoolName),
 	case queue:len(Pool) of
 		0 ->
-			io:format("queue 0\n"),
 			case ems_odbc_pool_worker:start_link(Datasource) of
 				{ok, WorkerPid} ->
 					?DEBUG("Start new odbc connection: ~s.", [Connection]),
@@ -138,7 +135,6 @@ do_create_connection(Datasource = #service_datasource{connection = Connection,
 					{error, eunavailable_odbc_connection}
 			end;
 		_ -> 
-			io:format("queue tem itens\n"),
 			{{value, Datasource2}, Pool2} = queue:out(Pool),
 			PidModuleRef = erlang:monitor(process, PidModule),
 			Datasource3 = Datasource2#service_datasource{pid_module = PidModule,

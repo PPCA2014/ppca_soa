@@ -15,7 +15,7 @@
 		 find_first/2, find_first/3, find_first/4]).
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
 -export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
--export([get_connection/1, release_connection/1, get_sqlite_connection_csv_file/1, get_odbc_connection_csv_file/1]).
+-export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1]).
 -export([get_param/1, set_param/2]).
 
 -include("../../include/ems_config.hrl").
@@ -199,9 +199,7 @@ counter(Name, Inc) -> mnesia:dirty_update_counter(counter, Name, Inc).
 get_connection(Datasource = #service_datasource{type = sqlserver}) ->
 	get_odbc_connection(Datasource);
 get_connection(Datasource = #service_datasource{type = csvfile}) ->
-	get_sqlite_connection_csv_file(Datasource);
-get_connection(Datasource = #service_datasource{type = csvfile_odbc}) ->
-	get_odbc_connection_csv_file(Datasource);
+	get_sqlite_connection_from_csv_file(Datasource);
 get_connection(Datasource = #service_datasource{type = mnesia}) ->
 	{ok, Datasource}.
 
@@ -245,15 +243,17 @@ create_sqlite_from_csv(#service_datasource{connection = FileName,
 	end.
 
 
-get_odbc_connection_csv_file(Datasource) -> 
+get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Driver}) -> 
 	SqliteFile = create_sqlite_from_csv(Datasource),
-	StringConnection = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [SqliteFile])),
-	ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite_odbc, connection = StringConnection}).
-
-get_sqlite_connection_csv_file(Datasource) -> 
-	SqliteFile = create_sqlite_from_csv(Datasource),
-	io:format("aqui0 ~p\n", [SqliteFile]),
-	ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = SqliteFile}).
+	case Driver of
+		<<"odbc">> ->
+			StringConnection = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [SqliteFile])),
+			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = StringConnection});
+		<<"sqlite3">> ->
+			io:format("aqui0 ~p\n", [SqliteFile]),
+			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = SqliteFile});
+		_ -> throw({error, einvalid_driver_datasource})
+	end.
 
 
 %create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 

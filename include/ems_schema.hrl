@@ -73,6 +73,7 @@
 
 -record(service_datasource, {rowid :: non_neg_integer(),
 							 type :: atom(),
+							 driver :: atom(),
 							 connection = <<>> :: binary(),
 							 table_name = <<>> :: binary(),
 							 primary_key = <<>> :: binary(),

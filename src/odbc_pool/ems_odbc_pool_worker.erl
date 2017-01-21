@@ -90,12 +90,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
     
-do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite}) -> 
+do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite, driver = <<"sqlite3">>}) -> 
 
-	io:format("aqui1  connection is ~p : ~p\n", [Connection, Datasource]),
 	{ok, ConnRef} = esqlite3:open(Connection),
 	Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
-	io:format("aqui2 connref is ~p : ~p\n", [ConnRef, Datasource2]),
 	{ok, Datasource2};
 do_connect(Datasource = #service_datasource{connection = Connection}) -> 
 
@@ -117,7 +115,7 @@ do_connect(Datasource = #service_datasource{connection = Connection}) ->
 			{error, PosixError2}
 	end.
 
-do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type = sqlite}}) -> 
+do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type = sqlite, driver = <<"sqlite3">>}}) -> 
 	esqlite3:close(ConnRef);
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
@@ -125,11 +123,19 @@ do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) ->
 do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																						   connection = Connection,
 																						   timeout = Timeout,
-																						   type = sqlite}}) ->
-		io:format("estou aqui  ~p \n", [Datasource]),
-		Result = esqlite3:q(Sql, ConnRef),
-		?DEBUG("Resultset query: ~p.", [Result]),
-		Result;
+																						   type = sqlite,
+																						   driver = <<"sqlite3">>}}) ->
+	Params2 = [V || {T, V} <- Params],
+	case esqlite3:prepare(Sql, ConnRef) of
+        {ok, Statement} ->
+            ok = esqlite3:bind(Statement, Params2),
+            Records = esqlite3:fetchall(Statement),
+			Fields = tuple_to_list(esqlite3:column_names(Statement)),
+			?DEBUG("Sqlite resultset query: ~p.", [Records]),
+			{selected, Fields, Records};
+        {error, Reason} ->
+            {error, eodbc_connection_closed}
+    end;
 do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																						   connection = Connection,
 																						   timeout = Timeout}}) ->
@@ -152,7 +158,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 						{error, eodbc_connection_closed}
 				end;
 			Result -> 
-				?DEBUG("Resultset query: ~p.", [Result]),
+				?DEBUG("Odbc resultset query: ~p.", [Result]),
 				Result
 		end
 	catch

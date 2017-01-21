@@ -400,6 +400,7 @@ json_field_format_table("0.0") -> "0.0";
 json_field_format_table(Value) when is_float(Value) -> Value;
 json_field_format_table(Value) when is_integer(Value) -> Value;
 json_field_format_table(Value) when is_boolean(Value) -> Value;
+json_field_format_table(Value) when is_binary(Value) -> json_field_strip_and_escape(utf8_list_to_string(binary_to_list(Value))); 
 json_field_format_table(null) -> null;
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) -> json_field_strip_and_escape(utf8_list_to_string(Value));

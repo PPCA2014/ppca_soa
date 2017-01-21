@@ -116,7 +116,7 @@
 -define(TIMEOUT_DISPATCHER_CACHE, 1000).
 
 % Number of datasource entries by odbc connection pool
--define(MAX_CONNECTION_BY_POOL, 50).
+-define(MAX_CONNECTION_BY_POOL, 5).
 
 % Header http cache-control 24 horas
 -define(DEFAULT_CACHE_CONTROL, <<"no-cache, public">>).
