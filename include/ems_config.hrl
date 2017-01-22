@@ -132,6 +132,9 @@
 -define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
 
 
+-define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
+-define(CACHE_CONTROL_NO_CACHE, <<"no-cache">>).
+
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,				%% Lista de hosts para pesquisar os serviços

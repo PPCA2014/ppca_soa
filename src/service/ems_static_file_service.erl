@@ -56,8 +56,7 @@ execute(Request = #request{url = Url,
 	case file_info(FileName) of
 		{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 														 reason = Reason,	
-														 response_data = Err, 
-														 response_header = error_http_header()}
+														 response_data = Err}
 								  };
 		{FSize, MTime} -> 
 			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
@@ -81,8 +80,7 @@ execute(Request = #request{url = Url,
 										   };
 						{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 																		 reason = Reason,
-																		 response_data = Err, 
-																		 response_header = error_http_header()}
+																		 response_data = Err}
 												 }
 					end
 			end
@@ -139,13 +137,6 @@ generate_header(MimeType, ETag, LastModified, Expires, Cache_Control) ->
 		<<"etag">> => ETag,
 		<<"last-modified">> => LastModified,
 		<<"expires">> => Expires
-	}.
-
-
-error_http_header() ->
-	#{
-		<<"content-type">> => <<"application/json; charset=utf-8">>,
-		<<"cache-control">> => <<"no-cache">>
 	}.
 
 

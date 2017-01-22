@@ -394,18 +394,18 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
-json_field_format_table([]) -> null;
+json_field_format_table([]) -> "";
 json_field_format_table("0.0") -> "0.0";
 json_field_format_table(Value) when is_float(Value) -> Value;
 json_field_format_table(Value) when is_integer(Value) -> Value;
 json_field_format_table(Value) when is_boolean(Value) -> Value;
-json_field_format_table(Value) when is_binary(Value) -> json_field_strip_and_escape(utf8_list_to_string(binary_to_list(Value))); 
-json_field_format_table(null) -> null;
+json_field_format_table(Value) when is_binary(Value) -> io:format("binary"), unicode:characters_to_list(Value, utf8); 
+json_field_format_table(null) -> "";
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
-json_field_format_table(Value) when is_list(Value) -> json_field_strip_and_escape(utf8_list_to_string(Value));
+json_field_format_table(Value) when is_list(Value) -> io:format("HHHHH\n"), json_field_strip_and_escape(utf8_list_to_string(Value));
 json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
 
-json_field_strip_and_escape([]) ->	null;
+json_field_strip_and_escape([]) ->	"";
 json_field_strip_and_escape(Value) -> 
 	case string:strip(Value) of
 		[] -> null;
@@ -423,10 +423,10 @@ json_encode_table(Fields, Records) ->
 											 end,  Fields, tuple_to_list(T))
 					end, Records), 
 	Objects2 = lists:map(fun(Obj) -> 
-									lists:flatten(["{", string:join(Obj, ", "), "}"]) 
+									[<<"{"/utf8>>, string:join(Obj, ", "), <<"}"/utf8>>] 
 						 end, Objects),
 	Objects3 = string:join(Objects2, ", "),
-	Result = unicode:characters_to_binary(["[", Objects3, "]"]),
+	Result = unicode:characters_to_binary(iolist_to_binary(["[", Objects3, "]"]), utf8),
 	Result.
 
 
@@ -434,7 +434,7 @@ utf8_list_to_string(null) -> "";
 utf8_list_to_string(Value) ->
 	try
 		case check_encoding_bin(list_to_binary(Value)) of
-			utf8 -> unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(Value)));
+			utf8 -> unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(Value)), utf8);
 			latin1 -> unicode:characters_to_list(Value, utf8)
 		end
 	catch

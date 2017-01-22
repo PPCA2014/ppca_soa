@@ -79,14 +79,15 @@ encode_response(Request = #request{type = Method,
 		undefined ->
 			case ResponseData of
 				{ok, <<_Content/binary>> = ResponseData} -> 
+					io:format("aqui1\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = #{
 											<<"server">> => ?SERVER_NAME,
-											<<"content-type">> => <<"application/json; charset=utf-8">>,
-											<<"cache-control">> => <<"no-cache">>,
+											<<"content-type">> => ?CONTENT_TYPE_JSON,
+											<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 											<<"ems-catalog">> => ServiceName,
 											<<"ems-owner">> => ServiceOwner,
 											<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -113,12 +114,14 @@ encode_response(Request = #request{type = Method,
 											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
+					io:format("aqui2\n"),
 					Request#request{code = HttpCode, 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = HttpHeader};
 				{HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
+					io:format("aqui3\n"),
 					Request#request{code = HttpCode, 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
@@ -131,8 +134,8 @@ encode_response(Request = #request{type = Method,
 									response_data = ems_schema:to_json(Error),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>,
+										<<"content-type">> => ?CONTENT_TYPE_JSON,
+										<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -141,14 +144,16 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
-				<<_Content/binary>> -> 
+				<<_Content/binary>> = Texto -> 
+					io:format("texto: ~p\n", [Texto]),
+					io:format("aqui4\n"),
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
 									reason = case Reason of undefined -> ok; _ -> Reason end, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_header = ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
-													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, <<"application/json; charset=utf-8">>),
-													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, <<"no-cache">>),
+													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ?CONTENT_TYPE_JSON),
+													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, ?CACHE_CONTROL_NO_CACHE),
 													<<"ems-catalog">> => ServiceName,
 													<<"ems-owner">> => ServiceOwner,
 													<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -158,14 +163,15 @@ encode_response(Request = #request{type = Method,
 													<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 												}};
 				Content when is_map(Content) -> 
+					io:format("aqui5\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>,
+										<<"content-type">> => ?CONTENT_TYPE_JSON,
+										<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -175,14 +181,15 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_map(H) -> 
+					io:format("aqui6\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>,
+										<<"content-type">> => ?CONTENT_TYPE_JSON,
+										<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -192,14 +199,15 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_tuple(H) -> 
+					io:format("aqui7\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>,
+										<<"content-type">> => ?CONTENT_TYPE_JSON,
+										<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -215,7 +223,7 @@ encode_response(Request = #request{type = Method,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"cache-control">> => <<"no-cache">>,
+										<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -234,8 +242,8 @@ encode_response(Request = #request{type = Method,
 									response_data = ems_schema:to_json(Error),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
-										<<"content-type">> => <<"application/json; charset=utf-8">>,
-										<<"cache-control">> => <<"no-cache">>,
+										<<"content-type">> => ?CONTENT_TYPE_JSON,
+										<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 										<<"ems-catalog">> => ServiceName,
 										<<"ems-owner">> => ServiceOwner,
 										<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -268,8 +276,8 @@ encode_response(Request = #request{type = Method,
 default_http_header() ->
 	#{
 		<<"server">> => ?SERVER_NAME,
-		<<"content-type">> => <<"application/json; charset=utf-8">>,
-		<<"cache-control">> => <<"no-cache">>,
+		<<"content-type">> => ?CONTENT_TYPE_JSON,
+		<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 		<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 		<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 		<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
@@ -301,7 +309,7 @@ header_cache_control(<<"image/bmp">>) ->
 header_cache_control(<<"application/font-woff">>) ->
 	<<"max-age=290304000, public"/utf8>>;
 header_cache_control(<<_MimeType/binary>>) ->
-	<<"no-cache"/utf8>>.
+	?CACHE_CONTROL_NO_CACHE.
 
 	
 terminate(_Reason, _Req, _State) ->  ok.    
