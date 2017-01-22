@@ -114,14 +114,12 @@ encode_response(Request = #request{type = Method,
 											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
-					io:format("aqui2\n"),
 					Request#request{code = HttpCode, 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = HttpHeader};
 				{HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
-					io:format("aqui3\n"),
 					Request#request{code = HttpCode, 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
@@ -144,9 +142,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
-				<<_Content/binary>> = Texto -> 
-					io:format("texto: ~p\n", [Texto]),
-					io:format("aqui4\n"),
+				<<_Content/binary>> -> 
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
 									reason = case Reason of undefined -> ok; _ -> Reason end, 
 									latency = ems_util:get_milliseconds() - T1,
@@ -163,7 +159,6 @@ encode_response(Request = #request{type = Method,
 													<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 												}};
 				Content when is_map(Content) -> 
-					io:format("aqui5\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
@@ -181,7 +176,6 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_map(H) -> 
-					io:format("aqui6\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,
@@ -199,7 +193,6 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_tuple(H) -> 
-					io:format("aqui7\n"),
 					Request#request{code = get_http_code_verb(Method, true), 
 									reason = ok, 
 									latency = ems_util:get_milliseconds() - T1,

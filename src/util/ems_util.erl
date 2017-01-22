@@ -399,7 +399,7 @@ json_field_format_table("0.0") -> "0.0";
 json_field_format_table(Value) when is_float(Value) -> Value;
 json_field_format_table(Value) when is_integer(Value) -> Value;
 json_field_format_table(Value) when is_boolean(Value) -> Value;
-json_field_format_table(Value) when is_binary(Value) -> io:format("binary"), unicode:characters_to_list(Value, utf8); 
+json_field_format_table(Value) when is_binary(Value) -> io:format("binary"), json_field_strip_and_escape(utf8_list_to_string(binary_to_list(Value)));
 json_field_format_table(null) -> "";
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(Value) when is_list(Value) -> io:format("HHHHH\n"), json_field_strip_and_escape(utf8_list_to_string(Value));
@@ -415,8 +415,33 @@ json_field_strip_and_escape(Value) ->
 			  end || Ch <- V]
 	end.
 
+json_encode_value(V) when is_binary(V) -> [<<"\""/utf8>>, V, <<"\""/utf8>>];
+json_encode_value(V) -> V.
 
-json_encode_table(Fields, Records) ->
+json_encode_record(_, [], true, RecordJson) -> 	
+	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"},"/utf8>>];
+json_encode_record(_, [], false, RecordJson) -> 		
+	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"}"/utf8>>];
+json_encode_record([F|FTail], [V|VTail], HasMoreRecords, RecordJson) -> 	
+	Field = case VTail of
+		[] -> iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_encode_value(V)]);
+		_ -> iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_encode_value(V), <<","/utf8>>])
+	end,
+	json_encode_record(FTail, VTail, HasMoreRecords, [Field | RecordJson]).
+
+json_encode_table(_, [], TableJson) -> 
+	iolist_to_binary([<<"["/utf8>>, lists:reverse(TableJson), <<"]"/utf8>>]);
+json_encode_table(Fields, [R|RTail], TableJson) -> 
+	Values = tuple_to_list(R),
+	HasMoreRecords = RTail =/= [],
+	R2 = json_encode_record(Fields, Values, HasMoreRecords, []),
+	json_encode_table(Fields, RTail, [R2 | TableJson]).
+
+json_encode_table(Fields, Records) -> 
+	Fields2 = [erlang:atom_to_binary(F, utf8) || F <- Fields],
+	json_encode_table(Fields2, Records, []).
+
+json_encode_table2(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
 							   lists:zipwith(fun(Fld, Value) -> 
 													io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)]) 
@@ -426,7 +451,9 @@ json_encode_table(Fields, Records) ->
 									[<<"{"/utf8>>, string:join(Obj, ", "), <<"}"/utf8>>] 
 						 end, Objects),
 	Objects3 = string:join(Objects2, ", "),
-	Result = unicode:characters_to_binary(iolist_to_binary(["[", Objects3, "]"]), utf8),
+	io:format("result0 is ~p\n", [Objects3]),
+	Result = unicode:characters_to_binary([<<"["/utf8>>, Objects3, <<"]"/utf8>>], utf8),
+	io:format("result is ~p\n", [Result]),
 	Result.
 
 
