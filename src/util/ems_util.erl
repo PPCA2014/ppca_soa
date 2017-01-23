@@ -415,7 +415,7 @@ json_field_strip_and_escape(Value) ->
 			  end || Ch <- V]
 	end.
 
-json_encode_value(V) when is_binary(V) -> [<<"\""/utf8>>, V, <<"\""/utf8>>];
+json_encode_value(V) when is_binary(V) -> [<<"\""/utf8>>, unicode:characters_to_list(V, utf8), <<"\""/utf8>>];
 json_encode_value(V) -> V.
 
 json_encode_record(_, [], true, RecordJson) -> 	
