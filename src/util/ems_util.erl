@@ -44,7 +44,8 @@
 		 date_add_minute/2,
 		 date_add_second/2,
 		 remove_quoted_str/1,
-		 boolean_to_binary/1]).
+		 boolean_to_binary/1,
+		 normalize_field_utf8/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -395,27 +396,28 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
-json_field_format_table([]) -> <<""/utf8>>;
-json_field_format_table("0.0") -> <<"0.0"/utf8>>;
+json_field_format_table(null) -> [<<"\""/utf8>>, <<"\""/utf8>>];
 json_field_format_table(V) when is_float(V) -> list_to_binary(mochinum:digits(V));
 json_field_format_table(V) when is_integer(V) -> list_to_binary(mochinum:digits(V));
 json_field_format_table(V) when is_boolean(V) -> boolean_to_binary(V);
 json_field_format_table(V) when is_binary(V) -> [<<"\""/utf8>>, ?UTF8_STRING(V), <<"\""/utf8>>];
-json_field_format_table(null) -> <<""/utf8>>;
-json_field_format_table(undefined) -> <<""/utf8>>;
-json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
 json_field_format_table(V) when is_list(V) -> [<<"\""/utf8>>, ?UTF8_STRING(list_to_binary(V)), <<"\""/utf8>>];
+json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> [<<"\""/utf8>>, list_to_binary(date_to_string(Data)), <<"\""/utf8>>];
 json_field_format_table(V) -> throw({error, einvalid_value, validation, "Could not serialize " ++ V}).
 
-json_field_strip_and_escape([]) ->	"";
-json_field_strip_and_escape(Value) -> 
-	case string:strip(Value) of
-		[] -> null;
-		V -> [case Ch of 
-					34 -> "\\\""; 
-					_ -> Ch 
-			  end || Ch <- V]
-	end.
+% Prepara um campo texto para o formato JSON UTF 8
+normalize_field_utf8("") ->	"";
+normalize_field_utf8(<<>>) -> "";
+normalize_field_utf8(V) when is_binary(V) -> normalize_field_utf8(binary_to_list(V));
+normalize_field_utf8(V) -> 
+	Text = case string:strip(V) of
+				[] -> "";
+				V2 -> [case Ch of 
+							34 -> "\\\""; 
+							_ -> Ch 
+					  end || Ch <- V2, Ch > 31]
+			end,
+	list_to_binary(Text).
 
 json_encode_record(_, [], true, RecordJson) -> 	
 	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"},"/utf8>>];
@@ -508,4 +510,5 @@ boolean_to_binary(<<"false"/utf8>>) -> <<"false"/utf8>>;
 boolean_to_binary(<<"1"/utf8>>) -> <<"true"/utf8>>;
 boolean_to_binary(<<"0"/utf8>>) -> <<"false"/utf8>>;
 boolean_to_binary(_) -> <<"false"/utf8>>.
+
 

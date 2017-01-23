@@ -21,12 +21,12 @@
 -endif.
 
 -ifdef(win32_plataform).
-	-define(UTF8_STRING(Text), unicode:characters_to_list(Text, utf8)).
+	-define(UTF8_STRING(Text), unicode:characters_to_list(ems_util:normalize_field_utf8(Text), utf8)).
 -else.
-	-define(UTF8_STRING(Text), 		case check_encoding_bin(Text) of
-										utf8 -> io:format("text1 is ~p\n", [Text]), Text;
-										latin1 -> io:format("text2 is ~p\n", [Text]), unicode:characters_to_binary(Text, latin1, utf8)  
-									end
+	-define(UTF8_STRING(Text), case check_encoding_bin(Text) of
+									utf8 -> ems_util:normalize_field_utf8(Text);
+									latin1 -> unicode:characters_to_binary(ems_util:normalize_field_utf8(Text), latin1, utf8)  
+							   end
 ).
 -endif.
 

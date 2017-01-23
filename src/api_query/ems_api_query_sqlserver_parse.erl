@@ -118,7 +118,7 @@ parse_value(Param, Value, "lte", sql_integer) ->
 parse_value(_, _, _, _) -> 
 	erlang:error(einvalid_operator_filter).
 
-format_odbc_data_type(Value, sql_varchar) -> {sql_varchar, length(Value)};
+format_odbc_data_type(Value, sql_varchar) -> {sql_varchar, length(Value) + 3};
 format_odbc_data_type(_Value, sql_integer) -> sql_integer;
 format_odbc_data_type(_Value, sql_boolean) -> sql_boolean;
 format_odbc_data_type(_, _) -> erlang:error(einvalid_odbc_data_type).
