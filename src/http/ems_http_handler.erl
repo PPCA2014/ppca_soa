@@ -143,6 +143,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				<<_Content/binary>> -> 
+					?DEBUG("Payload is ~p.", [_Content]),
 					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
 									reason = case Reason of undefined -> ok; _ -> Reason end, 
 									latency = ems_util:get_milliseconds() - T1,

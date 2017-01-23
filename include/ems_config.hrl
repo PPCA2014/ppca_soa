@@ -20,6 +20,16 @@
 	-define(JSON_LIB, jsx).
 -endif.
 
+-ifdef(win32_plataform).
+	-define(UTF8_STRING(Text), unicode:characters_to_list(Text, utf8)).
+-else.
+	-define(UTF8_STRING(Text), 		case check_encoding_bin(Text) of
+										utf8 -> io:format("text1 is ~p\n", [Text]), Text;
+										latin1 -> io:format("text2 is ~p\n", [Text]), unicode:characters_to_binary(Text, latin1, utf8)  
+									end
+).
+-endif.
+
 
 % Tamanho máximo do payload do POST. Por default é 1M
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).

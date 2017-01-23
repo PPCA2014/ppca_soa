@@ -1,3 +1,4 @@
+echo off
 rmdir /S /Q priv\log
 rmdir /S /Q priv\db
-tools/rebar/rebar get-deps clean compile
+tools/rebar/rebar clean get-deps compile --config rebar_win.config

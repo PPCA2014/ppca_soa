@@ -43,7 +43,8 @@
 		 json_decode_as_map_file/1,
 		 date_add_minute/2,
 		 date_add_second/2,
-		 remove_quoted_str/1]).
+		 remove_quoted_str/1,
+		 boolean_to_binary/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -394,16 +395,17 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
-json_field_format_table([]) -> "";
-json_field_format_table("0.0") -> "0.0";
-json_field_format_table(Value) when is_float(Value) -> Value;
-json_field_format_table(Value) when is_integer(Value) -> Value;
-json_field_format_table(Value) when is_boolean(Value) -> Value;
-json_field_format_table(Value) when is_binary(Value) -> io:format("binary"), json_field_strip_and_escape(utf8_list_to_string(binary_to_list(Value)));
-json_field_format_table(null) -> "";
+json_field_format_table([]) -> <<""/utf8>>;
+json_field_format_table("0.0") -> <<"0.0"/utf8>>;
+json_field_format_table(V) when is_float(V) -> list_to_binary(mochinum:digits(V));
+json_field_format_table(V) when is_integer(V) -> list_to_binary(mochinum:digits(V));
+json_field_format_table(V) when is_boolean(V) -> boolean_to_binary(V);
+json_field_format_table(V) when is_binary(V) -> [<<"\""/utf8>>, ?UTF8_STRING(V), <<"\""/utf8>>];
+json_field_format_table(null) -> <<""/utf8>>;
+json_field_format_table(undefined) -> <<""/utf8>>;
 json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
-json_field_format_table(Value) when is_list(Value) -> io:format("HHHHH\n"), json_field_strip_and_escape(utf8_list_to_string(Value));
-json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
+json_field_format_table(V) when is_list(V) -> [<<"\""/utf8>>, ?UTF8_STRING(list_to_binary(V)), <<"\""/utf8>>];
+json_field_format_table(V) -> throw({error, einvalid_value, validation, "Could not serialize " ++ V}).
 
 json_field_strip_and_escape([]) ->	"";
 json_field_strip_and_escape(Value) -> 
@@ -415,19 +417,18 @@ json_field_strip_and_escape(Value) ->
 			  end || Ch <- V]
 	end.
 
-json_encode_value(V) when is_binary(V) -> [<<"\""/utf8>>, unicode:characters_to_list(V, utf8), <<"\""/utf8>>];
-json_encode_value(V) -> V.
-
 json_encode_record(_, [], true, RecordJson) -> 	
 	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"},"/utf8>>];
 json_encode_record(_, [], false, RecordJson) -> 		
 	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"}"/utf8>>];
 json_encode_record([F|FTail], [V|VTail], HasMoreRecords, RecordJson) -> 	
 	Field = case VTail of
-		[] -> iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_encode_value(V)]);
-		_ -> iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_encode_value(V), <<","/utf8>>])
+		[] -> iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_field_format_table(V)]);
+		_ -> 
+			iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_field_format_table(V), <<","/utf8>>])
 	end,
 	json_encode_record(FTail, VTail, HasMoreRecords, [Field | RecordJson]).
+
 
 json_encode_table(_, [], TableJson) -> 
 	iolist_to_binary([<<"["/utf8>>, lists:reverse(TableJson), <<"]"/utf8>>]);
@@ -437,9 +438,10 @@ json_encode_table(Fields, [R|RTail], TableJson) ->
 	R2 = json_encode_record(Fields, Values, HasMoreRecords, []),
 	json_encode_table(Fields, RTail, [R2 | TableJson]).
 
+-spec json_encode_table(list(binary()), list(binary())) -> string().
 json_encode_table(Fields, Records) -> 
-	Fields2 = [erlang:atom_to_binary(F, utf8) || F <- Fields],
-	json_encode_table(Fields2, Records, []).
+	Result = json_encode_table(Fields, Records, []),
+	Result.
 
 json_encode_table2(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
@@ -451,9 +453,7 @@ json_encode_table2(Fields, Records) ->
 									[<<"{"/utf8>>, string:join(Obj, ", "), <<"}"/utf8>>] 
 						 end, Objects),
 	Objects3 = string:join(Objects2, ", "),
-	io:format("result0 is ~p\n", [Objects3]),
 	Result = unicode:characters_to_binary([<<"["/utf8>>, Objects3, <<"]"/utf8>>], utf8),
-	io:format("result is ~p\n", [Result]),
 	Result.
 
 
@@ -498,4 +498,14 @@ date_add_second(Timestamp, Seconds) ->
 criptografia_sha1(Password) when is_binary(Password) ->
 	criptografia_sha1(binary_to_list(Password));
 criptografia_sha1(Password) -> base64:encode(sha1:binstring(Password)).
+
+boolean_to_binary(true) -> <<"true"/utf8>>;
+boolean_to_binary(false) -> <<"false"/utf8>>;
+boolean_to_binary(1) -> <<"true"/utf8>>;
+boolean_to_binary(0) -> <<"false"/utf8>>;
+boolean_to_binary(<<"true"/utf8>>) -> <<"true"/utf8>>;
+boolean_to_binary(<<"false"/utf8>>) -> <<"false"/utf8>>;
+boolean_to_binary(<<"1"/utf8>>) -> <<"true"/utf8>>;
+boolean_to_binary(<<"0"/utf8>>) -> <<"false"/utf8>>;
+boolean_to_binary(_) -> <<"false"/utf8>>.
 
