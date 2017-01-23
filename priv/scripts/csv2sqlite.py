@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!python3
 # -*- coding: utf-8 -*-
 #
 # Author: Everton de Vargas Agilar
@@ -8,10 +8,7 @@
 #
 #
 # Requirements to run the service:
-#		* Software Python 2 ou 3
-#
-#
-#
+#		* Python 3 and sqlite3 installed
 #
 #
 # How to use: 
