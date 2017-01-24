@@ -16,19 +16,20 @@ export class LoginComponent implements OnInit {
   private error: string = '';
 
 
+
+
   constructor(
     private router: Router,
     private authenticationService: AuthenticationService) { }
 
   ngOnInit() {
-    
+
   }
 
   login() {
     this.loading = true;
-    this.authenticationService.getUrl(this.model.username, this.model.password).subscribe(
-      result => {
-        this.authenticationService.login()
+
+        this.authenticationService.login("http://127.0.0.1:2301/authorize?grant_type=password&username="+this.model.username+"&password="+this.model.password,'')
           .subscribe(result => {
             if (result === true) {
               this.authenticationService.getSitemap().subscribe(resp=>{
@@ -44,8 +45,7 @@ export class LoginComponent implements OnInit {
                 this.error = 'Usuario e/ou senha inválida';
               }
           );
-      });
-   
+
   }
 
 }

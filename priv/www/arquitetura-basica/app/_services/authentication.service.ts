@@ -24,8 +24,8 @@ export class AuthenticationService  {
     this.token = currentUser && currentUser.token;
   }
 
-  login(): Observable<boolean> {
-    return this.http.post(this.url,this.body)
+  login(url:string, body:string): Observable<boolean> {
+    return this.http.post(url,body)
       .map((response: Response) => {
         let token = response.json() && response.json();
         if (token) {
@@ -88,5 +88,6 @@ export class AuthenticationService  {
     localStorage.removeItem('currentUser');
     this.route.navigate(['']);
   }
+
 
 }
