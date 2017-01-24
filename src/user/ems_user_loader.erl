@@ -130,6 +130,7 @@ load_users_from_datasource(Datasource) ->
 					{_,_,[]} -> ok;
 					{_, _, Records} ->
 						F = fun() ->
+							io:format("aqui1\n"),
 							Count = insert_users(Records, 0),
 							ems_logger:info("~p load ~p users from database", [?SERVER, Count])
 						end,
@@ -191,13 +192,15 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 
 insert_users([], Count) -> Count;
 insert_users([{Codigo, Login, Name, Cpf, Email, Password}|T], Count) ->
+	io:format("insert ~p\n", [{Codigo, Login, Name, Cpf, Email, Password}]),
 	User = #user{id = ems_db:sequence(user),
 				 codigo = Codigo,
-				 login = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Login))),
-				 name = list_to_binary(ems_util:utf8_list_to_string(Name)),
-				 cpf = list_to_binary(ems_util:utf8_list_to_string(Cpf)),
-				 email = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Email))),
-				 password = list_to_binary(ems_util:utf8_list_to_string(Password))},
+				 login = ?UTF8_STRING(Login),
+				 name = ?UTF8_STRING(Name),
+				 cpf = ?UTF8_STRING(Cpf),
+				 email = ?UTF8_STRING(Email),
+				 password = list_to_binary(Password)},
+	%io:format("record ~p\n", [User]),
 	mnesia:dirty_write(User),
 	insert_users(T, Count+1).
 
@@ -209,11 +212,11 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Situacao}|T], Count) -
 			case Situacao of
 				1 -> % active
 					User2 = User#user{codigo = Codigo,
-									  login = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Login))),
-									  name = list_to_binary(ems_util:utf8_list_to_string(Name)),
-									  cpf = list_to_binary(ems_util:utf8_list_to_string(Cpf)),
-									  email = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Email))),
-									  password = list_to_binary(ems_util:utf8_list_to_string(Password))},
+									  login = ?UTF8_STRING(Login),
+									  name = ?UTF8_STRING(Name),
+									  cpf = ?UTF8_STRING(Cpf),
+									  email = ?UTF8_STRING(Email),
+									  password = list_to_binary(Password)},
 					mnesia:write(User2);
 				_ -> 
 					% if inative then delete
@@ -222,11 +225,11 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Situacao}|T], Count) -
 		{error, enoent} -> 
 			User = #user{id = ems_db:sequence(user),
 				 codigo = Codigo,
-				 login = list_to_binary(string:to_lower(ems_util:utf8_list_to_string(Login))),
-				 name = list_to_binary(ems_util:utf8_list_to_string(Name)),
-				 cpf = list_to_binary(ems_util:utf8_list_to_string(Cpf)),
-				 email = list_to_binary(ems_util:utf8_list_to_string(Email)),
-				 password = list_to_binary(ems_util:utf8_list_to_string(Password))},
+				 login = ?UTF8_STRING(Login),
+				 name = ?UTF8_STRING(Name),
+				 cpf = ?UTF8_STRING(Cpf),
+				 email = ?UTF8_STRING(Email),
+				 password = list_to_binary(Password)},
 			mnesia:write(User)
 	end,
 	update_users(T, Count+1).
