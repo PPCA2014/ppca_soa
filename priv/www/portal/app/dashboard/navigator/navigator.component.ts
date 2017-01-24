@@ -30,9 +30,14 @@ export class NavigatorController {
 		"name": "login",
 		"title": "Entrar"
 	}
-	
+
+	private selected:any;
+
+	private componente:any;
+
+
 	constructor(private sitemapService: SitemapService, private _ngZone: NgZone, private authGuard:AuthGuard) {
-		
+
 	}
 
 	ngOnInit() {
@@ -54,12 +59,15 @@ export class NavigatorController {
 					this.current = this.sitemap;
 				} else {
 					this.current = item;
+					this.componente = item.component;
+					this.componente = "<login></login>";
 				}
 			} else {
 				this.current = item;
 			}
 		}else{
 			this.current = this.login;
+			this.componente = "<login></login>";
 		}
 
 		this.breadcrumb = this.make_breadcrumb(this.current, []);
