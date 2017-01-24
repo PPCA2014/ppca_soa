@@ -409,6 +409,7 @@ parse_datasource(undefined, _) -> undefined;
 parse_datasource(M, Rowid) -> 
 	#service_datasource{rowid = Rowid,
 						type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
+						driver = maps:get(<<"driver">>, M, <<>>),
 						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
 						table_name = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
 						primary_key = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),

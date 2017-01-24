@@ -19,7 +19,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([get_connection/1, release_connection/1, connection_pool_size/1, param_query/3, param_query/4]).
+-export([get_connection/1, release_connection/1, connection_pool_size/1, param_query/2, param_query/3, param_query/4]).
 
 -define(SERVER, ?MODULE).
 
@@ -41,30 +41,24 @@ stop() ->
     gen_server:cast(?SERVER, shutdown).
  
  
-get_connection(Datasource = #service_datasource{rowid = Rowid}) ->
-	case erlang:get(Rowid) of
-		undefined ->
-			case gen_server:call(?SERVER, {create_connection, Datasource}) of
-				{ok, Datasource2} = Result ->
-					?DEBUG("Get odbc connection: ~p.", [Datasource2]),
-					erlang:put(Rowid, Datasource2),
-					Result;
-				Error -> 
-					?DEBUG("Fail get new odbc connection: ~p.", [Error]),
-					Error
-			end;
-		DatasourceCache -> {ok, DatasourceCache}
+get_connection(Datasource) ->
+	case gen_server:call(?SERVER, {create_connection, Datasource}) of
+		{ok, Datasource2} = Result ->
+			?DEBUG("Get odbc connection: ~p.", [Datasource2]),
+			Result;
+		Error -> 
+			?DEBUG("Fail get new odbc connection: ~p.", [Error]),
+			Error
 	end.
 
 
-release_connection(Datasource = #service_datasource{rowid = Rowid}) ->
-	case erlang:erase(Rowid) of
-		undefined -> ok;
-		_ -> gen_server:call(?SERVER, {release_connection, Datasource})
-	end.
-
+release_connection(Datasource) ->
+	gen_server:call(?SERVER, {release_connection, Datasource}).
 
 connection_pool_size(Datasource) -> gen_server:call(?SERVER, {get_size, Datasource}).
+
+param_query(#service_datasource{owner = Owner}, Sql) ->
+	gen_server:call(Owner, {param_query, Sql, [], undefined}).
 
 param_query(#service_datasource{owner = Owner}, Sql, Params) ->
 	gen_server:call(Owner, {param_query, Sql, Params, undefined}).

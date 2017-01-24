@@ -20,6 +20,12 @@
 	-define(JSON_LIB, jsx).
 -endif.
 
+-ifdef(win32_plataform).
+	-define(UTF8_STRING(Text), ems_util:utf8_string_win(Text)).
+-else.
+	-define(UTF8_STRING(Text), ems_util:utf8_string_linux(Text)).
+-endif.
+
 
 % Tamanho máximo do payload do POST. Por default é 1M
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
@@ -95,16 +101,10 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Quanto tempo aguardar um serviço
--define(SERVICE_TIMEOUT, 4000). % 4 segundos
+-define(SERVICE_TIMEOUT, 15000). % 15 segundos segundos
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?PRIV_PATH ++ "/scripts/csv2sqlite.py"). 
-
-% Caminho do banco de dados sqlite
--define(DATABASE_SQLITE_PATH, ?DATABASE_PATH ++ "/ems_dynamic_view.dat").	
-
-% String de conexão do banco de dados sqlite 
--define(DATABASE_SQLITE_STRING_CONNECTION, lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [?DATABASE_SQLITE_PATH]))).	
 
 % Quanto tempo uma parsed query mnesia fica em cache para reutilização (módulo ems_db)
 -define(LIFE_TIME_PARSED_QUERY, 60000 * 15). % 15 minutos
@@ -122,13 +122,24 @@
 -define(TIMEOUT_DISPATCHER_CACHE, 1000).
 
 % Number of datasource entries by odbc connection pool
--define(MAX_CONNECTION_BY_POOL, 50).
+-define(MAX_CONNECTION_BY_POOL, 5).
 
 % Header http cache-control 24 horas
 -define(DEFAULT_CACHE_CONTROL, <<"no-cache, public">>).
 
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
+
+% HTTP access control (CORS) headers
+-define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
+-define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).
+-define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"*">>).
+-define(ACCESS_CONTROL_ALLOW_METHODS, <<"GET, POST, PUT, DELETE, OPTIONS">>).
+-define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
+
+
+-define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
+-define(CACHE_CONTROL_NO_CACHE, <<"no-cache">>).
 
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]

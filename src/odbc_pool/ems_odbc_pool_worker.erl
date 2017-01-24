@@ -90,8 +90,12 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
     
-do_connect(Datasource = #service_datasource{connection = Connection, 
-											timeout = _Timeout}) -> 
+do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite, driver = <<"sqlite3">>}) -> 
+
+	{ok, ConnRef} = esqlite3:open(Connection),
+	Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
+	{ok, Datasource2};
+do_connect(Datasource = #service_datasource{connection = Connection}) -> 
 
 	try
 		case odbc:connect(Connection, []) of
@@ -111,9 +115,25 @@ do_connect(Datasource = #service_datasource{connection = Connection,
 			{error, PosixError2}
 	end.
 
+do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type = sqlite, driver = <<"sqlite3">>}}) -> 
+	esqlite3:close(ConnRef);
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
+do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																						   type = sqlite,
+																						   driver = <<"sqlite3">>}}) ->
+	Params2 = [hd(V) || {_, V} <- Params],
+	case esqlite3:prepare(Sql, ConnRef) of
+        {ok, Statement} ->
+            ok = esqlite3:bind(Statement, Params2),
+            Records = esqlite3:fetchall(Statement),
+			Fields = tuple_to_list(esqlite3:column_names(Statement)),
+			Fields2 = [erlang:atom_to_binary(F, utf8) || F <- Fields],
+			?DEBUG("Sqlite resultset query: ~p.", [Records]),
+			{ok, {selected, Fields2, Records}, Datasource};
+        Error -> Error
+    end;
 do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																						   connection = Connection,
 																						   timeout = Timeout}}) ->
@@ -121,23 +141,24 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, Reason} ->
 				% O erro pode ser perda de conexão ou falha na rede. Reconecta e tenta novamente
-				ems_logger:error("odbc param_query error: ~p. Reconecting...", [Reason]),
+				ems_logger:error("Odbc param_query error: ~p. Reconecting...", [Reason]),
 				case do_connect(Datasource) of
 					{ok, Datasource2} ->
 						case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 							{error, Reason1} -> 
-								ems_logger:error("odbc param_query fail after reconecting on connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
+								ems_logger:error("Odbc param_query fail after reconecting: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
 								{error, eodbc_connection_closed};
-							Result -> 
-								{ok, Result, Datasource2}
+							{selected, Fields2, Result2} -> 
+								?DEBUG("Odbc resultset after reconecting query: ~p.", [Result2]),
+								{ok, {selected, [erlang:list_to_binary(F) || F <- Fields2], Result2}, Datasource2}
 						end;
 					{error, Reason2} -> 
-						ems_logger:error("odbc param_query reconecting fail after connection_closed: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
+						ems_logger:error("Odbc param_query reconecting fail after: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
 						{error, eodbc_connection_closed}
 				end;
-			Result -> 
-				?DEBUG("Resultset query: ~p.", [Result]),
-				Result
+			{selected, Fields1, Result1} -> 
+				?DEBUG("Odbc resultset query: ~p.", [Result1]),
+				{ok, {selected, [erlang:list_to_binary(F) || F <- Fields1], Result1}, Datasource}
 		end
 	catch
 		_:timeout -> 
@@ -147,17 +168,18 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 				{ok, Datasource3} ->
 					case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 						{error, Reason4} -> 
-							ems_logger:error("odbc param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
+							ems_logger:error("Odbc param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
 							{error, eodbc_connection_closed};
-						Result3 -> 
-							{ok, Result3, Datasource3}
+						{selected, Fields3, Result3} -> 
+							?DEBUG("Odbc resultset after reconecting query on timeout: ~p.", [Result3]),
+							{ok, {selected, [erlang:list_to_binary(F) || F <- Fields3], Result3}, Datasource3}
 					end;
 				{error, Reason5} -> 
-					ems_logger:error("odbc param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
+					ems_logger:error("Odbc param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
 					{error, eodbc_connection_closed}
 			end;
 		_:Reason6 -> 
-			ems_logger:error("odbc param_query exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
+			ems_logger:error("Odbc param_query exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
 			{error, eodbc_connection_closed}
 	end.
 

@@ -43,7 +43,11 @@
 		 json_decode_as_map_file/1,
 		 date_add_minute/2,
 		 date_add_second/2,
-		 remove_quoted_str/1]).
+		 remove_quoted_str/1,
+		 boolean_to_binary/1,
+		 normalize_field_utf8/1,
+		 utf8_string_win/1,
+		 utf8_string_linux/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -166,7 +170,6 @@ json_encode(T) when is_tuple(T) ->
 	L = tuple_to_binlist(T),
 	?JSON_LIB:encode(L);
 json_encode(L) when is_list(L) ->
-	io:format("aqui1"),
 	case io_lib:printable_list(L) of
 		true -> L2 = iolist_to_binary(L);
 		false -> L2 = list_to_binlist(L)
@@ -395,38 +398,66 @@ node_is_live(Node) ->
 % Retorna somente a parte do name do node sem a parte do hostname após @
 get_node_name() -> hd(string:tokens(atom_to_list(node()), "@")).
 
-json_field_format_table([]) -> null;
-json_field_format_table("0.0") -> "0.0";
-json_field_format_table(Value) when is_float(Value) -> Value;
-json_field_format_table(Value) when is_integer(Value) -> Value;
-json_field_format_table(Value) when is_boolean(Value) -> Value;
-json_field_format_table(null) -> null;
-json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> date_to_string(Data);
-json_field_format_table(Value) when is_list(Value) -> json_field_strip_and_escape(utf8_list_to_string(Value));
-json_field_format_table(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
+json_field_format_table(null) -> [<<"\""/utf8>>, <<"\""/utf8>>];
+json_field_format_table(V) when is_float(V) -> list_to_binary(mochinum:digits(V));
+json_field_format_table(V) when is_integer(V) -> list_to_binary(mochinum:digits(V));
+json_field_format_table(V) when is_boolean(V) -> boolean_to_binary(V);
+json_field_format_table(V) when is_binary(V) -> [<<"\""/utf8>>, ?UTF8_STRING(V), <<"\""/utf8>>];
+json_field_format_table(V) when is_list(V) -> [<<"\""/utf8>>, ?UTF8_STRING(list_to_binary(V)), <<"\""/utf8>>];
+json_field_format_table(Data = {{_,_,_},{_,_,_}}) -> [<<"\""/utf8>>, list_to_binary(date_to_string(Data)), <<"\""/utf8>>];
+json_field_format_table(V) -> throw({error, einvalid_value, validation, "Could not serialize " ++ V}).
 
-json_field_strip_and_escape([]) ->	null;
-json_field_strip_and_escape(Value) -> 
-	case string:strip(Value) of
-		[] -> null;
-		V -> [case Ch of 
-					34 -> "\\\""; 
-					_ -> Ch 
-			  end || Ch <- V]
-	end.
+% Prepara um campo texto para o formato JSON UTF 8
+normalize_field_utf8("") ->	"";
+normalize_field_utf8(<<>>) -> "";
+normalize_field_utf8(V) when is_binary(V) -> normalize_field_utf8(binary_to_list(V));
+normalize_field_utf8(V) -> 
+	Text = case string:strip(V) of
+				[] -> "";
+				V2 -> [case Ch of 
+							34 -> "\\\""; 
+							_ -> Ch 
+					  end || Ch <- V2, Ch > 31]
+			end,
+	list_to_binary(Text).
+
+json_encode_record(_, [], true, RecordJson) -> 	
+	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"},"/utf8>>];
+json_encode_record(_, [], false, RecordJson) -> 		
+	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"}"/utf8>>];
+json_encode_record([F|FTail], [V|VTail], HasMoreRecords, RecordJson) -> 	
+	Field = case VTail of
+		[] -> iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_field_format_table(V)]);
+		_ -> 
+			iolist_to_binary([<<"\""/utf8>>, F, <<"\""/utf8>>, <<":"/utf8>>, json_field_format_table(V), <<","/utf8>>])
+	end,
+	json_encode_record(FTail, VTail, HasMoreRecords, [Field | RecordJson]).
 
 
-json_encode_table(Fields, Records) ->
+json_encode_table(_, [], TableJson) -> 
+	iolist_to_binary([<<"["/utf8>>, lists:reverse(TableJson), <<"]"/utf8>>]);
+json_encode_table(Fields, [R|RTail], TableJson) -> 
+	Values = tuple_to_list(R),
+	HasMoreRecords = RTail =/= [],
+	R2 = json_encode_record(Fields, Values, HasMoreRecords, []),
+	json_encode_table(Fields, RTail, [R2 | TableJson]).
+
+-spec json_encode_table(list(binary()), list(binary())) -> string().
+json_encode_table(Fields, Records) -> 
+	Result = json_encode_table(Fields, Records, []),
+	Result.
+
+json_encode_table2(Fields, Records) ->
 	Objects = lists:map(fun(T) -> 
 							   lists:zipwith(fun(Fld, Value) -> 
 													io_lib:format(<<"\"~s\":~p"/utf8>>, [Fld, json_field_format_table(Value)]) 
 											 end,  Fields, tuple_to_list(T))
 					end, Records), 
 	Objects2 = lists:map(fun(Obj) -> 
-									lists:flatten(["{", string:join(Obj, ", "), "}"]) 
+									[<<"{"/utf8>>, string:join(Obj, ", "), <<"}"/utf8>>] 
 						 end, Objects),
 	Objects3 = string:join(Objects2, ", "),
-	Result = unicode:characters_to_binary(["[", Objects3, "]"]),
+	Result = unicode:characters_to_binary([<<"["/utf8>>, Objects3, <<"]"/utf8>>], utf8),
 	Result.
 
 
@@ -434,7 +465,7 @@ utf8_list_to_string(null) -> "";
 utf8_list_to_string(Value) ->
 	try
 		case check_encoding_bin(list_to_binary(Value)) of
-			utf8 -> unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(Value)));
+			utf8 -> unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(Value)), utf8);
 			latin1 -> unicode:characters_to_list(Value, utf8)
 		end
 	catch
@@ -471,4 +502,30 @@ date_add_second(Timestamp, Seconds) ->
 criptografia_sha1(Password) when is_binary(Password) ->
 	criptografia_sha1(binary_to_list(Password));
 criptografia_sha1(Password) -> base64:encode(sha1:binstring(Password)).
+
+boolean_to_binary(true) -> <<"true"/utf8>>;
+boolean_to_binary(false) -> <<"false"/utf8>>;
+boolean_to_binary(1) -> <<"true"/utf8>>;
+boolean_to_binary(0) -> <<"false"/utf8>>;
+boolean_to_binary(<<"true"/utf8>>) -> <<"true"/utf8>>;
+boolean_to_binary(<<"false"/utf8>>) -> <<"false"/utf8>>;
+boolean_to_binary(<<"1"/utf8>>) -> <<"true"/utf8>>;
+boolean_to_binary(<<"0"/utf8>>) -> <<"false"/utf8>>;
+boolean_to_binary(_) -> <<"false"/utf8>>.
+
+
+utf8_string_win(null) -> <<""/utf8>>;
+utf8_string_win(Text) when is_list(Text) -> 
+	utf8_string_win(list_to_binary(Text));
+utf8_string_win(Text) ->
+	unicode:characters_to_list(normalize_field_utf8(Text), utf8).
+
+utf8_string_linux(null) -> <<""/utf8>>;
+utf8_string_linux(Text) when is_list(Text) -> 
+	utf8_string_linux(list_to_binary(Text));
+utf8_string_linux(Text) ->
+	case ems_util:check_encoding_bin(Text) of
+		utf8 -> normalize_field_utf8(Text);
+		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
+	end.
 

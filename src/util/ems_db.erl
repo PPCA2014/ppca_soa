@@ -15,7 +15,7 @@
 		 find_first/2, find_first/3, find_first/4]).
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
 -export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
--export([get_connection/1, release_connection/1]).
+-export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1]).
 -export([get_param/1, set_param/2]).
 
 -include("../../include/ems_config.hrl").
@@ -199,7 +199,7 @@ counter(Name, Inc) -> mnesia:dirty_update_counter(counter, Name, Inc).
 get_connection(Datasource = #service_datasource{type = sqlserver}) ->
 	get_odbc_connection(Datasource);
 get_connection(Datasource = #service_datasource{type = csvfile}) ->
-	get_odbc_connection_csv_file(Datasource);
+	get_sqlite_connection_from_csv_file(Datasource);
 get_connection(Datasource = #service_datasource{type = mnesia}) ->
 	{ok, Datasource}.
 
@@ -211,21 +211,22 @@ release_connection(Datasource) -> ems_odbc_pool:release_connection(Datasource).
 get_odbc_connection(Datasource) -> ems_odbc_pool:get_connection(Datasource).
 
 
-get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileName,
-															  table_name = TableName,
-															  csv_delimiter = Delimiter}) -> 
+create_sqlite_from_csv(#service_datasource{connection = FileName,
+										   table_name = TableName,
+										   csv_delimiter = Delimiter}) -> 
 	FileNamePath = ?CSV_FILE_PATH ++ "/" ++ FileName,
 	case filelib:last_modified(FileNamePath) of
 		0 -> {error, ecsvfile_not_exist};
 		LastModified ->
-			DatabaseExist = filelib:is_file(?DATABASE_SQLITE_PATH), 
+			SqliteFile = ?DATABASE_PATH ++ "/sqlite3_" ++ TableName,
+			DatabaseExist = filelib:is_file(SqliteFile), 
 			F = fun() ->
 				Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
 				case Ctrl =:= [] orelse not DatabaseExist orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
 					true ->
-						Csv2SqliteCmd = lists:flatten(io_lib:format("~s '~s\' '~s' '~s' '~s'",
+						Csv2SqliteCmd = lists:flatten(io_lib:format('~s "~s" "~s" "~s" "~s"',
 																	 [?CSV2SQLITE_PATH,
-																	  ?DATABASE_SQLITE_PATH, 
+																	  SqliteFile, 
 																	  TableName, 
 																	  FileNamePath, 
 																	  Delimiter])),
@@ -233,12 +234,24 @@ get_odbc_connection_csv_file(Datasource = #service_datasource{connection = FileN
 						os:cmd(Csv2SqliteCmd),
 						mnesia:write(#ctrl_sqlite_table{file_name = FileName, last_modified = LastModified});
 					false -> 
-						% não foi necessário fazer a carga dos dados do arquivo para o banco sqlite
+						% Não foi necessário criar o arquivo csv. Não houve mudança no arquivo csv
 						ok
 				end
 			end,
 			mnesia:activity(transaction, F),
-			get_odbc_connection(Datasource#service_datasource{type = sqlite, connection = ?DATABASE_SQLITE_STRING_CONNECTION})
+			SqliteFile
+	end.
+
+
+get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Driver}) -> 
+	SqliteFile = create_sqlite_from_csv(Datasource),
+	case Driver of
+		<<"odbc">> ->
+			StringConnection = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [SqliteFile])),
+			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = StringConnection});
+		<<"sqlite3">> ->
+			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = SqliteFile});
+		_ -> throw({error, einvalid_driver_datasource})
 	end.
 
 

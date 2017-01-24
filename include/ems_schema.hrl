@@ -6,7 +6,6 @@
 %% @copyright ErlangMS Team
 %%********************************************************************
 
-
 -record(sequence, {key :: atom(), 
 				   index :: non_neg_integer()}).
 
@@ -73,18 +72,19 @@
 
 
 -record(service_datasource, {rowid :: non_neg_integer(),
-							 type :: string(),
-							 connection :: string(),
-							 table_name :: string(),
-							 primary_key :: string(),
+							 type :: atom(),
+							 driver :: atom(),
+							 connection = <<>> :: binary(),
+							 table_name = <<>> :: binary(),
+							 primary_key = <<>> :: binary(),
+							 csv_delimiter = <<";">> :: binary(),
+							 sql = <<>> :: binary(),
+							 timeout = 4000 :: non_neg_integer(),
+							 max_pool_size = 1 :: non_neg_integer(),
 							 conn_ref,
 							 pid_module,
 							 pid_module_ref,
-							 csv_delimiter :: string(),
-							 sql :: string(),
-							 timeout :: non_neg_integer(),
-							 owner,
-							 max_pool_size :: non_neg_integer()
+							 owner
 							}).
 
 
