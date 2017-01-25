@@ -45,13 +45,13 @@ WORKING_DIR=$(dirname $0)
 cd $WORKING_DIR
 
 
-# Pega a versão do barramneto que está no arquivo rebar.config
-VERSION_RELEASE=$(cat ../src/ems_bus.app.src | sed -rn  's/^.*\{vsn.*([0-9]\.[0-9].[0-9]).*$/\1/p')
+# Pega a versão dop build do barramneto que está no arquivo src/ems_bus.app.src
+VERSION_RELEASE=$(cat ../src/ems_bus.app.src | sed -rn  's/^.*\{vsn.*([0-9]{1,2}\.[0-9]{1,2}.[0-9]{1,2}).*$/\1/p')
 [ -z "$VERSION_RELEASE" ] && die "Não foi possível obter a versão a ser gerada no rebar.config"
 echo "Aguarde, gerando a versão ems-bus-$VERSION_RELEASE do barramento, isso pode demorar um pouco!"
 
 
-# Clean
+# ***** Clean e preparação para build ##########*
 echo "Limpando a pasta rel..."
 rm -Rf ems-bus
 rm -Rf *.tar.gz
@@ -64,16 +64,18 @@ for SKEL_DEB_PACKAGE in `find ./deb/* -maxdepth 0 -type d`; do
 done
 
 
-# Recompila todo projeto antes de gerar a release
+# ########## Recompila todo projeto antes de gerar a release ########## 
 echo "Recompilando os fontes..."
 cd ..
+rm -f erl_crash.dump
+rm -rf priv/db
+rm -rf priv/log
 rebar clean 1> /dev/null || die "Falha ao limpar os fontes!"
 rebar get-deps 1>/dev/null || die "Falha ao obter as dependências!"
 rebar compile 1> /dev/null || die "Falha ao recompilar os fontes!"
+
+# ******** Gera o release na pasta rel *********
 cd rel
-
-
-# Gera o release
 echo "Gerando release com rebar..."
 rebar compile generate || die "Falha ao gerar o release com rebar compile generate!"
 
@@ -81,6 +83,7 @@ rebar compile generate || die "Falha ao gerar o release com rebar compile genera
 # Renomeia a pasta gerada e o nome do script ems_bus para ems-bus
 mv ems_bus ems-bus || die "Não foi possível renomear a pasta ems_bus para ems-bus!"
 mv ems-bus/bin/ems_bus ems-bus/bin/ems-bus
+rm -rf ems-bus/priv/www/
 
 
 # Cria o link simbólico da pasta priv para a lib do projeto ems_bus-$VERSION/priv
@@ -89,6 +92,7 @@ ln -sf lib/ems_bus-$VERSION_RELEASE/priv/ priv || die "Não foi possível criar 
 # Faz algumas limpezas para não ir lixo no pacote
 rm -Rf log || die "Não foi possível remover a pasta log na limpeza!"
 rm -rf priv/db || die "Não foi possível remover a pasta db na limpeza!"
+rm -rf priv/www
 cd ..
 
 

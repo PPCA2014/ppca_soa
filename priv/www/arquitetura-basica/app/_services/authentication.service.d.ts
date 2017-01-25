@@ -12,7 +12,7 @@ export declare class AuthenticationService {
     private url;
     private body;
     constructor(http: Http, route: Router, options: RequestOptions);
-    login(): Observable<boolean>;
+    login(url: string, body: string): Observable<boolean>;
     getUrl(login: string, senha: string): Observable<string>;
     periodicIncrement(sessionTime: number): void;
     cancelPeriodicIncrement(): void;

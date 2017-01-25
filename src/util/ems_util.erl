@@ -45,7 +45,9 @@
 		 date_add_second/2,
 		 remove_quoted_str/1,
 		 boolean_to_binary/1,
-		 normalize_field_utf8/1]).
+		 normalize_field_utf8/1,
+		 utf8_string_win/1,
+		 utf8_string_linux/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -511,4 +513,19 @@ boolean_to_binary(<<"1"/utf8>>) -> <<"true"/utf8>>;
 boolean_to_binary(<<"0"/utf8>>) -> <<"false"/utf8>>;
 boolean_to_binary(_) -> <<"false"/utf8>>.
 
+
+utf8_string_win(null) -> <<""/utf8>>;
+utf8_string_win(Text) when is_list(Text) -> 
+	utf8_string_win(list_to_binary(Text));
+utf8_string_win(Text) ->
+	unicode:characters_to_list(normalize_field_utf8(Text), utf8).
+
+utf8_string_linux(null) -> <<""/utf8>>;
+utf8_string_linux(Text) when is_list(Text) -> 
+	utf8_string_linux(list_to_binary(Text));
+utf8_string_linux(Text) ->
+	case ems_util:check_encoding_bin(Text) of
+		utf8 -> normalize_field_utf8(Text);
+		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
+	end.
 

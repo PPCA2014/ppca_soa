@@ -51,6 +51,8 @@ var NavigatorController = (function () {
                 }
                 else {
                     this.current = item;
+                    this.componente = item.component;
+                    this.componente = "<login></login>";
                 }
             }
             else {
@@ -59,6 +61,7 @@ var NavigatorController = (function () {
         }
         else {
             this.current = this.login;
+            this.componente = "<login></login>";
         }
         this.breadcrumb = this.make_breadcrumb(this.current, []);
         // Executado após renderizar a tela para configurar os inputs com a biblioteca fpc
