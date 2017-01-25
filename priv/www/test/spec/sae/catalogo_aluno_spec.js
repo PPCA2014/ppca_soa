@@ -23,7 +23,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sigra/aluno",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -49,7 +49,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/ocorrencia",
 					data : JSON.stringify(objOcorrencia),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -73,7 +73,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/ocorrencia/"+ idOcorrencia,
 					data : JSON.stringify(objOcorrenciaUpdate),
 					type: "PUT",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -89,7 +89,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/ocorrencia/"+ idOcorrencia,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -105,7 +105,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/ocorrencia/"+ idOcorrencia,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -121,7 +121,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sigra/aluno/"+ idAluno,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -150,7 +150,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sigra/aluno",
 					data : JSON.stringify(objAluno),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -178,7 +178,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/assinatura_termo_concessao_vale_alimentacao",
 					data : JSON.stringify(objTermo),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -201,7 +201,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/assinatura_termo_concessao_vale_alimentacao/"+ idTermo,
 					data : JSON.stringify(objTermoUpdate),
 					type: "PUT",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -217,7 +217,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/assinatura_termo_concessao_vale_alimentacao/"+ idTermo,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -233,7 +233,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/assinatura_termo_concessao_vale_alimentacao/"+ idTermo,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -249,7 +249,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sigra/aluno/"+ idAluno,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -276,7 +276,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sigra/aluno",
 					data : JSON.stringify(objAluno),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -301,7 +301,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/agenda",
 					data : JSON.stringify(objAgenda),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -322,7 +322,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/agendamento_entrevista",
 					data : JSON.stringify(objAgendamento),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -334,7 +334,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/agendamento_entrevista/"+ idAgendamento,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -349,7 +349,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/agendamento_entrevista/"+ idAgendamento,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -360,7 +360,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/agenda/"+ idAgenda,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -371,7 +371,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sigra/aluno/"+ idAluno,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -398,7 +398,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sigra/aluno",
 					data : JSON.stringify(objAluno),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -423,7 +423,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/agenda",
 					data : JSON.stringify(objAgenda),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -444,7 +444,7 @@ describe("AlunoSae", function() {
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/agendamento_entrevista",
 					data : JSON.stringify(objAgendamento),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -456,7 +456,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/agendamento_entrevista",
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -471,7 +471,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/aluno/"+ idAluno + "/agendamento_entrevista/"+ idAgendamento,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -482,7 +482,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/agenda/"+ idAgenda,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -493,7 +493,7 @@ describe("AlunoSae", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sigra/aluno/"+ idAluno,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

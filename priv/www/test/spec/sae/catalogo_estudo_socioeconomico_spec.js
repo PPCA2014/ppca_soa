@@ -10,7 +10,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sae/estudo/socioeconomico",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -41,7 +41,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sigra/aluno",
 					data : JSON.stringify(objAluno),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -63,7 +63,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/questionario",
 					data : JSON.stringify(objQuestionario),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -84,7 +84,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/categoria_pergunta",
 					data : JSON.stringify(objCategoria),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -108,7 +108,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/pergunta",
 					data : JSON.stringify(objPergunta01),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -134,7 +134,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta1 + "/resposta",
 					data : JSON.stringify(objRespostaSim),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -147,7 +147,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta1 + "/resposta",
 					data : JSON.stringify(objRespostaNao),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -172,7 +172,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/pergunta",
 					data : JSON.stringify(objPergunta2),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -190,7 +190,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta",
 					data : JSON.stringify({"pergunta" : idPergunta1}),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -203,7 +203,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta",
 					data : JSON.stringify({"pergunta" : idPergunta2}),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -227,7 +227,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sae/estudo/socioeconomico",
 					data : JSON.stringify(objEstudo),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -247,7 +247,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo,
 					data : JSON.stringify(objEstudoUpdate),
 					type: "PUT",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -259,7 +259,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo,
 					data : JSON.stringify(objEstudoUpdate),
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -282,7 +282,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo + "/resposta",
 					data : JSON.stringify(objResposta1Estudo),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -302,7 +302,7 @@ describe("EstudoSocioEconomico", function() {
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo + "/resposta",
 					data : JSON.stringify(objResposta2Estudo),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -319,7 +319,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo + "/resposta/"+ idResposta1Estudo,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -330,7 +330,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo + "/resposta/"+ idResposta2Estudo,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -341,7 +341,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/estudo/socioeconomico/"+ idEstudo,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -357,7 +357,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta/"+ idPergunta1,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -368,7 +368,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta/"+ idPergunta2,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -384,7 +384,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/questionario/"+ idQuestionario,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -400,7 +400,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta1 + "/resposta/"+ idRespostaSim,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -411,7 +411,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta1 + "/resposta/"+ idRespostaNao,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -422,7 +422,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta1,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -433,7 +433,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta2,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -450,7 +450,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/categoria_pergunta/"+ idCategoria,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -466,7 +466,7 @@ describe("EstudoSocioEconomico", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sigra/aluno/"+ idAluno,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

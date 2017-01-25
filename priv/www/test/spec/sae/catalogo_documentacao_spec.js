@@ -10,7 +10,7 @@ describe("Documentacao", function() {
 					url:  "http://localhost:2301/sae/documentacao",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -35,7 +35,7 @@ describe("Documentacao", function() {
 					url:  "http://localhost:2301/sae/documentacao",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -56,7 +56,7 @@ describe("Documentacao", function() {
 							url:  "http://localhost:2301/sae/documentacao/"+ objUpdate.id,
 							data : JSON.stringify(objUpdate),
 							type: "PUT",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -68,7 +68,7 @@ describe("Documentacao", function() {
 			var result = $.ajax({
 							url:  "http://localhost:2301/sae/documentacao/"+ objInserido.id,
 							type: "DELETE",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -92,7 +92,7 @@ describe("Documentacao", function() {
 					url:  "http://localhost:2301/sae/documentacao",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -106,7 +106,7 @@ describe("Documentacao", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/documentacao/"+ idDocumentacao,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -119,7 +119,7 @@ describe("Documentacao", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/documentacao/"+ idDocumentacao,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

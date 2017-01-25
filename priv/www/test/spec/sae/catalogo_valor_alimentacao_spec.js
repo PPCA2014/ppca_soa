@@ -10,7 +10,7 @@ describe("ValorAlimentacao", function() {
 					url:  "http://localhost:2301/sae/valoralimentacao",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -37,7 +37,7 @@ describe("ValorAlimentacao", function() {
 					url:  "http://localhost:2301/sae/valoralimentacao",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -59,7 +59,7 @@ describe("ValorAlimentacao", function() {
 							url:  "http://localhost:2301/sae/valoralimentacao/"+ objUpdate.id,
 							data : JSON.stringify(objUpdate),
 							type: "PUT",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -71,7 +71,7 @@ describe("ValorAlimentacao", function() {
 			var result = $.ajax({
 							url:  "http://localhost:2301/sae/valoralimentacao/"+ objInserido.id,
 							type: "DELETE",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -97,7 +97,7 @@ describe("ValorAlimentacao", function() {
 					url:  "http://localhost:2301/sae/valoralimentacao",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -111,7 +111,7 @@ describe("ValorAlimentacao", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/valoralimentacao/"+ idValorAlimentacao,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -124,7 +124,7 @@ describe("ValorAlimentacao", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/valoralimentacao/"+ idValorAlimentacao,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

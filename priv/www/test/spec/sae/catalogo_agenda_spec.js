@@ -10,7 +10,7 @@ describe("Agenda", function() {
 					url:  "http://localhost:2301/sae/agenda",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -36,7 +36,7 @@ describe("Agenda", function() {
 					url:  "http://localhost:2301/sae/agenda",
 					data : JSON.stringify(objAgenda),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -53,7 +53,7 @@ describe("Agenda", function() {
 					url:  "http://localhost:2301/sae/agenda/"+ idAgenda,
 					data : JSON.stringify(objAgendaUpdate),
 					type: "PUT",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -64,7 +64,7 @@ describe("Agenda", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/agenda/"+ idAgenda,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -75,7 +75,7 @@ describe("Agenda", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sae/agenda/"+ idAgenda,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

@@ -10,7 +10,7 @@ describe("EstudoPreliminar", function() {
 					url:  "http://localhost:2301/sae/estudo/preliminar",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -37,7 +37,7 @@ describe("EstudoPreliminar", function() {
 					url:  "http://localhost:2301/sigra/aluno",
 					data : JSON.stringify(objAluno),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -56,7 +56,7 @@ describe("EstudoPreliminar", function() {
 					url:  "http://localhost:2301/questionario/questionario",
 					data : JSON.stringify(objQuestionario),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -77,7 +77,7 @@ describe("EstudoPreliminar", function() {
 					url:  "http://localhost:2301/sae/estudo/preliminar",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -102,7 +102,7 @@ describe("EstudoPreliminar", function() {
 							url:  "http://localhost:2301/sae/estudo/preliminar/"+ objInserido.id,
 							data : JSON.stringify(objUpdate),
 							type: "PUT",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -113,7 +113,7 @@ describe("EstudoPreliminar", function() {
 			result = $.ajax({
 							url:  "http://localhost:2301/sae/estudo/preliminar/"+ objInserido.id,
 							type: "GET",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -124,7 +124,7 @@ describe("EstudoPreliminar", function() {
 			result = $.ajax({
 							url:  "http://localhost:2301/sae/estudo/preliminar/"+ objInserido.id,
 							type: "DELETE",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -138,7 +138,7 @@ describe("EstudoPreliminar", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/sigra/aluno/"+ idAluno,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -149,7 +149,7 @@ describe("EstudoPreliminar", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/questionario/"+ idQuestionario,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
