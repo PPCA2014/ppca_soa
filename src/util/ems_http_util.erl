@@ -74,7 +74,7 @@ encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, Worker
 					socket = Socket, 
 					t1 = T1, 
 					payload = binary_to_list(Payload), 
-					payload_map = decode_payload(Payload),
+					payload_map = decode_payload_as_json(Payload),
 					timestamp = Timestamp,
 					authorization = Authorization,
 					worker_send = WorkerSend,
@@ -129,7 +129,7 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 					socket = MochiReq:get(socket), 
 					t1 = T1, 
 					payload = Payload, 
-					payload_map = decode_payload(Payload),
+					payload_map = decode_payload_as_json(Payload),
 					timestamp = Timestamp,
 					authorization = Authorization,
 					worker_send = WorkerSend,
@@ -152,27 +152,37 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
+		Host = cowboy_req:host(CowboyReq),
+		Version = cowboy_req:version(CowboyReq),
+		Content_Type = cowboy_req:header(<<"content-type">>, CowboyReq),
+		case  Method == "POST" orelse Method == "PUT" of
+			true ->
+				Content_Length = cowboy_req:body_length(CowboyReq),
+				case Content_Type of
+					<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
+						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+						PayloadMap = maps:from_list(Payload);
+					<<"application/json">> ->
+						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						PayloadMap = decode_payload_as_json(Payload)
+				end;
+			false ->
+				Content_Length = 0,
+				Payload = <<>>,
+				PayloadMap = #{}
+		end,
 		QuerystringBin = cowboy_req:qs(CowboyReq),
 		case QuerystringBin of
-			<<>> -> 
-				Querystring = <<>>,
-				QuerystringMap = #{};
-			Q -> 
-				Querystring = binary_to_list(Q),
-				QuerystringMap = parse_querystring([Querystring])
+			<<>> -> QuerystringMap = #{};
+			_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
 		end,
-		{ok, Payload, _Req} = cowboy_req:read_body(CowboyReq),
-		Content_Length = cowboy_req:body_length(CowboyReq),
-		Content_Type = cowboy_req:header(<<"content-type">>, CowboyReq),
 		Accept = cowboy_req:header(<<"accept">>, CowboyReq),
 		Accept_Encoding = cowboy_req:header(<<"accept-encoding">>, CowboyReq),
 		User_Agent = cowboy_req:header(<<"user-agent">>, CowboyReq),
 		Cache_Control = cowboy_req:header(<<"cache-control">>, CowboyReq),
-		Host = cowboy_req:host(CowboyReq),
 		Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
 		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
-		PayloadMap = decode_payload(Payload),
 		ReqHash = erlang:phash2([Url, QuerystringBin, Content_Length, Content_Type]),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 		Request = #request{
@@ -181,8 +191,8 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			type = Method,
 			uri = Url2,
 			url = Url2,
-			version = cowboy_req:version(CowboyReq),
-			querystring = Querystring,
+			version = Version,
+			querystring = QuerystringBin,
 			querystring_map = QuerystringMap,
 			params_url = Params_url,
 			content_length = Content_Length,
@@ -206,7 +216,9 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		},	
 		{ok, Request}
 	catch
-		_Exception:Reason -> {error, Reason}
+		_Exception:Reason -> 
+			ems_logger:error("Invalid request ~p.\n\tReason: ~p.", [CowboyReq, Reason]),
+			{error, einvalid_request}
 	end.
 
 
@@ -325,9 +337,9 @@ decode_http_request(RequestBin) ->
 
 
 %% @doc Decodifica o payload e transforma em um tipo Erlang
-decode_payload(undefined) -> #{};
-decode_payload(<<>>) -> #{};
-decode_payload(PayloadBin) ->
+decode_payload_as_json(undefined) -> #{};
+decode_payload_as_json(<<>>) -> #{};
+decode_payload_as_json(PayloadBin) ->
 	case ems_util:json_decode_as_map(PayloadBin) of
 		{ok, PayloadMap} -> PayloadMap;
 		{error, _Reason} -> erlang:error(invalid_payload)
