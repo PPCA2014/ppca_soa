@@ -129,7 +129,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
             ok = esqlite3:bind(Statement, Params2),
             Records = esqlite3:fetchall(Statement),
 			Fields = tuple_to_list(esqlite3:column_names(Statement)),
-			Fields2 = [erlang:atom_to_binary(F, utf8) || F <- Fields],
+			Fields2 = [?UTF8_STRING(erlang:atom_to_binary(F, utf8)) || F <- Fields],
 			?DEBUG("Sqlite resultset query: ~p.", [Records]),
 			{ok, {selected, Fields2, Records}, Datasource};
         Error -> Error
@@ -150,7 +150,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 								{error, eodbc_connection_closed};
 							{selected, Fields2, Result2} -> 
 								?DEBUG("Odbc resultset after reconecting query: ~p.", [Result2]),
-								{ok, {selected, [erlang:list_to_binary(F) || F <- Fields2], Result2}, Datasource2}
+								{ok, {selected, [?UTF8_STRING(F) || F <- Fields2], Result2}, Datasource2}
 						end;
 					{error, Reason2} -> 
 						ems_logger:error("Odbc param_query reconecting fail after: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
@@ -158,7 +158,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 				end;
 			{selected, Fields1, Result1} -> 
 				?DEBUG("Odbc resultset query: ~p.", [Result1]),
-				{ok, {selected, [erlang:list_to_binary(F) || F <- Fields1], Result1}, Datasource}
+				{ok, {selected, [?UTF8_STRING(F) || F <- Fields1], Result1}, Datasource}
 		end
 	catch
 		_:timeout -> 
@@ -172,7 +172,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 							{error, eodbc_connection_closed};
 						{selected, Fields3, Result3} -> 
 							?DEBUG("Odbc resultset after reconecting query on timeout: ~p.", [Result3]),
-							{ok, {selected, [erlang:list_to_binary(F) || F <- Fields3], Result3}, Datasource3}
+							{ok, {selected, [?UTF8_STRING(F) || F <- Fields3], Result3}, Datasource3}
 					end;
 				{error, Reason5} -> 
 					ems_logger:error("Odbc param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),

@@ -84,7 +84,7 @@ handle_request({'LDAPMessage', _,
 					{bindRequest, #'BindRequest'{version = _Version, 
 												 name = Name, 
 												 authentication = {_, Password}}},
-				 _} = LdapMsg, State = #state{admin = AdminLdap, 
+				 _}, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
 	 <<Cn:3/binary, _/binary>> = Name,
 	 ?DEBUG("CnValue is : ~p.", [Name]),

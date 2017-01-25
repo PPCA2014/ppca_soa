@@ -14,6 +14,7 @@
   
 info(Request) -> 
 	{ok, Request#request{code = 200, 
+						 reason = ok,
 						 response_data = <<"{\"message\": \"It works!!!\"}">>}
 	}.
 

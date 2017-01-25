@@ -51,6 +51,7 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 				case Result of
 					{ok, JsonData} ->
 						{ok, Request#request{code = 200,
+											 reason = ok,
 											 response_data = JsonData}};
 					{error, Reason} = Error ->
 						{error, Request#request{code = 400,

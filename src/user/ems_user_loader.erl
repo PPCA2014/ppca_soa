@@ -192,7 +192,6 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 
 insert_users([], Count) -> Count;
 insert_users([{Codigo, Login, Name, Cpf, Email, Password}|T], Count) ->
-	io:format("insert ~p\n", [{Codigo, Login, Name, Cpf, Email, Password}]),
 	User = #user{id = ems_db:sequence(user),
 				 codigo = Codigo,
 				 login = ?UTF8_STRING(Login),
@@ -200,7 +199,6 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password}|T], Count) ->
 				 cpf = ?UTF8_STRING(Cpf),
 				 email = ?UTF8_STRING(Email),
 				 password = list_to_binary(Password)},
-	%io:format("record ~p\n", [User]),
 	mnesia:dirty_write(User),
 	insert_users(T, Count+1).
 

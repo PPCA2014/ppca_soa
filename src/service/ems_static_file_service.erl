@@ -67,6 +67,7 @@ execute(Request = #request{url = Url,
 			HttpHeader = generate_header(MimeType, ETag, LastModified, Expires, Cache_Control),
 			case ETag == IfNoneMatchReq orelse LastModified == IfModifiedSinceReq of
 				true -> {ok, Request#request{code = 304, 
+											 reason = enot_modified,
 											 etag = ETag,
 											 response_data = <<>>, 
 											 response_header = HttpHeader}
@@ -74,6 +75,7 @@ execute(Request = #request{url = Url,
 				false ->
 					case file:read_file(FileName) of
 						{ok, FileData} -> {ok, Request#request{code = 200, 
+															   reason = ok,
 															   etag = ETag,
 															   response_data = FileData, 
 															   response_header = HttpHeader}
