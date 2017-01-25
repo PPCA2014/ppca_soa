@@ -10,7 +10,7 @@ describe("TipoQuestionario", function() {
 					url:  "http://localhost:2301/questionario/tipo_questionario",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -35,7 +35,7 @@ describe("TipoQuestionario", function() {
 					url:  "http://localhost:2301/questionario/tipo_questionario",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -58,7 +58,7 @@ describe("TipoQuestionario", function() {
 							url:  "http://localhost:2301/questionario/tipo_questionario/"+ objUpdate.id,
 							data : JSON.stringify(objUpdate),
 							type: "PUT",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -69,7 +69,7 @@ describe("TipoQuestionario", function() {
 			var result = $.ajax({
 							url:  "http://localhost:2301/questionario/tipo_questionario/"+ objInserido.id,
 							type: "DELETE",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -93,7 +93,7 @@ describe("TipoQuestionario", function() {
 					url:  "http://localhost:2301/questionario/tipo_questionario",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -107,7 +107,7 @@ describe("TipoQuestionario", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/tipo_questionario/"+ idTipo,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -118,7 +118,7 @@ describe("TipoQuestionario", function() {
 	result = $.ajax({
 					url:  "http://localhost:2301/questionario/tipo_questionario/"+ idTipo,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

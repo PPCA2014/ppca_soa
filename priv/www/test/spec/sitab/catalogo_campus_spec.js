@@ -10,7 +10,7 @@ describe("Campus", function() {
 					url:  "http://localhost:2301/sitab/campus",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

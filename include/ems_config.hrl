@@ -131,7 +131,7 @@
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
 
 % HTTP access control (CORS) headers
--define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
+-define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, X-CSRF-Token, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
 -define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).
 -define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"*">>).
 -define(ACCESS_CONTROL_ALLOW_METHODS, <<"GET, POST, PUT, DELETE, OPTIONS">>).

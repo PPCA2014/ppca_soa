@@ -10,7 +10,7 @@ describe("academico.aluno", function() {
 					url:  "http://localhost:2301/academico/aluno",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false

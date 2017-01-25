@@ -10,7 +10,7 @@ describe("Questionario", function() {
 					url:  "http://localhost:2301/questionario/questionario",
 					data : {},
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -37,7 +37,7 @@ describe("Questionario", function() {
 					url:  "http://localhost:2301/questionario/questionario",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -61,7 +61,7 @@ describe("Questionario", function() {
 							url:  "http://localhost:2301/questionario/questionario/"+ objUpdate.id,
 							data : JSON.stringify(objUpdate),
 							type: "PUT",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -72,7 +72,7 @@ describe("Questionario", function() {
 			var result = $.ajax({
 							url:  "http://localhost:2301/questionario/questionario/"+ objInserido.id,
 							type: "DELETE",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -99,7 +99,7 @@ describe("Questionario", function() {
 					url:  "http://localhost:2301/questionario/questionario",
 					data : JSON.stringify(obj),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -114,7 +114,7 @@ describe("Questionario", function() {
 	var result = $.ajax({
 					url:  "http://localhost:2301/questionario/questionario/"+ idQuestionario,
 					type: "GET",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -127,7 +127,7 @@ describe("Questionario", function() {
 	var result = $.ajax({
 					url:  "http://localhost:2301/questionario/questionario/"+ idQuestionario,
 					type: "DELETE",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -151,7 +151,7 @@ describe("Questionario", function() {
 					url:  "http://localhost:2301/questionario/questionario",
 					data : JSON.stringify(objQuestionario),
 					type: "POST",
-					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+					contentType: "application/json",
 					dataType: "json",
 					crossDomain: true,
 					async: false
@@ -173,7 +173,7 @@ describe("Questionario", function() {
 							url:  "http://localhost:2301/questionario/categoria_pergunta",
 							data : JSON.stringify(objCategoria),
 							type: "POST",
-							contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+							contentType: "application/json",
 							dataType: "json",
 							crossDomain: true,
 							async: false
@@ -201,7 +201,7 @@ describe("Questionario", function() {
 								url:  "http://localhost:2301/questionario/pergunta",
 								data : JSON.stringify(objPergunta),
 								type: "POST",
-								contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+								contentType: "application/json",
 								dataType: "json",
 								crossDomain: true,
 								async: false
@@ -224,7 +224,7 @@ describe("Questionario", function() {
 								url:  "http://localhost:2301/questionario/pergunta",
 								data : JSON.stringify(objPergunta2),
 								type: "POST",
-								contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+								contentType: "application/json",
 								dataType: "json",
 								crossDomain: true,
 								async: false
@@ -243,7 +243,7 @@ describe("Questionario", function() {
 									url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta",
 									data : JSON.stringify({"pergunta" : idPergunta1}),
 									type: "POST",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -257,7 +257,7 @@ describe("Questionario", function() {
 									url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta",
 									data : JSON.stringify({"pergunta" : idPergunta2}),
 									type: "POST",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -273,7 +273,7 @@ describe("Questionario", function() {
 					result = $.ajax({
 									url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta/"+ idPergunta1,
 									type: "DELETE",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -285,7 +285,7 @@ describe("Questionario", function() {
 					result = $.ajax({
 									url:  "http://localhost:2301/questionario/questionario/" + idQuestionario +  "/pergunta/"+ idPergunta2,
 									type: "DELETE",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -297,7 +297,7 @@ describe("Questionario", function() {
 					result = $.ajax({
 									url:  "http://localhost:2301/questionario/questionario/"+ idQuestionario,
 									type: "DELETE",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -308,7 +308,7 @@ describe("Questionario", function() {
 					result = $.ajax({
 									url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta1,
 									type: "DELETE",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -319,7 +319,7 @@ describe("Questionario", function() {
 					result = $.ajax({
 									url:  "http://localhost:2301/questionario/pergunta/"+ idPergunta2,
 									type: "DELETE",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
@@ -330,7 +330,7 @@ describe("Questionario", function() {
 					result = $.ajax({
 									url:  "http://localhost:2301/questionario/categoria_pergunta/"+ idCategoria,
 									type: "DELETE",
-									contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+									contentType: "application/json",
 									dataType: "json",
 									crossDomain: true,
 									async: false
