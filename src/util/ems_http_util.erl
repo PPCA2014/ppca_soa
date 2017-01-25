@@ -155,19 +155,24 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Host = cowboy_req:host(CowboyReq),
 		Version = cowboy_req:version(CowboyReq),
 		Content_Type = cowboy_req:header(<<"content-type">>, CowboyReq),
-		case  Method == "POST" orelse Method == "PUT" of
+		Content_Length = cowboy_req:body_length(CowboyReq),
+		case Content_Length > 0 of
 			true ->
-				Content_Length = cowboy_req:body_length(CowboyReq),
 				case Content_Type of
 					<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
 						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
 						PayloadMap = maps:from_list(Payload);
 					<<"application/json">> ->
 						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-						PayloadMap = decode_payload_as_json(Payload)
+						PayloadMap = decode_payload_as_json(Payload);
+					<<"application/xml">> ->
+						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						PayloadMap = decode_payload_as_xml(Payload);
+					_ -> 
+						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						PayloadMap = #{}
 				end;
 			false ->
-				Content_Length = 0,
 				Payload = <<>>,
 				PayloadMap = #{}
 		end,
@@ -218,7 +223,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 	catch
 		_Exception:Reason -> 
 			ems_logger:error("Invalid request ~p.\n\tReason: ~p.", [CowboyReq, Reason]),
-			{error, einvalid_request}
+			{error, Reason}
 	end.
 
 
@@ -344,6 +349,10 @@ decode_payload_as_json(PayloadBin) ->
 		{ok, PayloadMap} -> PayloadMap;
 		{error, _Reason} -> erlang:error(invalid_payload)
 	end.
+
+decode_payload_as_xml(undefined) -> #{};
+decode_payload_as_xml(<<>>) -> #{};
+decode_payload_as_xml(_) -> #{}.
 	
 get_http_header_adicionais(Header) ->
 	Header1 = lists:map(fun(H) -> get_param_header(H, []) end, Header),

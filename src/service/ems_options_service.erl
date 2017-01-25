@@ -17,6 +17,7 @@
 
 execute(Request) ->
 	{ok, Request#request{code = 200,
+						 reason = ok,
 						 response_data = <<>>,
 						 response_header = #{<<"cache-control">> => <<"max-age=290304000, public">>}}
 	}.

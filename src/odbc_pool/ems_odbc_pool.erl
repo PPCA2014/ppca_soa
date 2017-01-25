@@ -43,8 +43,8 @@ stop() ->
  
 get_connection(Datasource) ->
 	case gen_server:call(?SERVER, {create_connection, Datasource}) of
-		{ok, Datasource2} = Result ->
-			?DEBUG("Get odbc connection: ~p.", [Datasource2]),
+		{ok, _Datasource2} = Result ->
+			?DEBUG("Get odbc connection: ~p.", [_Datasource2]),
 			Result;
 		Error -> 
 			?DEBUG("Fail get new odbc connection: ~p.", [Error]),

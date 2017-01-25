@@ -28,6 +28,7 @@ execute(Request = #request{timestamp = {{Year,Month,Day},{Hour,Min,Secs}}})	->
 			case file:read_file(?FAVICON_PATH) of
 				{ok, FileData} -> 		
 					{ok, Request#request{code = 200,
+										 reason = ok,
 										 response_data = FileData,
 										 response_header = generate_header(ETag, LastModified, Expires)}};
 				{error, Reason} = Err -> 

@@ -65,23 +65,19 @@ init(CowboyReq, Opts) ->
 
 
 
-encode_response(Request = #request{type = Method, 
-									 t1 = T1,
-									 code = Code,
-									 reason = Reason,
-									 response_data = ResponseData,	
-									 response_header = ResponseHeader,
-									 service = #service{name = ServiceName,
-														owner = ServiceOwner,
-														page_module = PageModule,
-														page_mime_type = PageMimeType}}) ->
+encode_response(Request = #request{t1 = T1,
+								   reason = Reason,
+								   response_data = ResponseData,	
+								   response_header = ResponseHeader,
+								   service = #service{name = ServiceName,
+									  				  owner = ServiceOwner,
+													  page_module = PageModule,
+													  page_mime_type = PageMimeType}}) ->
 	case PageModule of
 		undefined ->
 			case ResponseData of
 				{ok, <<_Content/binary>> = ResponseData} -> 
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = #{
 											<<"server">> => ?SERVER_NAME,
@@ -96,9 +92,7 @@ encode_response(Request = #request{type = Method,
 											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = #{
 											<<"server">> => ?SERVER_NAME,
@@ -112,22 +106,16 @@ encode_response(Request = #request{type = Method,
 											<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
 											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
-				{HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
-					Request#request{code = HttpCode, 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+				{_HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = HttpHeader};
-				{HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
-					Request#request{code = HttpCode, 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+				{_HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(ResponseData),
 									response_header = HttpHeader};
 				{error, Reason} = Error ->
-					Request#request{code = case Code of undefined -> get_http_code_verb(Method, false); _ -> Code end,
-									reason = Reason, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Error),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -142,9 +130,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				<<_Content/binary>> -> 
-					Request#request{code = case Code of undefined -> get_http_code_verb(Method, true); _ -> Code end,
-									reason = case Reason of undefined -> ok; _ -> Reason end, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_header = ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
 													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ?CONTENT_TYPE_JSON),
@@ -158,9 +144,7 @@ encode_response(Request = #request{type = Method,
 													<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 												}};
 				Content when is_map(Content) -> 
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -175,9 +159,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_map(H) -> 
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -192,9 +174,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content = [H|_] when is_tuple(H) -> 
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -209,9 +189,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				Content -> 
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Content),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -228,9 +206,7 @@ encode_response(Request = #request{type = Method,
 		_ -> 
 			case ResponseData of
 				{error, _Reason} = Error ->
-					Request#request{code = get_http_code_verb(Method, false), 
-									reason = Error, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(Error),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -245,9 +221,7 @@ encode_response(Request = #request{type = Method,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				_ ->
-					Request#request{code = get_http_code_verb(Method, true), 
-									reason = ok, 
-									latency = ems_util:get_milliseconds() - T1,
+					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_page:render(PageModule, ResponseData),
 									response_header = #{
 										<<"server">> => ?SERVER_NAME,
@@ -278,12 +252,7 @@ default_http_header() ->
 	}.
 
 
-get_http_code_verb("POST", true)  -> 201;
-get_http_code_verb("PUT", false)  -> 400;
-get_http_code_verb(_, true)  -> 200;
-get_http_code_verb(_, false)  -> 400.
 
-	
 header_cache_control(<<"application/x-javascript">>) ->
 	<<"max-age=290304000, public"/utf8>>;
 header_cache_control(<<"text/css">>) ->
