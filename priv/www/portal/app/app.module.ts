@@ -11,7 +11,7 @@ import { NavigatorController, PagerService, EmsRestClient, Sobre, DataTableFilte
 import { CustomModal } from './catalogo/exemplos_url_servico.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LoginComponent } from './login/login.component';
-import { AuthenticationService, AuthGuard, ErroComponent} from 'seguranca';
+import {AuthenticationService, AuthGuard, ErroComponent, NavigationComponent} from 'seguranca';
 import {routing, appRoutingProviders} from "./app.routing";
 
 
@@ -25,7 +25,7 @@ import {routing, appRoutingProviders} from "./app.routing";
     ModalModule.forRoot(),
     BootstrapModalModule,
   routing],
-  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoComponent, LoginComponent, CustomModal, DataTableFilterPipe ],
+  declarations: [ AppComponent, NavigatorController, Sobre, CatalogoComponent, LoginComponent, NavigationComponent, CustomModal, DataTableFilterPipe ],
   bootstrap: [ AppComponent, NavigatorController ],
   providers: [ appRoutingProviders, PagerService, EmsRestClient, AuthGuard, AuthenticationService ],
 

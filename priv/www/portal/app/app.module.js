@@ -35,7 +35,7 @@ var AppModule = (function () {
                 angular2_modal_1.ModalModule.forRoot(),
                 bootstrap_1.BootstrapModalModule,
                 app_routing_1.routing],
-            declarations: [app_component_1.AppComponent, main_1.NavigatorController, main_1.Sobre, catalogo_component_1.CatalogoComponent, login_component_1.LoginComponent, exemplos_url_servico_component_1.CustomModal, main_1.DataTableFilterPipe],
+            declarations: [app_component_1.AppComponent, main_1.NavigatorController, main_1.Sobre, catalogo_component_1.CatalogoComponent, login_component_1.LoginComponent, seguranca_1.NavigationComponent, exemplos_url_servico_component_1.CustomModal, main_1.DataTableFilterPipe],
             bootstrap: [app_component_1.AppComponent, main_1.NavigatorController],
             providers: [app_routing_1.appRoutingProviders, main_1.PagerService, main_1.EmsRestClient, seguranca_1.AuthGuard, seguranca_1.AuthenticationService],
             // IMPORTANT:
