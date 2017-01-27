@@ -46,6 +46,7 @@ getConfig() -> gen_server:call(?SERVER, get_config).
 init([]) -> 
 	try
 		Config = le_config(),
+		?DEBUG("Configuration file: ~p", [Config]),
 		{ok, Config}
 	catch _Exception: Reason ->
 		{stop, Reason}
@@ -80,11 +81,12 @@ code_change(_OldVsn, State, _Extra) ->
 
 % Returns the name of the configuration file
 % Locais do arquivo: home do user (.erlangms/node@hostname.conf) ou na pasta priv/conf do barramento
+-spec get_name_arq_config() -> list() | {error, atom()}.
 get_name_arq_config() ->
 	case init:get_argument(home) of
 		{ok, [[Home]]} -> 
 			NomeArqConfig = lists:concat([Home, "/.erlangms/", node(), ".conf"]),
-			% O arquivo no HOME do usuário deve existir!
+			?DEBUG("Checking if file ~p exists.", [NomeArqConfig]),
 			case file:read_file(NomeArqConfig) of 
 				{ok, _} -> NomeArqConfig;
 				_ -> ?CONF_FILE_PATH
@@ -95,15 +97,14 @@ get_name_arq_config() ->
 % Lê as configurações do arquivo de configuração
 le_config() ->
 	NomeArqConfig = get_name_arq_config(),
-	io:format("\nReading configuration file: ~p\n", [NomeArqConfig]),
+	io:format("\nReading configuration file: ~p.\n", [NomeArqConfig]),
 	case ems_util:read_file_as_map(NomeArqConfig) of
 		{ok, Json} -> 
 			try
 				parse_config(Json, NomeArqConfig)
 			catch 
 				_Exception:Reason ->
-					io:format("Unable to process the configuration file. Reason: ~p.\n", [Reason]),
-					io:format("Running the bus with default settings...\n"),
+					io:format("Unable to parse configuration file. Reason: ~p. Running with default settings...\n", [Reason]),
 					get_default_config()
 			end;
 		{error, enojsonformat} -> 
@@ -114,12 +115,20 @@ le_config() ->
 			get_default_config()
 	end.
 
+parse_cat_path_search(Json) ->
+	CatPathSearchMap = maps:get(<<"cat_path_search">>, Json, #{}),
+	case maps:is_key(<<"cat_path_search">>, CatPathSearchMap) of
+		true -> maps:to_list(CatPathSearchMap);
+		false -> maps:to_list(maps:put(<<"{{ CATALOG_PATH }}">>, ?CATALOGO_PATH, CatPathSearchMap))
+	end.
+
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
 	#config{ cat_host_alias				= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
 			 cat_host_search			= maps:get(<<"cat_host_search">>, Json, <<>>),							
 			 cat_node_search			= maps:get(<<"cat_node_search">>, Json, <<>>),
+			 cat_path_search			= parse_cat_path_search(Json),
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
@@ -133,8 +142,10 @@ get_default_config() ->
 	#config{ cat_host_alias				= #{<<"local">> => Hostname2},
 			 cat_host_search			= <<>>,							
 			 cat_node_search			= <<>>,
+			 cat_path_search			= [],
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",
 			 ems_debug					= false
 		}.
+

@@ -54,7 +54,7 @@ init(#service{datasource = Datasource,
 				   operation = load_or_update_operation(),
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update = LastUpdate},
-	{ok, State, 2000}.
+	{ok, State, 5000}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};

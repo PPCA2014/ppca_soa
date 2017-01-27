@@ -1,3 +1,4 @@
+
 %%********************************************************************
 %% @title Módulo ems_page
 %% @version 1.0.0
@@ -47,7 +48,10 @@
 		 boolean_to_binary/1,
 		 normalize_field_utf8/1,
 		 utf8_string_win/1,
-		 utf8_string_linux/1]).
+		 utf8_string_linux/1,
+		 replace/3,
+		 replace_all/2,
+		 read_file_as_string/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -379,16 +383,6 @@ string_is_integer(S) ->
         false
     end.
 
-read_file_as_map(FileName) ->
-	case file:read_file(FileName) of
-		{ok, Arq} -> 
-			case json_decode_as_map(Arq) of
-				{ok, Json} -> {ok, Json};
-				_ -> {error, enojsonformat}
-			end;
-		Error -> Error
-	end.
-
 node_is_live(Node) -> 
 	case net_adm:ping(Node) of
 		pong -> 1;
@@ -529,3 +523,26 @@ utf8_string_linux(Text) ->
 		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
 	end.
 
+-spec read_file_as_map(FileName :: string()) -> map().
+read_file_as_map(FileName) -> 	
+	case file:read_file(FileName) of
+		{ok, Arq} -> json_decode_as_map(Arq);
+		Error -> Error
+	end.
+
+-spec replace(string(), string(), string()) -> string().
+replace(Subject, Var, VarToReplace) -> 
+	re:replace(Subject, Var, VarToReplace, [global, {return, list}]).
+
+-spec replace_all(string(), list(tuple())) -> string().
+replace_all(Subject, []) -> Subject;
+replace_all(Subject, [{Key, Value}|VarTail]) -> 
+	NewSubject = replace(Subject, Key, Value),
+	replace_all(NewSubject, VarTail).
+
+
+read_file_as_string(FileName) -> 	
+	case file:read_file(FileName) of
+		{ok, Arq} -> Arq;
+		Error -> throw(Error)
+	end.

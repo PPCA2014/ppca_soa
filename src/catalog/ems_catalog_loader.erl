@@ -23,7 +23,7 @@
 
 init_catalog() ->
 	ets:new(ets_ems_catalog, [set, named_table, public]),
-	case get_catalog() of
+	case get_catalog(?MAIN_CATALOG_FILE) of
 		{ok, Cat1, Cat2, Cat3, CatK} -> 
 			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3, CatK}}),
 			ok;
@@ -38,56 +38,66 @@ list_kernel_catalog() ->
 	end.
 
 
-%% @doc Obtém o catálogo
-get_catalog() -> 
-	case get_main_catalog() of
-		{ok, CatMestre} ->
-
-			CatalogoDefsPath = ?CATALOGO_PATH ++ "/",
-			%% Obtém a lista do conteúdo de todos os catálogos
-			CatDefs_ = lists:map(fun(M) -> 
-									NomeArq = CatalogoDefsPath ++ binary_to_list(maps:get(<<"file">>, M)),
-									case file:read_file(NomeArq) of
-										{ok, Arq} -> Arq;
-										{error, enoent} -> 
-											ems_logger:format_warn("Attention: Catalog \"~s\" not found. Ignoring...\n", [NomeArq]),
-											<<>>
-									end
-								end, CatMestre),
-
-			CatDefs0 = [Cat || Cat <- CatDefs_, Cat =/= <<>>],
-
-			%% Adiciona "," entre as definições de cada catálogo
-			CatDefs1 = lists:foldl(fun(X, Y) ->
-										case Y of
-											<<>> -> X;
-											Y2 -> iolist_to_binary([X, <<","/utf8>>, Y2])
-										end 
-									end, <<>>, CatDefs0),
-
-			%% Adiciona abertura e fechamento de lista para o parser correto do JSON
-			CatDefs2 = iolist_to_binary([<<"[">>, CatDefs1, <<"]">>]),
-
-			{ok, Cat1} = ems_util:json_decode_as_map(CatDefs2),
+%% @doc Get catalog of services
+get_catalog(FileName) -> 
+	Conf = ems_config:getConfig(),
+	ListCatalog = scan_catalog(FileName, Conf, []),
+	?DEBUG("Parse catalogs...\n~p.", [ListCatalog]),
+	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
+		{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
+		Error -> Error
+	end.
 			
-			%% Faz o parser do catálogo
-			Conf = ems_config:getConfig(),
-			
-			case parse_catalog(Cat1, [], [], [], [], 1, Conf) of
-				{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
-				Error -> Error
+
+-spec scan_catalog(FileName :: string(), Conf :: #config{}, Result :: list(map())) -> list(map()) | {error, atom()}.
+scan_catalog(FileName, Conf, Result) ->
+	case ems_util:read_file_as_map(FileName) of
+		{ok, CatList} when is_list(CatList) -> 
+			scan_catalog_entry(CatList, Conf, Result);
+		{ok, CatMap} -> 
+			scan_catalog_entry([CatMap], Conf, Result);
+		{error, enoent} ->
+			io:format("Catalog ~p not exist, ignoring this catalog.\n", [FileName]),
+			Result;
+		_ -> 
+			io:format("Catalog ~p with invalid json format, ignoring this catalog.\n", [FileName]),
+			Result
+	end.
+	
+-spec scan_catalog_entry(list(), Conf :: #config{}, list()) -> list().
+scan_catalog_entry([], _, Result) -> 
+	Result;
+scan_catalog_entry([Cat|CatTail], Conf, Result) ->
+	case maps:is_key(<<"file">>, Cat) of
+		true -> 
+			case parse_filename_catalog(Cat, Conf) of
+				{ok, FileName} ->
+					?DEBUG("Scan catalog ~p.", [FileName]),
+					Result2 = scan_catalog(FileName, Conf, Result),
+					scan_catalog_entry(CatTail, Conf, Result2);			
+				{error, FileName} ->
+					?DEBUG("Fail scan catalog ~p: ~p.", [FileName, Cat]),
+					io:format("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName]),
+					scan_catalog_entry(CatTail, Conf, Result)
 			end;
-		Error -> Error
+		false -> 
+			scan_catalog_entry(CatTail, Conf, [Cat | Result])
 	end.
-			
 
-%% @doc O catálogo mestre possui os includes para os catálogos
-
-get_main_catalog() ->
-	case file:read_file(?CATALOGO_PATH ++ "/catalog.conf") of
-		{ok, Arq} -> ems_util:json_decode_as_map(Arq);
-		Error -> Error
+-spec parse_filename_catalog(map(), #config{}) -> {ok, string()} | {error, string()}.
+parse_filename_catalog(#{<<"file">> := FileName}, Conf) ->
+	FileName2 = ems_util:replace_all(FileName, Conf#config.cat_path_search),
+	case hd(FileName2) == $~ of
+		true -> 
+			case init:get_argument(home) of
+				{ok, [[HomePath]]} -> 
+					FileName3 = ems_util:replace(FileName2, "~", HomePath),
+					{ok, FileName3};
+				_Error -> {error, FileName}
+			end;
+		_ -> {ok, FileName2}
 	end.
+
 
 %% @doc Indica se o name da querystring é valido
 is_name_querystring_valido(Name) ->

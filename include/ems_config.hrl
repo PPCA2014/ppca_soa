@@ -55,6 +55,9 @@
 % Caminho do catálogo de serviços
 -define(CATALOGO_PATH, ?PRIV_PATH ++ "/catalog").
 
+% Caminho do catálogo de serviços
+-define(MAIN_CATALOG_FILE, ?PRIV_PATH ++ "/catalog/catalog.conf").
+
 % Caminho da pasta de databases
 -define(DATABASE_PATH, ?PRIV_PATH ++ "/db").
 
@@ -142,12 +145,13 @@
 -define(CACHE_CONTROL_NO_CACHE, <<"no-cache">>).
 
 %  Definição para o arquivo de configuração
--record(config, {cat_host_alias, 				%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
-				 cat_host_search,				%% Lista de hosts para pesquisar os serviços
-				 cat_node_search,				%% Lista de nodes para pesquisar os serviços
-				 ems_hostname,					%% Nome da maquina onde o barramento está sendo executado
-				 ems_host,						%% Atom do name da maquina onde o barramento está sendo executado
-				 ems_file_dest,					%% Nome do arquivo de configuração (útil para saber o local do arquivo)
+-record(config, {cat_host_alias, 					%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
+				 cat_host_search,					%% Lista de hosts para pesquisar os serviços
+				 cat_node_search,					%% Lista de nodes para pesquisar os serviços
+				 cat_path_search :: list(tuple()),	%% Lista de tuplas com caminhos alternativos para catálogos
+				 ems_hostname,						%% Nome da maquina onde o barramento está sendo executado
+				 ems_host,							%% Atom do name da maquina onde o barramento está sendo executado
+				 ems_file_dest,						%% Nome do arquivo de configuração (útil para saber o local do arquivo)
 				 ems_debug
 		 }). 	
 

@@ -41,8 +41,8 @@ init([]) ->
 	?MODULE = ets:new(?MODULE, [set, protected, named_table, {read_concurrency, true}]),
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	LocalTimeStr = lists:flatten(io_lib:format("~p/~p/~p ~p:~p:~p", [Dia, Mes, Ano, Hora, Min, Seg])),
-	TRef = erlang:send_after(1000, self(), update),
 	ets:insert(?MODULE, {clock, LocalTimeStr}),
+	TRef = erlang:send_after(1000, self(), update),
 	{ok, #state{tref = TRef}}.
 
 handle_call(stop, _From, State) ->
