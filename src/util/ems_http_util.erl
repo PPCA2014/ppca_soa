@@ -44,8 +44,8 @@ encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, Worker
 		case length(Querystring) =< 1 of
 			 true ->
 				Url2 = ems_util:remove_ult_backslash_url(Url),
-				Content_Length = maps:get('Content-Length', HttpParams, 0),
-				Content_Type = maps:get('Content-Type', HttpParams, "application/json"),
+				ContentLength = maps:get('Content-Length', HttpParams, 0),
+				ContentType = maps:get('Content-Type', HttpParams, "application/json"),
 				Accept = maps:get('Accept', HttpParams, "*/*"),
 				Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
 				User_Agent = maps:get('User-Agent', HttpParams, ""),
@@ -64,8 +64,8 @@ encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, Worker
 					querystring = Querystring,
 					querystring_map = QuerystringMap,
 					params_url = Params_url,
-					content_length = Content_Length,
-					content_type = Content_Type,
+					content_length = ContentLength,
+					content_type = ContentType,
 					accept = Accept,
 					user_agent = User_Agent,
 					accept_encoding = Accept_Encoding,
@@ -99,8 +99,8 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 		case length(Querystring) =< 1 of
 			 true ->
 				Url2 = ems_util:remove_ult_backslash_url(Url),
-				Content_Length = MochiReq:get(body_length),
-				Content_Type = MochiReq:get_header_value("content-type"),
+				ContentLength = MochiReq:get(body_length),
+				ContentType = MochiReq:get_header_value("content-type"),
 				Accept = MochiReq:get_header_value("accept"),
 				Accept_Encoding = MochiReq:get_header_value("accept-encoding"),
 				User_Agent = MochiReq:get_header_value("user-agent"),
@@ -119,8 +119,8 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 					querystring = Querystring,
 					querystring_map = QuerystringMap,
 					params_url = Params_url,
-					content_length = Content_Length,
-					content_type = Content_Type,
+					content_length = ContentLength,
+					content_type = ContentType,
 					accept = Accept,
 					user_agent = User_Agent,
 					accept_encoding = Accept_Encoding,
@@ -154,32 +154,47 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
 		Host = cowboy_req:host(CowboyReq),
 		Version = cowboy_req:version(CowboyReq),
-		Content_Type = cowboy_req:header(<<"content-type">>, CowboyReq),
-		Content_Length = cowboy_req:body_length(CowboyReq),
-		case Content_Length > 0 of
-			true ->
-				case Content_Type of
-					<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
-						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
-						PayloadMap = maps:from_list(Payload);
-					<<"application/json">> ->
-						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-						PayloadMap = decode_payload_as_json(Payload);
-					<<"application/xml">> ->
-						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-						PayloadMap = decode_payload_as_xml(Payload);
-					_ -> 
-						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-						PayloadMap = #{}
-				end;
-			false ->
-				Payload = <<>>,
-				PayloadMap = #{}
-		end,
+		ContentType = cowboy_req:header(<<"content-type">>, CowboyReq),
+		ContentLength = cowboy_req:body_length(CowboyReq),
 		QuerystringBin = cowboy_req:qs(CowboyReq),
 		case QuerystringBin of
 			<<>> -> QuerystringMap = #{};
 			_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
+		end,
+		case ContentLength > 0 of
+			true ->
+				case ContentType of
+					<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
+						ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+						PayloadMap = maps:from_list(Payload),
+						QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
+					<<"application/x-www-form-urlencoded">> ->
+						ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+						PayloadMap = maps:from_list(Payload),
+						QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
+					<<"application/json">> ->
+						ContentType2 = <<"application/json">>,
+						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						PayloadMap = decode_payload_as_json(Payload),
+						QuerystringMap2 = QuerystringMap;
+					<<"application/xml">> ->
+						ContentType2 = <<"application/xml">>,
+						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						PayloadMap = decode_payload_as_xml(Payload),
+						QuerystringMap2 = QuerystringMap;
+					_ -> 
+						ContentType2 = ContentType,						
+						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						PayloadMap = #{},
+						QuerystringMap2 = QuerystringMap
+				end;
+			false ->
+				ContentType2 = ContentType,						
+				Payload = <<>>,
+				PayloadMap = #{},
+				QuerystringMap2 = QuerystringMap
 		end,
 		Accept = cowboy_req:header(<<"accept">>, CowboyReq),
 		Accept_Encoding = cowboy_req:header(<<"accept-encoding">>, CowboyReq),
@@ -188,7 +203,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
 		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
-		ReqHash = erlang:phash2([Url, QuerystringBin, Content_Length, Content_Type]),
+		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 		Request = #request{
 			rid = RID,
@@ -198,10 +213,10 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			url = Url2,
 			version = Version,
 			querystring = QuerystringBin,
-			querystring_map = QuerystringMap,
+			querystring_map = QuerystringMap2,
 			params_url = Params_url,
-			content_length = Content_Length,
-			content_type = Content_Type,
+			content_length = ContentLength,
+			content_type = ContentType2,
 			accept = Accept,
 			user_agent = User_Agent,
 			accept_encoding = Accept_Encoding,

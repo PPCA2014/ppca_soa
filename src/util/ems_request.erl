@@ -208,8 +208,8 @@ get_param_url(NomeParam, Default, Request) ->
 	maps:get(NomeParam2, ParamsUrl, Default).
 
 %% @doc Retorna uma querystring do request
-get_querystring(QueryName, Default, Request) ->
-	Value = maps:get(QueryName, Request#request.querystring_map, Default),
+get_querystring(QueryName, Default, #request{querystring_map = QuerystringMap}) ->
+	Value = maps:get(QueryName, QuerystringMap, Default),
 	case erlang:is_binary(Value) of
 		true -> binary_to_list(Value);
 		false -> Value

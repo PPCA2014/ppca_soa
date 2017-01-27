@@ -56,7 +56,7 @@ start() ->
                           ets:new(Table, [named_table, public])
                   end,
                   ?TABLES),
-	add_client("s6BhdRkqt3","qwer", "http://localhost:2301/portal/index.html").
+	add_client("s6BhdRkqt3","qwer", "http://localhost:2301/").
 
 stop() ->
     lists:foreach(fun ets:delete/1, ?TABLES).
