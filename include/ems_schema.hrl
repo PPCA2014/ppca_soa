@@ -58,7 +58,7 @@
 					  worker :: pid(),							%% Processo worker http que vai atender a requisição
 					  status_send,								%% Registra que a mensagem foi entregue ou o erro ocorrido na entrega
 					  authorization :: string(),				%% Dados da autenticação da requisição
-					  user :: user,								%% Usuário da requisição ou anonimo
+					  user :: #user{},							%% Usuário da requisição ou anonimo
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
