@@ -57,7 +57,7 @@ scan_catalog(FileName, Conf, Result) ->
 		{ok, CatMap} -> 
 			scan_catalog_entry([CatMap], Conf, Result);
 		{error, enoent} ->
-			io:format("Catalog ~p not exist, ignoring this catalog.\n", [FileName]),
+			io:format("Catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
 			Result;
 		_ -> 
 			io:format("Catalog ~p with invalid json format, ignoring this catalog.\n", [FileName]),
