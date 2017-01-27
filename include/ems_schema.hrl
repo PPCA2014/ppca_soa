@@ -118,7 +118,7 @@
 					host :: atom(),  							%% Atom do host onde está o módulo do serviço que vai processar a requisição
 					host_name,				  					%% Nome do host onde está o módulo do serviço que vai processar a requisição
 					result_cache :: non_neg_integer(), 			%% Indica quanto tempo em milisegundos o resultado vai ficar armazenado em cache (somente para o módulo msbus_static_file_service)
-					authentication :: string(),					%% Forma de autenticação (Por enquanto somente Basic)
+					authorization :: binary(),					%% Forma de autenticação (Por enquanto somente Basic)
 					page,										%% Page django file
 					page_module,								%% Page module django file compiled
 					page_mime_type = <<"text/html">>,			%% Page mime type

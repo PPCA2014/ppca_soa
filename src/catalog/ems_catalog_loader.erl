@@ -185,9 +185,9 @@ valida_lang(<<"erlang">>) -> ok;
 valida_lang(<<"net">>) -> ok;
 valida_lang(_) -> erlang:error(invalid_lang_service).
 
-valida_authentication(<<"Basic">>) -> ok;
-valida_authentication(<<>>) -> ok;
-valida_authentication(_) -> erlang:error(invalid_authentication).
+valida_authorization(<<"Basic">>) -> ok;
+valida_authorization(<<>>) -> ok;
+valida_authorization(_) -> erlang:error(invalid_authorization).
 
 valida_length(Value, MaxLength) ->
 	case is_valid_length(Value, MaxLength) of
@@ -311,7 +311,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Lang = maps:get(<<"lang">>, H, <<>>),
 				Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
 				Result_Cache = maps:get(<<"result_cache">>, H, 0),
-				Authentication = maps:get(<<"authentication">>, H, <<>>),
+				Authorization = maps:get(<<"authorization">>, H, <<>>),
 				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 				UseRE = maps:get(<<"use_re">>, H, false),
 				SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
@@ -331,7 +331,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				valida_length(Comment, 1000),
 				valida_length(Version, 10),
 				valida_length(Owner, 30),
-				valida_authentication(Authentication),
+				valida_authorization(Authorization),
 				valida_bool(Debug),
 				valida_bool(UseRE),
 				case Lang of
@@ -350,7 +350,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				PageModule = compile_page_module(Page, Rowid),
 				ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 												 Type, Enable, Comment, Version, Owner, 
-												 Async, Host, Result_Cache, Authentication, Node, Lang,
+												 Async, Host, Result_Cache, Authorization, Node, Lang,
 												 Datasource, Debug, SchemaIn, SchemaOut, 
 												 Page, Timeout, Middleware, Cache_Control, ExpiresMinute, Public),
 				case UseRE of
@@ -363,7 +363,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												   Version, Owner, Async, 
 												   Querystring, QtdQuerystringRequired,
 												   Host, HostName, Result_Cache,
-												   Authentication, Node, Lang,
+												   Authorization, Node, Lang,
 												   Datasource, Debug, SchemaIn, SchemaOut, 
 												   PoolSize, PoolMax, H, Page, 
 												   PageModule, Timeout, 
@@ -381,7 +381,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												Version, Owner, Async, 
 												Querystring, QtdQuerystringRequired,
 												Host, HostName, Result_Cache,
-												Authentication, Node, Lang,
+												Authorization, Node, Lang,
 												Datasource, Debug, SchemaIn, SchemaOut, 
 												PoolSize, PoolMax, H, Page, 
 												PageModule, Timeout, 
@@ -473,7 +473,7 @@ parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Enable, Comment, Version, Owner, Async, Querystring, 
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
-			   Authentication, Node, Lang, Datasource,
+			   Authorization, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
 			   Page, PageModule, Timeout, 
 			   Middleware, Cache_Control, ExpiresMinute, Public) ->
@@ -502,7 +502,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    host = Host,
 			    host_name = HostName,
 			    result_cache = Result_Cache,
-			    authentication = Authentication,
+			    authorization = Authorization,
 			    node = Node,
 			    page = Page,
 			    page_module = PageModule,
@@ -524,7 +524,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Enable, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
-			Authentication, Node, Lang, Datasource, 
+			Authorization, Node, Lang, Datasource, 
 			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
 			Page, PageModule, Timeout, 
 			Middleware, Cache_Control, ExpiresMinute, Public) ->
@@ -550,7 +550,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    host = Host,
 			    host_name = HostName,
 			    result_cache = Result_Cache,
-			    authentication = Authentication,
+			    authorization = Authorization,
 			    node = Node,
 			    page = Page,
 			    page_module = PageModule,
@@ -571,7 +571,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
-				  Authentication, Node, Lang, _Datasource, 
+				  Authorization, Node, Lang, _Datasource, 
 				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
 				  Middleware, Cache_Control, ExpiresMinute, Public) ->
 	Service = #{<<"id">> => Id,
@@ -587,7 +587,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 			    <<"async">> => Async,
 			    <<"host">> => Host,
 			    <<"result_cache">> => Result_Cache,
-			    <<"authentication">> => Authentication,
+			    <<"authorization">> => Authorization,
 			    <<"node">> => Node,
 			    <<"page">> => Page,
 			    <<"debug">> => Debug,

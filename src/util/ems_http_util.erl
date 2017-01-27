@@ -14,7 +14,6 @@
 -include("../../include/ems_schema.hrl").
 -include("../../include/ems_http_messages.hrl").
 
-
 encode_request(Uri) -> encode_request("GET", Uri).
 
 encode_request(Method, Uri) -> 
@@ -452,6 +451,19 @@ match_ip_address(Ip1, 	Ip2) ->
    (O3 == '_' orelse O3 == X3) andalso
    (O4 == '_' orelse O4 == X4).
 	
+	
+-spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
+parse_basic_authorization_header(Header) ->
+	<<Basic:5/binary, _:1/binary, Secret/binary>> = Header,
+	case Basic =:= <<"Basic">> of
+		true ->
+			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
+			[Login|[Password|_]] = string:tokens(Secret2, ":"),
+			{ok, Login, Password};
+		false -> 
+			{error, einvalid_authorization_header}
+	end.
+
 	
 %% @doc Retorna o mime-type do arquivo
 mime_type(".htm") -> <<"text/html">>;

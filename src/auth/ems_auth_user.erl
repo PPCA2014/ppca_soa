@@ -13,29 +13,32 @@
     
 -export([autentica/2]).
 
-autentica(Service, Request) ->
+autentica(#service{authorization = AuthorizationMode}, Request) ->
 	try
-		case Service#service.authentication of
+		case AuthorizationMode of
 			<<"Basic">> -> do_basic_authorization(Request);
-			<<>> -> {ok, anonimo}
+			<<>> -> {ok, public}
 		end
 	catch
 		_Exception:_Reason ->  {error, no_authorization} 
 	end.
 
-do_basic_authorization(Request) ->
-	case Request#request.authorization /= "" of
+do_basic_authorization(#request{authorization = Authorization}) ->
+	case Authorization /= <<>> of
 		true -> 
-			[Authorization|[LoginAndPassword|_]] = string:tokens(Request#request.authorization, " "),
-			case Authorization =:= "Basic" of
-				true -> 
-					LoginAndPassword2 = base64:decode_to_string(LoginAndPassword),
-					[Login|[Password|_]] = string:tokens(LoginAndPassword2, ":"),
+			case ems_http_util:parse_basic_authorization_header(Authorization) of
+				{ok, Login, Password} ->
 					case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
-						{ok, User} -> {ok, User};
-						_ -> {error, no_authorization}
+						{ok, User} -> 
+							?DEBUG("Authenticating ~p with HTTP Basic protocol: ok", [{Login, Password}]),
+							{ok, User};
+						_ -> 
+							?DEBUG("Authenticating ~p with HTTP Basic protocol: no_authorization", [{Login, Password}]),
+							{error, no_authorization}
 					end;
-				false -> {error, no_authorization}
+				_Error -> 
+					?DEBUG("Invalid authorization header to HTTP Basic protocol: ~p.", [Authorization]),
+					{error, no_authorization}
 			end;
 		false -> {error, no_authorization}
 	end.
