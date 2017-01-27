@@ -8,7 +8,7 @@
             </div>
           </div>
           <div class="col-sm-2" *ngIf="verificarUsuarioLogado()">
-            <div class="login"> <h5 style="color: #FFFFFF;" class="login"> Seja vem vindo! <br/>
+            <div class="login"> <h5 style="color: #FFFFFF;" class="login"> Seja vem vindo {{usuario.resource_owner.user}}! <br/>
               <a class="cor-branca" (click)="logout()">Logout</a></h5> </div>
           </div>
           <div class="col-sm-2" *ngIf="verificarUsuarioLogado()">
