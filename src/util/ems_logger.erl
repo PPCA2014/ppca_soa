@@ -116,7 +116,7 @@ init(#service{properties = Props}) ->
 	Debug = maps:get(<<"debug">>, Props, false),
 	case get_filename_device() of
 		{ok, NomeArqLog, IODevice} ->
-			info("Loading server ~s...", [?SERVER_NAME]),
+			info("Loading ems-bus server ~s.", [?SERVER_NAME]),
 			set_timeout_for_get_filename_device(),
 			{ok, #state{log_file_checkpoint = Checkpoint,
 						log_file_name = NomeArqLog,

@@ -104,14 +104,14 @@ le_config() ->
 				parse_config(Json, NomeArqConfig)
 			catch 
 				_Exception:Reason ->
-					io:format("Unable to parse configuration file. Reason: ~p. Running with default settings...\n", [Reason]),
+					io:format("Fail to parse configuration file. Reason: ~p. Running with default settings...\n", [Reason]),
 					get_default_config()
 			end;
 		{error, enojsonformat} -> 
-			io:format("Configuration file layout is not a valid JSON, running the bus with default settings...\n"),
+			io:format("Configuration file layout is not a valid JSON, runningwith default settings...\n"),
 			get_default_config();
 		{error, _Reason} -> 
-			io:format("Missing or inaccessible configuration filel, running the bus with default settings...\n"),
+			io:format("Missing or invalid configuration file, running with default settings...\n"),
 			get_default_config()
 	end.
 
@@ -129,6 +129,7 @@ parse_config(Json, NomeArqConfig) ->
 			 cat_host_search			= maps:get(<<"cat_host_search">>, Json, <<>>),							
 			 cat_node_search			= maps:get(<<"cat_node_search">>, Json, <<>>),
 			 cat_path_search			= parse_cat_path_search(Json),
+			 cat_disable_services		= maps:get(<<"cat_disable_services">>, Json, []),
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
@@ -142,7 +143,8 @@ get_default_config() ->
 	#config{ cat_host_alias				= #{<<"local">> => Hostname2},
 			 cat_host_search			= <<>>,							
 			 cat_node_search			= <<>>,
-			 cat_path_search			= [],
+			 cat_path_search			= [{<<"{{ CATALOG_PATH }}">>, ?CATALOGO_PATH}],
+			 cat_disable_services		= [],
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",

@@ -17,7 +17,7 @@ autentica(#service{authorization = AuthorizationMode}, Request) ->
 	try
 		case AuthorizationMode of
 			<<"Basic">> -> do_basic_authorization(Request);
-			<<>> -> {ok, public}
+			<<>> -> {ok, undefined}
 		end
 	catch
 		_Exception:_Reason ->  {error, no_authorization} 

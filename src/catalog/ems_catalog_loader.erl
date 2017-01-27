@@ -86,7 +86,7 @@ scan_catalog_entry([Cat|CatTail], Conf, Result) ->
 
 -spec parse_filename_catalog(map(), #config{}) -> {ok, string()} | {error, string()}.
 parse_filename_catalog(#{<<"file">> := FileName}, Conf) ->
-	FileName2 = ems_util:replace_all(FileName, Conf#config.cat_path_search),
+	FileName2 = ems_util:replace_all(binary_to_list(FileName), Conf#config.cat_path_search),
 	case hd(FileName2) == $~ of
 		true -> 
 			case init:get_argument(home) of
