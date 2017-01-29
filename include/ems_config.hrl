@@ -56,7 +56,7 @@
 -define(CATALOGO_PATH, ?PRIV_PATH ++ "/catalog").
 
 % Caminho do catálogo de serviços
--define(MAIN_CATALOG_FILE, ?PRIV_PATH ++ "/catalog/catalog.conf").
+-define(CATALOGO_ESB_PATH, ?CATALOGO_PATH  ++ "/catalog.json").
 
 % Caminho da pasta de databases
 -define(DATABASE_PATH, ?PRIV_PATH ++ "/db").

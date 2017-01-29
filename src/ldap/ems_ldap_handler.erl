@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_ldap_handler
 %% @version 1.0.0
-%% @doc Main module HTTP server
+%% @doc Ldap handler
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************

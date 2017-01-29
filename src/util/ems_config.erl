@@ -116,20 +116,17 @@ le_config() ->
 	end.
 
 parse_cat_path_search(Json) ->
-	CatPathSearchMap = maps:get(<<"cat_path_search">>, Json, #{}),
-	case maps:is_key(<<"cat_path_search">>, CatPathSearchMap) of
-		true -> maps:to_list(CatPathSearchMap);
-		false -> maps:to_list(maps:put(<<"{{ CATALOG_PATH }}">>, ?CATALOGO_PATH, CatPathSearchMap))
-	end.
+	CatPathSearch = maps:get(<<"catalog_path">>, Json, []),
+	[{<<"catalog_esb">>, ?CATALOGO_ESB_PATH} | CatPathSearch].
 
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
-	#config{ cat_host_alias				= maps:get(<<"cat_host_alias">>, Json, #{<<"local">> => Hostname2}),
-			 cat_host_search			= maps:get(<<"cat_host_search">>, Json, <<>>),							
-			 cat_node_search			= maps:get(<<"cat_node_search">>, Json, <<>>),
+	#config{ cat_host_alias				= maps:get(<<"host_alias">>, Json, #{<<"local">> => Hostname2}),
+			 cat_host_search			= maps:get(<<"host_search">>, Json, <<>>),							
+			 cat_node_search			= maps:get(<<"node_search">>, Json, <<>>),
 			 cat_path_search			= parse_cat_path_search(Json),
-			 cat_disable_services		= maps:get(<<"cat_disable_services">>, Json, []),
+			 cat_disable_services		= maps:get(<<"disable_services">>, Json, []),
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
@@ -143,11 +140,12 @@ get_default_config() ->
 	#config{ cat_host_alias				= #{<<"local">> => Hostname2},
 			 cat_host_search			= <<>>,							
 			 cat_node_search			= <<>>,
-			 cat_path_search			= [{<<"{{ CATALOG_PATH }}">>, ?CATALOGO_PATH}],
+			 cat_path_search			= [{<<"catalog_esb">>, ?CATALOGO_ESB_PATH}],
 			 cat_disable_services		= [],
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",
 			 ems_debug					= false
 		}.
+
 

@@ -130,7 +130,6 @@ load_users_from_datasource(Datasource) ->
 					{_,_,[]} -> ok;
 					{_, _, Records} ->
 						F = fun() ->
-							io:format("aqui1\n"),
 							Count = insert_users(Records, 0),
 							ems_logger:info("~p load ~p users from database", [?SERVER, Count])
 						end,

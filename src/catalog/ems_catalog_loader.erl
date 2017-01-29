@@ -23,7 +23,7 @@
 
 init_catalog() ->
 	ets:new(ets_ems_catalog, [set, named_table, public]),
-	case get_catalog(?MAIN_CATALOG_FILE) of
+	case get_catalog() of
 		{ok, Cat1, Cat2, Cat3, CatK} -> 
 			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3, CatK}}),
 			ok;
@@ -39,23 +39,36 @@ list_kernel_catalog() ->
 
 
 %% @doc Get catalog of services
-get_catalog(FileName) -> 
+get_catalog() -> 
 	Conf = ems_config:getConfig(),
-	ListCatalog = scan_catalog(FileName, Conf, []),
+	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
 	?DEBUG("Parse catalogs...\n~p.", [ListCatalog]),
 	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
 		{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
 		Error -> Error
 	end.
-			
-
+	
+	
+-spec scan_catalogs(list(tuple()), #config{}, list()) -> list().
+scan_catalogs([{CatName, FileName}|Rest], Conf, Result) ->
+	case parse_filename_catalog(FileName, ?CATALOGO_PATH) of
+		{ok, FileName2} ->
+			io:format("Loading catalog ~p from ~p.\n", [CatName, FileName2]),
+			Cat = scan_catalog(FileName2, Conf, Result),
+			scan_catalogs(Rest, Conf, Result ++ Cat);
+		{error, FileName2} ->
+			io:format("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName2])
+	end.
+		
+		
 -spec scan_catalog(FileName :: string(), Conf :: #config{}, Result :: list(map())) -> list(map()) | {error, atom()}.
 scan_catalog(FileName, Conf, Result) ->
+	CurrentDir = filename:dirname(FileName),
 	case ems_util:read_file_as_map(FileName) of
 		{ok, CatList} when is_list(CatList) -> 
-			scan_catalog_entry(CatList, Conf, Result);
+			scan_catalog_entry(CatList, Conf, CurrentDir, Result);
 		{ok, CatMap} -> 
-			scan_catalog_entry([CatMap], Conf, Result);
+			scan_catalog_entry([CatMap], Conf, CurrentDir, Result);
 		{error, enoent} ->
 			io:format("Catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
 			Result;
@@ -64,38 +77,47 @@ scan_catalog(FileName, Conf, Result) ->
 			Result
 	end.
 	
--spec scan_catalog_entry(list(), Conf :: #config{}, list()) -> list().
-scan_catalog_entry([], _, Result) -> 
+-spec scan_catalog_entry(list(), Conf :: #config{}, string(), list()) -> list().
+scan_catalog_entry([], _, _, Result) -> 
 	Result;
-scan_catalog_entry([Cat|CatTail], Conf, Result) ->
+scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 	case maps:is_key(<<"file">>, Cat) of
 		true -> 
-			case parse_filename_catalog(Cat, Conf) of
+			case parse_filename_catalog(maps:get(<<"file">>, Cat), CurrentDir) of
 				{ok, FileName} ->
 					?DEBUG("Scan catalog ~p.", [FileName]),
 					Result2 = scan_catalog(FileName, Conf, Result),
-					scan_catalog_entry(CatTail, Conf, Result2);			
+					scan_catalog_entry(CatTail, Conf, CurrentDir, Result2);			
 				{error, FileName} ->
 					?DEBUG("Fail scan catalog ~p: ~p.", [FileName, Cat]),
 					io:format("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName]),
-					scan_catalog_entry(CatTail, Conf, Result)
+					scan_catalog_entry(CatTail, Conf, CurrentDir, Result)
 			end;
 		false -> 
-			scan_catalog_entry(CatTail, Conf, [Cat | Result])
+			scan_catalog_entry(CatTail, Conf, CurrentDir, [Cat | Result])
 	end.
 
--spec parse_filename_catalog(map(), #config{}) -> {ok, string()} | {error, string()}.
-parse_filename_catalog(#{<<"file">> := FileName}, Conf) ->
-	FileName2 = ems_util:replace_all(binary_to_list(FileName), Conf#config.cat_path_search),
-	case hd(FileName2) == $~ of
-		true -> 
-			case init:get_argument(home) of
-				{ok, [[HomePath]]} -> 
-					FileName3 = ems_util:replace(FileName2, "~", HomePath),
-					{ok, FileName3};
-				_Error -> {error, FileName}
-			end;
-		_ -> {ok, FileName2}
+-spec parse_filename_catalog(map(), string()) -> {ok, string()} | {error, string()}.
+parse_filename_catalog(FileName, CurrentDir) when is_binary(FileName) ->
+	parse_filename_catalog(binary_to_list(FileName), CurrentDir);
+parse_filename_catalog(FileName, CurrentDir) ->
+	Ch = hd(FileName),
+	case Ch == $/ of
+		true -> {ok, FileName};  
+		false ->
+			case Ch == $~ of
+				true -> 
+					case init:get_argument(home) of
+						{ok, [[HomePath]]} -> 
+							{ok, ems_util:replace(FileName, "~", HomePath)};
+						_Error -> {error, FileName}
+					end;
+				_ -> 
+					case Ch == $. of
+						true -> {ok, CurrentDir ++ "/" ++ string:substr(FileName, 3)};
+						false -> {ok, CurrentDir ++ "/" ++ FileName}
+					end
+			end
 	end.
 
 

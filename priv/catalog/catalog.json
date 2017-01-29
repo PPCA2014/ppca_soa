@@ -1,0 +1,13 @@
+[
+
+	{
+		"catalog": "emsbus", 
+		"file": "emsbus/catalogo_emsbus.conf"
+	},
+
+	{
+		"catalog": "samples", 
+		"file": "samples/catalogo_samples.conf"
+	}
+
+]
