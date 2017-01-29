@@ -1,11 +1,11 @@
 [
 	{
 		"catalog": "/unb_aula/curso", 
-		"file": "unb_aula/catalogo_curso.conf"
+		"file": "unb_aula/catalogo_curso.json"
 	},
 	
 	{
 		"catalog": "/unb_aula/pessoa", 
-		"file": "unb_aula/catalogo_pessoa.conf"
+		"file": "unb_aula/catalogo_pessoa.json"
 	}
 ]

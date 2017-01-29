@@ -1,21 +1,21 @@
 [
 	{
 		"catalog": "/casestudy/questionario/catalogo_modulo_questionario", 
-		"file": "casestudy/questionario/catalogo_modulo_questionario.conf"
+		"file": "casestudy/questionario/catalogo_modulo_questionario.json"
 	},
 	
 	{
 		"catalog": "/casestudy/sae/catalogo_modulo_sae", 
-		"file": "casestudy/sae/catalogo_modulo_sae.conf"
+		"file": "casestudy/sae/catalogo_modulo_sae.json"
 	},
 
 	{
 		"catalog": "/casestudy/sigra/catalogo_modulo_sigra", 
-		"file": "casestudy/sigra/catalogo_modulo_sigra.conf"
+		"file": "casestudy/sigra/catalogo_modulo_sigra.json"
 	},
 
 	{
 		"catalog": "/casestudy/sitab/catalogo_modulo_sitab", 
-		"file": "casestudy/sitab/catalogo_modulo_sitab.conf"
+		"file": "casestudy/sitab/catalogo_modulo_sitab.json"
 	}
 ]

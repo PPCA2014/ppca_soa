@@ -1,0 +1,21 @@
+[
+	{
+		"catalog": "questionario/catalogo_questionario", 
+		"file": "casestudy/questionario/catalogo_questionario.json"
+	},
+	
+	{
+		"catalog": "questionario/catalogo_pergunta", 
+		"file": "casestudy/questionario/catalogo_pergunta.json"
+	},
+	
+	{
+		"catalog": "questionario/catalogo_tipo_questionario", 
+		"file": "casestudy/questionario/catalogo_tipo_questionario.json"
+	},
+
+	{
+		"catalog": "questionario/catalogo_categoria_pergunta", 
+		"file": "casestudy/questionario/catalogo_categoria_pergunta.json"
+	}	
+]

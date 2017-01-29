@@ -1,37 +1,37 @@
 [
 	{
 		"catalog": "/samples/catalogo_produto", 
-		"file": "samples/catalogo_produto.conf"
+		"file": "catalogo_produto.json"
 	},
 	
 	{
 		"catalog": "/samples/catalogo_cep", 
-		"file": "samples/catalogo_cep.conf"
+		"file": "catalogo_cep.json"
 	},
 	
 	{
 		"catalog": "/samples/catalogo_hello_world", 
-		"file": "samples/catalogo_hello_world.conf"
+		"file": "catalogo_hello_world.json"
 	},
 
 	{
 		"catalog": "/samples/catalogo_calc", 
-		"file": "samples/catalogo_calc.conf"
+		"file": "catalogo_calc.json"
 	},
 
 	{
 		"catalog": "/samples/catalogo_contador", 
-		"file": "samples/catalogo_contador.conf"
+		"file": "catalogo_contador.json"
 	},
 	
 	{
 		"catalog": "/samples/hackathon", 
-		"file": "samples/catalogo_hackathon.conf"
+		"file": "catalogo_hackathon.json"
 	},
 	
 	{
 		"catalog": "/samples/catalogo_agenda_telefone", 
-		"file": "samples/catalogo_agenda_telefone.conf"
+		"file": "catalogo_agenda_telefone.json"
 	}
 	
 	

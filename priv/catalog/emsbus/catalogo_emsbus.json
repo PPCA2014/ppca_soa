@@ -2,106 +2,106 @@
 
 	{
 		"catalog": "/emsbus/ems_clock", 
-		"file": "emsbus/ems_clock.conf"
+		"file": "ems_clock.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_logger", 
-		"file": "emsbus/ems_logger.conf"
+		"file": "ems_logger.json"
 	},
 	
 	{
 		"catalog": "/emsbus/ems_http_server", 
-		"file": "emsbus/ems_http_server.conf"
+		"file": "ems_http_server.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_user_loader", 
-		"file": "emsbus/ems_user_loader.conf"
+		"file": "ems_user_loader.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_ldap_server", 
-		"file": "emsbus/ems_ldap_server.conf"
+		"file": "ems_ldap_server.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_eventmgr", 
-		"file": "emsbus/ems_eventmgr.conf"
+		"file": "ems_eventmgr.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_cache", 
-		"file": "emsbus/ems_cache.conf"
+		"file": "ems_cache.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_request", 
-		"file": "emsbus/ems_request.conf"
+		"file": "ems_request.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_health", 
-		"file": "emsbus/ems_health.conf"
+		"file": "ems_health.json"
 	},
 	
 	{
 		"catalog": "/emsbus/ems_static_file_service", 
-		"file": "emsbus/ems_static_file_service.conf"
+		"file": "ems_static_file_service.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_catalog", 
-		"file": "emsbus/ems_catalog.conf"
+		"file": "ems_catalog.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_catalog_schema", 
-		"file": "emsbus/ems_catalog_schema.conf"
+		"file": "ems_catalog_schema.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_catalog_owner", 
-		"file": "emsbus/ems_catalog_owner.conf"
+		"file": "ems_catalog_owner.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_web_service", 
-		"file": "emsbus/ems_web_service.conf"
+		"file": "ems_web_service.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_info_service", 
-		"file": "emsbus/ems_info_service.conf"
+		"file": "ems_info_service.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_favicon_service", 
-		"file": "emsbus/ems_favicon_service.conf"
+		"file": "ems_favicon_service.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_options_service", 
-		"file": "emsbus/ems_options_service.conf"
+		"file": "ems_options_service.json"
 	},
 
 	{
 		"catalog": "/emsbus/auth_user", 
-		"file": "emsbus/ems_catalog_auth_user.conf"
+		"file": "ems_catalog_auth_user.json"
 	},
 
 	{
 		"catalog": "/emsbus/auth_oauth2", 
-		"file": "emsbus/ems_oauth2.conf"
+		"file": "ems_oauth2.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_odbc_pool", 
-		"file": "emsbus/ems_odbc_pool.conf"
+		"file": "ems_odbc_pool.json"
 	},
 
 	{
 		"catalog": "/emsbus/ems_netadm_service", 
-		"file": "emsbus/ems_netadm_service.conf"
+		"file": "ems_netadm_service.json"
 	}
 ]

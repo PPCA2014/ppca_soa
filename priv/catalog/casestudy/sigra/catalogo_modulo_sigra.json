@@ -1,6 +1,6 @@
 [
 	{
 		"catalog": "sigra/catalogo_aluno", 
-		"file": "casestudy/sigra/catalogo_aluno.conf"
+		"file": "casestudy/sigra/catalogo_aluno.json"
 	}
 ]

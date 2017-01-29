@@ -2,12 +2,12 @@
 
 	{
 		"catalog": "emsbus", 
-		"file": "emsbus/catalogo_emsbus.conf"
+		"file": "emsbus/catalogo_emsbus.json"
 	},
 
 	{
 		"catalog": "samples", 
-		"file": "samples/catalogo_samples.conf"
+		"file": "samples/catalogo_samples.json"
 	}
 
 ]

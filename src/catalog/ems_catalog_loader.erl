@@ -50,12 +50,13 @@ get_catalog() ->
 	
 	
 -spec scan_catalogs(list(tuple()), #config{}, list()) -> list().
+scan_catalogs([], _, Result) -> Result;
 scan_catalogs([{CatName, FileName}|Rest], Conf, Result) ->
 	case parse_filename_catalog(FileName, ?CATALOGO_PATH) of
 		{ok, FileName2} ->
-			io:format("Loading catalog ~p from ~p.\n", [CatName, FileName2]),
-			Cat = scan_catalog(FileName2, Conf, Result),
-			scan_catalogs(Rest, Conf, Result ++ Cat);
+			io:format("Loading catalog ~p from ~p.\n", [binary_to_list(CatName), FileName2]),
+			Result2 = scan_catalog(FileName2, Conf, Result),
+			scan_catalogs(Rest, Conf, Result2);
 		{error, FileName2} ->
 			io:format("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName2])
 	end.

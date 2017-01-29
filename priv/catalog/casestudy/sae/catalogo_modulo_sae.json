@@ -1,0 +1,36 @@
+[
+	{
+		"catalog": "sae/catalogo_agenda", 
+		"file": "casestudy/sae/catalogo_agenda.json"
+	},
+	
+	{
+		"catalog": "sae/catalogo_aluno", 
+		"file": "casestudy/sae/catalogo_aluno.json"
+	},
+	
+	{
+		"catalog": "sae/catalogo_documentacao", 
+		"file": "casestudy/sae/catalogo_documentacao.json"
+	},
+
+	{
+		"catalog": "sae/catalogo_documentacao_pendente", 
+		"file": "asestudy/sae/catalogo_documentacao_pendente.json"
+	},
+	
+	{
+		"catalog": "sae/catalogo_estudo_preliminar", 
+		"file": "casestudy/sae/catalogo_estudo_preliminar.json"
+	},
+
+	{
+		"catalog": "sae/catalogo_estudo_socioeconomico", 
+		"file": "casestudy/sae/catalogo_estudo_socioeconomico.json"
+	},	
+
+	{
+		"catalog": "sae/catalogo_valoralimentacao", 
+		"file": "casestudy/sae/catalogo_valoralimentacao.json"
+	}
+]
