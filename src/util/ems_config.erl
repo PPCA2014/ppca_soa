@@ -97,7 +97,7 @@ get_name_arq_config() ->
 % Lê as configurações do arquivo de configuração
 le_config() ->
 	NomeArqConfig = get_name_arq_config(),
-	io:format("\nReading configuration file: ~p.\n", [NomeArqConfig]),
+	io:format("\nLoading configuration file: ~p.\n", [NomeArqConfig]),
 	case ems_util:read_file_as_map(NomeArqConfig) of
 		{ok, Json} -> 
 			try
