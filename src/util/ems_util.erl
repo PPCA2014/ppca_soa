@@ -574,7 +574,6 @@ is_letter_lower("x") -> true;
 is_letter_lower("z") -> true;
 is_letter_lower("a") -> true;
 is_letter_lower("b") -> true;
-is_letter_lower("x") -> true;
 is_letter_lower(_) -> false.
 
 

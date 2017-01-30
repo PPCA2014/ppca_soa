@@ -124,6 +124,7 @@ load_config() ->
 	case get_config_data() of
 		{ok, ConfigData, FileName} ->
 			io:format("\nLoading configuration file: ~p.\n", [FileName]),
+			io:format("aqui 2 ~p\n", [ems_util:normalize_field_utf8(ConfigData)]),
 			case ems_util:json_decode_as_map(ConfigData) of
 				{ok, Json} -> 
 					try

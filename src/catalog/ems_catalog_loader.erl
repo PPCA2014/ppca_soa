@@ -111,6 +111,7 @@ parse_filename_catalog(FileName, CurrentDir) ->
 				true -> 
 					case init:get_argument(home) of
 						{ok, [[HomePath]]} ->
+							io:format("aqui ~p ~p  - ~p\n", [FileName, HomePath, ems_util:replace(FileName, "~", HomePath)]),
 							{ok, ems_util:replace(FileName, "~", HomePath)};
 						_Error -> {error, FileName}
 					end;
