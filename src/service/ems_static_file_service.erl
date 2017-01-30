@@ -59,6 +59,7 @@ execute(Request = #request{url = Url,
 														 response_data = Err}
 								  };
 		{FSize, MTime} -> 
+			?DEBUG("Loading file ~p.", [FileName]),
 			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
 			ETag = generate_etag(FSize, MTime),
 			LastModified = cowboy_clock:rfc1123(MTime),
