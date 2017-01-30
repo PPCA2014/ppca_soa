@@ -117,7 +117,7 @@ parse_filename_catalog(FileName, CurrentDir) ->
 				_ -> 
 					case Ch == $. of
 						true -> io:format("aqui3\n"), {ok, CurrentDir ++ "/" ++ string:substr(FileName, 3)};
-						false -> io:format("aqui4\n"), {ok, CurrentDir ++ "/" ++ FileName}
+						false -> io:format("aqui4  ~p e ~p \n", [CurrentDir, FileName]), {ok, CurrentDir ++ "/" ++ FileName}
 					end
 			end
 	end.
