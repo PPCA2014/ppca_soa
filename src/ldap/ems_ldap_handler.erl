@@ -44,8 +44,8 @@ init(Ref, Socket, Transport, [#service{datasource = Datasource,
 loop(Socket, Transport, State) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
-			?DEBUG("Ldap msg is ~p\n", [Data]),
 			LdapMessage = decode_ldap_message(Data),
+			?DEBUG("Ldap msg is ~p\n", [LdapMessage]),
 			MessageID = LdapMessage#'LDAPMessage'.messageID,
 			Result = handle_request(LdapMessage, State),
 			case Result of

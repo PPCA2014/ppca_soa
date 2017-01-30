@@ -18,7 +18,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([getConfig/0, get_name_arq_config/0]).
+-export([getConfig/0]).
 
 -define(SERVER, ?MODULE).
 
@@ -45,8 +45,7 @@ getConfig() -> gen_server:call(?SERVER, get_config).
  
 init([]) -> 
 	try
-		Config = le_config(),
-		?DEBUG("Configuration file: ~p", [Config]),
+		Config = load_config(),
 		{ok, Config}
 	catch _Exception: Reason ->
 		{stop, Reason}
@@ -79,39 +78,72 @@ code_change(_OldVsn, State, _Extra) ->
 %% Funções internas
 %%====================================================================
 
-% Returns the name of the configuration file
-% Locais do arquivo: home do user (.erlangms/node@hostname.conf) ou na pasta priv/conf do barramento
--spec get_name_arq_config() -> list() | {error, atom()}.
-get_name_arq_config() ->
+% Returns the configuration file data
+% Locais do arquivo: home do user (.erlangms/node@hostname.conf, .erlangms/emsbus.conf) ou na pasta priv/conf do barramento
+-spec get_config_data() -> string() | {error, enofile_config}.
+get_config_data() ->
 	case init:get_argument(home) of
-		{ok, [[Home]]} -> 
-			NomeArqConfig = lists:concat([Home, "/.erlangms/", node(), ".conf"]),
-			?DEBUG("Checking if file ~p exists.", [NomeArqConfig]),
-			case file:read_file(NomeArqConfig) of 
-				{ok, _} -> NomeArqConfig;
-				_ -> ?CONF_FILE_PATH
+		{ok, [[HomePath]]} -> 
+			FileName = lists:concat([HomePath, "/.erlangms/", node(), ".conf"]),
+			case file:read_file(FileName) of 
+				{ok, Arq} -> 
+					?DEBUG("Checking if node file configuration ~p exist: Ok", [FileName]),
+					{ok, Arq, FileName};
+				_Error -> 
+					?DEBUG("Checking if node file configuration ~p exist: No", [FileName]),
+					FileName2 = lists:concat([HomePath, "/.erlangms/emsbus.conf"]),
+					case file:read_file(FileName2) of 
+						{ok, Arq2} -> 
+							?DEBUG("Checking if file configuration ~p exist: Ok", [FileName2]),
+							{ok, Arq2, FileName2};
+						_Error -> 
+							?DEBUG("Checking if file configuration ~p exist: No", [FileName2]),
+							case file:read_file(?CONF_FILE_PATH) of 
+								{ok, Arq3} -> 
+									?DEBUG("Checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
+									{ok, Arq3, ?CONF_FILE_PATH};
+								_Error -> 
+									?DEBUG("Checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
+									{error, enofile_config}
+							end
+					end
 			end;
-		error -> ?CONF_FILE_PATH
+		error ->
+			case file:read_file(?CONF_FILE_PATH) of 
+				{ok, Arq4} -> 
+					?DEBUG("Checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
+					{ok, Arq4, ?CONF_FILE_PATH};
+				{error, enoent} -> 
+					?DEBUG("Checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
+					{error, enofile_config}
+			end
 	end.
 
-% Lê as configurações do arquivo de configuração
-le_config() ->
-	NomeArqConfig = get_name_arq_config(),
-	io:format("\nLoading configuration file: ~p.\n", [NomeArqConfig]),
-	case ems_util:read_file_as_map(NomeArqConfig) of
-		{ok, Json} -> 
-			try
-				parse_config(Json, NomeArqConfig)
-			catch 
-				_Exception:Reason ->
-					io:format("Fail to parse configuration file. Reason: ~p. Running with default settings...\n", [Reason]),
+% Load the configuration file
+load_config() ->
+	case get_config_data() of
+		{ok, ConfigData, FileName} ->
+			io:format("\nLoading configuration file: ~p.\n", [FileName]),
+			case ems_util:json_decode_as_map(ConfigData) of
+				{ok, Json} -> 
+					try
+						parse_config(Json, FileName)
+					catch 
+						_Exception:_Reason ->
+							io:format("Fail to parse invalid configuration file, running with default settings...\n"),
+							get_default_config()
+					end;
+				_Error -> 
+					io:format("Configuration file layout is not a valid JSON format, running with default settings...\n"),
 					get_default_config()
 			end;
-		_Error -> 
-			io:format("Configuration file layout is not a valid JSON, running with default settings...\n"),
+		{error, enofile_config} ->
+			io:format("No file configuration exist, running with default settings...\n"),
 			get_default_config()
 	end.
 
+% parse path_search and return a list
+-spec parse_cat_path_search(map()) -> list().
 parse_cat_path_search(Json) ->
 	CatPathSearch = maps:get(<<"catalog_path">>, Json, #{}),
 	case maps:is_key(<<"ems-bus">>, CatPathSearch) of
