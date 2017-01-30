@@ -102,6 +102,7 @@ scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 parse_filename_catalog(FileName, CurrentDir) when is_binary(FileName) ->
 	parse_filename_catalog(binary_to_list(FileName), CurrentDir);
 parse_filename_catalog(FileName, CurrentDir) ->
+	?DEBUG("Parse filename ~p   current_dir: ~p.", [FileName, CurrentDir]),
 	Ch = hd(FileName),
 	case Ch == $/ of
 		true -> {ok, FileName};  
