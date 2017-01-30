@@ -102,22 +102,22 @@ scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 parse_filename_catalog(FileName, CurrentDir) when is_binary(FileName) ->
 	parse_filename_catalog(binary_to_list(FileName), CurrentDir);
 parse_filename_catalog(FileName, CurrentDir) ->
-	?DEBUG("Parse filename ~p   current_dir: ~p.", [FileName, CurrentDir]),
-	Ch = hd(FileName),
-	case Ch == $/ of
-		true ->io:format("aqui1\n"), {ok, FileName};  
+	Ch = string:substr(FileName, 1, 1),
+	Ch2 = string:substr(FileName, 2, 1),
+	case Ch =:= "/" orelse (ems_util:is_letter(Ch) andalso Ch2 =:= ":")   of
+		true -> {ok, FileName};  
 		false ->
-			case Ch == $~ of
+			case Ch == "~" of
 				true -> 
 					case init:get_argument(home) of
-						{ok, [[HomePath]]} -> io:format("aqui2\n"),
+						{ok, [[HomePath]]} ->
 							{ok, ems_util:replace(FileName, "~", HomePath)};
 						_Error -> {error, FileName}
 					end;
 				_ -> 
-					case Ch == $. of
-						true -> io:format("aqui3\n"), {ok, CurrentDir ++ "/" ++ string:substr(FileName, 3)};
-						false -> io:format("aqui4  ~p e ~p \n", [CurrentDir, FileName]), {ok, CurrentDir ++ "/" ++ FileName}
+					case Ch == "." of
+						true -> {ok, CurrentDir ++ "/" ++ string:substr(FileName, 3)};
+						false -> {ok, CurrentDir ++ "/" ++ FileName}
 					end
 			end
 	end.

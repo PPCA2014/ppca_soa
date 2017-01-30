@@ -546,3 +546,37 @@ read_file_as_string(FileName) ->
 		{ok, Arq} -> Arq;
 		Error -> throw(Error)
 	end.
+
+-spec is_letter(string()) -> boolean().
+is_letter(V) ->
+	is_letter_lower(string:to_lower(V)).
+is_letter_lower("c") -> true;
+is_letter_lower("d") -> true;
+is_letter_lower("e") -> true;
+is_letter_lower("f") -> true;
+is_letter_lower("g") -> true;
+is_letter_lower("h") -> true;
+is_letter_lower("i") -> true;
+is_letter_lower("j") -> true;
+is_letter_lower("k") -> true;
+is_letter_lower("l") -> true;
+is_letter_lower("m") -> true;
+is_letter_lower("n") -> true;
+is_letter_lower("o") -> true;
+is_letter_lower("p") -> true;
+is_letter_lower("q") -> true;
+is_letter_lower("r") -> true;
+is_letter_lower("s") -> true;
+is_letter_lower("t") -> true;
+is_letter_lower("u") -> true;
+is_letter_lower("v") -> true;
+is_letter_lower("x") -> true;
+is_letter_lower("z") -> true;
+is_letter_lower("a") -> true;
+is_letter_lower("b") -> true;
+is_letter_lower("x") -> true;
+is_letter_lower(_) -> false.
+
+
+
+
