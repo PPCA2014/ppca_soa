@@ -42,7 +42,7 @@ list_kernel_catalog() ->
 get_catalog() -> 
 	Conf = ems_config:getConfig(),
 	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
-	?DEBUG("Parse catalogs...\n~p.", [ListCatalog]),
+	%?DEBUG("Parse catalogs...\n~p.", [ListCatalog]),
 	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
 		{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
 		Error -> Error
@@ -105,19 +105,19 @@ parse_filename_catalog(FileName, CurrentDir) ->
 	?DEBUG("Parse filename ~p   current_dir: ~p.", [FileName, CurrentDir]),
 	Ch = hd(FileName),
 	case Ch == $/ of
-		true -> {ok, FileName};  
+		true ->io:format("aqui1\n"), {ok, FileName};  
 		false ->
 			case Ch == $~ of
 				true -> 
 					case init:get_argument(home) of
-						{ok, [[HomePath]]} -> 
+						{ok, [[HomePath]]} -> io:format("aqui2\n"),
 							{ok, ems_util:replace(FileName, "~", HomePath)};
 						_Error -> {error, FileName}
 					end;
 				_ -> 
 					case Ch == $. of
-						true -> {ok, CurrentDir ++ "/" ++ string:substr(FileName, 3)};
-						false -> {ok, CurrentDir ++ "/" ++ FileName}
+						true -> io:format("aqui3\n"), {ok, CurrentDir ++ "/" ++ string:substr(FileName, 3)};
+						false -> io:format("aqui4\n"), {ok, CurrentDir ++ "/" ++ FileName}
 					end
 			end
 	end.
