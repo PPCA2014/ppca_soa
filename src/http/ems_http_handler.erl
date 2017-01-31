@@ -29,6 +29,7 @@ init(CowboyReq, Opts) ->
 					Response = cowboy_req:reply(HttpCode, HttpHeader, ResponseData, CowboyReq),
 					ems_logger:log_request(Request2);
 				{ok, Request2} ->
+					io:format("teste1\n"),
 					Request3 = encode_response(Request2),
 					case Method == "GET" of
 						true -> ems_dispatcher_cache:add(ReqHash, T1, Request3);
@@ -69,6 +70,7 @@ encode_response(Request = #request{t1 = T1,
 								   reason = Reason,
 								   response_data = ResponseData,	
 								   response_header = ResponseHeader,
+								   content_type = ContentType,
 								   service = #service{name = ServiceName,
 									  				  owner = ServiceOwner,
 													  page_module = PageModule,
@@ -77,6 +79,7 @@ encode_response(Request = #request{t1 = T1,
 		undefined ->
 			case ResponseData of
 				{ok, <<_Content/binary>> = ResponseData} -> 
+					io:format("aqui1\n"),
 					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = #{
@@ -92,6 +95,7 @@ encode_response(Request = #request{t1 = T1,
 											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{ok, <<_Content/binary>> = ResponseData, <<MimeType/binary>> = MimeType} ->
+					io:format("aqui2\n"),
 					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = #{
@@ -107,10 +111,12 @@ encode_response(Request = #request{t1 = T1,
 											<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 										}};
 				{_HttpCode, <<_Content/binary>> = ResponseData, HttpHeader} ->
+					io:format("aqui3\n"),
 					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ResponseData,
 									response_header = HttpHeader};
 				{_HttpCode, ResponseData, HttpHeader} when erlang:is_tuple(ResponseData) ->
+					io:format("aqui5\n"),
 					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_data = ems_schema:to_json(ResponseData),
 									response_header = HttpHeader};
@@ -130,10 +136,12 @@ encode_response(Request = #request{t1 = T1,
 										<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS
 									}};
 				<<_Content/binary>> -> 
+					io:format("aqui4 -> ~p\n", [ContentType]),
+					io:format("content: ~p\n", [_Content]),
 					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_header = ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
-													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ?CONTENT_TYPE_JSON),
+													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, case ContentType of undefined -> <<"application/pdf"/utf8>>; _ -> ContentType end),
 													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, ?CACHE_CONTROL_NO_CACHE),
 													<<"ems-catalog">> => ServiceName,
 													<<"ems-owner">> => ServiceOwner,
