@@ -69,8 +69,8 @@ encode_response(Request = #request{t1 = T1,
 								   reason = Reason,
 								   response_data = ResponseData,	
 								   response_header = ResponseHeader,
-								   content_type = ContentType,
 								   service = #service{name = ServiceName,
+													  content_type = ContentTypeService,	
 									  				  owner = ServiceOwner,
 													  page_module = PageModule,
 													  page_mime_type = PageMimeType}}) ->
@@ -134,7 +134,11 @@ encode_response(Request = #request{t1 = T1,
 					Request#request{latency = ems_util:get_milliseconds() - T1,
 									response_header = ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
-													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, case ContentType of undefined -> ?CONTENT_TYPE_JSON; _ -> ContentType end),
+													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, 
+														case ContentTypeService of 
+															undefined -> ?CONTENT_TYPE_JSON; 
+															_ -> ContentTypeService 
+														end),
 													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, ?CACHE_CONTROL_NO_CACHE),
 													<<"ems-catalog">> => ServiceName,
 													<<"ems-owner">> => ServiceOwner,

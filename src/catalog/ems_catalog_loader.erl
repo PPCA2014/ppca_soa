@@ -347,6 +347,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Cache_Control = maps:get(<<"cache_control">>, H, ?DEFAULT_CACHE_CONTROL),
 				ExpiresMinute = maps:get(<<"expires_minute">>, H, 60),
 				Public = maps:get(<<"public">>, H, true),
+				ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
 				valida_lang(Lang),
 				valida_name_service(Name),
 				valida_type_service(Type),
@@ -376,7 +377,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												 Type, Enable, Comment, Version, Owner, 
 												 Async, Host, Result_Cache, Authorization, Node, Lang,
 												 Datasource, Debug, SchemaIn, SchemaOut, 
-												 Page, Timeout, Middleware, Cache_Control, ExpiresMinute, Public),
+												 Page, Timeout, Middleware, Cache_Control, ExpiresMinute, Public, ContentType),
 				case UseRE of
 					true -> 
 						Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -391,7 +392,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												   Datasource, Debug, SchemaIn, SchemaOut, 
 												   PoolSize, PoolMax, H, Page, 
 												   PageModule, Timeout, 
-												   Middleware, Cache_Control, ExpiresMinute, Public),
+												   Middleware, Cache_Control, ExpiresMinute, Public, ContentType),
 						case Type of
 							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 							_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -409,7 +410,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												Datasource, Debug, SchemaIn, SchemaOut, 
 												PoolSize, PoolMax, H, Page, 
 												PageModule, Timeout, 
-												Middleware, Cache_Control, ExpiresMinute, Public),
+												Middleware, Cache_Control, ExpiresMinute, Public, ContentType),
 						case Type of
 							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 							_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -500,7 +501,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   Authorization, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
 			   Page, PageModule, Timeout, 
-			   Middleware, Cache_Control, ExpiresMinute, Public) ->
+			   Middleware, Cache_Control, ExpiresMinute, Public, ContentType) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -542,6 +543,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    properties = Properties,
 			    cache_control = Cache_Control,
 			    expires = ExpiresMinute,
+			    content_type = ContentType,
 			    enable = Enable
 			}.
 
@@ -551,7 +553,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			Authorization, Node, Lang, Datasource, 
 			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
 			Page, PageModule, Timeout, 
-			Middleware, Cache_Control, ExpiresMinute, Public) ->
+			Middleware, Cache_Control, ExpiresMinute, Public, ContentType) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -590,6 +592,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    properties = Properties,
 			    cache_control = Cache_Control,
 			    expires = ExpiresMinute,
+			    content_type = ContentType,
 			    enable = Enable
 			}.
 
@@ -597,7 +600,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authorization, Node, Lang, _Datasource, 
 				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
-				  Middleware, Cache_Control, ExpiresMinute, Public) ->
+				  Middleware, Cache_Control, ExpiresMinute, Public, ContentType) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -622,6 +625,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
    			    <<"cache_control">> => Cache_Control,
 			    <<"expires">> => ExpiresMinute,
 				<<"lang">> => Lang,
+				<<"content_type">> => ContentType,
 				<<"enable">> => Enable},
 	Service.
 

@@ -134,7 +134,8 @@
 					timeout :: non_neg_integer(),
 					expires :: non_neg_integer(),
 					cache_control :: string(),
-					enable :: boolean()
+					enable :: boolean(),
+					content_type :: binary()					%% Tipo de conteúdo (Ex.: application/json)
 				}).
 
 
