@@ -53,7 +53,7 @@ execute(Request = #request{url = Url,
 						   service = #service{cache_control = Cache_Control,
 											  expires = ExpiresMinute,
 											  path = Path}}) ->
-	FileName = Path ++ Url,
+	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
 	case file_info(FileName) of
 		{error, Reason} = Err -> 
 			?DEBUG("Static file ~p does not exist.", [FileName]),

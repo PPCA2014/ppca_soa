@@ -121,8 +121,8 @@
 -define(MAX_TIME_ODBC_QUERY, 30000).
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
-% Timeout to expire cache of dispatcher
--define(TIMEOUT_DISPATCHER_CACHE, 1000).
+% Timeout in ms to expire cache of get request (ems_dispatcher_cache)
+-define(TIMEOUT_DISPATCHER_CACHE, 1500).
 
 % Number of datasource entries by odbc connection pool
 -define(MAX_CONNECTION_BY_POOL, 5).
