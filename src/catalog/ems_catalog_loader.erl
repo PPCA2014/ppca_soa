@@ -58,7 +58,7 @@ scan_catalogs([{CatName, FileName}|Rest], Conf, Result) ->
 			Result2 = scan_catalog(FileName2, Conf, Result),
 			scan_catalogs(Rest, Conf, Result2);
 		{error, FileName2} ->
-			io:format("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName2])
+			ems_logger:format_warn("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName2])
 	end.
 		
 		
@@ -71,10 +71,10 @@ scan_catalog(FileName, Conf, Result) ->
 		{ok, CatMap} -> 
 			scan_catalog_entry([CatMap], Conf, CurrentDir, Result);
 		{error, enoent} ->
-			io:format("Catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
+			ems_logger:format_warn("Catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
 			Result;
 		_ -> 
-			io:format("Catalog ~p with invalid json format, ignoring this catalog.\n", [FileName]),
+			ems_logger:format_warn("Catalog ~p with invalid json format, ignoring this catalog.\n", [FileName]),
 			Result
 	end.
 	
@@ -91,7 +91,7 @@ scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result2);			
 				{error, FileName} ->
 					?DEBUG("Fail scan catalog ~p: ~p.", [FileName, Cat]),
-					io:format("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName]),
+					ems_logger:format_warn("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName]),
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result)
 			end;
 		false -> 
@@ -228,6 +228,35 @@ valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
 		{Function, 2} -> ok;
 		_ -> throw({enoent, ServiceImpl, Cat})
 	end.
+
+
+% Process the path "~" and "." wildcards and variable path. Return path
+-spec parse_path_catalog(string(), list(tuple())) -> string().
+parse_path_catalog(Path, StaticFilePathList) when is_binary(Path) ->
+	parse_path_catalog(binary_to_list(Path), StaticFilePathList);
+parse_path_catalog(Path, StaticFilePathList) ->
+	Ch = string:substr(Path, 1, 1),
+	Ch2 = string:substr(Path, 2, 1),
+	case Ch =:= "/" orelse (ems_util:is_letter(Ch) andalso Ch2 =:= ":")   of
+		true -> Path;  
+		false ->
+			case Ch == "~" of
+				true -> 
+					case init:get_argument(home) of
+						{ok, [[HomePath]]} -> ems_util:replace(Path, "~", HomePath);
+						_Error -> throw({error, einvalid_path_catalog})
+					end;
+				_ -> 
+					case Ch == "." of
+						true -> ?STATIC_FILE_PATH ++ "/" ++ string:substr(Path, 3);
+						false -> 
+							% Renders variables {{ var }} and invokes them again parse_path_catalog to process the path "~" and "." wildcards
+							parse_path_catalog(ems_util:replace_all_vars(Path, StaticFilePathList), StaticFilePathList)
+					end
+			end
+	end.
+			
+
 	
 
 %% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
@@ -348,6 +377,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				ExpiresMinute = maps:get(<<"expires_minute">>, H, 60),
 				Public = maps:get(<<"public">>, H, true),
 				ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
+				Path = parse_path_catalog(maps:get(<<"path">>, H, ?STATIC_FILE_PATH), Conf#config.static_file_path),
+				RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
 				valida_lang(Lang),
 				valida_name_service(Name),
 				valida_type_service(Type),
@@ -377,7 +408,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												 Type, Enable, Comment, Version, Owner, 
 												 Async, Host, Result_Cache, Authorization, Node, Lang,
 												 Datasource, Debug, SchemaIn, SchemaOut, 
-												 Page, Timeout, Middleware, Cache_Control, ExpiresMinute, Public, ContentType),
+												 Page, Timeout, Middleware, Cache_Control, 
+												 ExpiresMinute, Public, ContentType, Path, RedirectUrl),
 				case UseRE of
 					true -> 
 						Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -392,7 +424,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												   Datasource, Debug, SchemaIn, SchemaOut, 
 												   PoolSize, PoolMax, H, Page, 
 												   PageModule, Timeout, 
-												   Middleware, Cache_Control, ExpiresMinute, Public, ContentType),
+												   Middleware, Cache_Control, ExpiresMinute, 
+												   Public, ContentType, Path, RedirectUrl),
 						case Type of
 							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 							_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -410,7 +443,9 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 												Datasource, Debug, SchemaIn, SchemaOut, 
 												PoolSize, PoolMax, H, Page, 
 												PageModule, Timeout, 
-												Middleware, Cache_Control, ExpiresMinute, Public, ContentType),
+												Middleware, Cache_Control, 
+												ExpiresMinute, Public, 
+												ContentType, Path, RedirectUrl),
 						case Type of
 							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 							_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -500,8 +535,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   QtdQuerystringRequired, Host, HostName, Result_Cache,
 			   Authorization, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			   Page, PageModule, Timeout, 
-			   Middleware, Cache_Control, ExpiresMinute, Public, ContentType) ->
+			   Page, PageModule, Timeout, Middleware, Cache_Control, 
+			   ExpiresMinute, Public, ContentType, Path, RedirectUrl) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -544,16 +579,17 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    cache_control = Cache_Control,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
+			    path = Path,
+			    redirect_url = RedirectUrl,
 			    enable = Enable
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Enable, Comment, Version, Owner, Async, Querystring, 
 			QtdQuerystringRequired, Host, HostName, Result_Cache,
-			Authorization, Node, Lang, Datasource, 
-			Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			Page, PageModule, Timeout, 
-			Middleware, Cache_Control, ExpiresMinute, Public, ContentType) ->
+			Authorization, Node, Lang, Datasource, Debug, SchemaIn, SchemaOut, 
+			PoolSize, PoolMax, Properties, Page, PageModule, Timeout, Middleware, 
+			Cache_Control, ExpiresMinute, Public, ContentType, Path, RedirectUrl) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -593,6 +629,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    cache_control = Cache_Control,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
+			    path = Path,
+			    redirect_url = RedirectUrl,
 			    enable = Enable
 			}.
 
@@ -600,7 +638,8 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  Comment, Version, Owner, Async, Host, Result_Cache,
 				  Authorization, Node, Lang, _Datasource, 
 				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
-				  Middleware, Cache_Control, ExpiresMinute, Public, ContentType) ->
+				  Middleware, Cache_Control, ExpiresMinute, 
+				  Public, ContentType, Path, RedirectUrl) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -626,6 +665,8 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 			    <<"expires">> => ExpiresMinute,
 				<<"lang">> => Lang,
 				<<"content_type">> => ContentType,
+				<<"path">> => Path,
+				<<"redirect_url">> => RedirectUrl,
 				<<"enable">> => Enable},
 	Service.
 

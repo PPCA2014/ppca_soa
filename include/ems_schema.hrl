@@ -135,7 +135,9 @@
 					expires :: non_neg_integer(),
 					cache_control :: string(),
 					enable :: boolean(),
-					content_type :: binary()					%% Tipo de conteúdo (Ex.: application/json)
+					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
+					path :: string(),
+					redirect_url :: binary()					%% redirect url						
 				}).
 
 

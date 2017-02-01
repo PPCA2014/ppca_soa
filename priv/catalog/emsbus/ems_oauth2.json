@@ -7,7 +7,7 @@
 		"service" : "oauth2ems_authorize:execute",
 		"url": "/authorize",
 		"type": "GET",
-		"authorization" : "Basic",
+		"authorization" : "",
 		"querystring": [
 			{
 				"name": "response_type",
@@ -67,7 +67,7 @@
 		"service" : "oauth2ems_authorize:execute",
 		"url": "/authorize",
 		"type": "POST",
-		"authorization" : "Basic",
+		"authorization" : "",
 		"querystring": [
 			{
 				"name": "grant_type",

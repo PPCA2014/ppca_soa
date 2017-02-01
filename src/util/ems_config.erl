@@ -130,15 +130,15 @@ load_config() ->
 						parse_config(Json, FileName)
 					catch 
 						_Exception:_Reason ->
-							io:format("Fail to parse invalid configuration file, running with default settings...\n"),
+							ems_logger:format_warn("Fail to parse invalid configuration file, running with default settings...\n"),
 							get_default_config()
 					end;
 				_Error -> 
-					io:format("Configuration file layout is not a valid JSON format, running with default settings...\n"),
+					ems_logger:format_warn("Configuration file layout is not a valid JSON format, running with default settings...\n"),
 					get_default_config()
 			end;
 		{error, enofile_config} ->
-			io:format("No file configuration exist, running with default settings...\n"),
+			ems_logger:format_warn("No file configuration exist, running with default settings...\n"),
 			get_default_config()
 	end.
 
@@ -152,6 +152,14 @@ parse_cat_path_search(Json) ->
 	end.
 	
 
+-spec parse_static_file_path(map()) -> list().
+parse_static_file_path(Json) ->
+	StaticFilePath = maps:get(<<"static_file_path">>, Json, #{}),
+	StaticFilePathList = maps:to_list(StaticFilePath),
+	[{K, ems_util:remove_ult_backslash_url(binary_to_list(V))} || {K, V} <- StaticFilePathList].
+	
+	
+
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
@@ -159,6 +167,7 @@ parse_config(Json, NomeArqConfig) ->
 			 cat_host_search			= maps:get(<<"host_search">>, Json, <<>>),							
 			 cat_node_search			= maps:get(<<"node_search">>, Json, <<>>),
 			 cat_path_search			= parse_cat_path_search(Json),
+			 static_file_path			= parse_static_file_path(Json),
 			 cat_disable_services		= maps:get(<<"disable_services">>, Json, []),
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
@@ -175,6 +184,7 @@ get_default_config() ->
 			 cat_node_search			= <<>>,
 			 cat_path_search			= [{<<"ems-bus">>, ?CATALOGO_ESB_PATH}],
 			 cat_disable_services		= [],
+			 static_file_path			= [],
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",
