@@ -7,8 +7,8 @@
 %%********************************************************************
 
 -ifdef(debug).
-	-define(DEBUG(Msg), io:format("\033[0;34mDEBUG ~p\033[0m\n", [Msg])).
-	-define(DEBUG(Msg, Params), io:format( "\033[0;34mDEBUG " ++ Msg ++ "\033[0m\n", Params)).
+	-define(DEBUG(Msg), io:format("\033[0;34mDEBUG ~s\033[0m\n", [Msg])).
+	-define(DEBUG(Msg, Params), io:format("\033[0;34mDEBUG " ++ Msg ++ "\033[0m\n", Params)).
 -else.
 	-define(DEBUG(Msg), ok).
 	-define(DEBUG(Msg, Params), ok).
