@@ -547,6 +547,27 @@ read_file_as_string(FileName) ->
 		Error -> throw(Error)
 	end.
 
+%% Converte arquivo latin1 para utf8 formatando os unicodes
+%% Esta função está desconfigurando os arquivos no formato utf8	
+to_utf8(FileName) ->
+	try
+		{ok, File} = file:open(FileName, [read,binary]),
+		Size = filelib:file_size(FileName),
+		{ok, Device} = file:read(File,Size),
+		io:format("Conteudo do arquivo ~p~n",[Device]),
+		{Type,Bytes} = unicode:bom_to_encoding(Device),
+		io:format("Tipo do arquivo: ~p   Bytes do arquivo: ~p~n",[Type, Device]),
+		case Type of
+			utf8 -> Device;	
+			latin1 -> unicode:characters_to_binary(Device, latin1, utf8);
+			_ -> {error, undefined}
+		end,
+		io:format("Verificar se funciona: ~p~n",[unicode:characters_to_list(Device)]),
+		{ok, Device}
+	catch
+		_Exception:Reason -> {error, Reason}
+	end.
+
 -spec is_letter(string()) -> boolean().
 is_letter(V) ->
 	is_letter_lower(string:to_lower(V)).
