@@ -102,7 +102,6 @@ set_level(Level) ->
 show_response(Value) -> 
 	gen_server:cast(?SERVER, {show_response, Value}). 
 
-
 format_warn(Message) ->	io:format("\033[0;33m~s\033[0m", [Message]).
 format_warn(Message, Params) ->	io:format("\033[0;33m~s\033[0m", [io_lib:format(Message, Params)]).
 

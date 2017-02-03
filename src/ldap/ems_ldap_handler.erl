@@ -44,20 +44,28 @@ init(Ref, Socket, Transport, [#service{datasource = Datasource,
 loop(Socket, Transport, State) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
-			LdapMessage = decode_ldap_message(Data),
-			?DEBUG("Ldap msg is ~p\n", [LdapMessage]),
-			MessageID = LdapMessage#'LDAPMessage'.messageID,
-			Result = handle_request(LdapMessage, State),
-			case Result of
-				{ok, unbindRequest} ->
-					Transport:close(Socket);
-				{ok, Msg} -> 
-					Response = lists:map(fun(M) -> encode_response(MessageID, M) end, Msg),
-					Transport:send(Socket, Response)
-			end,
-			loop(Socket, Transport, State);
+			case decode_ldap_message(Data) of
+				{ok, LdapMessage} ->
+					?DEBUG("Ldap request: ~p.", [LdapMessage]),
+					MessageID = LdapMessage#'LDAPMessage'.messageID,
+					Result = handle_request(LdapMessage, State),
+					case Result of
+						{ok, unbindRequest} ->
+							?DEBUG("Ldap unbindRequest."),
+							Transport:close(Socket);
+						{ok, Msg} -> 
+							?DEBUG("Ldap response: ~p.", [Msg]),
+							Response = [ encode_response(MessageID, M) || M <- Msg ],
+							Transport:send(Socket, Response)
+					end,
+					loop(Socket, Transport, State);
+				{error, _Reason} ->
+					?DEBUG("Ldap decode message fail. Reason: ~p. Close socket immediately!", [_Reason]),
+					Transport:close(Socket),
+					loop(Socket, Transport, State)
+			end;
 		_ ->
-			ok = Transport:close(Socket)
+			Transport:close(Socket)
 	end.
 
 
@@ -73,10 +81,8 @@ encode_response(MessageID, Msg) ->
 
 decode_ldap_message(RequestBin) ->
 	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
-        {ok, {'LDAPMessage', _MessageID, _ProtocolOp, _} = LdapMsg} ->
-			LdapMsg;
-		{error, Reason} -> 
-			{error, Reason}
+        {ok, {'LDAPMessage', _MessageID, _ProtocolOp, _} = LdapMsg} -> {ok, LdapMsg};
+		Error -> Error
     end.
 
   
@@ -87,7 +93,7 @@ handle_request({'LDAPMessage', _,
 				 _}, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
 	 <<Cn:3/binary, _/binary>> = Name,
-	 ?DEBUG("CnValue is : ~p.", [Name]),
+	 ?DEBUG("Ldap CnValue is : ~p.", [Name]),
 	case Cn of
 		<<"cn=">> ->
 			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
@@ -114,21 +120,45 @@ handle_request({'LDAPMessage', _,
 													typesOnly = _TypesOnly, 
 													filter =  {equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}},
 													attributes = _Attributes}},
-				 _}, State = #state{admin = AdminLdap}) ->
-	UserLogin = UsuLoginBin,
-	case middleware_find_user_by_login(UserLogin, State) of
-		{error, enoent} ->
-			ResultDone = make_result_done(invalidCredentials),
-			{ok, [ResultDone]};
-		{error, _Reason} ->
-			?DEBUG("middleware_find_user_by_login fail: ~p.", [_Reason]),
-			ResultDone = make_result_done(unavailable),
-			{ok, [ResultDone]};
-		{ok, UserRecord} ->
-			ResultEntry = make_result_entry(UsuLoginBin, UserRecord, AdminLdap),
-			ResultDone = make_result_done(success),
-			{ok, [ResultEntry, ResultDone]}
-	end;
+				 _}, State) ->
+	handle_request_search_login(UsuLoginBin, State);
+handle_request({'LDAPMessage', _,
+					{searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
+													scope = _Scope, 
+													derefAliases = _DerefAliases, 
+													sizeLimit = _SizeLimit, 
+													timeLimit = _TimeLimit, 
+													typesOnly = _TypesOnly, 
+													filter =  {present, ObjectClass},
+													attributes = _Attributes}},
+				 _}, _State) ->
+	ObjectName = make_object_name(ObjectClass),
+	ResultEntry = {searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
+										  attributes = [#'PartialAttribute'{type = <<"supportedCapabilities">>, vals = [<<"yes">>]},
+														#'PartialAttribute'{type = <<"supportedControl">>, vals = [<<"no">>]},
+														#'PartialAttribute'{type = <<"supportedExtension">>, vals = [<<"no">>]},
+														#'PartialAttribute'{type = <<"supportedFeatures">>, vals = [<<"no">>]},
+														#'PartialAttribute'{type = <<"supportedLdapVersion">>, vals = [<<"3">>]},
+														#'PartialAttribute'{type = <<"supportedSASLMechanisms">>, vals = [<<"no">>]}
+														]
+										}
+	},
+	ResultDone = make_result_done(success),
+	{ok, [ResultEntry, ResultDone]};
+handle_request({'LDAPMessage', _,
+					{searchRequest, #'SearchRequest'{baseObject = _BaseObject, 
+													scope = _Scope, 
+													derefAliases = _DerefAliases, 
+													sizeLimit = _SizeLimit, 
+													timeLimit = _TimeLimit, 
+													typesOnly = _TypesOnly, 
+													filter =  {'and',
+																[{present,<<"objectClass">>},
+																	{equalityMatch, {'AttributeValueAssertion', <<"uid">>, UsuLoginBin}}
+																]},
+													attributes = _Attributes}},
+				_}, State) ->
+	handle_request_search_login(UsuLoginBin, State);
 handle_request({'LDAPMessage', _, 
 					{unbindRequest, _},
 				 _}, _State) ->
@@ -183,12 +213,26 @@ make_result_done(ResultCode) ->
 	}.
 	
 
+handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->	
+	case middleware_find_user_by_login(UserLogin, State) of
+		{error, enoent} ->
+			ResultDone = make_result_done(invalidCredentials),
+			{ok, [ResultDone]};
+		{error, _Reason} ->
+			?DEBUG("Ldap middleware_find_user_by_login fail: ~p.", [_Reason]),
+			ResultDone = make_result_done(unavailable),
+			{ok, [ResultDone]};
+		{ok, UserRecord} ->
+			ResultEntry = make_result_entry(UserLogin, UserRecord, AdminLdap),
+			ResultDone = make_result_done(success),
+			{ok, [ResultEntry, ResultDone]}
+	end.
+	
+
 middleware_autentica(UserLogin, UserPassword, #state{middleware = undefined}) ->
-	io:format("aqui0\n"),
 	ems_user:authenticate_login_password(UserLogin, UserPassword);
 middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware, 
 													 datasource = Datasource}) ->
-	io:format("aqui1\n"),
 	case code:ensure_loaded(Middleware) of
 		{module, _} ->
 			case erlang:function_exported(Middleware, autentica, 3) of
@@ -219,7 +263,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 				true -> 
 					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
 						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
-							?DEBUG("middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
+							?DEBUG("Ldap middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
 							UserRecord2 = {format_user_field(UsuId),
 										   format_user_field(UsuNome),
 										   format_user_field(UsuCpf),

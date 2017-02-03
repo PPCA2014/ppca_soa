@@ -7,8 +7,8 @@
 %%********************************************************************
 
 -ifdef(debug).
-	-define(DEBUG(Msg), io:format("\033[0;34mDEBUG ~p\033[0m\n", [Msg])).
-	-define(DEBUG(Msg, Params), io:format( "\033[0;34mDEBUG " ++ Msg ++ "\033[0m\n", Params)).
+	-define(DEBUG(Msg), io:format("\033[0;34mDEBUG ~s\033[0m\n", [Msg])).
+	-define(DEBUG(Msg, Params), io:format("\033[0;34mDEBUG " ++ Msg ++ "\033[0m\n", Params)).
 -else.
 	-define(DEBUG(Msg), ok).
 	-define(DEBUG(Msg, Params), ok).
@@ -121,8 +121,8 @@
 -define(MAX_TIME_ODBC_QUERY, 30000).
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
-% Timeout to expire cache of dispatcher
--define(TIMEOUT_DISPATCHER_CACHE, 1000).
+% Timeout in ms to expire cache of get request (ems_dispatcher_cache)
+-define(TIMEOUT_DISPATCHER_CACHE, 1500).
 
 % Number of datasource entries by odbc connection pool
 -define(MAX_CONNECTION_BY_POOL, 5).
@@ -150,6 +150,7 @@
 				 cat_node_search,							%% Lista de nodes para pesquisar os serviços
 				 cat_path_search :: list(tuple()),			%% Lista de tuplas com caminhos alternativos para catálogos
 				 cat_disable_services :: list(binary()),	%% Lista de serviços para desativar
+				 static_file_path :: list(string()),		%% Lista de diretórios para arquivos estáticos
 				 ems_hostname,								%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)

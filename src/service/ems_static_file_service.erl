@@ -51,15 +51,18 @@ execute(Request = #request{url = Url,
 						   if_none_match = IfNoneMatchReq,
 						   timestamp = Timestamp,
 						   service = #service{cache_control = Cache_Control,
-											  expires = ExpiresMinute}}) ->
-	FileName = ?STATIC_FILE_PATH ++ Url,
+											  expires = ExpiresMinute,
+											  path = Path}}) ->
+	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
 	case file_info(FileName) of
-		{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
+		{error, Reason} = Err -> 
+			?DEBUG("Static file ~p does not exist.", [FileName]),
+			{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 														 reason = Reason,	
 														 response_data = Err}
-								  };
+			 };
 		{FSize, MTime} -> 
-			?DEBUG("Loading file ~p.", [FileName]),
+			?DEBUG("Loading static file ~p.", [FileName]),
 			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
 			ETag = generate_etag(FSize, MTime),
 			LastModified = cowboy_clock:rfc1123(MTime),
@@ -87,6 +90,7 @@ execute(Request = #request{url = Url,
 												 }
 					end
 			end
+		
 	end.
 
 

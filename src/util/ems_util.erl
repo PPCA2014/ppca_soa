@@ -541,6 +541,13 @@ replace_all(Subject, [{Key, Value}|VarTail]) ->
 	replace_all(NewSubject, VarTail).
 
 
+-spec replace_all_vars(string(), list(tuple())) -> string().
+replace_all_vars(Subject, []) -> Subject;
+replace_all_vars(Subject, [{Key, Value}|VarTail]) -> 
+	NewSubject = replace(Subject, "{{ "++ binary_to_list(Key) ++ " }}", Value),
+	replace_all_vars(NewSubject, VarTail).
+
+
 read_file_as_string(FileName) -> 	
 	case file:read_file(FileName) of
 		{ok, Arq} -> Arq;

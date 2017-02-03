@@ -146,7 +146,8 @@ encode_request_mochiweb(MochiReq, WorkerSend) ->
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
 		Url = cowboy_req:path(CowboyReq),
-		Url2 = binary_to_list(Url),
+		Url2 = ems_util:remove_ult_backslash_url(binary_to_list(Url)),
+		?DEBUG("URL ~p", [Url2]),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
