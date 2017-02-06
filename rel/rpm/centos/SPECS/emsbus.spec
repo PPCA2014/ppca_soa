@@ -1,14 +1,15 @@
-Summary: RPM de Teste
+Summary: A service-oriented bus developed in Erlang / OTP by Everton de Vargas Agilar
 Name: ems-bus
-Version: 1.0.11.centos
-Release: 1
+Version: 1.0.11
+Release: el7.centos
 License: GPL
 Group: System/Utilities
 URL: https://github.com/erlangms
 Vendor: ERLANGMS
-Packager: ErlangMS Team <evertonagilar@gmail.com>
+Packager: ErlangMS Team <evertonagilar@unb.br>
 BuildRoot: %{_tmppath}/%{name}-{%version}
 Source0: %{name}-%version.tar.gz
+Provides: ems-bus
 
 %description
 ErlangMS is a enterprise service bus developed in Erlang/OTP to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. 
@@ -17,18 +18,16 @@ This work is the result of efforts made in the Master of Applied Computing at th
 by graduate student Everton Vargas Agilar.
 
 %prep
-rm -rf %{name}-%{version}
-mkdir -p %{name}-%{version}
-pwd
-#tar -zxf $RPM_SOURCE_DIR/%{name}-%{version}.tar.gz
+
+  rm -rf %{name}-%{version}
+  mkdir -p %{name}-%{version}
+  #tar -zxf $RPM_SOURCE_DIR/%{name}-%{version}.tar.gz
 
 
 %install
-systemctl stop ems-bus.service 2>/dev/null || true	
 
-pwd
-mkdir -p $RPM_BUILD_ROOT
-cp -R $RPM_SOURCE_DIR/* $RPM_BUILD_ROOT/
+  mkdir -p $RPM_BUILD_ROOT
+  cp -R $RPM_SOURCE_DIR/* $RPM_BUILD_ROOT/
 
 
 %post
@@ -79,6 +78,11 @@ cp -R $RPM_SOURCE_DIR/* $RPM_BUILD_ROOT/
   systemctl daemon-reload  > /dev/null 2>&1 || true
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
 
+  # create link simbólico (/var/opt/erlangms --> /usr/lib/ems-bus)
+  ln -s /usr/lib/ems-bus /var/opt/erlangms
+
+
+
 %postun 
 
 	# pare e desative o serviço systemctl
@@ -88,6 +92,9 @@ cp -R $RPM_SOURCE_DIR/* $RPM_BUILD_ROOT/
 	# remove user
 	#groupdel erlangms > /dev/null 2>&1 || true
 	#userdel erlangms > /dev/null 2>&1 || true
+
+	# remove link simbólico  (/var/opt/erlangms --> /usr/lib/ems-bus)
+	rm /var/opt/erlangms
 
 	/sbin/ldconfig
 

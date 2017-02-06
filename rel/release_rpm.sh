@@ -117,7 +117,7 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	echo "Criando pacote rpm para o template $SKEL_RPM_PACKAGE..."
 
 	SKEL_RPM_PACKAGE_SOURCES="$SKEL_RPM_PACKAGE/SOURCES"
-	VERSION_RELEASE_PACK="$VERSION_RELEASE.centos"
+	VERSION_RELEASE_PACK=$VERSION_RELEASE
 	
 	# Cria a pasta onde vão ser colocados os sources 
 	mkdir -p $SKEL_RPM_PACKAGE_SOURCES || die "Não foi possível criar a pasta $SKEL_RPM_PACKAGE_SOURCES!"
@@ -149,16 +149,11 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	#cp -f rpm/emsbus.spec $SKEL_RPM_PACKAGE/SPECS
 	
 	# Atualiza a versão no arquivo SPEC/emsbus.spec
-	echo aqui1
 	echo "sed is sed -ri sed -ri s/Version: .*$/Version: $VERSION_RELEASE_PACK/  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec"
-	echo aqui2
 	sed -ri "s/Version: .*$/Version: $VERSION_RELEASE_PACK/"  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec
-	#dpkg-deb -b $SKEL_RPM_PACKAGE deb || die "Falha ao gerar o pacote $SKEL_RPM_PACKAGE com dpkg-deb!"
 	
-	echo aqui3
 	# tar sources path
 	echo "Generate $SKEL_RPM_PACKAGE_SOURCES/ems-bus-$VERSION_RELEASE_PACK.tar.gz from $SKEL_RPM_PACKAGE_SOURCES"
-	#cd $SKEL_RPM_PACKAGE_SOURCES
 	tar -czvf  ems-bus-$VERSION_RELEASE_PACK.tar.gz *
 	
 	
