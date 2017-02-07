@@ -1,4 +1,4 @@
-Summary: A service-oriented bus developed in Erlang / OTP by Everton de Vargas Agilar
+Summary: A service-oriented bus developed in Erlang/OTP by Everton de Vargas Agilar
 Name: ems-bus
 Version: 1.0.11
 Release: el7.centos
@@ -69,7 +69,26 @@ by graduate student Everton Vargas Agilar.
   mkdir -p /var/log/ems-bus
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus
 
-  /sbin/ldconfig
+  # create link simbólico (/var/opt/erlangms --> /usr/lib/ems-bus)
+  ln -s /usr/lib/ems-bus /var/opt/erlangms
+
+  # Iptables firewall
+  #iptables -C INPUT -p tcp -m multiport --dports 2301,2302,2389 -j ACCEPT 2> /dev/null
+  #if [ "$?" -eq "1" ]; then
+  #    iptables -A INPUT -p tcp -m multiport --dports 2301,2302,2389 -j ACCEPT  > /dev/null 2>&1 || true
+  #fi
+
+
+  # Firewalld
+  firewall-cmd --zone=public --add-port=2301/tcp > /dev/null 2>&1 || true
+  firewall-cmd --zone=public --add-port=2302/tcp > /dev/null 2>&1 || true
+  firewall-cmd --zone=public --add-port=2389/tcp > /dev/null 2>&1 || true
+  firewall-cmd --zone=public --add-port=4369/tcp > /dev/null 2>&1 || true
+  firewall-cmd --reload  > /dev/null 2>&1 || true
+
+
+  # ldconfig
+  /sbin/ldconfig  > /dev/null 2>&1 || true
 
   # systemd
   chown -hf  $USER_EMS_BUS:$GROUP_EMS_BUS /etc/systemd/system/ems-bus.service
@@ -77,9 +96,6 @@ by graduate student Everton Vargas Agilar.
   systemctl enable ems-bus.service  > /dev/null 2>&1 || true
   systemctl daemon-reload  > /dev/null 2>&1 || true
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
-
-  # create link simbólico (/var/opt/erlangms --> /usr/lib/ems-bus)
-  ln -s /usr/lib/ems-bus /var/opt/erlangms
 
 
 
@@ -105,5 +121,8 @@ by graduate student Everton Vargas Agilar.
 %defattr(0755,root,root)
 /etc/ems-bus/*
 /etc/systemd/system/ems-bus.service
+/etc/systemd/system/ems-bus.service.d/limits.conf
+/etc/firewalld/services/ems-bus.xml
 /usr/lib/ems-bus/*
+
 

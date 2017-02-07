@@ -137,10 +137,19 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	ln -s /usr/lib/ems-bus/priv/ssl $SKEL_RPM_PACKAGE_SOURCES/etc/ems-bus/ssl
 	ln -s /usr/lib/ems-bus/priv/schema $SKEL_RPM_PACKAGE_SOURCES/etc/ems-bus/schema
 	ln -s /usr/lib/ems-bus/priv/systemd $SKEL_RPM_PACKAGE_SOURCES/etc/ems-bus/systemd
+	ln -s /usr/lib/ems-bus/priv/firewalld $SKEL_RPM_PACKAGE_SOURCES/etc/ems-bus/firewalld
 	
 	# Gera a estrutura /etc/systemd/system
 	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/systemd/system
+	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d
 	ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_RPM_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service!" 
+	ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service.d/limits.conf $SKEL_RPM_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d/limits.conf || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service.d/limits.conf!" 
+
+
+	# Gera a estrutura /etc/firewalld
+	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/firewalld/services
+	ln -s /usr/lib/ems-bus/priv/firewalld/ems-bus.xml $SKEL_RPM_PACKAGE_SOURCES/etc/firewalld/services/ems-bus.xml || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/firewalld/services/ems-bus.xml!" 
+
 
 	# Log -> /var/log/ems-bus
 	ln -s /var/log/ems-bus $SKEL_RPM_PACKAGE_SOURCES/usr/lib/ems-bus/priv/log
