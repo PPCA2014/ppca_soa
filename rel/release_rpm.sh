@@ -152,7 +152,7 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 
 	# Gera a estrutura /etc/sudoers.d
 	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/sudoers.d
-	ln -s /usr/lib/ems-bus/priv/sudoers.d/ems-bus $SKEL_RPM_PACKAGE_SOURCES/etc/sudoers.d/ems-bus || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/sudoers.d/ems-bus!" 
+	ln -s /usr/lib/ems-bus/priv/sudoers.d/ems-bus.sudoers $SKEL_RPM_PACKAGE_SOURCES/etc/sudoers.d/ems-bus.sudoers || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/sudoers.d/ems-bus!" 
 
 	# Log -> /var/log/ems-bus
 	ln -s /var/log/ems-bus $SKEL_RPM_PACKAGE_SOURCES/usr/lib/ems-bus/priv/log
