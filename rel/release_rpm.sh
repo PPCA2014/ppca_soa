@@ -6,12 +6,12 @@
 # Objetivo: Gerar a release do barramento para facilitar a instalação nas 
 #           principais distros Linux. Os seguintes arquivos são gerados:
 #				* arquivo ems-bus-x.x.x.tar.gz
-#				* arquivo deb para as principais distros Linux
+#				* arquivo rpm para as principais distros Linux
 #				* pasta ems-bus com instalação standalone
 #
 # Modo de usar: 
 #
-#    $ ./release.sh
+#    $ ./release_rpm.sh
 #
 #
 #
@@ -150,12 +150,12 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/firewalld/services
 	ln -s /usr/lib/ems-bus/priv/firewalld/ems-bus.xml $SKEL_RPM_PACKAGE_SOURCES/etc/firewalld/services/ems-bus.xml || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/firewalld/services/ems-bus.xml!" 
 
+	# Gera a estrutura /etc/sudoers.d
+	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/sudoers.d
+	ln -s /usr/lib/ems-bus/priv/sudoers.d/ems-bus $SKEL_RPM_PACKAGE_SOURCES/etc/sudoers.d/ems-bus || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/sudoers.d/ems-bus!" 
 
 	# Log -> /var/log/ems-bus
 	ln -s /var/log/ems-bus $SKEL_RPM_PACKAGE_SOURCES/usr/lib/ems-bus/priv/log
-	
-	# Copia os scripts padrão para o pacote
-	#cp -f rpm/emsbus.spec $SKEL_RPM_PACKAGE/SPECS
 	
 	# Atualiza a versão no arquivo SPEC/emsbus.spec
 	echo "sed is sed -ri sed -ri s/Version: .*$/Version: $VERSION_RELEASE_PACK/  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec"
@@ -165,10 +165,8 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	echo "Generate $SKEL_RPM_PACKAGE_SOURCES/ems-bus-$VERSION_RELEASE_PACK.tar.gz from $SKEL_RPM_PACKAGE_SOURCES"
 	tar -czvf  ems-bus-$VERSION_RELEASE_PACK.tar.gz *
 	
-	
 	echo "rpm build..."
 	cd $SKEL_RPM_PACKAGE
-	#ln -s  /home/agilar/erlangms/ems-bus/rel/rpm/centos ~/rpmbuild 2> /dev/null
 	pwd
 	rpmbuild -bb SPECS/emsbus.spec
 

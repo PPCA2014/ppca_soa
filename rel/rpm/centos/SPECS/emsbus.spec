@@ -35,6 +35,7 @@ by graduate student Everton Vargas Agilar.
   LOG="/var/log/ems-bus/ems-bus.log"
   USER_EMS_BUS=erlangms
   GROUP_EMS_BUS=erlangms
+  HOME_EMS_BUS=/var/opt/erlangms/
 
   # database and log path
   mkdir -p /usr/lib/ems-bus/priv/db > /dev/null 2>&1
@@ -46,10 +47,10 @@ by graduate student Everton Vargas Agilar.
   #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
   password_crypt="wtdgpkEyPdF1A"
   useradd -g $GROUP_EMS_BUS --no-create-home --system \
-						    --home-dir /usr/lib/ems-bus/ \
+						    --home-dir $HOME_EMS_BUS \
 						    --shell /bin/bash \
 						    --password $password_crypt \
-						    --comment "User do barramento Erlangms ems-bus" $USER_EMS_BUS  > /dev/null 2>&1
+						    --comment "User do barramento ERLANGMS" $USER_EMS_BUS  > /dev/null 2>&1
 
   # change owners
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /usr/lib/ems-bus
@@ -69,8 +70,13 @@ by graduate student Everton Vargas Agilar.
   mkdir -p /var/log/ems-bus
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus
 
-  # create link simbólico (/var/opt/erlangms --> /usr/lib/ems-bus)
-  ln -s /usr/lib/ems-bus /var/opt/erlangms
+
+  # configure home user (/var/opt/erlangms)
+  ln -s /usr/lib/ems-bus $HOME_EMS_BUS/ems-bus
+  mkdir -p $HOME_EMS_BUS/.erlangms
+  cp /usr/lib/ems-bus/priv/conf/emsbus.conf $HOME_EMS_BUS/.erlangms
+
+	
 
   # Iptables firewall
   #iptables -C INPUT -p tcp -m multiport --dports 2301,2302,2389 -j ACCEPT 2> /dev/null
@@ -98,6 +104,8 @@ by graduate student Everton Vargas Agilar.
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
 
 
+  # create file config in home user
+  mkdir -p /usr/lib/
 
 %postun 
 
