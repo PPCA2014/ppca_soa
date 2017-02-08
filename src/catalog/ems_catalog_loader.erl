@@ -41,8 +41,9 @@ list_kernel_catalog() ->
 %% @doc Get catalog of services
 get_catalog() -> 
 	Conf = ems_config:getConfig(),
+	?DEBUG("Scan catalogs..."),
 	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
-	%?DEBUG("Parse catalogs...\n~p.", [ListCatalog]),
+	?DEBUG("Parse catalogs..."),
 	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
 		{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
 		Error -> Error
@@ -455,7 +456,10 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 		end
 	catch
-		_Exception:Reason -> {error, Reason}
+		_Exception:_Reason -> 
+			ems_logger:format_warn("Invalid catalog specification: \n\t~p.\n", [H]),
+			?DEBUG("Reason to invalid catalog specification: ~p.\n", [_Reason]),
+			parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 	end.
 
 parse_middleware(undefined) -> undefined;
