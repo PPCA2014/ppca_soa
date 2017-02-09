@@ -45,8 +45,12 @@ get_catalog() ->
 	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
 	?DEBUG("Parse catalogs..."),
 	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
-		{Cat2, Cat3, Cat4, CatK} -> {ok, Cat4, Cat2, Cat3, CatK};
-		Error -> Error
+		{Cat2, Cat3, Cat4, CatK} ->
+			?DEBUG("Parse catalog: Ok."),
+			{ok, Cat4, Cat2, Cat3, CatK};
+		Error -> 
+			?DEBUG("Parse catalog error: ~p.", [Error]),
+			Error
 	end.
 	
 	
@@ -250,9 +254,7 @@ parse_path_catalog(Path, StaticFilePathList) ->
 				_ -> 
 					case Ch == "." of
 						true -> ?STATIC_FILE_PATH ++ "/" ++ string:substr(Path, 3);
-						false -> 
-							% Renders variables {{ var }} and invokes them again parse_path_catalog to process the path "~" and "." wildcards
-							parse_path_catalog(ems_util:replace_all_vars(Path, StaticFilePathList), StaticFilePathList)
+						false -> ems_util:replace_all_vars(Path, StaticFilePathList)
 					end
 			end
 	end.
@@ -348,6 +350,7 @@ parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	
 parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
+		?DEBUG("Parse catalog ~p.", [H]),
 		Enable = maps:get(<<"enable">>, H, true),
 		case Enable of 
 			true ->
