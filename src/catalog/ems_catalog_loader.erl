@@ -254,7 +254,21 @@ parse_path_catalog(Path, StaticFilePathList) ->
 				_ -> 
 					case Ch == "." of
 						true -> ?STATIC_FILE_PATH ++ "/" ++ string:substr(Path, 3);
-						false -> ems_util:replace_all_vars(Path, StaticFilePathList)
+						false -> 
+							Path2 = ems_util:replace_all_vars(Path, StaticFilePathList),
+							% after process variables, check ~ or . wildcards
+							case string:substr(Path2, 1, 1) == "~" of
+								true -> 
+									case init:get_argument(home) of
+										{ok, [[HomePath]]} -> ems_util:replace(Path2, "~", HomePath);
+										_Error -> throw({error, einvalid_path_catalog})
+									end;
+								_ -> 
+									case Ch == "." of
+										true -> ?STATIC_FILE_PATH ++ "/" ++ string:substr(Path2, 3);
+										false ->  Path2
+									end
+							end
 					end
 			end
 	end.
