@@ -85,7 +85,7 @@ by graduate student Everton Vargas Agilar.
 
   # create .hosts.erlang if it not exist
   if [ ! -f ~/.hosts.erlang ]; then
-	echo \'$(hostname | cut -d. -f1)\' > $HOME_EMS_BUS/.hosts.erlang 
+	echo \'$(hostname | cut -d. -f1)\'. > $HOME_EMS_BUS/.hosts.erlang 
   fi
   
 
