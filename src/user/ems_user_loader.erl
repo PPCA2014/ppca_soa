@@ -72,6 +72,7 @@ handle_info(timeout, State = #state{datasource = Datasource,
 									operation = update_users,
 									update_checkpoint = UpdateCheckpoint,
 									last_update = LastUpdate}) ->
+	?DEBUG("ems_user_loader checkpoint. operation: update_users."),
 	NextUpdate = calendar:local_time(),
 	case update_users_from_datasource(Datasource, LastUpdate) of
 		ok -> 
@@ -87,6 +88,7 @@ handle_info(timeout, State = #state{datasource = Datasource,
 handle_info(timeout, State = #state{datasource = Datasource,
 									operation = load_users,
 									update_checkpoint = UpdateCheckpoint}) ->
+	?DEBUG("ems_user_loader checkpoint. operation: load_users."),
 	NextUpdate = calendar:local_time(),
 	case load_users_from_datasource(Datasource) of
 		ok -> 
@@ -99,7 +101,7 @@ handle_info(timeout, State = #state{datasource = Datasource,
 	end;
 	
 handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:warn("~p não está conseguindo atualizar users. Reason: ~p", [?SERVER, Reason]),
+	ems_logger:warn("~p is unable to update users. Reason: ~p", [?SERVER, Reason]),
 	{noreply, State, UpdateCheckpoint}.
 			
 terminate(_Reason, _State) ->
@@ -123,15 +125,18 @@ load_users_from_datasource(Datasource) ->
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
+				?DEBUG("ems_user_loader got a connection to load users."),
 				Result = case ems_odbc_pool:param_query(Datasource2, 
 														sql_load_users(), 
 														[], 
 														?MAX_TIME_ODBC_QUERY) of
-					{_,_,[]} -> ok;
+					{_,_,[]} -> 
+						?DEBUG("ems_user_loader did not load any users."),
+						ok;
 					{_, _, Records} ->
 						F = fun() ->
 							Count = insert_users(Records, 0),
-							ems_logger:info("~p load ~p users from database", [?SERVER, Count])
+							ems_logger:info("~p load ~p users from database.", [?SERVER, Count])
 						end,
 						mnesia:ets(F),
 						mnesia:change_table_copy_type(user, node(), disc_copies),
@@ -154,6 +159,7 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
+				?DEBUG("ems_user_loader got a connection to update users."),
 				case LastUpdate of 
 					undefined -> 
 						Sql = sql_load_users(),
@@ -165,7 +171,9 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 						Params = [{sql_timestamp, [{{Year, Month, Day}, {Hour, Min, 0}}]}]
 				end, 
 				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
-					{_,_,[]} -> ok;
+					{_,_,[]} -> 
+						?DEBUG("ems_user_loader did not update any users."),
+						ok;
 					{_, _, Records} ->
 						%?DEBUG("Update users ~p.", [Records]),
 						F = fun() ->

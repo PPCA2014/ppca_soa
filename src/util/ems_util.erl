@@ -127,7 +127,11 @@ sleep(T) ->
 %% @doc Retorna o timestamp em formato texto
 timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
-	lists:flatten(io_lib:format("~p/~p/~p ~p:~p:~p", [Dia, Mes, Ano, Hora, Min, Seg])).
+	lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
+
+timestamp_str({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
+  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
+
 
 date_to_string({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
     lists:flatten(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).

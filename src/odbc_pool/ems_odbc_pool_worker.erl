@@ -130,7 +130,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
             Records = esqlite3:fetchall(Statement),
 			Fields = tuple_to_list(esqlite3:column_names(Statement)),
 			Fields2 = [?UTF8_STRING(erlang:atom_to_binary(F, utf8)) || F <- Fields],
-			?DEBUG("Sqlite resultset query: ~p.", [Records]),
+			%?DEBUG("Sqlite resultset query: ~p.", [Records]),
 			{ok, {selected, Fields2, Records}, Datasource};
         Error -> Error
     end;
@@ -149,7 +149,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 								ems_logger:error("Odbc param_query fail after reconecting: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
 								{error, eodbc_connection_closed};
 							{selected, Fields2, Result2} -> 
-								?DEBUG("Odbc resultset after reconecting query: ~p.", [Result2]),
+								%?DEBUG("Odbc resultset after reconecting query: ~p.", [Result2]),
 								{ok, {selected, [?UTF8_STRING(F) || F <- Fields2], Result2}, Datasource2}
 						end;
 					{error, Reason2} -> 
@@ -157,7 +157,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 						{error, eodbc_connection_closed}
 				end;
 			{selected, Fields1, Result1} -> 
-				?DEBUG("Odbc resultset query: ~p.", [Result1]),
+				%?DEBUG("Odbc resultset query: ~p.", [Result1]),
 				{ok, {selected, [?UTF8_STRING(F) || F <- Fields1], Result1}, Datasource}
 		end
 	catch
@@ -171,7 +171,7 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 							ems_logger:error("Odbc param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
 							{error, eodbc_connection_closed};
 						{selected, Fields3, Result3} -> 
-							?DEBUG("Odbc resultset after reconecting query on timeout: ~p.", [Result3]),
+							%?DEBUG("Odbc resultset after reconecting query on timeout: ~p.", [Result3]),
 							{ok, {selected, [?UTF8_STRING(F) || F <- Fields3], Result3}, Datasource3}
 					end;
 				{error, Reason5} -> 

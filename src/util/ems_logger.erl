@@ -197,7 +197,7 @@ handle_info(checkpoint_get_filename_device, State = #state{log_file_handle = IOD
 			set_timeout_for_get_filename_device(),
 			{noreply, State#state{log_file_name = NewLogFileName, log_file_handle = IODevice2}};
 		_Error ->
-			ems_logger:error("Não foi possível substituir arquivo de log ~p. Ele poderá crescer indefinidamente!", [CurLogFileName]),
+			ems_logger:error("Could not overwrite log file ~p. It can grow indefinitely!", [CurLogFileName]),
 			{noreply, State}
 	end.
 
@@ -227,7 +227,7 @@ get_filename_device() ->
 				Error -> Error
 			end;
 		{error, Reason} = Error -> 
-			io:format("Falhou ao abrir arquivo de log ~p: ~p.", [NomeArqLog, Reason]),
+			io:format("Failed to open log file ~p: ~p.", [NomeArqLog, Reason]),
 			Error
 	end.
 

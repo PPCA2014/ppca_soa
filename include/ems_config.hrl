@@ -26,7 +26,6 @@
 	-define(UTF8_STRING(Text), ems_util:utf8_string_linux(Text)).
 -endif.
 
-
 % Tamanho máximo do payload do POST. Por default é 1M
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
