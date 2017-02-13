@@ -42,7 +42,7 @@ by graduate student Everton Vargas Agilar.
   mkdir -p /var/log/ems-bus > /dev/null 2>&1
 
   # create user and group erlangms if it not exist
-  if ! grep erlangms /etc/passwd | cut -d: -f1 ; then
+  if ! grep erlangms /etc/passwd | cut -d: -f1 > /dev/null ; then
 	  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
 	  password="admin"
 	  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
@@ -52,7 +52,7 @@ by graduate student Everton Vargas Agilar.
 								--shell /bin/bash \
 								--password $password_crypt \
 								--comment "User do barramento ERLANGMS" $USER_EMS_BUS  > /dev/null 2>&1
-    echo User erlangms created with admin passwd. Change after installation!
+      echo "User erlangms created with admin passwd. Change after installation!"
   fi
   
   # The starters need to be Suid root.
