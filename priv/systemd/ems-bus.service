@@ -1,5 +1,5 @@
 [Unit]
-Description=Barramento de serviços Erlangms
+Description=Enterprise service bus ERLANGMS
 After=network.target
 
 [Service]

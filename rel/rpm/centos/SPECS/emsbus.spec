@@ -35,42 +35,59 @@ by graduate student Everton Vargas Agilar.
   LOG="/var/log/ems-bus/ems-bus.log"
   USER_EMS_BUS=erlangms
   GROUP_EMS_BUS=erlangms
+  HOME_EMS_BUS=/var/opt/erlangms
 
   # database and log path
   mkdir -p /usr/lib/ems-bus/priv/db > /dev/null 2>&1
   mkdir -p /var/log/ems-bus > /dev/null 2>&1
 
-  # create users and groups
-  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
-  password="admin"
-  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
-  password_crypt="wtdgpkEyPdF1A"
-  useradd -g $GROUP_EMS_BUS --no-create-home --system \
-						    --home-dir /usr/lib/ems-bus/ \
-						    --shell /bin/bash \
-						    --password $password_crypt \
-						    --comment "User do barramento Erlangms ems-bus" $USER_EMS_BUS  > /dev/null 2>&1
-
-  # change owners
-  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /usr/lib/ems-bus
-  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /etc/ems-bus
-  chown -f $USER_EMS_BUS:$GROUP_EMS_BUS /usr/bin/ems-bus
-  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus
-
-
+  # create user and group erlangms if it not exist
+  if ! egrep "^erlangms:" /etc/passwd >> /dev/null ; then
+	  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
+	  password="admin"
+	  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
+	  password_crypt="wtdgpkEyPdF1A"
+	  useradd -g $GROUP_EMS_BUS --create-home --system \
+								--home-dir $HOME_EMS_BUS \
+								--shell /bin/bash \
+								--password $password_crypt \
+								--comment "User do barramento ERLANGMS" $USER_EMS_BUS  > /dev/null 2>&1
+      echo "User erlangms created with admin passwd. Change after installation!"
+  fi
+  
   # The starters need to be Suid root.
-  chmod 4777 /usr/lib/ems-bus/bin/ems-bus
+  chmod 4777 /usr/lib/ems-bus/bin/ems-bus > /dev/null 2>&1
   # The starters need to be Suid root para Erts.
   for ExecutableErts in `find /usr/lib/ems-bus/erts-*/bin/`; do
-      chmod 4511 $ExecutableErts
+      chmod 4511 $ExecutableErts > /dev/null 2>&1
   done
   
   # Cria a pasta /var/log/ems-bus
   mkdir -p /var/log/ems-bus
-  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus > /dev/null 2>&1
 
-  # create link simbólico (/var/opt/erlangms --> /usr/lib/ems-bus)
-  ln -s /usr/lib/ems-bus /var/opt/erlangms
+
+  # configure home user (/var/opt/erlangms)
+  mkdir -p $HOME_EMS_BUS/.erlangms > /dev/null 2>&1
+  # Creates the configuration file only if it does not exist
+  if [ ! -f /var/opt/erlangms/.erlangms/emsbus.conf ]; then
+	cp /usr/lib/ems-bus/priv/conf/emsbus.conf $HOME_EMS_BUS/.erlangms/ > /dev/null 2>&1
+  fi
+  ln -s /usr/lib/ems-bus/ $HOME_EMS_BUS/ems-bus > /dev/null 2>&1
+  
+  # remove o .odbc.ini original criado pelo useradd e cria um link para o priv/conf/odbc.ini
+  rm -f $HOME_EMS_BUS/.odbc.ini > /dev/null 2>&1
+  ln -s /usr/lib/ems-bus/priv/conf/odbc.ini $HOME_EMS_BUS/.odbc.ini > /dev/null 2>&1
+
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/opt/erlangms > /dev/null 2>&1	
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/opt/erlangms/.erlangms > /dev/null 2>&1	
+
+
+  # create .hosts.erlang if it not exist
+  if [ ! -f ~/.hosts.erlang ]; then
+	echo \'$(hostname | cut -d. -f1)\'. > $HOME_EMS_BUS/.hosts.erlang 
+  fi
+  
 
   # Iptables firewall
   #iptables -C INPUT -p tcp -m multiport --dports 2301,2302,2389 -j ACCEPT 2> /dev/null
@@ -87,16 +104,38 @@ by graduate student Everton Vargas Agilar.
   firewall-cmd --reload  > /dev/null 2>&1 || true
 
 
+  # change owners to erlangms:erlangms
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /usr/lib/ems-bus > /dev/null 2>&1
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /etc/ems-bus > /dev/null 2>&1
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus > /dev/null 2>&1
+  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/opt/erlangms > /dev/null 2>&1
+  chown -f $USER_EMS_BUS:$GROUP_EMS_BUS /usr/bin/ems-bus > /dev/null 2>&1
+
+  # change owners to root:root
+  chown root:root /etc/sudoers.d/ems-bus.sudoers > /dev/null 2>&1
+  chown root:root /etc/systemd/system/ems-bus.service > /dev/null 2>&1
+
+  # config /etc/odbcinst.ini if necessary for FreeTDS SQL-server driver
+  JTDS_ENTRY_CONF=$(sed -rn '/\[FreeTDS\]/, /(^$|^#)/p' /etc/odbcinst.ini 2> /dev/null)
+  if [ -z "$JTDS_ENTRY_CONF" ]; then
+	echo " " >> /etc/odbcinst.ini 
+	echo "# Driver for SQL-server" >> /etc/odbcinst.ini 
+	echo "# Setup from the ems-bus package" >> /etc/odbcinst.ini 
+	echo "[FreeTDS]" >> /etc/odbcinst.ini 
+	echo "Description=FreeTDS Driver" >> /etc/odbcinst.ini 
+	echo "Driver=/usr/lib64/libtdsodbc.so.0" >> /etc/odbcinst.ini 
+	echo " " >> /etc/odbcinst.ini 
+  fi
+
   # ldconfig
   /sbin/ldconfig  > /dev/null 2>&1 || true
 
+
   # systemd
-  chown -hf  $USER_EMS_BUS:$GROUP_EMS_BUS /etc/systemd/system/ems-bus.service
   systemctl stop ems-bus.service  > /dev/null 2>&1 || true
   systemctl enable ems-bus.service  > /dev/null 2>&1 || true
   systemctl daemon-reload  > /dev/null 2>&1 || true
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
-
 
 
 %postun 
@@ -109,9 +148,6 @@ by graduate student Everton Vargas Agilar.
 	#groupdel erlangms > /dev/null 2>&1 || true
 	#userdel erlangms > /dev/null 2>&1 || true
 
-	# remove link simbólico  (/var/opt/erlangms --> /usr/lib/ems-bus)
-	rm /var/opt/erlangms
-
 	/sbin/ldconfig
 
 
@@ -123,6 +159,7 @@ by graduate student Everton Vargas Agilar.
 /etc/systemd/system/ems-bus.service
 /etc/systemd/system/ems-bus.service.d/limits.conf
 /etc/firewalld/services/ems-bus.xml
+/etc/sudoers.d/ems-bus.sudoers
 /usr/lib/ems-bus/*
 
 
