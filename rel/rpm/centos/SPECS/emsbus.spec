@@ -41,17 +41,20 @@ by graduate student Everton Vargas Agilar.
   mkdir -p /usr/lib/ems-bus/priv/db > /dev/null 2>&1
   mkdir -p /var/log/ems-bus > /dev/null 2>&1
 
-  # create users and groups
-  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
-  password="admin"
-  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
-  password_crypt="wtdgpkEyPdF1A"
-  useradd -g $GROUP_EMS_BUS --create-home --system \
-						    --home-dir $HOME_EMS_BUS \
-						    --shell /bin/bash \
-						    --password $password_crypt \
-						    --comment "User do barramento ERLANGMS" $USER_EMS_BUS  > /dev/null 2>&1
-
+  # create user and group erlangms if it not exist
+  if ! grep erlangms /etc/passwd | cut -d: -f1 ; then
+	  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
+	  password="admin"
+	  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
+	  password_crypt="wtdgpkEyPdF1A"
+	  useradd -g $GROUP_EMS_BUS --create-home --system \
+								--home-dir $HOME_EMS_BUS \
+								--shell /bin/bash \
+								--password $password_crypt \
+								--comment "User do barramento ERLANGMS" $USER_EMS_BUS  > /dev/null 2>&1
+    echo User erlangms created with admin passwd. Change after installation!
+  fi
+  
   # The starters need to be Suid root.
   chmod 4777 /usr/lib/ems-bus/bin/ems-bus > /dev/null 2>&1
   # The starters need to be Suid root para Erts.
@@ -79,6 +82,12 @@ by graduate student Everton Vargas Agilar.
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/opt/erlangms > /dev/null 2>&1	
   chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/opt/erlangms/.erlangms > /dev/null 2>&1	
 
+
+  # create .hosts.erlang if it not exist
+  if [ ! -f ~/.hosts.erlang ]; then
+	echo \'$(hostname | cut -d. -f1)\' > $HOME_EMS_BUS/.hosts.erlang 
+  fi
+  
 
   # Iptables firewall
   #iptables -C INPUT -p tcp -m multiport --dports 2301,2302,2389 -j ACCEPT 2> /dev/null
