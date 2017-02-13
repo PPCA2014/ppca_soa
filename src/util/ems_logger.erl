@@ -297,28 +297,6 @@ sync_buffer(State = #state{log_file_handle = IODevice,
 	file:write(IODevice, Msg),
 	State#state{buffer = [], flag_checkpoint = false}.
 
-do_log_request(#request{protocol = ldap, 
-						type = Metodo,
-						url = Url,
-						version = Version,
-						payload = Payload,
-						service = Service,
-						code = Code,
-						reason = Reason,
-						latency = Latency,
-						authorization = Authorization,
-						node_exec = Node}, _State) ->
-	ServiceImpl = case Service of
-		undefined -> "";
-		_ -> Service#service.service
-	end,
-	Texto =  "~s ~s ~s {\n\tPayload: ~p\n\tService: ~s\n\tAuthorization: ~s\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
-	Texto1 = io_lib:format(Texto, [Metodo, Url, Version, Payload, ServiceImpl, Authorization, Node, Code, Reason, Latency]),
-	case Code of
-		200 -> ems_logger:info(Texto1);
-		_ 	-> ems_logger:error(Texto1)
-	end;
-	
 	
 do_log_request(#request{rid = RID,
 						req_hash = ReqHash,
