@@ -42,7 +42,7 @@ by graduate student Everton Vargas Agilar.
   mkdir -p /var/log/ems-bus > /dev/null 2>&1
 
   # create user and group erlangms if it not exist
-  if ! grep erlangms /etc/passwd | cut -d: -f1 > /dev/null ; then
+  if ! egrep "^erlangms:" /etc/passwd >> /dev/null ; then
 	  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
 	  password="admin"
 	  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
