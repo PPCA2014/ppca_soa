@@ -222,18 +222,19 @@ make_result_done(ResultCode) ->
 	}.
 	
 
+-spec handle_request_search_login(binary(), #state{}) -> {ok, tuple()}.
 handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->	
 	case middleware_find_user_by_login(UserLogin, State) of
 		{error, enoent} ->
-			ems_logger:error("Ldap request search not found ~p.", [UserLogin]),
+			ems_logger:error("Ldap request search ~s does not exist.", [binary_to_list(UserLogin)]),
 			ResultDone = make_result_done(invalidCredentials),
 			{ok, [ResultDone]};
 		{error, Reason} ->
-			ems_logger:error("Ldap request search ~p fail: ~p.", [UserLogin, Reason]),
+			ems_logger:error("Ldap request search ~s fail. Reason: ~p.", [binary_to_list(UserLogin), Reason]),
 			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
 		{ok, UserRecord = {_, UsuNome, _, _, _}} ->
-			ems_logger:info("Ldap request search ~p ~p success.", [UserLogin, UsuNome]),
+			ems_logger:info("Ldap request search ~s ~p success.", [binary_to_list(UserLogin), UsuNome]),
 			ResultEntry = make_result_entry(UserLogin, UserRecord, AdminLdap),
 			ResultDone = make_result_done(success),
 			{ok, [ResultEntry, ResultDone]}
