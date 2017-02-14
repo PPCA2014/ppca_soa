@@ -53,7 +53,7 @@ public class LdapClient {
 		System.out.println("ERLANGMS ldap client tool (Java version v1.0)");
 		System.out.println("Modo de usar 1: java ldap_client host_ldap login admin_passwd");
 		System.out.println("Modo de usar 2: java ldap_client login admin_passwd");
-		System.out.println("Modo de usar 2: java ldap_client loginr");
+		System.out.println("Modo de usar 3: java ldap_client loginr");
 		System.out.println("default host_ldap is localhost:2389");
 		System.out.println("admin_passwd is not the user's password");
 	}
