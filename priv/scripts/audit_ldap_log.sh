@@ -30,10 +30,36 @@
 #
 ########################################################################################################
 
+
 VERSION=1.0.0
 LDAP_SERVER="$(hostname):2389"
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms/audit_ldap_log_$$/"
+TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
+ENVIRONMENT="desenvolvimento"
+MMIN="1440"
+CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
+
+echo "Starting audit_ldap_log.sh Version: $VERSION - ERLANGMS"
+
+
+# Check parameters
+if [ "$#" = "0" ] && [ "$1" = "--help" ]; then
+	echo "How to use: ./audit_ldap_log.sh minutes"
+	echo "where minutes is logfile's data was last modified minutes ago (default is 43200 minutes)"
+elif [ "$#" = "1" ]; then
+	MMIN="$1"
+	RE='^[0-9]{1,4}$'
+	if ! [[ $MMIN =~ $RE ]] ; then
+		echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99."
+		echo "How to use: ./audit_ldap_log.sh minutes"
+		echo "where minutes is logfile's data was last modified minutes ago (default is 43200 minutes)"
+		exit 1
+	fi
+fi
+
+# Calcula a data retroativa
+DATE_AFTER=$(date --date="$MMIN min ago" '+%d/%m/%Y %H:%M:%S')
+
 
 # Enables installation logging
 AUDIT_LOG_FILE="audit_ldap_log_$(date '+%d%m%Y_%H%M%S').log"
@@ -45,8 +71,9 @@ mkdir -p $TMP_DIR && cd $TMP_DIR
 
 
 # Log destination
-LOG_DEST=/home/agilar/desenvolvimento/erlangms/ems-bus/priv/log/emsbus@CPD-DES-374405/2017/Fevereiro
-LOG_FILE="$LOG_DEST/emsbus_14022017_1607.log"
+LOG_DEST=/var/log/ems-bus
+LOG_FILE_TMP="$TMP_DIR/full_log_file.log"
+LOG_FILE="$TMP_DIR/full_log_file_filtered.log"
 
 
 # Configurações SMTP para envio de alertas aos admins
@@ -100,62 +127,157 @@ EOF
 
 # Função para realizar auditoria de logs
 audit(){
-	echo "Starting audit_ldap_log.sh Version: $VERSION - ERLANGMS"
-	echo "Date: $(date '+%d/%m/%Y %H:%M:%S')"
+	echo "Date: $CURRENT_DATE"
 	echo "Log dest: $LOG_DEST"
-	echo "Space available for log files: $(( 100 - $USO_LOG_DEST ))%"
-	echo "Server: $(uname -a)"
-	echo "Auditing ldap Logs on $LDAP_SERVER, wait..."
-	echo 
+	echo "Space available for logfiles: $(( 100 - $USO_LOG_DEST ))%"
+	echo "Server: $LDAP_SERVER"
+	echo "Environment: $ENVIRONMENT"
+	echo "Analyzing the ldap log files from the date $DATE_AFTER ($MMIN minutes ago)..."
+
+
+	echo "Reading the following logfiles:"
+	LOG_FILE_LIST=$(find "$LOG_DEST" -type f -mmin "-$MMIN" -follow)
+	if [ -z "$LOG_FILE_LIST" ]; then
+		echo "No logfiles to analyze."
+		exit 1
+	else
+		find "$LOG_DEST" -type f -mmin "-$MMIN" -follow
+	fi 
+
+
+	# concat all logfiles (remove characters control of the line colors)
+	find "$LOG_DEST" -type f -mmin "-$MMIN" -follow | xargs sed -r 's/\0x033//' | sed -r 's/\\033\[0m\$//'  > $LOG_FILE_TMP
+	
+	sed -n 'l' $LOG_FILE_TMP
+	
+	exit
 	
 
+	# filter only the log lines of the defined interval	
+	awk '{
+			DT_LOG=$2" "$3;
+			if (DT_LOG > "15/02/2017 15:00:00"){
+				print; 
+			}
+	}' $LOG_FILE_TMP > $LOG_FILE
+	
+
+	
+	# Print title
+	echo
+	echo
+	if [ "$MMIN" == "1440" ]; then
+		echo "                                LDAP REPORT FOR THE"
+		echo "                               LAST DAY OF OPERATION"
+	elif [ "$MMIN" == "1" ]; then
+		echo "                                LDAP REPORT FOR THE"
+		echo "                          LAST $MMIN MINUTE OF OPERATION"
+	else 
+		echo "                                LDAP REPORT FOR THE"
+		echo "                          LAST $MMIN MINUTES OF OPERATION"
+	fi
+	echo
+	echo
+	
+	
+
+	############################################### SUCCESS REPORT ####################################################################
+
+
 	# create a tmp file with request search lines
-	egrep '^INFO.*Ldap request search' $LOG_FILE | sort > request_search.tmp
-	REQ_SEARCH_TOTAL=$(wc -l request_search.tmp | cut -d" " -f1)
+	egrep '^INFO.*Ldap request search' $LOG_FILE | tr -d "<>" > info_request_search.tmp
+	REQ_SEARCH_SUCCESS_TOTAL=$(wc -l info_request_search.tmp | cut -d" " -f1)
 
 
 	# create a tmp file with request search success lines
-	grep 'Ldap' request_search.tmp | egrep '^INFO.*Ldap request search' | cut -d" " -f8- | sed 's/ success.//g' > request_search_success.tmp
+	grep 'Ldap' info_request_search.tmp | egrep '^INFO.*Ldap request search' | cut -d" " -f8- | sed 's/ success.//g' | sort > request_search_success.tmp
 	uniq request_search_success.tmp > request_search_success_uniq.tmp
 	
-	
+	# totals
 	REQ_SEARCH_SUCCESS_TOTAL=$(wc -l request_search_success.tmp | cut -d" " -f1)
 	REQ_SEARCH_SUCCESS_UNIQ_TOTAL=$(wc -l request_search_success_uniq.tmp | cut -d" " -f1)
-	
+
 
 	echo
 	echo "                ****************** SUCCESS REPORT ******************"
 	echo
-	
-	echo "1) Total number of ldap requests: $REQ_SEARCH_TOTAL"
+	echo
+
+	echo "1) Total number of success ldap requests: $REQ_SEARCH_SUCCESS_TOTAL requests"
 	echo
 	echo
 	
-	echo "2) Distinguished users were success authenticated: $REQ_SEARCH_SUCCESS_UNIQ_TOTAL users"
-	echo
-	echo '+---------------------------+--------------------------------------------------------------------------+'
-	printf "| %-25s |  %-70s\n"  "LOGIN"   "NAME                                                                    |"
-	echo '+---------------------------+--------------------------------------------------------------------------+'
-	cat request_search_success_uniq.tmp | xargs printf "| %-25s |  %-70s  |\n"  
-	echo '+---------------------------+--------------------------------------------------------------------------+'
+	echo "2) Which users were found in the request search operation: $REQ_SEARCH_SUCCESS_UNIQ_TOTAL users"
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	printf "| %-45s |  %-51s |\n"  "LOGIN"   "NAME"
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	cat request_search_success_uniq.tmp | xargs printf "| %-45s |  %-50s  |\n"  
+	echo '+-----------------------------------------------+------------------------------------------------------+'
 
 	echo
 	echo
 	echo
 	
-	echo "3) Number of success requests search per user:"
+	echo "3) Number of success requests search operation per user:"
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	printf "| %-45s |  %-51s |\n"  "LOGIN"   "REQUESTS"
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	awk '{print $1}' request_search_success_uniq.tmp > request_search_success_uniq_login.tmp 
+	for USER in `cat request_search_success_uniq_login.tmp`; do
+		REQ_SEARCH_SUCCESS_TOTAL_By_USER=$(grep -w $USER request_search_success.tmp | wc -l | cut -d" " -f1)
+		printf "| %-45s | %17d  %34s|\n"   $USER   $REQ_SEARCH_SUCCESS_TOTAL_By_USER " "
+	done
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	printf "| %-45s | TOTAL:      %-24d %16s|\n"   " " $REQ_SEARCH_SUCCESS_TOTAL " "
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	
 	echo
 	echo
 	
-	echo '+---------------------------+--------------------------------------------------------------------------+'
-	printf "| %-25s |  %-70s\n"  "LOGIN"   "REQUESTS                                                                |"
-	echo '+---------------------------+--------------------------------------------------------------------------+'
-	awk '{print $1}' request_search_success_uniq.tmp > request_search_success_uniq_login.tmp 
-	for USER in `cat request_search_success_uniq_login.tmp`; do
-		REQ_SEARCH_SUCCESS_TOTAL_By_USER=$(grep $USER request_search_success.tmp | wc -l | cut -d" " -f1)
-		printf "| %-25s |  %5d                                                                   |\n"   $USER   $REQ_SEARCH_SUCCESS_TOTAL_By_USER
+
+
+	############################################  ERRRO REPORT  #######################################################################
+
+
+	# create a tmp file with request search fail lines (remove caracteres de controle da cor antes de ERROR)
+	egrep '^ERROR.*Ldap' $LOG_FILE > error_request_search.tmp
+	
+	cat $LOG_FILE
+	cat error_request_search.tmp
+	
+	REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL=$(wc -l error_request_search.tmp | cut -d" " -f1)
+	
+	# create a tmp file with request search login does not exist lines
+	egrep 'Ldap request search' error_request_search.tmp | cut -d" " -f8- | sed 's/ does not exist.//g' | sort > request_search_login_does_not_exist.tmp
+	uniq request_search_login_does_not_exist.tmp > request_search_login_does_not_exist_uniq.tmp
+	REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL=$(wc -l request_search_login_does_not_exist.tmp | cut -d" " -f1)
+	
+	
+	REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_UNIQ_TOTAL=$(wc -l request_search_login_does_not_exist_uniq.tmp | cut -d" " -f1)
+
+
+	echo
+	echo
+	echo
+	echo "                ****************** ERROR REPORT ******************"
+	echo
+	echo
+	
+	echo "1) Number of failed request attempts because login does not exist: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL requests"
+	echo
+	echo
+	
+	echo "2) Which users were not found in the request search operation: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_UNIQ_TOTAL users"
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	printf "| %-45s |  %-51s |\n"  "LOGIN"   "REQUESTS"                                                                  
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	for USER in `cat request_search_login_does_not_exist_uniq.tmp`; do
+		REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER=$(grep -w $USER request_search_login_does_not_exist.tmp | wc -l | cut -d" " -f1)
+		printf "| %-45s | %18d         %26s|\n"   $USER   $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER " "
 	done
-	echo '+---------------------------+--------------------------------------------------------------------------+'
+	echo '+-----------------------------------------------+------------------------------------------------------+'
+	printf "| %-45s | TOTAL:      %-24d %16s|\n"   " " $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL " "
+	echo '+-----------------------------------------------+------------------------------------------------------+'
 	
 	echo
 	echo
@@ -196,12 +318,6 @@ verifica_espaco_disponivel(){
 ############## main ####################
 
 audit
-
-
 cd $CURRENT_DIR
-echo
-echo "Ok!!!"
-
-
 
 
