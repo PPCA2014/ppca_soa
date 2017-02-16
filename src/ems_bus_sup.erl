@@ -64,8 +64,8 @@ init([]) ->
 	
 
 start_process([Module, Function, Service = #service{name = WorkerName}]) ->
-	Reply = apply(Module, Function, [Service]),
 	ems_logger:info("Start ~s.", [binary_to_list(WorkerName)]),
+	Reply = apply(Module, Function, [Service]),
 	Reply.
 	
 start_process_sup([Module, Function, Args = [[_,
@@ -74,7 +74,7 @@ start_process_sup([Module, Function, Args = [[_,
 											  {size, PoolSize}, 
 											  {max_overflow, PoolMax}], 
 											_]]) ->
-	Reply = apply(Module, Function, Args),
 	ems_logger:info("Start ~p with ~p workers (Max ~p).", [WorkerNameAtom, PoolSize, PoolMax]),
+	Reply = apply(Module, Function, Args),
 	Reply.
 

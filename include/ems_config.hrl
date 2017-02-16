@@ -87,8 +87,11 @@
 % Armazena o buffer do log a cada LOG_FILE_CHECKPOINT ms (Aumente este valor se existir muita contenção na escrita em disco)
 -define(LOG_FILE_CHECKPOINT, 6000).  
 
+% Tamanho em KB máximo permitido para os arquivos de logs
+-define(LOG_FILE_MAX_SIZE, 51200000).  
+
 % Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
--define(LOG_ARCHIVE_CHECKPOINT, 10000 * 60 * 60 * 4).  % Por default são 4 horas
+-define(LOG_ARCHIVE_CHECKPOINT, 1000 * 60 * 60 * 4).  % Por default são 4 horas
 
 % Quantos workers HTTP instanciar se não especificado no arquivo de configuração
 -define(MIN_HTTP_WORKER, 1).

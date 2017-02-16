@@ -301,6 +301,22 @@ mes_extenso(11) -> "Novembro";
 mes_extenso(12) -> "Dezembro";
 mes_extenso(_) -> erlang:error(badarg).
 
+mes_abreviado(1) -> "jan";
+mes_abreviado(2) -> "fev";
+mes_abreviado(3) -> "mar";
+mes_abreviado(4) -> "abr";
+mes_abreviado(5) -> "maio";
+mes_abreviado(6) -> "jun";
+mes_abreviado(7) -> "jul";
+mes_abreviado(8) -> "ago";
+mes_abreviado(9) -> "set";
+mes_abreviado(10) -> "out";
+mes_abreviado(11) -> "nov";
+mes_abreviado(12) -> "dez";
+mes_abreviado(_) -> erlang:error(badarg).
+
+
+
 %% @doc Retorna um ets a partir de uma lista
 list_to_ets(List, Name, Options) ->
 	Ets = ets:new(Name, Options),

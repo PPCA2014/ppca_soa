@@ -5,20 +5,20 @@
 # Data: 14/02/2017
 #
 #
-# Requisitos para executar o serviço:
-#       * Python (já incluído como padrão no Debian)
+# Requirements to run the service:
+#       * Python
 #
-# Modo de usar: 
+# Use mode: 
 #
-#    $ sudo ./audit_ldap_log.sh
+#    $ sudo ./audit_ldap_log.sh minutes [ --sendemail ]
+#
+#   ./audit_ldap_log.sh 10 --sendemail  
+#   ./audit_ldap_log.sh  
+#
+# Obs.: parameter --sendmail is optional and send email to admin
 #
 #
-# Observações: 
-#
-#
-#
-#
-## Histórico de modificações:
+## History of changes:
 #
 # Data       |  Quem           |  Mensagem  
 # -----------------------------------------------------------------------------------------------------
@@ -40,7 +40,6 @@ TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
 ENVIRONMENT="desenvolvimento"
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
-DATE_AFTER=$(date --date="$MMIN min ago" '+%d/%m/%Y %H:%M:%S')   # Calcula a data retroativa
 REPORT_FILE="$TMP_DIR/audit_ldap_log_$(date '+%d%m%Y_%H%M%S').log"
 SUB_TITLE_REPORT="LAST DAY OF OPERATION"
 
@@ -54,6 +53,7 @@ USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
 SMTP_DE="evertonagilar@unb.br"
+#SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br,felipesantos@unb.br"
 SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
 SMTP_PASSWD=unb9601
 
@@ -62,21 +62,27 @@ SMTP_PASSWD=unb9601
 mkdir -p $TMP_DIR && cd $TMP_DIR
 
 
-if [ "$#" = "1" ] && [ "$1" = "--help" ]; then
-	echo "How to use: ./audit_ldap_log.sh minutes"
-	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-	exit 1
-elif [ "$#" = "1" ]; then
-	MMIN="$1"
-	RE='^[0-9]{1,4}$'
-	if ! [[ $MMIN =~ $RE ]] ; then
-		echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99."
-		echo "How to use: ./audit_ldap_log.sh minutes"
+if [ "$#" = "1" ]; then
+	if [ "$1" = "--help" ]; then
+		echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
 		echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
+		echo "parameter --sendmail is optional and send email to admin"
 		exit 1
+	else
+		MMIN="$1"
+		RE='^[0-9]{1,4}$'
+		if ! [[ $MMIN =~ $RE ]] ; then
+			echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99."
+			echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
+			echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
+			echo "parameter --sendmail is optional and send email to admin"
+			exit 1
+		fi
 	fi
 fi
 
+# Compute initial date
+DATE_INIT=$(date --date="$MMIN min ago" '+%d/%m/%Y %H:%M:%S')   # Calcula a data retroativa
 
 
 # generate a report
@@ -88,15 +94,14 @@ generate_report(){
 	echo "Starting ERLANGMS audit_ldap_log tool   ( Version: $VERSION )"
 	echo "Date: $CURRENT_DATE"
 	echo "Log dest: $LOG_DEST"
-	echo "Space available for logfiles: $(( 100 - $USO_LOG_DEST ))%"
 	echo "Server: $LDAP_SERVER"
 	echo "Environment: $ENVIRONMENT"
 	echo
 	
 	if [ "$MMIN" == "1440" ]; then
-		echo "Analyzing logfiles between $DATE_AFTER (1 day ago) and $CURRENT_DATE"
+		echo "Analyzing logfiles between $DATE_INIT (1 day ago) and $CURRENT_DATE"
 	else
-		echo "Analyzing logfiles between $DATE_AFTER ($MMIN minutes ago) and $CURRENT_DATE"
+		echo "Analyzing logfiles between $DATE_INIT ($MMIN minutes ago) and $CURRENT_DATE"
 	fi
 	LOG_FILE_LIST=$(find "$LOG_DEST" -type f -mmin "-$MMIN" -follow)
 	if [ -z "$LOG_FILE_LIST" ]; then
@@ -113,14 +118,17 @@ generate_report(){
 	
 	
 
-	# filter only the log lines of the defined interval	$DATE_AFTER
-	awk '{
+	# filter only the log lines of the defined interval	$DATE_INIT
+	awk -v DT_INIT="$DATE_INIT" '{
 			DT_LOG=$2" "$3;
-			if (DT_LOG > "$DATE_AFTER"){
+			if (DT_LOG >= DT_INIT){
 				print; 
 			}
 	}' $LOG_FILE_TMP > $LOG_FILE
 	
+	echo
+	echo
+	echo
 
 
 	# Print title
@@ -235,6 +243,7 @@ generate_report(){
 	echo '+-----------------------------------------------+------------------------------------------------------+'
 	printf "| %-45s | TOTAL: %12d %33s|\n"   " " $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL " "
 	echo '+-----------------------------------------------+------------------------------------------------------+'
+	echo
 
 }
 
@@ -274,7 +283,7 @@ EOF
 # /////////////////// main /////////////////
 
 generate_report
-send_email
+[ "$2" == "--sendemail" ] && send_email && echo "Report sent by email to administrators."
 cd $CURRENT_DIR
 
 
