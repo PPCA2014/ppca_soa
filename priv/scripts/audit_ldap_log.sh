@@ -31,6 +31,8 @@
 ########################################################################################################
 
 
+# Parameters
+
 VERSION=1.0.0
 LDAP_SERVER="$(hostname):2389"
 CURRENT_DIR=$(pwd)
@@ -38,80 +40,17 @@ TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
 ENVIRONMENT="desenvolvimento"
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
+DATE_AFTER=$(date --date="$MMIN min ago" '+%d/%m/%Y %H:%M:%S')   # Calcula a data retroativa
+REPORT_FILE="$TMP_DIR/audit_ldap_log_$(date '+%d%m%Y_%H%M%S').log"
+SUB_TITLE_REPORT="LAST DAY OF OPERATION"
 
-
-# Função para enviar e-mail
-# Parâmetros:
-#   $1  - Título do e-mail
-#   $2  - Corpo do e-mail
-envia_email () {
-    TITULO_MSG=$1
-    SUBJECT=$2
-    python <<EOF
-# -*- coding: utf-8 -*-
-import smtplib
-from email.mime.text import MIMEText
-from email.Utils import formatdate
-try:
-	smtp = smtplib.SMTP("$SMTP_SERVER", $SMTP_PORT)
-	smtp.starttls()
-	smtp.login("$SMTP_DE", "$SMTP_PASSWD")
-	msg = MIMEText("""$SUBJECT""")
-	msg['Subject'] = "$TITULO_MSG"
-	msg['From'] = "$SMTP_DE"
-	msg['To'] = "$SMTP_PARA"
-	msg['Date'] = formatdate(localtime=True)
-	msg['Content-Type'] = 'text/plain; charset=utf-8'
-	smtp.sendmail("$SMTP_DE", ['evertonagilar@unb.br'], msg.as_string())
-	smtp.quit()
-except Exception:
-	print(Exception)
-EOF
-}
-
-	
-bash -i <<EOF 
-
-
-echo "Starting ERLANGMS audit_ldap_log tool   ( Version: $VERSION )"
-
-
-# Check parameters
-if [ "$#" = "1" ] && [ "$1" = "--help" ]; then
-	echo "How to use: ./audit_ldap_log.sh minutes"
-	echo "where minutes is logfile's data was last modified minutes ago (default is 43200 minutes)"
-	exit 1
-elif [ "$#" = "1" ]; then
-	MMIN="$1"
-	RE='^[0-9]{1,4}$'
-	if ! [[ $MMIN =~ $RE ]] ; then
-		echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99."
-		echo "How to use: ./audit_ldap_log.sh minutes"
-		echo "where minutes is logfile's data was last modified minutes ago (default is 43200 minutes)"
-		exit 1
-	fi
-fi
-
-# Calcula a data retroativa
-DATE_AFTER=$(date --date="$MMIN min ago" '+%d/%m/%Y %H:%M:%S')
-
-
-# Enables installation logging
-AUDIT_LOG_FILE="$TMP_DIR/audit_ldap_log_$(date '+%d%m%Y_%H%M%S').log"
-exec > >(tee -a ${AUDIT_LOG_FILE} )
-exec 2> >(tee -a ${AUDIT_LOG_FILE} >&2)
-
-# tmpfiles go to /$TMP_DIR
-mkdir -p $TMP_DIR && cd $TMP_DIR
-
-
-# Log destination
+# Log destination parameter
 LOG_DEST=/var/log/ems-bus
 LOG_FILE_TMP="$TMP_DIR/full_log_file.log"
 LOG_FILE="$TMP_DIR/full_log_file_filtered.log"
+USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
 
-
-# Configurações SMTP para envio de alertas aos admins
+# SMTP parameter
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
 SMTP_DE="evertonagilar@unb.br"
@@ -119,21 +58,45 @@ SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
 SMTP_PASSWD=unb9601
 
 
-# Percentual de uso da pasta de backup
-USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
+# tmpfiles go to /$TMP_DIR
+mkdir -p $TMP_DIR && cd $TMP_DIR
 
+
+if [ "$#" = "1" ] && [ "$1" = "--help" ]; then
+	echo "How to use: ./audit_ldap_log.sh minutes"
+	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
+	exit 1
+elif [ "$#" = "1" ]; then
+	MMIN="$1"
+	RE='^[0-9]{1,4}$'
+	if ! [[ $MMIN =~ $RE ]] ; then
+		echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99."
+		echo "How to use: ./audit_ldap_log.sh minutes"
+		echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
+		exit 1
+	fi
+fi
+
+
+
+# generate a report
+generate_report(){
+	# Output to report file
+	exec > >(tee -a ${REPORT_FILE} )
+	exec 2> >(tee -a ${REPORT_FILE} >&2)
 	
+	echo "Starting ERLANGMS audit_ldap_log tool   ( Version: $VERSION )"
 	echo "Date: $CURRENT_DATE"
 	echo "Log dest: $LOG_DEST"
 	echo "Space available for logfiles: $(( 100 - $USO_LOG_DEST ))%"
 	echo "Server: $LDAP_SERVER"
 	echo "Environment: $ENVIRONMENT"
-
 	echo
+	
 	if [ "$MMIN" == "1440" ]; then
-		echo "Analyzing the ldap logs between $DATE_AFTER (1 day ago) and $CURRENT_DATE"
+		echo "Analyzing logfiles between $DATE_AFTER (1 day ago) and $CURRENT_DATE"
 	else
-		echo "Analyzing the ldap logs between $DATE_AFTER ($MMIN minutes ago) and $CURRENT_DATE"
+		echo "Analyzing logfiles between $DATE_AFTER ($MMIN minutes ago) and $CURRENT_DATE"
 	fi
 	LOG_FILE_LIST=$(find "$LOG_DEST" -type f -mmin "-$MMIN" -follow)
 	if [ -z "$LOG_FILE_LIST" ]; then
@@ -163,15 +126,16 @@ USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
 	# Print title
 	echo
 	echo
+	echo "                                LDAP REPORT FOR THE"
 	if [ "$MMIN" == "1440" ]; then
-		echo "                                LDAP REPORT FOR THE"
-		echo "                               LAST DAY OF OPERATION"
+		SUB_TITLE_REPORT="LAST DAY OF OPERATION"
+		echo "                               $SUB_TITLE_REPORT"
 	elif [ "$MMIN" == "1" ]; then
-		echo "                                LDAP REPORT FOR THE"
-		echo "                          LAST $MMIN MINUTE OF OPERATION"
+		SUB_TITLE_REPORT="LAST $MMIN MINUTE OF OPERATION"
+		echo "                             $SUB_TITLE_REPORT"
 	else 
-		echo "                                LDAP REPORT FOR THE"
-		echo "                          LAST $MMIN MINUTES OF OPERATION"
+		SUB_TITLE_REPORT="LAST $MMIN MINUTES OF OPERATION"
+		echo "                          $SUB_TITLE_REPORT"
 	fi
 	echo
 	echo
@@ -256,11 +220,11 @@ USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
 	echo
 	echo
 	
-	echo "1) Number of failed ldap request attempts because login does not exist: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL requests"
+	echo "4) Number of failed ldap request attempts because login does not exist: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL requests"
 	echo
 	echo
 	
-	echo "2) Which users were not found in the ldap request search operation: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_UNIQ_TOTAL users"
+	echo "5) Which users were not found in the ldap request search operation: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_UNIQ_TOTAL users"
 	echo '+-----------------------------------------------+------------------------------------------------------+'
 	printf "| %-45s | %-52s |\n"  "LOGIN"   "REQUESTS"                                                                  
 	echo '+-----------------------------------------------+------------------------------------------------------+'
@@ -271,22 +235,47 @@ USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
 	echo '+-----------------------------------------------+------------------------------------------------------+'
 	printf "| %-45s | TOTAL: %12d %33s|\n"   " " $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL " "
 	echo '+-----------------------------------------------+------------------------------------------------------+'
-	
-	echo
-	echo
 
+}
+
+
+send_email(){	
+	REPORT_CONTENT=$(cat $REPORT_FILE)
+	TITULO_MSG="ERLANGMS LDAP Proxy Log Analysis Report -- $SUB_TITLE_REPORT" 
+	SUBJECT="<font size=\"3\" face=\"Courier New, Courier, monospace\"><pre>$REPORT_CONTENT</pre></font>"
+    python <<EOF
+# -*- coding: utf-8 -*-
+import smtplib
+from email.mime.text import MIMEText
+from email.Utils import formatdate
+from email.mime.multipart import MIMEMultipart
+from email import encoders
+try:
+	smtp = smtplib.SMTP("$SMTP_SERVER", $SMTP_PORT)
+	smtp.starttls()
+	smtp.login("$SMTP_DE", "$SMTP_PASSWD")
+	msg = MIMEMultipart()
+	msg['Subject'] = "$TITULO_MSG"
+	msg['From'] = "$SMTP_DE"
+	msg['To'] = "$SMTP_PARA"
+	msg['Date'] = formatdate(localtime=True)
+	part1 = MIMEText("Relatório em anexo.", 'plain')
+	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
+	msg.attach(part2)
+	smtp.sendmail("$SMTP_DE", ['evertonagilar@unb.br'], msg.as_string())
+	smtp.quit()
+except Exception as e:
+	print(e)
 EOF
 	
-	TextLog=$(cat $AUDIT_LOG_FILE)
-	envia_email "Relatório de auditoria dos logs LDAP do barramento ERLANGMS" \
-				"$TextLog"  
-	
-	echo "concluído."
-	
+}	
 
 
+# /////////////////// main /////////////////
 
-
+generate_report
+send_email
 cd $CURRENT_DIR
+
 
 
