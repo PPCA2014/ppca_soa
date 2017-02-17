@@ -5,6 +5,7 @@
 -include("../include/ems_schema.hrl").
 
 
+
 execute(Request = #request{type = Type}) -> 
 	TypeAuth = case Type of
 		"GET" -> ems_request:get_querystring(<<"response_type">>, "", Request);
@@ -23,7 +24,7 @@ execute(Request = #request{type = Type}) ->
 				access_token_request(Request);	
 			"code2" ->
 				% Apenas para simulação
-				authorization_request2(Request);				
+				code_request(Request);				
              _ -> {error, invalid_request}
 	end,  
 	case Result of
@@ -34,7 +35,7 @@ execute(Request = #request{type = Type}) ->
 			};
 		{redirect, ClientId, RedirectUri} ->
 			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
-			LocationPath = lists:concat(["http://127.0.0.1:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
+			LocationPath = lists:concat(["http://164.41.120.42:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
 			{ok, Request#request{code = 302, 
 									 response_data = <<"{}">>,
 									 response_header = #{
@@ -42,11 +43,9 @@ execute(Request = #request{type = Type}) ->
 														}
 									}
 			};
-		Error ->
-			ResponseData = ems_util:json_encode(Error),
-			{ok, Request#request{code = 400, 
-								 response_data = ResponseData}
-			}
+		Error ->   {ok, Request#request{code = 400, 
+								 response_data = Error}
+					}
 	end.
 
 	
@@ -54,20 +53,27 @@ execute(Request = #request{type = Type}) ->
 %%% Funções internas
 %%%===================================================================
 
+
+%% Cliente Credencial Grant- seção 4.4.1 do RFC 6749. 
+%% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=client_credentials&client_id=s6BhdRkqt3&secret=qwer
 client_credentials_grant(Request) ->
 	ClientId = ems_request:get_querystring(<<"client_id">>, "", Request),
 	Secret = ems_request:get_querystring(<<"secret">>, "", Request),
 	Scope = ems_request:get_querystring(<<"scope">>, "", Request),	
-    Auth = oauth2:authorize_client_credentials(ClientId, Secret, Scope, []),
-	issue_token(Auth).
-    
+    Authorization = oauth2:authorize_client_credentials({ClientId, Secret}, Scope, []),
+	issue_token(Authorization).
+
+%% Resource Owner Password Credentials Grant - seção 4.3.1 do RFC 6749.
+%% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=password&username=johndoe&password=A3ddj3w
 password_grant(Request) -> 
 	Username = ems_request:get_querystring(<<"username">>, "", Request),
 	Password = ems_request:get_querystring(<<"password">>, "", Request),
 	Scope = ems_request:get_querystring(<<"scope">>, "", Request),	
-    Auth = oauth2:authorize_password(Username, Password, Scope, []),
-	issue_token(Auth).
-
+	Authorization = oauth2:authorize_password({Username,Password}, Scope, []),
+	issue_token(Authorization).
+	
+%% Verifica a URI do Cliente e redireciona para a página de autorização - Implicit Grant e Authorization Code Grant
+%% URL de teste: GET http://127.0.0.1:2301/authorize?response_type=code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html
 authorization_request(Request) ->
     %State       = ems_request:get_querystring(<<"state">>, [],Request),
     %Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
@@ -76,46 +82,40 @@ authorization_request(Request) ->
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		ok -> {redirect, ClientId, RedirectUri};
 		Error -> Error
-	end,			
+	end,
     Resposta.
 
-authorization_request2(Request) ->
+%% Requisita o código de autorização - seções 4.1.1 e 4.1.2 do RFC 6749.
+%% URL de teste: GET http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w
+code_request(Request) ->
     ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     Username    = ems_request:get_querystring(<<"username">>, [],Request),
     Password    = ems_request:get_querystring(<<"password">>, [],Request),
-    %State       = ems_request:get_querystring(<<"state">>, [],Request),
+    %State      = ems_request:get_querystring(<<"state">>, [],Request),
     Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
-    Resposta 	= case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, [])  of
-        ok ->
-            case oauth2:authorize_password(Username, Password, Scope, []) of
-                {ok, Auth} -> issue_code({ok, Auth});
-                Error -> Error
-			end; 
-        Error2 -> Error2
-	end,			
-    Resposta.
+    Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, []),
+   	issue_code(Authorization).
 
+%% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
+%% URL de teste: GET http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w&secret=qwer&code=dxUlCWj2JYxnGp59nthGfXFFtn3hJTqx
 access_token_request(Request) ->
 	Code = list_to_binary(ems_request:get_querystring(<<"code">>, [],Request)),
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-    Result = case oauth2:authorize_code_grant(ClientId, ClientSecret, Code, RedirectUri, []) of
-        {ok, Auth} -> issue_token({ok, Auth});
-		Error -> Error
-	end,
-	Result. 
+    Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
+    issue_token(Authorization).  
 		
 
-issue_token({ok, Auth}) ->
-	Response = oauth2:issue_token(Auth, []),
+issue_token({ok, {_, Auth}}) ->
+	{ok, {_, Response}} = oauth2:issue_token(Auth, []),
 	{ok, oauth2_response:to_proplist(Response)};
 issue_token(Error) ->
     Error.
     
-issue_code({ok, Auth}) ->
-	Response = oauth2:issue_code(Auth, []),
+issue_code({ok, {_, Auth}}) ->
+	{ok, {_, Response}} = oauth2:issue_code(Auth, []),
 	{ok, oauth2_response:to_proplist(Response)};
 issue_code(Error) ->
     Error.
