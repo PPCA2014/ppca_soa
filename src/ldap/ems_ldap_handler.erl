@@ -224,15 +224,15 @@ make_result_done(ResultCode) ->
 handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->	
 	case middleware_find_user_by_login(UserLogin, State) of
 		{error, enoent} ->
-			ems_logger:error("ems_ldap_handler search ~s does not exist.", [binary_to_list(UserLogin)]),
+			ems_logger:error("ems_ldap_handler search ~p does not exist.", [UserLogin]),
 			ResultDone = make_result_done(invalidCredentials),
 			{ok, [ResultDone]};
 		{error, Reason} ->
-			ems_logger:error("ems_ldap_handler search ~s fail. Reason: ~p.", [binary_to_list(UserLogin), Reason]),
+			ems_logger:error("ems_ldap_handler search ~p fail. Reason: ~p.", [UserLogin, Reason]),
 			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
 		{ok, UserRecord = {_, UsuNome, _, _, _}} ->
-			ems_logger:info("ems_ldap_handler search ~s ~p success.", [binary_to_list(UserLogin), UsuNome]),
+			ems_logger:info("ems_ldap_handler search ~p ~p success.", [UserLogin, UsuNome]),
 			ResultEntry = make_result_entry(UserLogin, UserRecord, AdminLdap),
 			ResultDone = make_result_done(success),
 			{ok, [ResultEntry, ResultDone]}
