@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_ldap_listener
 %% @version 1.0.0
-%% @doc Listener module for HTTP server
+%% @doc Listener module for ldap server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -12,7 +12,6 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
 
 %% Server API
 -export([start/4, stop/0]).
@@ -45,7 +44,6 @@ stop() ->
 init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, Args}) ->
 	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}], ems_ldap_handler, [Args]),
 	{ok, #state{listener_name = ListenerName, tcp_config = TcpConfig}}.
-		
 		
 handle_cast(shutdown, State) ->
     {stop, normal, State}.

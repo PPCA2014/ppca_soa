@@ -12,7 +12,6 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
 -include("../include/LDAP.hrl").
 
 %  Stores the state of the service.
@@ -46,21 +45,21 @@ loop(Socket, Transport, State) ->
 		{ok, Data} ->
 			case decode_ldap_message(Data) of
 				{ok, LdapMessage} ->
-					?DEBUG("Ldap request: ~p.", [LdapMessage]),
+					?DEBUG("ems_ldap_handler request: ~p.", [LdapMessage]),
 					MessageID = LdapMessage#'LDAPMessage'.messageID,
 					Result = handle_request(LdapMessage, State),
 					case Result of
 						{ok, unbindRequest} ->
-							?DEBUG("Ldap unbindRequest."),
+							?DEBUG("ems_ldap_handler unbindRequest."),
 							Transport:close(Socket);
 						{ok, Msg} -> 
-							?DEBUG("Ldap response: ~p.", [Msg]),
+							?DEBUG("ems_ldap_handler response: ~p.", [Msg]),
 							Response = [ encode_response(MessageID, M) || M <- Msg ],
 							Transport:send(Socket, Response)
 					end,
 					loop(Socket, Transport, State);
 				{error, Reason} ->
-					ems_logger:error("Ldap decode invalid message. Reason: ~p.", [Reason]),
+					ems_logger:error("ems_ldap_handler decode invalid message. Reason: ~p.", [Reason]),
 					Transport:close(Socket),
 					loop(Socket, Transport, State)
 			end;
@@ -93,29 +92,28 @@ handle_request({'LDAPMessage', _,
 				 _}, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
 	 <<Cn:3/binary, _/binary>> = Name,
-	 ?DEBUG("Ldap CnValue is : ~p.", [Name]),
 	case Cn of
 		<<"cn=">> ->
 			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
 				true -> 
-					ems_logger:info("Ldap bind request cn ~p success.", [Name]),
+					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
 					make_bind_response(success, Name);
 				_-> 
-					ems_logger:error("Ldap invalid credentials to bind request cn ~p.", [Name]),
+					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
 					make_bind_response(invalidCredentials, Name)
 			end;
 		<<"uid">> -> 
 			<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
 			BindResponse = case middleware_autentica(UserLogin, Password, State) of
 				{error, _Reason} ->	
-					ems_logger:error("Ldap invalid credentials to bind request uid ~p.", [Name]),
+					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
 					make_bind_response(invalidCredentials, Name);
 				ok -> 
-					ems_logger:info("Ldap bind request uid ~p success.", [Name]),
+					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
 					make_bind_response(success, Name)
 			end;
 		UnknowCn -> 
-			ems_logger:error("Ldap unknow bind request ~p.", [UnknowCn]),
+			ems_logger:error("ems_ldap_handler bind unknow request ~p.", [UnknowCn]),
 			BindResponse = make_bind_response(invalidCredentials, Name)
 	end,
 	{ok, [BindResponse]};
@@ -151,7 +149,7 @@ handle_request({'LDAPMessage', _,
 														]
 										}
 	},
-	ems_logger:info("Ldap request supported capabilities."),
+	ems_logger:info("ems_ldap_handler request supported capabilities."),
 	ResultDone = make_result_done(success),
 	{ok, [ResultEntry, ResultDone]};
 handle_request({'LDAPMessage', _,
@@ -175,7 +173,7 @@ handle_request({'LDAPMessage', _,
 handle_request({'LDAPMessage', _, 
 					_UnknowMsg,
 				 _} = LdapMsg, _State) ->
-	ems_logger:warn("Ldap handle unknow msg ~p\n", [LdapMsg]),
+	ems_logger:warn("ems_ldap_handler received unknow msg ~p\n", [LdapMsg]),
 	{ok, unbindRequest}.
 	
 
@@ -185,7 +183,7 @@ make_object_name(UsuId) ->
 	R2.
 
 make_bind_response(unavailable, _) ->
-	make_bind_response(unavailable, <<"">>, <<"LDAP database or server machine unavailable!!!">>);
+	make_bind_response(unavailable, <<"">>, <<"LDAP unavailable!!!">>);
 
 make_bind_response(ResultCode, MatchedDN) ->
 	make_bind_response(ResultCode, MatchedDN, <<"">>).
@@ -226,15 +224,15 @@ make_result_done(ResultCode) ->
 handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->	
 	case middleware_find_user_by_login(UserLogin, State) of
 		{error, enoent} ->
-			ems_logger:error("Ldap request search ~s does not exist.", [binary_to_list(UserLogin)]),
+			ems_logger:error("ems_ldap_handler search ~s does not exist.", [binary_to_list(UserLogin)]),
 			ResultDone = make_result_done(invalidCredentials),
 			{ok, [ResultDone]};
 		{error, Reason} ->
-			ems_logger:error("Ldap request search ~s fail. Reason: ~p.", [binary_to_list(UserLogin), Reason]),
+			ems_logger:error("ems_ldap_handler search ~s fail. Reason: ~p.", [binary_to_list(UserLogin), Reason]),
 			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
 		{ok, UserRecord = {_, UsuNome, _, _, _}} ->
-			ems_logger:info("Ldap request search ~s ~p success.", [binary_to_list(UserLogin), UsuNome]),
+			ems_logger:info("ems_ldap_handler search ~s ~p success.", [binary_to_list(UserLogin), UsuNome]),
 			ResultEntry = make_result_entry(UserLogin, UserRecord, AdminLdap),
 			ResultDone = make_result_done(success),
 			{ok, [ResultEntry, ResultDone]}
@@ -258,7 +256,7 @@ middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware,
 middleware_find_user_by_login(UserLogin, #state{middleware = undefined}) ->
 	case ems_user:find_by_login(UserLogin) of
 		{ok, _User = #user{codigo = UsuId, name = UsuNome, cpf = UsuCpf, email = UsuEmail, password = UsuSenha}} ->
-			?DEBUG("Ldap ems_user:find_by_login user: ~p.", [_User]),
+			?DEBUG("ems_ldap_handler exec ems_user:find_by_login user: ~p.", [_User]),
 			UserRecord2 = {format_user_field(UsuId),
 						   format_user_field(UsuNome),
 						   format_user_field(UsuCpf),
@@ -275,7 +273,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 				true -> 
 					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
 						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
-							?DEBUG("Ldap middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
+							?DEBUG("ems_ldap_handler exec middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
 							UserRecord2 = {format_user_field(UsuId),
 										   format_user_field(UsuNome),
 										   format_user_field(UsuCpf),

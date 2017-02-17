@@ -146,6 +146,9 @@
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
 -define(CACHE_CONTROL_NO_CACHE, <<"no-cache">>).
 
+% Default ports
+-define(LDAP_SERVER_PORT, 2389).
+
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 							%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,							%% Lista de hosts para pesquisar os serviços

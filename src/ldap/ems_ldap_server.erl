@@ -57,7 +57,7 @@ init(Service = #service{name = Name,
 		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
 		tcp_allowed_address = AllowedAddress,
 		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
-		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, 2301))
+		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, ?LDAP_SERVER_PORT))
  	},
  	State = #state{tcp_config = TcpConfig, name = ServerName},
 	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, Service, 1, State) of
@@ -109,17 +109,6 @@ do_start_listener(IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerN
 		{error, Reason} ->
 			{{error, Reason}, State}
 	end.
-
-%%do_stop_listener(Port, IpAddress, State) ->
-%%	case [ S || {S,P,I} <- State#state.listener, {P,I} == {Port, IpAddress}] of
-%%		[PidListener|_] ->
-%%			gen_server:call(PidListener, shutdown),
-%%			NewState = State#state{listener=lists:delete({PidListener, Port, IpAddress}, State#state.listener)},
-%%			ems_logger:info("Stopped listening at the address ~p:~p.", [inet:ntoa(IpAddress), Port]),
-%%			{ok, NewState};
-%%		_ -> 
-%%			{{error, enolisten}, State}
-%%	end.
 	
 parse_tcp_listen_address(ListenAddress) ->
 	lists:map(fun(IP) -> 
@@ -139,6 +128,6 @@ parse_tcp_port(Port) when is_list(Port) ->
 parse_tcp_port(Port) when is_integer(Port) -> 
 	case ems_consist:is_range_valido(Port, 1024, 5000) of
 		true -> Port;
-		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
+		false -> erlang:error("ems_ldap_server parameter tcp_port invalid. Enter a value between 1024 and 5000.")
 	end.
 	
