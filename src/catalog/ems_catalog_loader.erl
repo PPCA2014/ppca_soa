@@ -41,15 +41,15 @@ list_kernel_catalog() ->
 %% @doc Get catalog of services
 get_catalog() -> 
 	Conf = ems_config:getConfig(),
-	?DEBUG("Scan catalogs..."),
+	?DEBUG("ems_catalog_loader scan catalogs."),
 	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
-	?DEBUG("Parse catalogs..."),
+	?DEBUG("ems_catalog_loader scan catalogs ok."),
 	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
 		{Cat2, Cat3, Cat4, CatK} ->
-			?DEBUG("Parse catalog: Ok."),
+			?DEBUG("ems_catalog_loader parse catalogs ok."),
 			{ok, Cat4, Cat2, Cat3, CatK};
 		Error -> 
-			?DEBUG("Parse catalog error: ~p.", [Error]),
+			?DEBUG("ems_catalog_loader parse catalog error: ~p.", [Error]),
 			Error
 	end.
 	
@@ -59,11 +59,11 @@ scan_catalogs([], _, Result) -> Result;
 scan_catalogs([{CatName, FileName}|Rest], Conf, Result) ->
 	case parse_filename_catalog(FileName, ?CATALOGO_PATH) of
 		{ok, FileName2} ->
-			io:format("Loading catalog ~p from ~p.\n", [binary_to_list(CatName), FileName2]),
+			io:format("ems_catalog_loader loading ~p from ~p.\n", [binary_to_list(CatName), FileName2]),
 			Result2 = scan_catalog(FileName2, Conf, Result),
 			scan_catalogs(Rest, Conf, Result2);
 		{error, FileName2} ->
-			ems_logger:format_warn("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName2])
+			ems_logger:format_warn("ems_catalog_loader failed to scan invalid catalog ~p. Ignoring this catalog.\n", [FileName2])
 	end.
 		
 		
@@ -76,10 +76,10 @@ scan_catalog(FileName, Conf, Result) ->
 		{ok, CatMap} -> 
 			scan_catalog_entry([CatMap], Conf, CurrentDir, Result);
 		{error, enoent} ->
-			ems_logger:format_warn("Catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
+			ems_logger:format_warn("ems_catalog_loader catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
 			Result;
 		_ -> 
-			ems_logger:format_warn("Catalog ~p with invalid json format, ignoring this catalog.\n", [FileName]),
+			ems_logger:format_warn("ems_catalog_loader failed to read invalid catalog ~p. Ignoring this catalog.\n", [FileName]),
 			Result
 	end.
 	
@@ -91,12 +91,12 @@ scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 		true -> 
 			case parse_filename_catalog(maps:get(<<"file">>, Cat), CurrentDir) of
 				{ok, FileName} ->
-					?DEBUG("Scan catalog ~p.", [FileName]),
+					?DEBUG("ems_catalog_loader scan ~p.", [FileName]),
 					Result2 = scan_catalog(FileName, Conf, Result),
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result2);			
 				{error, FileName} ->
-					?DEBUG("Fail scan catalog ~p: ~p.", [FileName, Cat]),
-					ems_logger:format_warn("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName]),
+					ems_logger:format_warn("ems_catalog_loader scan invalid catalog ~p. Ignoring this catalog.\n", [FileName]),
+					?DEBUG("~p: ~p.", [FileName, Cat]),
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result)
 			end;
 		false -> 
@@ -474,8 +474,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 		end
 	catch
 		_Exception:_Reason -> 
-			ems_logger:format_warn("Invalid catalog specification: \n\t~p.\n", [H]),
-			?DEBUG("Reason to invalid catalog specification: ~p.\n", [_Reason]),
+			ems_logger:format_warn("ems_catalog_loader parse invalid catalog specification: \n\t~p.\n", [H]),
+			?DEBUG("ems_catalog_loader reason to invalid catalog specification: ~p.\n", [_Reason]),
 			parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 	end.
 

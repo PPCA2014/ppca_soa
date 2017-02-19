@@ -44,10 +44,10 @@ stop() ->
 get_connection(Datasource) ->
 	case gen_server:call(?SERVER, {create_connection, Datasource}) of
 		{ok, _Datasource2} = Result ->
-			?DEBUG("Get odbc connection: ~p.", [_Datasource2]),
+			?DEBUG("ems_odbc_pool get odbc connection: ~p.", [_Datasource2]),
 			Result;
 		Error -> 
-			?DEBUG("Fail get new odbc connection: ~p.", [Error]),
+			?DEBUG("ems_odbc_pool failed to get a new odbc connection: ~p.", [Error]),
 			Error
 	end.
 
@@ -124,7 +124,7 @@ do_create_connection(Datasource = #service_datasource{connection = Connection,
 		0 ->
 			case ems_odbc_pool_worker:start_link(Datasource) of
 				{ok, WorkerPid} ->
-					?DEBUG("Start new odbc connection: ~s.", [Connection]),
+					?DEBUG("ems_odbc_pool start new odbc connection: ~s.", [Connection]),
 					PidModuleRef = erlang:monitor(process, PidModule),
 					Datasource2 = Datasource#service_datasource{owner = WorkerPid, 
 																pid_module = PidModule,
@@ -159,10 +159,10 @@ do_release_connection(Datasource = #service_datasource{connection = Connection,
 			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 														   pid_module_ref = undefined}, Pool),
 			erlang:put(PoolName, Pool2),
-			?DEBUG("release odbc connection ~p.", [Datasource]),
-			?DEBUG("~p entry for odbc connection pool ~p.", [PoolSize+1, Connection]);
+			?DEBUG("ems_odbc_pool release odbc connection ~p.", [Datasource]),
+			?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Connection]);
 		false -> 
-			?DEBUG("shutdown odbc connection ~p.", [Datasource]),
+			?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Datasource]),
 			gen_server:call(Owner, shutdown)
 	end.
 

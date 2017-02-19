@@ -31,7 +31,7 @@ validate(Map, Schema) ->
 				{error,[{schema_invalid, SchemaErrorMap = #{<<"type">> := TypeField}, wrong_type_specification}]} ->
                     {error, {<<"field">>, TypeField,  <<"reason">>, wrong_type_specification, <<"field_def">>, SchemaErrorMap}};
 				Other -> 
-					io:format("Erro desconhecido ~p", [Other]),
+					ems_logger:error("ems_api_query_validator validation schema error: ~p.", [Other]),
 					Other
 			end
 	end.

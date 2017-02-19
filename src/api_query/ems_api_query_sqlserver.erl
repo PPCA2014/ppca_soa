@@ -35,7 +35,7 @@ delete(Id, Datasource) ->
 
 execute_dynamic_query(Sql, Params, Datasource) ->
 	try
-		?DEBUG("SQL exec: ~s. \n\tParams: ~p.", [Sql, Params]),
+		?DEBUG("ems_api_query_sqlserver execute sql: ~s. Params: ~p.", [Sql, Params]),
 		case ems_odbc_pool:param_query(Datasource, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 			{_, Fields, Records} -> 
 				Objects = ems_util:json_encode_table(Fields, Records),
