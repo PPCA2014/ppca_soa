@@ -20,11 +20,7 @@ deps/**
 *.gz
 rel/ems-bus
 rel/*.gz
-rel/rpm/centos/RPMS/x86_64/**
-rel/rpm/centos/BUILD/**
-rel/rpm/centos/SOURCES/**
-rel/rpm/centos/SOURCES/SRPMS/**
-rel/rpm/centos/RPMS/x86_64/**
+rel/rpm/centos/**
 rel/deb/ems-bus-Debian-jessie_amd64/**
 rel/deb/ems-bus-Ubuntu-xenial_amd64/**
 rel/deb/ems-bus-Ubuntu-yakkety_amd64/**
