@@ -16,12 +16,14 @@
 
 
 init(CowboyReq, Opts) ->
-	?DEBUG("Http request: ~p\n", [CowboyReq]),
+	?DEBUG("ems_http_handler new request: ~p.", [CowboyReq]),
 	case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
 		{ok, Request = #request{type = Method,
 								req_hash = ReqHash,
 								t1 = T1}} -> 
-			case ems_dispatcher:dispatch_request(Request) of
+			?DEBUG("ems_http_handler delivers the request to the dispatcher."),
+			Result = ems_dispatcher:dispatch_request(Request),
+			case Result of
 				{ok, Request2 = #request{result_cache = true,
 										 code = HttpCode,
 										 response_data = ResponseData,
@@ -39,13 +41,25 @@ init(CowboyReq, Opts) ->
 												Request3#request.response_data, 
 												CowboyReq),
 					ems_logger:log_request(Request3);
-				{error, request, Request2} ->
-					Request3 = encode_response(Request2),
-					Response = cowboy_req:reply(Request3#request.code, 
-												Request3#request.response_header, 
-												Request3#request.response_data, 
+				{error, request, Request2 = #request{code = Code,
+													 response_header = ResponseHeader,
+													 response_data = ResponseData,
+													 service = #service{name = ServiceName,
+																		owner = ServiceOwner}}} ->
+					Response = cowboy_req:reply(Code, 
+												ResponseHeader#{<<"server">> => ?SERVER_NAME,
+																<<"content-type">> => ?CONTENT_TYPE_JSON,
+																<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
+																<<"ems-catalog">> => ServiceName,
+																<<"ems-owner">> => ServiceOwner,
+																<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
+																<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
+																<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
+																<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
+																<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS},
+												ResponseData, 
 												CowboyReq),
-					ems_logger:log_request(Request3);
+					ems_logger:log_request(Request2);
 				{error, Reason} = Error ->
 					Request2 = Request#request{code = 400, 
 											   reason = Reason, 
@@ -58,7 +72,7 @@ init(CowboyReq, Opts) ->
 					ems_logger:log_request(Request2)
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:error("Error encode request: ~p.\n", [Reason]),
+			ems_logger:error("ems_http_handler encode request error: ~p.\n", [Reason]),
 			Response = cowboy_req:reply(400, default_http_header(), ems_schema:to_json(Error), CowboyReq)
 	end,
 	{ok, Response, Opts}.

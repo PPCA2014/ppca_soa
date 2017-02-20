@@ -52,34 +52,28 @@ execute(Request = #request{rid = Rid,
 											timeout = Timeout}}) ->
 	case Host == '' of
 		true ->	
-			ems_logger:info("Send local msg to ~p.", [ServName]),
+			ems_logger:info("ems_web_service send local msg to ~p.", [ServName]),
 			%?DEBUG("Exec: apply(~p, ~p, [~p])", [Module, Function, Request]),
 			apply(Module, Function, [Request]);
 		false ->
 			WebService = ems_pool:checkout(ems_web_service),
 			gen_server:cast(WebService, {execute_remote, Request}),
-			ems_logger:info("Send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
+			ems_logger:info("ems_web_service send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
 			receive 
-				{Code, RidRemote, {ok, ResponseData}} when RidRemote == Rid -> 
-					?DEBUG("Receive msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {ok, ResponseData}}]),
-					Reply = {ok, Request#request{code = Code,
-												 reason = ok,
-												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
-												 response_data = ResponseData}};
-				{Code, RidRemote, ResponseData} when RidRemote == Rid -> 
-					?DEBUG("Receive msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, ResponseData}]),
-					Reply = {ok, Request#request{code = Code,
-												 reason = ok,
-												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
-												 response_data = ResponseData}};
+				{Code, RidRemote, {Reason, ResponseData}} when RidRemote == Rid -> 
+					?DEBUG("ems_web_service received msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {Reason, ResponseData}}]),
+					Reply = {Reason, Request#request{code = Code,
+													 reason = Reason,
+													 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
+													 response_data = ResponseData}};
 				Msg -> 
-					ems_logger:error("Receive invalid message ~p.", [Msg]), 
+					ems_logger:error("ems_web_service received invalid message ~p.", [Msg]), 
 					Reply = {ok, Request#request{code = 500,
 												 reason = einvalid_rec_message,
 												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
 												 response_data = {error, einvalid_rec_message}}}
 				after Timeout ->
-					?DEBUG("Wait ~pms to receive msg from ~p.", [Timeout, {Module, Node}]),
+					?DEBUG("ems_web_service received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
 					Reply = {error, Request#request{code = 503,
 													reason = etimeout_service,
 													response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
@@ -140,5 +134,5 @@ do_execute_remote(#request{rid = Rid,
 										    function_name = FunctionName, 
 										    module = Module}}) ->
 	Msg = {{Rid, Uri, Type, ParamsUrl, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
-	?DEBUG("Send msg to ~p: ~p.", [{Module, Node}, Msg]),
+	?DEBUG("ems_web_service send remote msg to ~p: ~p.", [{Module, Node}, Msg]),
 	{Module, Node} ! Msg.

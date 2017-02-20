@@ -26,7 +26,7 @@ dispatch_request(Request = #request{type = "GET",
 									t1 = Timestamp}) -> 
 	case ems_dispatcher_cache:lookup(ReqHash, Timestamp) of
 		{true, RequestCache} -> 
-			?DEBUG("Lookup request in cache. Request: ~p.", [RequestCache]),
+			?DEBUG("ems_dispatcher lookup request in cache. ReqHash: ~p.", [ReqHash]),
 			{ok, Request#request{result_cache = true,
 								 code = RequestCache#request.code,
 								 reason = RequestCache#request.reason,
@@ -41,18 +41,21 @@ dispatch_request(Request) -> lookup_request(Request).
 lookup_request(Request = #request{type = Type,
 								  url = Url,
 								  rowid = Rowid}) -> 
-	?DEBUG("Lookup request ~p.", [Request]),
+	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	case ems_catalog:lookup(Request) of
 		{Service, ParamsMap, QuerystringMap} -> 
+			?DEBUG("ems_dispatcher lookup request found."),
 			% Autenticate user request
 			case ems_auth_user:autentica(Service, Request) of
 				{ok, User} ->
+					?DEBUG("ems_dispatcher authenticate user ~p.", [User]),
 					% get a worker node to process a service	
 					case get_work_node(Service#service.host, 
 									   Service#service.host,	
 									   Service#service.host_name, 
 									   Service#service.module_name, 1) of
 						{ok, Node} ->
+							?DEBUG("ems_dispatcher selected the node ~p for the task.", [Node]),
 							Request2 = Request#request{user = User, 
 													   node_exec = Node,
 													   service = Service,
@@ -69,12 +72,16 @@ lookup_request(Request = #request{type = Type,
 									{ok, Request3};
 								{error, Request3} -> {error, request, Request3}
 							end;
-						Error ->  Error
+						Error ->  
+							?DEBUG("ems_dispatcher could not get a node for the task."),
+							Error
 					end;
-				Error -> Error
+				Error -> 
+					?DEBUG("ems_dispatcher was unable to authenticate user."),
+					Error
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:info("Lookup request ~p fail. Reason: ~p.", [Url, Reason]),
+			ems_logger:info("ems_dispatcher request ~p fail. Reason: ~p.", [Url, Reason]),
 			Error
 	end.
 
@@ -112,7 +119,7 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 	
 	% Este node está vivo? Temos que rotear para um node existente
 	Ping = net_adm:ping(Node),
-	?DEBUG("Ping ~p: ~p.", [Node, Ping]),
+	?DEBUG("ems_dispatcher ping ~p: ~p.", [Node, Ping]),
 	case Ping of
 		pong -> {ok, Node};
 		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
