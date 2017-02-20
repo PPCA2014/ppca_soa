@@ -96,9 +96,9 @@ add_scope(Scope, Client) ->
 %%% OAuth2 backend functions
 %%%===================================================================
 
-authenticate_user({Username, Password}, []) ->
-    case ems_user:find_by_login_and_password(Username, Password) of
-        {ok, #user{name = Username}} ->	
+authenticate_user({Login, Password}, _) ->
+    case ems_user:find_by_login_and_password(Login, Password) of
+        {ok, User = #user{name = Username}} ->	
 			{ok, {[],{<<"user">>, Username}}};
 		%% Padronizar o erro conforme o RFC 6749
         Error = {error, notfound} ->  Error
