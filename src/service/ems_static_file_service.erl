@@ -55,14 +55,14 @@ execute(Request = #request{url = Url,
 											  path = Path}}) ->
 	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
 	case file_info(FileName) of
-		{error, Reason} = Err -> 
-			?DEBUG("Static file ~p does not exist.", [FileName]),
+		{error, Reason} = Error -> 
+			?DEBUG("ems_static_file_service file ~p does not exist.", [FileName]),
 			{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
-														 reason = Reason,	
-														 response_data = Err}
+									reason = Reason,	
+									response_data = ems_schema:to_json(Error)}
 			 };
 		{FSize, MTime} -> 
-			?DEBUG("Loading static file ~p.", [FileName]),
+			?DEBUG("ems_static_file_service loading file ~p.", [FileName]),
 			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
 			ETag = generate_etag(FSize, MTime),
 			LastModified = cowboy_clock:rfc1123(MTime),
@@ -78,16 +78,18 @@ execute(Request = #request{url = Url,
 						 };
 				false ->
 					case file:read_file(FileName) of
-						{ok, FileData} -> {ok, Request#request{code = 200, 
-															   reason = ok,
-															   etag = ETag,
-															   response_data = FileData, 
-															   response_header = HttpHeader}
-										   };
-						{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
-																		 reason = Reason,
-																		 response_data = Err}
-												 }
+						{ok, FileData} -> 
+							{ok, Request#request{code = 200, 
+											     reason = ok,
+											     etag = ETag,
+											     response_data = FileData, 
+											     response_header = HttpHeader}
+							};
+						{error, Reason} = Error -> 
+							{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
+												    reason = Reason,
+												    response_data = ems_schema:to_json(Error)}
+							}
 					end
 			end
 		
