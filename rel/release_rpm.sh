@@ -31,6 +31,9 @@
 #
 ########################################################################################################
 
+# Pasta rel
+WORKING_DIR=$(pwd)
+
 # Imprime uma mensagem e termina o script
 # Parâmetros:
 #  $1  - Mensagem que será impressa 
@@ -39,37 +42,37 @@ die () {
     exit 1
 }
 
+# ***** Clean e preparação para build ##########*
+clean(){
+	echo "Clean..."
+	cd $WORKING_DIR
+	rm -Rf ems-bus
+	rm -Rf *.tar.gz
+	rm -Rf deb/*.deb
+	# Loop pelas pastas de templates dos pacotes
+	for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
+		# remove old paths
+		rm -Rf $SKEL_RPM_PACKAGE/BUILD
+		rm -Rf $SKEL_RPM_PACKAGE/SOURCES
+		rm -Rf $SKEL_RPM_PACKAGE/BUILDROOT
+		rm -Rf $SKEL_RPM_PACKAGE/RPMS
 
-# Executar a partir do diretório do próprio script
-WORKING_DIR=$(dirname $0)
-cd $WORKING_DIR
+		# create new paths
+		mkdir -p $SKEL_RPM_PACKAGE/BUILD
+		mkdir -p $SKEL_RPM_PACKAGE/SOURCES
+		mkdir -p $SKEL_RPM_PACKAGE/BUILDROOT
+		mkdir -p $SKEL_RPM_PACKAGE/RPMS
+	done
+}
+
 
 
 # Pega a versão dop build do barramneto que está no arquivo src/ems_bus.app.src
 VERSION_RELEASE=$(cat ../src/ems_bus.app.src | sed -rn  's/^.*\{vsn.*([0-9]{1,2}\.[0-9]{1,2}.[0-9]{1,2}).*$/\1/p')
 [ -z "$VERSION_RELEASE" ] && die "Não foi possível obter a versão a ser gerada no rebar.config"
-echo "Aguarde, gerando a versão ems-bus-$VERSION_RELEASE do barramento, isso pode demorar um pouco!"
+echo "Aguarde, gerando a release $VERSION_RELEASE do barramento, isso pode demorar um pouco!"
 
-
-# ***** Clean e preparação para build ##########*
-echo "Clean..."
-rm -Rf ems-bus
-rm -Rf *.tar.gz
-rm -Rf deb/*.deb
-# Loop pelas pastas de templates dos pacotes
-for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
-	# remove old paths
-	rm -Rf $SKEL_RPM_PACKAGE/BUILD
-	rm -Rf $SKEL_RPM_PACKAGE/SOURCES
-	rm -Rf $SKEL_RPM_PACKAGE/BUILDROOT
-	rm -Rf $SKEL_RPM_PACKAGE/RPMS
-
-	# create new paths
-	mkdir -p $SKEL_RPM_PACKAGE/BUILD
-	mkdir -p $SKEL_RPM_PACKAGE/SOURCES
-	mkdir -p $SKEL_RPM_PACKAGE/BUILDROOT
-	mkdir -p $SKEL_RPM_PACKAGE/RPMS
-done
+clean
 
 
 # ########## Recompila todo projeto antes de gerar a release ########## 
@@ -79,7 +82,7 @@ rm -f erl_crash.dump
 rm -rf priv/db
 rm -rf priv/log
 rebar clean 1> /dev/null || die "Falha ao limpar os fontes!"
-rebar get-deps 1>/dev/null || die "Falha ao obter as dependências!"
+#rebar get-deps 1>/dev/null || die "Falha ao obter as dependências!"
 rebar compile 1> /dev/null || die "Falha ao recompilar os fontes!"
 
 # ******** Gera o release na pasta rel *********
@@ -117,7 +120,13 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	echo "Criando pacote rpm para o template $SKEL_RPM_PACKAGE..."
 
 	SKEL_RPM_PACKAGE_SOURCES="$SKEL_RPM_PACKAGE/SOURCES"
-	VERSION_RELEASE_PACK=$VERSION_RELEASE
+	RPM_VERSION_PACK=$VERSION_RELEASE
+	# Atualiza a versão no arquivo SPEC/emsbus.spec
+	sed -ri "s/Version: .*$/Version: $RPM_VERSION_PACK/"  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec
+	RPM_RELEASE_PACK=$(grep 'Release:' $SKEL_RPM_PACKAGE/SPECS/emsbus.spec | cut -d":" -f2 | tr " " "\0")
+	RPM_PACKAGE=ems-bus-$VERSION_RELEASE-$RPM_RELEASE_PACK.x86_64.rpm
+	RPM_PACKAGE_FILE=$SKEL_RPM_PACKAGE/RPMS/x86_64/$RPM_PACKAGE
+	echo $RPM_PACKAGE_FILE
 	
 	# Cria a pasta onde vão ser colocados os sources 
 	mkdir -p $SKEL_RPM_PACKAGE_SOURCES || die "Não foi possível criar a pasta $SKEL_RPM_PACKAGE_SOURCES!"
@@ -145,7 +154,6 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 	ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_RPM_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service!" 
 	ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service.d/limits.conf $SKEL_RPM_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d/limits.conf || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service.d/limits.conf!" 
 
-
 	# Gera a estrutura /etc/firewalld
 	mkdir -p $SKEL_RPM_PACKAGE_SOURCES/etc/firewalld/services
 	ln -s /usr/lib/ems-bus/priv/firewalld/ems-bus.xml $SKEL_RPM_PACKAGE_SOURCES/etc/firewalld/services/ems-bus.xml || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/firewalld/services/ems-bus.xml!" 
@@ -156,22 +164,47 @@ for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do
 
 	# Log -> /var/log/ems-bus
 	ln -s /var/log/ems-bus $SKEL_RPM_PACKAGE_SOURCES/usr/lib/ems-bus/priv/log
+
+	#echo "Generate $SKEL_RPM_PACKAGE_SOURCES/ems-bus-$RPM_VERSION_PACK.tar.gz from $SKEL_RPM_PACKAGE_SOURCES"
+	tar -czvf  ems-bus-$RPM_VERSION_PACK.tar.gz *
 	
-	# Atualiza a versão no arquivo SPEC/emsbus.spec
-	echo "sed is sed -ri sed -ri s/Version: .*$/Version: $VERSION_RELEASE_PACK/  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec"
-	sed -ri "s/Version: .*$/Version: $VERSION_RELEASE_PACK/"  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec
-	
-	# tar sources path
-	echo "Generate $SKEL_RPM_PACKAGE_SOURCES/ems-bus-$VERSION_RELEASE_PACK.tar.gz from $SKEL_RPM_PACKAGE_SOURCES"
-	tar -czvf  ems-bus-$VERSION_RELEASE_PACK.tar.gz *
-	
-	echo "rpm build..."
+	echo "rpm build with rpmbuild..."
 	cd $SKEL_RPM_PACKAGE
-	pwd
 	rpmbuild -bb SPECS/emsbus.spec
+
+	# enviar o pacote gerado para a pasta releases (se a pasta releases existe)
+	cd $WORKING_DIR
+	if [ -d $WORKING_DIR/../../releases/ ]; then
+		rm -rf $WORKING_DIR/../../releases/$VERSION_RELEASE/
+		mkdir -p $WORKING_DIR/../../releases/$VERSION_RELEASE/
+		cp $RPM_PACKAGE_FILE  $WORKING_DIR/../../releases/$VERSION_RELEASE/
+		
+		# pode usar -y para confirmar o envio para o repositório releases automático
+		FAZER_GIT_PUSH=$(echo $1 | tr "-" "\0")  
+		
+		# pergunta envia para o repositório
+		while [[ ! $FAZER_GIT_PUSH =~ [YyNn] ]]; do
+			printf "Enviar a nova versão $VERSION_RELEASE para o repositório releases? [Yn]"
+			read FAZER_GIT_PUSH
+		done
+
+		# envia se confirmou 
+		if [[ $FAZER_GIT_PUSH =~ [Yy] ]]; then
+			cd $WORKING_DIR/../../releases/
+			echo "$VERSION_RELEASE" > setup/current_version
+			git add $VERSION_RELEASE/$RPM_PACKAGE >> /dev/null
+			git add setup/current_version >> /dev/null
+			git commit -am "new release $VERSION_RELEASE" >> /dev/null
+			echo "Enviando pacote $RPM_PACKAGE para o repositório releases..."
+			git push
+		fi
+	else
+		echo "O pacote $RPM_PACKAGE não será enviado para releases, pois este repositório não existe neste computador."  
+	fi
 
 done
 
-
+clean
+cd $WORKING_DIR
 echo "Feito!"
 
