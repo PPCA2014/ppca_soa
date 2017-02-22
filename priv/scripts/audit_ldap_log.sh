@@ -31,8 +31,6 @@
 ########################################################################################################
 
 
-# Parameters
-
 # Get linux description
 LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
 									gsub("\"", "", $2);  print $2 
@@ -152,7 +150,6 @@ generate_report(){
 
 
 	# Print title
-	COLS=$(tput cols)
 	echo
 	echo
 	echo "                                 ERLANGMS LDAP REPORT FOR THE"
@@ -245,7 +242,7 @@ generate_report(){
 
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE)
-	TITULO_MSG="ERLANGMS LDAP Proxy Log Analysis Report -- $SUB_TITLE_REPORT" 
+	TITULO_MSG="ERLANGMS LDAP Log Analysis Report - $LINUX_IP_SERVER" 
 	SUBJECT="<font size=\"2\" face=\"Courier New, Courier, monospace\"><pre>$REPORT_CONTENT</pre></font>"
     python <<EOF
 # -*- coding: utf-8 -*-
