@@ -33,21 +33,33 @@
 
 # Parameters
 
+# Get linux description
+LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
+									gsub("\"", "", $2);  print $2 
+								 } 
+							   }'  /etc/os-release)
+
+# Primary IP of the server
+LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
+
+# Script version
 VERSION=1.0.0
-LDAP_SERVER="$(hostname):2389"
+LDAP_SERVER="$LINUX_IP_SERVER:2389"
 CURRENT_DIR=$(pwd)
 TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
-ENVIRONMENT="desenvolvimento"
+EMS_NODE="ems-bus"
+ENVIRONMENT="$LINUX_DESCRIPTION << $LINUX_IP_SERVER >>"
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_audit_ldap_log_$(date '+%d%m%Y_%H%M%S').txt"
 SUB_TITLE_REPORT="LAST DAY OF OPERATION"
 
 # Log destination parameter
-LOG_DEST=/var/log/ems-bus
-LOG_FILE_TMP="$TMP_DIR/full_log_file.log"
-LOG_FILE="$TMP_DIR/full_log_file_filtered.log"
-USO_LOG_DEST=$(df -h  $LOG_DEST | sed '1d' | awk '{print $5}' | sed 's/%//')
+LOG_YEAR=$(date '+%Y')
+LOG_DEST_BASE="/var/log/$EMS_NODE"
+LOG_DEST="$LOG_DEST_BASE/$(ls $LOG_DEST_BASE/ | sed '/ems_bus@.*/ !d; 1q')/$LOG_YEAR"
+LOG_FILE_TMP="$TMP_DIR/full_log_file.tmp"
+LOG_FILE="$TMP_DIR/full_log_file_filtered.tmp"
 
 # SMTP parameter
 SMTP_SERVER="mail.unb.br"
@@ -96,6 +108,7 @@ generate_report(){
 	echo "Log dest: $LOG_DEST"
 	echo "Server: $LDAP_SERVER"
 	echo "Environment: $ENVIRONMENT"
+	echo "ERLANGMS Node: $EMS_NODE"
 	echo
 	
 	if [ "$MMIN" == "1440" ]; then
@@ -105,7 +118,7 @@ generate_report(){
 	fi
 
 	# copies the log files to $TMP_DIR tmp and returns a list of them
-	LOG_FILE_LIST=$(find "$LOG_DEST" -type f -mmin "-$MMIN" -follow -name 'emsbus_*.log' -size +0 -exec cp {} $TMP_DIR \; -exec basename  {} \;) 
+	LOG_FILE_LIST=$(find "$LOG_DEST/" -type f -mmin "-$MMIN" -follow -name "*.log" -size +0 -exec cp {} $TMP_DIR \; -exec basename  {} \;) 
 
 	if [ -z "$LOG_FILE_LIST" ]; then
 		echo "No logfiles to analyze."
@@ -124,7 +137,7 @@ generate_report(){
 
 	# concat all logfiles of ems_ldap_handler and create $LOG_FILE_TMP
 	# remove characters control of the line colors too
-	cat $TMP_DIR/emsbus*.log | grep "ems_ldap_handler" | sed -r '/ERROR/ { s/.{7}// ;  s/.{4}$// } ; y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚçÇ/aAaAaAaAeEeEiIoOoOoOuUcC/ ; s/<//g ; s/>//g' > $LOG_FILE_TMP
+	cat $TMP_DIR/*.log | grep "ems_ldap_handler" | sed -r '/ERROR/ { s/.{7}// ;  s/.{4}$// } ; y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚçÇ/aAaAaAaAeEeEiIoOoOoOuUcC/ ; s/<//g ; s/>//g' > $LOG_FILE_TMP
 	
 
 	# filter only the log lines of the defined interval	$DATE_INIT
@@ -152,7 +165,7 @@ generate_report(){
 	fi
 	SUB_TITLE_SIZE=$[$(echo $SUB_TITLE_REPORT | wc -c) / 2]
 	printf "%*s\n" $[47 + $SUB_TITLE_SIZE] "$SUB_TITLE_REPORT"
-	echo "                                      ( $ENVIRONMENT )"
+	printf "%*s\n" $[57 + $SUB_TITLE_SIZE] "$ENVIRONMENT"
 	echo
 	
 
