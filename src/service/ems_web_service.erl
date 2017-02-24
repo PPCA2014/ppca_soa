@@ -71,13 +71,13 @@ execute(Request = #request{rid = Rid,
 					Reply = {ok, Request#request{code = 500,
 												 reason = einvalid_rec_message,
 												 response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
-												 response_data = {error, einvalid_rec_message}}}
+												 response_data = ems_schema:to_json({error, einvalid_rec_message})}}
 				after Timeout ->
 					?DEBUG("ems_web_service received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
 					Reply = {error, Request#request{code = 503,
 													reason = etimeout_service,
 													response_header = #{<<"ems-node">> => erlang:atom_to_binary(Node, utf8)},
-													response_data = {error, etimeout_service}}}
+													response_data = ems_schema:to_json({error, etimeout_service})}}
 			end,
 			ems_pool:checkin(ems_web_service, WebService),
 			Reply

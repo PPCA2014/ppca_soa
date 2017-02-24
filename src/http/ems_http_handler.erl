@@ -46,6 +46,7 @@ init(CowboyReq, Opts) ->
 													 response_data = ResponseData,
 													 service = #service{name = ServiceName,
 																		owner = ServiceOwner}}} ->
+					Request3 = Request2#request{latency = ems_util:get_milliseconds() - T1},
 					Response = cowboy_req:reply(Code, 
 												ResponseHeader#{<<"server">> => ?SERVER_NAME,
 																<<"content-type">> => ?CONTENT_TYPE_JSON,
@@ -59,7 +60,7 @@ init(CowboyReq, Opts) ->
 																<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS},
 												ResponseData, 
 												CowboyReq),
-					ems_logger:log_request(Request2);
+					ems_logger:log_request(Request3);
 				{error, Reason} = Error ->
 					Request2 = Request#request{code = 400, 
 											   reason = Reason, 
