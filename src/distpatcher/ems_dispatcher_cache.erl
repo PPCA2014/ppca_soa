@@ -10,10 +10,9 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
 
 %% Client API
--export([start/0, lookup/2, add/3, lookup_options/0, add_options/1, invalidate/1]).
+-export([start/0, lookup/2, add/4, invalidate/0]).
 
 start() -> 
 	ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
@@ -23,34 +22,18 @@ lookup(ReqHash, Timestamp2) ->
 	try
 		case ets:lookup(dispatcher_cache_get, ReqHash) of
 			[] -> false;
-			[{_, Timestamp, _}] when Timestamp2 - Timestamp > ?TIMEOUT_DISPATCHER_CACHE -> false;
-			[{_, _, Request}] -> {true, Request}
+			[{_, Timestamp, _, ResultCache}] when Timestamp2 - Timestamp > ResultCache -> false;
+			[{_, _, Request, _}] -> {true, Request}
 		end
 	catch
 		_Exception:_Reason ->
-			ems_logger:warn("Recriando ets dispatcher_cache_get."),
+			ems_logger:warn("ems_dispatcher_cache recreate ets dispatcher_cache_get."),
 			ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
 			lookup(ReqHash, Timestamp2)
 	end.
 
-lookup_options() ->
-	try
-		case ets:lookup(dispatcher_cache_options, 1) of
-			[] -> false;
-			[{1, Response}] -> {true, Response}
-		end
-	catch
-		_Exception:_Reason ->
-			ems_logger:warn("Recriando ets dispatcher_cache_options."),
-			ets:new(dispatcher_cache_options, [set, named_table, public, {read_concurrency, true}]),
-			lookup_options()
-	end.
-	
+add(ReqHash, Timestamp, Request, ResultCache) -> ets:insert(dispatcher_cache_get, {ReqHash, Timestamp, Request, ResultCache}).
 
-add(ReqHash, Timestamp, Request) -> ets:insert(dispatcher_cache_get, {ReqHash, Timestamp, Request}).
-
-add_options(Response) -> ets:insert(dispatcher_cache_options, {1, Response}).
-
-invalidate(ReqHash) ->
-	?DEBUG("Invalidate request get cache after POST, PUT or DELETE operation."),
-	ets:delete(dispatcher_cache_get, ReqHash).
+invalidate() ->
+	?DEBUG("ems_dispatcher_cache invalidate request get cache after POST, PUT or DELETE operation."),
+	ets:delete_all_objects(dispatcher_cache_get).

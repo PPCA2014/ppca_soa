@@ -10,7 +10,6 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
 
 %% Client API
 -export([start/0, dispatch_request/1]).
@@ -27,61 +26,127 @@ dispatch_request(Request = #request{type = "GET",
 	case ems_dispatcher_cache:lookup(ReqHash, Timestamp) of
 		{true, RequestCache} -> 
 			?DEBUG("ems_dispatcher lookup request in cache. ReqHash: ~p.", [ReqHash]),
-			{ok, Request#request{result_cache = true,
-								 code = RequestCache#request.code,
-								 reason = RequestCache#request.reason,
-								 response_data = RequestCache#request.response_data,
-								 response_header = RequestCache#request.response_header,
-								 result_cache_rid = RequestCache#request.rid,
-								 latency = RequestCache#request.latency}};
+			{ok, request, Request#request{result_cache = true,
+										  code = RequestCache#request.code,
+										  reason = RequestCache#request.reason,
+										  response_data = RequestCache#request.response_data,
+										  response_header = RequestCache#request.response_header,
+										  result_cache_rid = RequestCache#request.rid,
+										  latency = RequestCache#request.latency,
+										  service = RequestCache#request.service,
+										  querystring_map = RequestCache#request.querystring_map}};
 		false -> lookup_request(Request)
 	end;
 dispatch_request(Request) -> lookup_request(Request).
 	
-lookup_request(Request = #request{type = Type,
+lookup_request(Request = #request{rid = Rid,
+								  type = Type,
 								  url = Url,
-								  rowid = Rowid}) -> 
+	  						      uri = Uri,
+								  req_hash = ReqHash,
+								  payload = Payload,
+								  t1 = T1,
+								  content_type = ContentTypeReq}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	case ems_catalog:lookup(Request) of
-		{Service, ParamsMap, QuerystringMap} -> 
+		{Service = #service{name = ServiceName,
+							owner = ServiceOwner,
+							host = Host,
+							host_name = HostName,
+							module_name = ModuleName,
+							module = Module,
+							function = Function,
+							function_name = FunctionName, 
+							content_type = ContentTypeService,
+							timeout = Timeout,
+							result_cache = ResultCache}, 
+		 ParamsMap, 
+		 QuerystringMap} -> 
 			?DEBUG("ems_dispatcher lookup request found."),
-			% Autenticate user request
-			case ems_auth_user:autentica(Service, Request) of
+			ContentType = case ContentTypeReq of
+							  undefined -> ContentTypeService;
+							  _ -> ContentTypeReq
+						  end,
+			case ems_auth_user:authenticate(Service, Request) of
 				{ok, User} ->
-					?DEBUG("ems_dispatcher authenticate user ~p.", [User]),
-					% get a worker node to process a service	
-					case get_work_node(Service#service.host, 
-									   Service#service.host,	
-									   Service#service.host_name, 
-									   Service#service.module_name, 1) of
-						{ok, Node} ->
-							?DEBUG("ems_dispatcher selected the node ~p for the task.", [Node]),
-							Request2 = Request#request{user = User, 
-													   node_exec = Node,
-													   service = Service,
+					case Host == '' of
+						true ->	
+							Request2 = Request#request{service = Service,
 													   params_url = ParamsMap,
-													   querystring_map = QuerystringMap},
-							case ems_web_service:execute(Request2) of
-								{ok, Request3} -> 
-									case Type =:= "POST" orelse Type =:= "PUT" orelse Type =:= "DELETE" of
-										true -> 
-											% After POST, PUT or DELETE operation, invalidate request get cache
-											ems_dispatcher_cache:invalidate(Rowid);
-										false -> ok
-									end,
-									{ok, Request3};
-								{error, Request3} -> {error, request, Request3}
-							end;
-						Error ->  
-							?DEBUG("ems_dispatcher could not get a node for the task."),
-							Error
+													   querystring_map = QuerystringMap,
+													   user = User,
+													   content_type = ContentType},
+							ems_logger:info("ems_dispatcher send local msg to ~s.", [ModuleName]),
+							{Reason, Request3 = #request{response_header = ResponseHeader}} = apply(Module, Function, [Request2]),
+							AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+							Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => node_binary(),
+																						  <<"ems-catalog">> => ServiceName,
+																						  <<"ems-owner">> => ServiceOwner,
+																						  <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+														latency = ems_util:get_milliseconds() - T1},
+							case AllowResultCache of
+								true -> ems_dispatcher_cache:add(ReqHash, T1, Request4, ResultCache);
+								false -> ems_dispatcher_cache:invalidate()
+							end,
+							{Reason, request, Request4};
+						false ->
+							case get_work_node(Host, Host, HostName, ModuleName, 1) of
+								{ok, Node} ->
+									Msg = {{Rid, Uri, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
+									{Module, Node} ! Msg,
+									NodeBin = erlang:atom_to_binary(Node, utf8),
+									ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
+									receive 
+										{Code, RidRemote, {Reason, ResponseData}} when RidRemote == Rid -> 
+											?DEBUG("ems_dispatcher received msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {Reason, ResponseData}}]),
+											AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+											Request2 = Request#request{service = Service,
+																	   params_url = ParamsMap,
+																	   querystring_map = QuerystringMap,
+																	   user = User,
+																	   content_type = ContentType,
+																	   code = Code,
+																	   reason = Reason,
+																	   response_header = #{<<"ems-node">> => NodeBin,
+									 													   <<"ems-catalog">> => ServiceName,
+																						   <<"ems-owner">> => ServiceOwner,
+																						   <<"content-type">> => ContentType,
+																						   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+																	   response_data = ResponseData,
+																	   latency = ems_util:get_milliseconds() - T1},
+											case AllowResultCache of
+												true -> ems_dispatcher_cache:add(ReqHash, T1, Request2, ResultCache);
+												false -> ems_dispatcher_cache:invalidate()
+											end,
+											{Reason, request, Request2};
+										Msg -> 
+											ems_logger:error("ems_dispatcher received invalid message ~p.", [Msg]), 
+											{error, request, Request#request{code = 500,
+																			 reason = einvalid_rec_message,
+																			 response_header = #{<<"ems-node">> => NodeBin,
+											 													 <<"ems-catalog">> => ServiceName,
+																								 <<"ems-owner">> => ServiceOwner},
+																			 response_data = ems_schema:to_json({error, einvalid_rec_message}),
+																			 latency = ems_util:get_milliseconds() - T1}}
+										after Timeout ->
+											?DEBUG("ems_dispatcher received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
+											{error, request, Request#request{code = 503,
+																			 reason = etimeout_service,
+																			 response_header = #{<<"ems-node">> => NodeBin,
+											 													 <<"ems-catalog">> => ServiceName,
+																								 <<"ems-owner">> => ServiceOwner},
+																			 response_data = ems_schema:to_json({error, etimeout_service}),
+																			 latency = ems_util:get_milliseconds() - T1}}
+									end;
+								Error ->  
+									ems_logger:warn("ems_dispatcher could not get a node for request ~p.", [Url]),
+									Error
+							end
 					end;
-				Error -> 
-					?DEBUG("ems_dispatcher was unable to authenticate user."),
-					Error
+				Error -> Error
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:info("ems_dispatcher request ~p fail. Reason: ~p.", [Url, Reason]),
+			ems_logger:info("ems_dispatcher request ~p not found. Reason: ~p.", [Url, Reason]),
 			Error
 	end.
 
@@ -125,3 +190,7 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.
 		
+
+-spec node_binary() -> binary().
+node_binary() -> erlang:atom_to_binary(node(), utf8).
+

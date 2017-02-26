@@ -20,10 +20,10 @@ busca_cep(Request = #request{service = #service{properties = Props}}) ->
 	case httpc:request(get, {UrlBuscaCep, []}, [], []) of
 		{ok, {_, _, Result}} ->
 			{ok, Request#request{code = 200, 
-								response_data = list_to_binary(Result)}
+								 response_data = list_to_binary(Result)}
 			};
 		Error -> 
 			{error, Request#request{code = 400, 
-							response_data = Error}
+									response_data = Error}
 			}
 	end.

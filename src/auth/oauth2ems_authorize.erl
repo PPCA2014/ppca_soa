@@ -36,14 +36,13 @@ execute(Request = #request{type = Type}) ->
 			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
 			LocationPath = lists:concat(["http://127.0.0.1:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
 			{ok, Request#request{code = 302, 
-									 response_data = <<"{}">>,
 									 response_header = #{
 															<<"location">> => LocationPath
 														}
 									}
 			};
 		Error ->
-			ResponseData = ems_util:json_encode(Error),
+			ResponseData = ems_schema:to_json(Error),
 			{ok, Request#request{code = 400, 
 								 response_data = ResponseData}
 			}
