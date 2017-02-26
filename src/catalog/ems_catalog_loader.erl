@@ -381,7 +381,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Rowid = ems_util:make_rowid(Url2),
 				Lang = maps:get(<<"lang">>, H, <<>>),
 				Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
-				Result_Cache = maps:get(<<"result_cache">>, H, ?TIMEOUT_DISPATCHER_CACHE),
+				Result_Cache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
 				Authorization = maps:get(<<"authorization">>, H, <<>>),
 				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 				UseRE = maps:get(<<"use_re">>, H, false),

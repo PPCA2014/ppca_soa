@@ -158,7 +158,8 @@
 				 ems_hostname,								%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)
-				 ems_debug
+				 ems_debug,
+				 ems_result_cache
 		 }). 	
 
 

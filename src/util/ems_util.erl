@@ -249,9 +249,9 @@ no_periodo(DateTime, Periodo) ->
 
 %% @doc Obtém a hora atual em milisegundos
 -spec get_milliseconds() -> integer().
-get_milliseconds() -> erlang:system_time().
-   %{Mega, Sec, Micro} = erlang:timestamp(),
-   %(Mega*1000000 + Sec)*1000 + round(Micro/1000).
+get_milliseconds() ->
+   {Mega, Sec, Micro} = erlang:timestamp(),
+   (Mega*1000000 + Sec)*1000 + round(Micro/1000).
 
 %% @doc Remove o último backslash da Url
 remove_ult_backslash_url("/") -> "/";
