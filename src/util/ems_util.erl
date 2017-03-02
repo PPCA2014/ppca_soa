@@ -52,7 +52,11 @@
 		 replace/3,
 		 replace_all/2,
 		 read_file_as_string/1,
+<<<<<<< HEAD
 		 is_number/1]).
+=======
+		 generate_public_private_key/0]).
+>>>>>>> acbbb242e88900f633c851e1410baa9dce2ffd69
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -597,6 +601,11 @@ read_file_as_string(FileName) ->
 		{ok, Arq} -> Arq;
 		Error -> throw(Error)
 	end.
+	
+
+generate_public_private_key() ->
+    DHPs = crypto:dh_generate_parameters(512,2),
+    crypto:generate_key(dh, DHPs).
 
 %% Converte arquivo latin1 para utf8 formatando os unicodes
 %% Esta função está desconfigurando os arquivos no formato utf8	
