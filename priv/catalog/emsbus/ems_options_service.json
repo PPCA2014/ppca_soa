@@ -8,7 +8,7 @@
 	"use_re" : true,
 	"async": "false",
 	"type": "OPTIONS",
-	"APIkey": "false",
+	"result_cache" : 5184000,
 	"lang" : "erlang"
 }
 
