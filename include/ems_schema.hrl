@@ -18,7 +18,11 @@
 			   name :: string(), 
 			   cpf :: string(),
 			   email :: string(), 
-			   password :: string()
+			   password :: string(),
+			   type :: non_neg_integer(),
+			   passwd_crypto :: string(),
+			   type_email :: non_neg_integer(),
+			   active :: boolean() 
 		}).
 
 -record(ctrl_params, {name :: string(),

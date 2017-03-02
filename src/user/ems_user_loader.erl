@@ -12,7 +12,6 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
 
 %% Server API
 -export([start/1, stop/0]).
@@ -101,7 +100,7 @@ handle_info(timeout, State = #state{datasource = Datasource,
 	end;
 	
 handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:warn("~p is unable to update users. Reason: ~p", [?SERVER, Reason]),
+	ems_logger:warn("ems_user_loader is unable to update users. Reason: ~p.", [Reason]),
 	{noreply, State, UpdateCheckpoint}.
 			
 terminate(_Reason, _State) ->
@@ -136,23 +135,27 @@ load_users_from_datasource(Datasource) ->
 					{_, _, Records} ->
 						F = fun() ->
 							Count = insert_users(Records, 0),
-							ems_logger:info("~p load ~p users from database.", [?SERVER, Count])
+							ems_logger:info("ems_user_loader load ~p users.", [Count])
 						end,
+						?DEBUG("ems_user_loader is loading users....\n"),
 						mnesia:ets(F),
+						?DEBUG("mnesia:change_table_copy_type\n"),
 						mnesia:change_table_copy_type(user, node(), disc_copies),
 						ok;
 					{error, Reason} = Error -> 
-						ems_logger:error("~p fail in load users from database. Error: ~p.", [?SERVER, Reason]),
+						ems_logger:error("ems_user_loader load users error: ~p.", [Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
 				Result;
 			Error2 -> 
-				ems_logger:warn("~p has no connection to load users from database.", [?SERVER]),
+				ems_logger:warn("ems_user_loader has no connection to load users from database."),
 				Error2
 		end
 	catch
-		_Exception:Reason3 -> {error, Reason3}
+		_Exception:Reason3 -> 
+			ems_logger:error("ems_user_loader load users error: ~p.", [Reason3]),
+			{error, Reason3}
 	end.
 
 update_users_from_datasource(Datasource, LastUpdate) -> 
@@ -168,7 +171,16 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 						Sql = sql_update_users(),
 						{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 						% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
-						Params = [{sql_timestamp, [{{Year, Month, Day}, {Hour, Min, 0}}]}]
+						DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
+						Params = [{sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]}]
 				end, 
 				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 					{_,_,[]} -> 
@@ -178,73 +190,227 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 						%?DEBUG("Update users ~p.", [Records]),
 						F = fun() ->
 							Count = update_users(Records, 0),
-							ems_logger:info("~p update ~p users from database.", [?SERVER, Count])
+							ems_logger:info("ems_user_loader update ~p users.", [Count])
 						end,
 						mnesia:activity(transaction, F),
 						ok;
 					{error, Reason} = Error -> 
-						ems_logger:error("~p fail in update users from database. Error: ~p.", [?SERVER, Reason]),
+						ems_logger:error("ems_user_loader update users error: ~p.", [Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
 				Result;
 			Error2 -> 
-				ems_logger:warn("~p has no connection to update users from database.", [?SERVER]),
+				ems_logger:warn("ems_user_loader has no connection to update users from database."),
 				Error2
 		end
 	catch
-		_Exception:Reason3 -> {error, Reason3}
+		_Exception:Reason3 -> 
+			ems_logger:error("ems_user_loader udpate users error: ~p.", [Reason3]),
+			{error, Reason3}
 	end.
 
 
 insert_users([], Count) -> Count;
-insert_users([{Codigo, Login, Name, Cpf, Email, Password}|T], Count) ->
+insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count) ->
+	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
 	User = #user{id = ems_db:sequence(user),
 				 codigo = Codigo,
 				 login = ?UTF8_STRING(Login),
 				 name = ?UTF8_STRING(Name),
 				 cpf = ?UTF8_STRING(Cpf),
 				 email = ?UTF8_STRING(Email),
-				 password = list_to_binary(Password)},
+				 password = case PasswdCryptoBin of
+								<<"SHA1">> -> ?UTF8_STRING(Password);
+								_ -> ems_util:criptografia_sha1(Password)
+							end,
+				 type = Type,
+				 passwd_crypto = PasswdCrypto,
+				 type_email = TypeEmail,
+				 active = Situacao == 1},
+	%?DEBUG("User  ~p\n", [User]),
 	mnesia:dirty_write(User),
 	insert_users(T, Count+1).
 
 
 update_users([], Count) -> Count;
-update_users([{Codigo, Login, Name, Cpf, Email, Password, Situacao}|T], Count) ->
+update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count) ->
+	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
 	case ems_user:find_by_login(Login) of
-		{ok, User = #user{id = Id}} ->
-			case Situacao of
-				1 -> % active
-					User2 = User#user{codigo = Codigo,
-									  login = ?UTF8_STRING(Login),
-									  name = ?UTF8_STRING(Name),
-									  cpf = ?UTF8_STRING(Cpf),
-									  email = ?UTF8_STRING(Email),
-									  password = list_to_binary(Password)},
-					mnesia:write(User2);
-				_ -> 
-					% if inative then delete
-					mnesia:delete(Id)
-			end;
+		{ok, User} ->
+			PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
+			User2 = User#user{codigo = Codigo,
+							  login = ?UTF8_STRING(Login),
+							  name = ?UTF8_STRING(Name),
+							  cpf = ?UTF8_STRING(Cpf),
+							  email = ?UTF8_STRING(Email),
+							  password = case PasswdCryptoBin of
+											<<"SHA1">> -> ?UTF8_STRING(Password);
+											_ -> ems_util:criptografia_sha1(Password)
+										 end,
+							  type = Type,
+							  passwd_crypto = PasswdCrypto,
+							  type_email = TypeEmail,
+							  active = Situacao == 1},
+			mnesia:write(User2);
 		{error, enoent} -> 
-			User = #user{id = ems_db:sequence(user),
-				 codigo = Codigo,
-				 login = ?UTF8_STRING(Login),
-				 name = ?UTF8_STRING(Name),
-				 cpf = ?UTF8_STRING(Cpf),
-				 email = ?UTF8_STRING(Email),
-				 password = list_to_binary(Password)},
-			mnesia:write(User)
+			User2 = #user{id = ems_db:sequence(user),
+						  codigo = Codigo,
+						  login = ?UTF8_STRING(Login),
+						  name = ?UTF8_STRING(Name),
+						  cpf = ?UTF8_STRING(Cpf),
+						  email = ?UTF8_STRING(Email),
+						  password = case PasswdCryptoBin of
+										<<"SHA1">> -> ?UTF8_STRING(Password);
+										_ -> ems_util:criptografia_sha1(Password)
+									 end,
+						  type = Type,
+						  passwd_crypto = PasswdCrypto,
+						  type_email = TypeEmail,
+						  active = Situacao == 1},
+			mnesia:write(User2)
 	end,
 	update_users(T, Count+1).
 
 sql_load_users() ->	 
-	"select p.PesCodigoPessoa, rtrim(u.UsuLogin), rtrim(p.PesNome), p.PesCpf, rtrim(p.PesEmail), u.UsuSenha
-	 from BDPessoa.dbo.TB_Pessoa p join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa
-	 where u.UsuSituacao = 1".
+	"select distinct CodigoPessoa, 
+					rtrim(LoginPessoa) as LoginPessoa, 
+					rtrim(NomePessoa) as NomePessoa, 
+					CpfCnpjPessoa, 
+					cast(lower(rtrim(EmailPessoa)) as varchar(60)) as EmailPessoa, 
+					SenhaPessoa,
+					TipoPessoa,
+					PasswdCryptoPessoa,
+					TipoEmailPessoa,
+					1 as SituacaoPessoa
+	from (
+			-- Busca dados de pessoa física em BDPessoa
+			select p.PesCodigoPessoa as CodigoPessoa, 
+				   u.UsuLogin as LoginPessoa,
+				   p.PesNome as NomePessoa, 
+				   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
+				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
+				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
+				   0 as TipoPessoa,  -- Pessoa física,
+				   'SHA1' as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
+						 on u.UsuPesIdPessoa = p.PesCodigoPessoa
+				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
+						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
+				 join BDPessoa.dbo.TB_Email em
+						 on pfe.PFmEmaCodigo = em.EmaCodigo
+			
+			union all
+			
+			-- Busca dados de pessoa jurídica em BDPessoa
+			select pj.PjuCodigo as CodigoPessoa, 
+				   u.UsuLogin as LoginPessoa,
+				   pj.PjuRazaoSocial as NomePessoa, 
+				   cast(pj.PjuCnpj as varchar(14))  as CpfCnpjPessoa, 
+				   em.EmaEmail as EmailPessoa, 
+				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
+				   1 as TipoPessoa,  -- Pessoa jurídica
+				   'SHA1' as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_PessoaJuridica pj
+						 on u.UsuPesIdPessoa = pj.PjuCodigo
+				 left join BDPessoa.dbo.TB_PessoaJuridicaEmail pje
+						 on pj.PjuCodigo = pje.PJmPJuCodigo
+				 join BDPessoa.dbo.TB_Email em
+						 on pje.PJmEmaCodigo = em.EmaCodigo
+			
+			union all
+			
+			-- Busca dados de alunos em BDSiac
+			select p.PesCodigoPessoa as CodigoPessoa, 
+				   cast(al.AluMatricula as varchar(100)) as LoginPessoa,
+				   p.PesNome as NomePessoa, 
+				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
+				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
+				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
+				   2 as TipoPessoa,  -- Aluno
+				   null as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
+						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
+				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
+						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
+				 join BDPessoa.dbo.TB_Email em
+						 on pfe.PFmEmaCodigo = em.EmaCodigo 
+
+	) as t_users
+	".
 
 sql_update_users() ->	 
-	"select p.PesCodigoPessoa, rtrim(u.UsuLogin), rtrim(p.PesNome), p.PesCpf, rtrim(p.PesEmail), u.UsuSenha, u.UsuSituacao
-	 from BDPessoa.dbo.TB_Pessoa p join BDAcesso.dbo.TB_Usuario u on p.PesCodigoPessoa = u.UsuPesIdPessoa
-	 where u.UsuDataAlteracao >= ?".
+	"select distinct CodigoPessoa, 
+					rtrim(LoginPessoa) as LoginPessoa, 
+					rtrim(NomePessoa) as NomePessoa, 
+					CpfCnpjPessoa, 
+					cast(lower(rtrim(EmailPessoa)) as varchar(60)) as EmailPessoa, 
+					SenhaPessoa,
+					TipoPessoa,
+					PasswdCryptoPessoa,
+					TipoEmailPessoa,
+					1 as SituacaoPessoa
+	from (
+			-- Busca dados de pessoa física em BDPessoa
+			select p.PesCodigoPessoa as CodigoPessoa, 
+				   u.UsuLogin as LoginPessoa,
+				   p.PesNome as NomePessoa, 
+				   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
+				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
+				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
+				   0 as TipoPessoa,  -- Pessoa física,
+				   'SHA1' as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
+						 on u.UsuPesIdPessoa = p.PesCodigoPessoa
+				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
+						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
+				 join BDPessoa.dbo.TB_Email em
+						 on pfe.PFmEmaCodigo = em.EmaCodigo
+			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
+				
+			union all
+			
+			-- Busca dados de pessoa jurídica em BDPessoa
+			select pj.PjuCodigo as CodigoPessoa, 
+				   u.UsuLogin as LoginPessoa,
+				   pj.PjuRazaoSocial as NomePessoa, 
+				   cast(pj.PjuCnpj as varchar(14))  as CpfCnpjPessoa, 
+				   em.EmaEmail as EmailPessoa, 
+				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
+				   1 as TipoPessoa,  -- Pessoa jurídica
+				   'SHA1' as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_PessoaJuridica pj
+						 on u.UsuPesIdPessoa = pj.PjuCodigo
+				 left join BDPessoa.dbo.TB_PessoaJuridicaEmail pje
+						 on pj.PjuCodigo = pje.PJmPJuCodigo
+				 join BDPessoa.dbo.TB_Email em
+						 on pje.PJmEmaCodigo = em.EmaCodigo
+			where u.UsuDataAlteracao >= ? or pj.PjuDataAlteracao >= ? or em.EmaDataAlteracao >= ?
+			
+			union all
+			
+			-- Busca dados de alunos em BDSiac
+			select p.PesCodigoPessoa as CodigoPessoa, 
+				   cast(al.AluMatricula as varchar(100)) as LoginPessoa,
+				   p.PesNome as NomePessoa, 
+				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
+				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
+				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
+				   2 as TipoPessoa,  -- Aluno
+				   null as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
+						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
+				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
+						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
+				 join BDPessoa.dbo.TB_Email em
+						 on pfe.PFmEmaCodigo = em.EmaCodigo 
+			where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
+			
+	) as t_users
+	".

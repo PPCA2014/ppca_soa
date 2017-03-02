@@ -51,7 +51,8 @@
 		 utf8_string_linux/1,
 		 replace/3,
 		 replace_all/2,
-		 read_file_as_string/1]).
+		 read_file_as_string/1,
+		 is_number/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -513,8 +514,11 @@ date_add_second(Timestamp, Seconds) ->
     calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Seconds).
 
 % Return a encrypted password in binary format        
-criptografia_sha1(Password) when is_binary(Password) ->
-	criptografia_sha1(binary_to_list(Password));
+criptografia_sha1(<<>>) -> <<>>;
+criptografia_sha1("") -> <<>>;	
+criptografia_sha1(undefined) -> <<>>;
+criptografia_sha1(null) -> <<>>;
+criptografia_sha1(Password) when is_binary(Password) ->	criptografia_sha1(binary_to_list(Password));
 criptografia_sha1(Password) -> base64:encode(sha1:binstring(Password)).
 
 boolean_to_binary(true) -> <<"true"/utf8>>;
@@ -529,23 +533,39 @@ boolean_to_binary(_) -> <<"false"/utf8>>.
 
 
 %%melhorar este método para conversão para utf8
+utf8_string_win(<<>>) -> <<""/utf8>>;
+utf8_string_win("") -> <<""/utf8>>;
+utf8_string_win(undefined) -> <<""/utf8>>;
 utf8_string_win(null) -> <<""/utf8>>;
 utf8_string_win(Text) when is_list(Text) -> 
 	utf8_string_win(list_to_binary(Text));
+utf8_string_win(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_win(Text) ->
 	case ems_util:check_encoding_bin(Text) of
 		utf8 -> normalize_field_utf8(Text);
 		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
 	end.
 
+utf8_string_linux(<<>>) -> <<""/utf8>>;
+utf8_string_linux("") -> <<""/utf8>>;
+utf8_string_linux(undefined) -> <<""/utf8>>;
 utf8_string_linux(null) -> <<""/utf8>>;
 utf8_string_linux(Text) when is_list(Text) -> 
 	utf8_string_linux(list_to_binary(Text));
+utf8_string_linux(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_linux(Text) ->
+	try
 	case ems_util:check_encoding_bin(Text) of
 		utf8 -> normalize_field_utf8(Text);
-		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
+		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8);
+		Other -> io:format("outro ~p\n\n", [Other]), <<>>
+	end
+	catch
+		_Exception:Reason -> 
+			io:format("ocorreu erro ~p  ~p\n\n", [Reason, Text]),
+			<<>>
 	end.
+	
 
 -spec read_file_as_map(FileName :: string()) -> map().
 read_file_as_map(FileName) -> 	
@@ -585,15 +605,11 @@ to_utf8(FileName) ->
 		{ok, File} = file:open(FileName, [read,binary]),
 		Size = filelib:file_size(FileName),
 		{ok, Device} = file:read(File,Size),
-		io:format("Conteudo do arquivo ~p~n",[Device]),
-		{Type,Bytes} = unicode:bom_to_encoding(Device),
-		io:format("Tipo do arquivo: ~p   Bytes do arquivo: ~p~n",[Type, Device]),
+		{Type, _Bytes} = unicode:bom_to_encoding(Device),
 		case Type of
 			utf8 -> Device;	
-			latin1 -> unicode:characters_to_binary(Device, latin1, utf8);
-			_ -> {error, undefined}
+			_ -> unicode:characters_to_binary(Device, latin1, utf8)
 		end,
-		io:format("Verificar se funciona: ~p~n",[unicode:characters_to_list(Device)]),
 		{ok, Device}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -629,5 +645,7 @@ is_letter_lower("b") -> true;
 is_letter_lower(_) -> false.
 
 
-
+-spec is_number(string()) -> boolean().
+is_number("") -> false;
+is_number(V) -> [Char || Char <- V, Char < $0 orelse Char > $9] == [].
 
