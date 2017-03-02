@@ -237,7 +237,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		{ok, Request}
 	catch
 		_Exception:Reason -> 
-			ems_logger:error("Invalid request ~p.\n\tReason: ~p.", [CowboyReq, Reason]),
+			ems_logger:error("ems_http_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.
 
@@ -255,7 +255,7 @@ encode_request(Socket, RequestBin, WorkerSend) ->
 						   Http_Version, Payload, 
 						   Socket, WorkerSend);
 		Error -> 
-			ems_logger:error("Error in request: ~p\n", [RequestBin]),
+			ems_logger:error("ems_http_util encode http error: ~p.", [RequestBin]),
 			Error
 	end.
 
@@ -337,7 +337,7 @@ decode_http_header(Headers, Params) ->
 decode_http_request(RequestBin) ->
 	case erlang:decode_packet(http_bin, RequestBin, []) of
 		{ok, {http_error, _}, _} ->
-			ems_logger:error("RequestBin -> ~p", [RequestBin]),
+			ems_logger:error("ems_http_util decode http error: ~p.", [RequestBin]),
 			{error, http_error};
 		{ok, Req, Rest} ->
 			{http_request, Method, {abs_path, Uri}, {Http_Version_Major, Http_Version_Minor}} = Req,
@@ -351,7 +351,7 @@ decode_http_request(RequestBin) ->
 										   Payload}
 			end;
 		{error, Reason} -> 
-			ems_logger:error("RequestBin -> ~p", [RequestBin]),
+			ems_logger:error("ems_http_util decode http error: ~p.", [RequestBin]),
 			{error, Reason}
 	end.
 

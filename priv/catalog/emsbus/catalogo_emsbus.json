@@ -45,10 +45,6 @@
 		"file": "ems_health.json"
 	},
 	
-	{
-		"catalog": "/emsbus/ems_static_file_service", 
-		"file": "ems_static_file_service.json"
-	},
 
 	{
 		"catalog": "/emsbus/ems_catalog", 
@@ -63,11 +59,6 @@
 	{
 		"catalog": "/emsbus/ems_catalog_owner", 
 		"file": "ems_catalog_owner.json"
-	},
-
-	{
-		"catalog": "/emsbus/ems_web_service", 
-		"file": "ems_web_service.json"
 	},
 
 	{

@@ -11,16 +11,12 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
     
--export([autentica/2]).
+-export([authenticate/2]).
 
-autentica(#service{authorization = AuthorizationMode}, Request) ->
-	try
-		case AuthorizationMode of
-			<<"Basic">> -> do_basic_authorization(Request);
-			<<>> -> {ok, undefined}
-		end
-	catch
-		_Exception:_Reason ->  {error, no_authorization} 
+authenticate(#service{authorization = AuthorizationMode}, Request) ->
+	case AuthorizationMode of
+		<<"Basic">> -> do_basic_authorization(Request);
+		_ -> {ok, undefined}
 	end.
 
 do_basic_authorization(#request{authorization = Authorization}) ->
@@ -30,17 +26,19 @@ do_basic_authorization(#request{authorization = Authorization}) ->
 				{ok, Login, Password} ->
 					case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
 						{ok, User} -> 
-							?DEBUG("Authenticating ~p with HTTP Basic protocol: ok", [{Login, Password}]),
+							ems_logger:info("ems_auth_user authenticating ~p with HTTP Basic protocol: ok", [{Login, Password}]),
 							{ok, User};
 						_ -> 
-							?DEBUG("Authenticating ~p with HTTP Basic protocol: no_authorization", [{Login, Password}]),
+							ems_logger:warn("ems_auth_user authenticating ~p with HTTP Basic protocol: no_authorization", [{Login, Password}]),
 							{error, no_authorization}
 					end;
 				_Error -> 
-					?DEBUG("Invalid authorization header to HTTP Basic protocol: ~p.", [Authorization]),
+					ems_logger:warn("ems_auth_user parse invalid authorization header to HTTP Basic protocol: ~p.", [Authorization]),
 					{error, no_authorization}
 			end;
-		false -> {error, no_authorization}
+		false -> 
+			ems_logger:warn("ems_auth_user no HTTP Basic authorization user."),
+			{error, no_authorization}
 	end.
  	
 

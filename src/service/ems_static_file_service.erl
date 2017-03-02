@@ -1,62 +1,29 @@
 %%********************************************************************
 %% @title Module ems_static_file_service
 %% @version 1.0.0
-%% @doc Reads static files
+%% @doc static files service
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_static_file_service).
 
--behavior(gen_server). 
-
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
-%% Server API
--export([start/1, start_link/1, stop/0]).
-
-%% Cliente interno API
 -export([execute/1]).
 
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
-
--define(SERVER, ?MODULE).
-
-%  Armazena o estado do service. 
--record(state, {}). 
-
-
-%%====================================================================
-%% Server API
-%%====================================================================
-
-start(_) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
-
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
- 
-%%====================================================================
-%% Cliente API
-%%====================================================================
- 
 execute(Request = #request{url = Url,
 						   if_modified_since = IfModifiedSinceReq, 
 						   if_none_match = IfNoneMatchReq,
 						   timestamp = Timestamp,
-						   service = #service{cache_control = Cache_Control,
+						   service = #service{cache_control = CacheControl,
 											  expires = ExpiresMinute,
 											  path = Path}}) ->
 	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
 	case file_info(FileName) of
 		{error, Reason} = Error -> 
-			?DEBUG("ems_static_file_service file ~p does not exist.", [FileName]),
+			ems_logger:warn("ems_static_file_service file ~p does not exist.", [FileName]),
 			{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 									reason = Reason,	
 									response_data = ems_schema:to_json(Error)}
@@ -68,7 +35,7 @@ execute(Request = #request{url = Url,
 			LastModified = cowboy_clock:rfc1123(MTime),
 			ExpireDate = ems_util:date_add_minute(Timestamp, ExpiresMinute + 120), % add +120min (2h) para ser horário GMT
 			Expires = cowboy_clock:rfc1123(ExpireDate),
-			HttpHeader = generate_header(MimeType, ETag, LastModified, Expires, Cache_Control),
+			HttpHeader = generate_header(MimeType, ETag, LastModified, Expires, CacheControl),
 			case ETag == IfNoneMatchReq orelse LastModified == IfModifiedSinceReq of
 				true -> {ok, Request#request{code = 304, 
 											 reason = enot_modified,
@@ -95,35 +62,6 @@ execute(Request = #request{url = Url,
 		
 	end.
 
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-    {ok, #state{}}.
-
-    
-handle_cast(shutdown, State) ->
-    {stop, normal, State};
-
-handle_cast(_Msg, State) ->
-	{noreply, State}.
-    
-handle_call(Msg, _From, State) ->
-	{reply, Msg, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
     
     
 %%====================================================================
@@ -139,10 +77,10 @@ file_info(FileName) ->
 	end.
 	
 
-generate_header(MimeType, ETag, LastModified, Expires, Cache_Control) ->
+generate_header(MimeType, ETag, LastModified, Expires, CacheControl) ->
 	#{
 		<<"content-type">> => MimeType,
-		<<"cache-control">> => Cache_Control,
+		<<"cache-control">> => CacheControl,
 		<<"etag">> => ETag,
 		<<"last-modified">> => LastModified,
 		<<"expires">> => Expires

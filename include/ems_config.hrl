@@ -124,13 +124,11 @@
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
 % Timeout in ms to expire cache of get request (ems_dispatcher_cache)
--define(TIMEOUT_DISPATCHER_CACHE, 1500).
+-define(TIMEOUT_DISPATCHER_CACHE, 8000).
 
 % Number of datasource entries by odbc connection pool
 -define(MAX_CONNECTION_BY_POOL, 5).
 
-% Header http cache-control 24 horas
--define(DEFAULT_CACHE_CONTROL, <<"no-cache, public">>).
 
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
@@ -138,13 +136,14 @@
 % HTTP access control (CORS) headers
 -define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, X-CSRF-Token, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
 -define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).
--define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"*">>).
+-define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, X-CSRF-Token, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
 -define(ACCESS_CONTROL_ALLOW_METHODS, <<"GET, POST, PUT, DELETE, OPTIONS">>).
 -define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
 
 
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
--define(CACHE_CONTROL_NO_CACHE, <<"no-cache">>).
+-define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public">>).
+-define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public">>).
 
 % Default ports
 -define(LDAP_SERVER_PORT, 2389).
@@ -159,7 +158,8 @@
 				 ems_hostname,								%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)
-				 ems_debug
+				 ems_debug,
+				 ems_result_cache
 		 }). 	
 
 

@@ -87,23 +87,23 @@ get_config_data() ->
 			FileName = lists:concat([HomePath, "/.erlangms/", node(), ".conf"]),
 			case file:read_file(FileName) of 
 				{ok, Arq} -> 
-					?DEBUG("Checking if node file configuration ~p exist: Ok", [FileName]),
+					?DEBUG("ems_config checking if node file configuration ~p exist: Ok", [FileName]),
 					{ok, Arq, FileName};
 				_Error -> 
-					?DEBUG("Checking if node file configuration ~p exist: No", [FileName]),
+					?DEBUG("ems_config checking if node file configuration ~p exist: No", [FileName]),
 					FileName2 = lists:concat([HomePath, "/.erlangms/emsbus.conf"]),
 					case file:read_file(FileName2) of 
 						{ok, Arq2} -> 
-							?DEBUG("Checking if file configuration ~p exist: Ok", [FileName2]),
+							?DEBUG("ems_config checking if file configuration ~p exist: Ok", [FileName2]),
 							{ok, Arq2, FileName2};
 						_Error -> 
-							?DEBUG("Checking if file configuration ~p exist: No", [FileName2]),
+							?DEBUG("ems_config checking if file configuration ~p exist: No", [FileName2]),
 							case file:read_file(?CONF_FILE_PATH) of 
 								{ok, Arq3} -> 
-									?DEBUG("Checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
+									?DEBUG("ems_config checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
 									{ok, Arq3, ?CONF_FILE_PATH};
 								_Error -> 
-									?DEBUG("Checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
+									?DEBUG("ems_config checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
 									{error, enofile_config}
 							end
 					end
@@ -111,10 +111,10 @@ get_config_data() ->
 		error ->
 			case file:read_file(?CONF_FILE_PATH) of 
 				{ok, Arq4} -> 
-					?DEBUG("Checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
+					?DEBUG("ems_config checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
 					{ok, Arq4, ?CONF_FILE_PATH};
 				{error, enoent} -> 
-					?DEBUG("Checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
+					?DEBUG("ems_config checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
 					{error, enofile_config}
 			end
 	end.
@@ -123,22 +123,23 @@ get_config_data() ->
 load_config() ->
 	case get_config_data() of
 		{ok, ConfigData, FileName} ->
-			io:format("\nLoading configuration file: ~p.\n", [FileName]),
 			case ems_util:json_decode_as_map(ConfigData) of
 				{ok, Json} -> 
 					try
-						parse_config(Json, FileName)
+						Result = parse_config(Json, FileName),
+						io:format("\nems_config loading configuration file ~p:\n~p\n", [FileName, Json]),
+						Result
 					catch 
 						_Exception:_Reason ->
-							ems_logger:format_warn("Fail to parse invalid configuration file, running with default settings...\n"),
+							ems_logger:format_warn("ems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
 							get_default_config()
 					end;
 				_Error -> 
-					ems_logger:format_warn("Configuration file layout is not a valid JSON format, running with default settings...\n"),
+					ems_logger:format_warn("ems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
 					get_default_config()
 			end;
 		{error, enofile_config} ->
-			ems_logger:format_warn("No file configuration exist, running with default settings...\n"),
+			ems_logger:format_warn("ems_config has no file configuration. Running with default settings.\n"),
 			get_default_config()
 	end.
 
@@ -172,7 +173,8 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
-			 ems_debug					= maps:get(<<"ems_debug">>, Json, false)
+			 ems_debug					= maps:get(<<"ems_debug">>, Json, false),
+			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE)
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -188,7 +190,8 @@ get_default_config() ->
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",
-			 ems_debug					= false
+			 ems_debug					= false,
+			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE
 		}.
 
 

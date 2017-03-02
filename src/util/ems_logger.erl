@@ -414,10 +414,9 @@ do_log_request(#request{rid = RID,
 						etag = Etag,
 						if_modified_since = IfModifiedSince,
 						if_none_match = IfNoneMatch,
-						node_exec = Node
-						}, 
+						node_exec = Node}, 
 			  #state{show_response = ShowResponse}) ->
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type: ~p\n\tHost: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p\n\tETag: ~p\n\tIf-Modified-Since: ~p\n\tIf-None-Match: ~p\n\tAuthorization: ~p\n\tUser: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type: ~p\n\tHost: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~s\n\tETag: ~p\n\tIf-Modified-Since: ~p\n\tIf-None-Match: ~p\n\tAuthorization: ~p\n\tUser: ~p\n\tNode: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Url, 
 								   Version, 
@@ -430,7 +429,14 @@ do_log_request(#request{rid = RID,
 								   Query, 
 								   Payload, 
 								   case ShowResponse of true -> io_lib:format("Response: ~p\n\t", [ResponseData]); false -> <<>> end,
-								   case ResultCache of true -> io_lib:format("true  <<RID: ~s>>", [integer_to_list(ResultCacheRid)]); false -> "false" end,
+								   case Service =/= undefined of
+										true ->
+										   case ResultCache of 
+												true -> io_lib:format("~sms  <<RID: ~s>>", [integer_to_list(Service#service.result_cache), integer_to_list(ResultCacheRid)]); 
+												false -> integer_to_list(Service#service.result_cache) ++ "ms" 
+											end;
+										false -> "0ms"
+									end,
 								   CacheControl,
 								   Etag,
 								   IfModifiedSince,

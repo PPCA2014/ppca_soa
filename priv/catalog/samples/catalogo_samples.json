@@ -27,12 +27,6 @@
 	{
 		"catalog": "/samples/hackathon", 
 		"file": "catalogo_hackathon.json"
-	},
-	
-	{
-		"catalog": "/samples/catalogo_agenda_telefone", 
-		"file": "catalogo_agenda_telefone.json"
 	}
-	
 	
 ]
