@@ -10,7 +10,7 @@
 #
 # Use mode: 
 #
-#    $ sudo ./audit_ldap_log.sh minutes [ --sendemail ]
+#    $ sudo ./audit_ldap_log.sh minutes [ --sendemail --showlogs ]
 #
 #   ./audit_ldap_log.sh 10 --sendemail  
 #   ./audit_ldap_log.sh  
@@ -90,19 +90,25 @@ mkdir -p $TMP_DIR && cd $TMP_DIR
 
 
 if [ "$1" = "--help" ]; then
-	echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
+	echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail --showlogs ]"
 	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
 	echo "parameter --sendemail is optional and send email to admin"
+	echo "parameter --showlogs show log files content"
 	exit 1
 else
-	MMIN="$1"
-	RE='^[0-9]{1,5}$'
-	if ! [[ $MMIN =~ $RE ]] ; then
-		echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99999."
-		echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
-		echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-		echo "parameter --sendemail is optional and send email to admin"
-		exit 1
+	if [ "$1" == "--sendemail" ] || [ "$1" == "--showlogs" ]; then
+		MMIN="1440"	
+	else
+		MMIN="$1"
+		RE='^[0-9]{1,5}$'
+		if ! [[ $MMIN =~ $RE ]] ; then
+			echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99999."
+			echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail  --showlogs ]"
+			echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
+			echo "parameter --sendemail is optional and send email to admin"
+			echo "parameter --showlogs show log files content"
+			exit 1
+		fi
 	fi
 fi
 
@@ -317,8 +323,10 @@ try:
 	msg.attach(part2)
 	smtp.sendmail("$SMTP_DE", ['evertonagilar@unb.br'], msg.as_string())
 	smtp.quit()
+	exit(0)
 except Exception as e:
-	print(e)
+	print("Send email error: "+ str(e))
+	exit(1)
 EOF
 	
 }	
@@ -327,12 +335,12 @@ EOF
 # /////////////////// main /////////////////
 
 # check parameter --showlogs
-if [ "$2" == "--showlogs" ] || [ "$3" == "--showlogs" ]; then
+if [ "$1" == "--showlogs" ] || [ "$2" == "--showlogs" ] || [ "$3" == "--showlogs" ]; then
   SHOW_LOGS="true"		
 fi
 
 # check parameter --sendemail
-if [ "$2" == "--sendemail" ] || [ "$3" == "--sendemail" ]; then
+if [ "$1" == "--sendemail" ] || [ "$2" == "--sendemail" ] || [ "$3" == "--sendemail" ]; then
   SEND_EMAIL="true"
 fi
 

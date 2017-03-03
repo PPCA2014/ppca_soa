@@ -81,6 +81,40 @@ help(){
 }
 
 
+# enviar o pacote gerado para a pasta releases (se a pasta releases existe)
+send_build_repo(){
+	cd $WORKING_DIR
+	if [ -d $WORKING_DIR/../../releases/ ]; then
+		rm -rf $WORKING_DIR/../../releases/$VERSION_RELEASE/
+		mkdir -p $WORKING_DIR/../../releases/$VERSION_RELEASE/
+		cp $RPM_PACKAGE_FILE  $WORKING_DIR/../../releases/$VERSION_RELEASE/
+		
+		# pode usar -y para confirmar o envio para o repositório releases automático
+		FAZER_GIT_PUSH=$(echo $1 | tr "-" "\0")  
+		
+		# pergunta envia para o repositório
+		while [[ ! $FAZER_GIT_PUSH =~ [YyNn] ]]; do
+			printf "Enviar a nova versão $VERSION_RELEASE para o repositório releases? [Yn]"
+			read FAZER_GIT_PUSH
+		done
+
+		# envia se confirmou 
+		if [[ $FAZER_GIT_PUSH =~ [Yy] ]]; then
+			cd $WORKING_DIR/../../releases/
+			echo "$VERSION_RELEASE" > setup/current_version
+			git add $VERSION_RELEASE/$RPM_PACKAGE >> /dev/null
+			git add setup/current_version >> /dev/null
+			git commit -am "new release $VERSION_RELEASE" >> /dev/null
+			echo "Enviando pacote $RPM_PACKAGE para o repositório releases..."
+			git push
+		fi
+	else
+		echo "O pacote $RPM_PACKAGE não será enviado para releases, pois este repositório não existe neste computador."  
+	fi
+}	
+	
+
+
 # Build relase
 # parameter:
 #  $1  --rpm or --deb
@@ -146,7 +180,6 @@ build(){
 			RPM_RELEASE_PACK=$(grep 'Release:' $SKEL_RPM_PACKAGE/SPECS/emsbus.spec | cut -d":" -f2 | tr " " "\0")
 			RPM_PACKAGE=ems-bus-$VERSION_RELEASE-$RPM_RELEASE_PACK.x86_64.rpm
 			RPM_PACKAGE_FILE=$SKEL_RPM_PACKAGE/RPMS/x86_64/$RPM_PACKAGE
-			echo $RPM_PACKAGE_FILE
 			
 			# Cria a pasta onde vão ser colocados os sources 
 			mkdir -p $SKEL_RPM_PACKAGE_SOURCES || die "Não foi possível criar a pasta $SKEL_RPM_PACKAGE_SOURCES!"
@@ -192,42 +225,55 @@ build(){
 			cd $SKEL_RPM_PACKAGE
 			rpmbuild -bb SPECS/emsbus.spec
 
-			# enviar o pacote gerado para a pasta releases (se a pasta releases existe)
-			cd $WORKING_DIR
-			if [ -d $WORKING_DIR/../../releases/ ]; then
-				rm -rf $WORKING_DIR/../../releases/$VERSION_RELEASE/
-				mkdir -p $WORKING_DIR/../../releases/$VERSION_RELEASE/
-				cp $RPM_PACKAGE_FILE  $WORKING_DIR/../../releases/$VERSION_RELEASE/
-				
-				# pode usar -y para confirmar o envio para o repositório releases automático
-				FAZER_GIT_PUSH=$(echo $1 | tr "-" "\0")  
-				
-				# pergunta envia para o repositório
-				while [[ ! $FAZER_GIT_PUSH =~ [YyNn] ]]; do
-					printf "Enviar a nova versão $VERSION_RELEASE para o repositório releases? [Yn]"
-					read FAZER_GIT_PUSH
-				done
-
-				# envia se confirmou 
-				if [[ $FAZER_GIT_PUSH =~ [Yy] ]]; then
-					cd $WORKING_DIR/../../releases/
-					echo "$VERSION_RELEASE" > setup/current_version
-					git add $VERSION_RELEASE/$RPM_PACKAGE >> /dev/null
-					git add setup/current_version >> /dev/null
-					git commit -am "new release $VERSION_RELEASE" >> /dev/null
-					echo "Enviando pacote $RPM_PACKAGE para o repositório releases..."
-					git push
-				fi
-			else
-				echo "O pacote $RPM_PACKAGE não será enviado para releases, pois este repositório não existe neste computador."  
-			fi
-
+			send_build_email()
 		done
 		
-	y# build deb packages	
+	# build deb packages	
 	elif [[ "$1" =~ (-{1,2}deb|deb) ]]; then 	
+		echo "Criando pacote deb para o template $SKEL_DEB_PACKAGE..."
+		
+		SKEL_RPM_PACKAGE_SOURCES="$SKEL_RPM_PACKAGE/SOURCES"
+		RPM_VERSION_PACK=$VERSION_RELEASE
+		# Atualiza a versão no arquivo SPEC/emsbus.spec
+		sed -ri "s/Version: .*$/Version: $RPM_VERSION_PACK/"  $SKEL_RPM_PACKAGE/SPECS/emsbus.spec
+		RPM_RELEASE_PACK=$(grep 'Release:' $SKEL_RPM_PACKAGE/SPECS/emsbus.spec | cut -d":" -f2 | tr " " "\0")
+		RPM_PACKAGE=ems-bus-$VERSION_RELEASE-$RPM_RELEASE_PACK.x86_64.rpm
+		RPM_PACKAGE_FILE=$SKEL_RPM_PACKAGE/RPMS/x86_64/$RPM_PACKAGE
+		
+		# Gera a estrutura /usr/lib/ems-bus
+		rm -Rf $SKEL_DEB_PACKAGE/usr/lib/ems-bus || die "Não foi possível remover pasta $SKEL_DEB_PACKAGE/usr/lib/ems-bus!" 
+		mkdir -p $SKEL_DEB_PACKAGE/usr/lib
+		cp -R ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus || die "Não foi possível copiar pasta ems-bus para $SKEL_DEB_PACKAGE/usr/lib!"
 
+		rm -Rf $SKEL_DEB_PACKAGE/etc || die "Não foi possível remover pasta $SKEL_DEB_PACKAGE/etc!" 
 
+		# Gera a estrutura /etc/ems-bus
+		mkdir -p $SKEL_DEB_PACKAGE/etc/ems-bus || die "Não foi possível criar a pasta $SKEL_DEB_PACKAGE/etc/ems-bus!" 
+		ln -s /usr/lib/ems-bus/priv/catalog $SKEL_DEB_PACKAGE/etc/ems-bus/catalog
+		ln -s /usr/lib/ems-bus/priv/conf $SKEL_DEB_PACKAGE/etc/ems-bus/conf
+		ln -s /usr/lib/ems-bus/priv/csv $SKEL_DEB_PACKAGE/etc/ems-bus/csv
+		ln -s /usr/lib/ems-bus/priv/ssl $SKEL_DEB_PACKAGE/etc/ems-bus/ssl
+		ln -s /usr/lib/ems-bus/priv/schema $SKEL_DEB_PACKAGE/etc/ems-bus/schema
+		ln -s /usr/lib/ems-bus/priv/systemd $SKEL_DEB_PACKAGE/etc/ems-bus/systemd
+		
+		# Gera a estrutura /etc/systemd/system
+		mkdir -p $SKEL_DEB_PACKAGE/etc/systemd/system
+		ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_DEB_PACKAGE/etc/systemd/system/ems-bus.service || die "Não foi possível criar o link simbólico $SKEL_DEB_PACKAGE/etc/systemd/system/ems-bus.service!" 
+
+		# Log -> /var/log/ems-bus
+		ln -s /var/log/ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus/priv/log
+		
+		# Copia os scripts padrão para o pacote
+		cp -f deb/postinst $SKEL_DEB_PACKAGE/DEBIAN
+		cp -f deb/postrm $SKEL_DEB_PACKAGE/DEBIAN
+		cp -f deb/preinst $SKEL_DEB_PACKAGE/DEBIAN
+		cp -f deb/prerm $SKEL_DEB_PACKAGE/DEBIAN
+		
+		# Atualiza a versão no arquivo DEBIAN/control 
+		sed -ri "s/Version: .{6}(.*$)/Version: $VERSION_RELEASE-\1/" $SKEL_DEB_PACKAGE/DEBIAN/control
+		dpkg-deb -b $SKEL_DEB_PACKAGE deb || die "Falha ao gerar o pacote $SKEL_DEB_PACKAGE com dpkg-deb!"
+		
+		send_build_email()
 	else
 		help()
 	fi
