@@ -15,7 +15,7 @@
 		 find_first/2, find_first/3, find_first/4]).
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
 -export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
--export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1]).
+-export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1, create_datasource_from_map/1, create_datasource_from_map/2]).
 -export([get_param/1, set_param/2]).
 
 -include("../../include/ems_config.hrl").
@@ -493,6 +493,33 @@ set_param(ParamName, ParamValue) ->
 	P = #ctrl_params{name = ParamName, value = ParamValue},
 	mnesia:dirty_write(ctrl_params, P).
 	
-	
+
+-spec create_datasource_from_map(map()) -> #service_datasource{}.
+create_datasource_from_map(M) ->
+	create_datasource_from_map(M, undefined).
+
+-spec create_datasource_from_map(map(), non_neg_integer()) -> #service_datasource{}.
+create_datasource_from_map(M, Rowid) ->
+	Type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
+	Driver = maps:get(<<"driver">>, M, <<>>),
+	Connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
+	TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
+	PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
+	CsvDelimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>)),
+	Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
+	Timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY),
+	MaxPoolSize = maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL),
+	Id = erlang:phash2([Rowid, Type, Driver, Connection, TableName, PrimaryKey, CsvDelimiter, Sql, Timeout, MaxPoolSize]),
+	#service_datasource{id = Id,
+						rowid = Rowid,
+						type = Type,
+						driver = Driver,
+						connection = Connection,
+						table_name = TableName,
+						primary_key = PrimaryKey,
+						csv_delimiter = CsvDelimiter,
+						sql = Sql,
+						timeout = Timeout,
+						max_pool_size = MaxPoolSize}.
 	
 

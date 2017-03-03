@@ -486,7 +486,7 @@ parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 compile_page_module(undefined, _) -> undefined;
 compile_page_module(Page, Rowid) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	case ems_page:compile_file(Page, ModuleNamePage) of
+	case ems_page:compile_file(binary_to_list(Page), ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
 	end.
@@ -497,20 +497,8 @@ parse_schema(Name) -> Name.
 
 	
 parse_datasource(undefined, _) -> undefined;
-parse_datasource(M, Rowid) -> 
-	#service_datasource{rowid = Rowid,
-						type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
-						driver = maps:get(<<"driver">>, M, <<>>),
-						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
-						table_name = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
-						primary_key = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
-						csv_delimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>)),
-						sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
-						timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY),
-						max_pool_size = maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL)
-						}.
-	
-	
+parse_datasource(M, Rowid) -> ems_db:create_datasource_from_map(M, Rowid).
+
 	
 parse_service_service(Service) ->
 	try

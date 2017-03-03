@@ -8,6 +8,7 @@
 	"type": "KERNEL",
 	"APIkey":"false",
 	"log_file_checkpoint" : 6000,
+	"log_file_max_size" : 51200000,
 	"debug" : false,
 	"lang" : "erlang",
 	"pool_size" : 1,

@@ -13,8 +13,7 @@
 
 -export([compile_file/2, render/2]).
 		 
-compile_file(<<Page/binary>>, ModuleName) -> compile_file(binary_to_list(Page), ModuleName);
-compile_file(Page, ModuleName) -> erlydtl:compile_file(?WEBAPPS_PATH ++ Page, ModuleName, [{out_dir, "ebin"}]).
+compile_file(Page, ModuleName) -> erlydtl:compile_file(Page, ModuleName, [{out_dir, "ebin"}]).
 
 render(PageModule, Args) ->	
 	case PageModule:render(Args) of

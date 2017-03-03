@@ -162,7 +162,7 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_loader got a connection to update users."),
+				?DEBUG("ems_user_loader got a connection ~p to update users.", [Datasource#service_datasource.id]),
 				case LastUpdate of 
 					undefined -> 
 						Sql = sql_load_users(),
@@ -251,8 +251,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 							  type = Type,
 							  passwd_crypto = PasswdCrypto,
 							  type_email = TypeEmail,
-							  active = Situacao == 1},
-			mnesia:write(User2);
+							  active = Situacao == 1};
 		{error, enoent} -> 
 			User2 = #user{id = ems_db:sequence(user),
 						  codigo = Codigo,
@@ -267,9 +266,10 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 						  type = Type,
 						  passwd_crypto = PasswdCrypto,
 						  type_email = TypeEmail,
-						  active = Situacao == 1},
-			mnesia:write(User2)
+						  active = Situacao == 1}
 	end,
+	mnesia:write(User2),
+	?DEBUG("ems_user_loader update user: ~p.\n", [User2]),
 	update_users(T, Count+1).
 
 sql_load_users() ->	 

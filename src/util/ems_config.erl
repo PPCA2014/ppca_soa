@@ -11,6 +11,7 @@
 -behavior(gen_server). 
 
 -include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -159,6 +160,17 @@ parse_static_file_path(Json) ->
 	StaticFilePathList = maps:to_list(StaticFilePath),
 	[{K, ems_util:remove_ult_backslash_url(binary_to_list(V))} || {K, V} <- StaticFilePathList].
 	
+
+parse_datasources([], _, Result) -> maps:from_list(Result);
+parse_datasources([DsName|T], Datasources, Result) ->
+	M = maps:get(DsName, Datasources),
+	Ds = ems_db:create_datasource_from_map(M),
+	parse_datasources(T, Datasources, [{DsName, Ds} | Result]).
+								
+	
+parse_datasources(Json) ->
+	Datasources = maps:get(<<"datasources">>, Json, #{}),
+	parse_datasources(maps:keys(Datasources), Datasources, []).
 	
 
 parse_config(Json, NomeArqConfig) ->
@@ -174,7 +186,8 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
 			 ems_debug					= maps:get(<<"ems_debug">>, Json, false),
-			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE)
+			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
+			 ems_datasources			= parse_datasources(Json)
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -191,7 +204,8 @@ get_default_config() ->
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",
 			 ems_debug					= false,
-			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE
+			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE,
+			 ems_datasources			= #{}
 		}.
 
 

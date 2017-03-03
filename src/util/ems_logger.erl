@@ -233,8 +233,8 @@ checkpoint_arquive_log(State = #state{log_file_handle = IODevice}, Immediate) ->
 			State2 = State#state{log_file_name = LogFileName, 
 								 log_file_handle = IODevice2,
 								 sync_buffer_error_count = 0};
-		{error, _Reason} ->
-			?DEBUG("ems_logger archive log file checkpoint error: ~p.", [_Reason]),
+		{error, Reason} ->
+			ems_logger:error("ems_logger archive log file checkpoint error: ~p.", [Reason]),
 			State2 = State
 	end,
 	set_timeout_archive_log_checkpoint(),
@@ -315,7 +315,7 @@ write_msg(Tipo, Msg, State = #state{level = Level})  ->
 								flag_checkpoint_tela = true}
 			end;
 		false -> 
-			?DEBUG("ems_logger skipt write_msg. Type: ~p, Level: ~p.", [Tipo, Level]),
+			?DEBUG("ems_logger skip write_msg. Type: ~p, Level: ~p.", [Tipo, Level]),
 			State
 	end.
 		
@@ -354,7 +354,6 @@ sync_buffer(State = #state{buffer = Buffer,
 					Msg = [ [L | ["\n"]] || L <- lists:reverse(Buffer)],
 					case file:write(IODevice, Msg) of
 						ok -> 
-							?DEBUG("ems_logger sync_buffer flush to log file ~p. Buffer count: 0, FileSize: ~p.", [LogFileName, filelib:file_size(LogFileName)]),
 							State#state{buffer = [], 
 										flag_checkpoint_sync_buffer = false, 
 										log_file_handle = IODevice, 

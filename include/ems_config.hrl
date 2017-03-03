@@ -91,7 +91,7 @@
 -define(LOG_FILE_MAX_SIZE, 51200000).  
 
 % Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
--define(LOG_ARCHIVE_CHECKPOINT, 1000 * 60 * 60 * 4).  % Por default são 4 horas
+-define(LOG_ARCHIVE_CHECKPOINT, 1000 * 60 * 60 * 24).  % Por default são 24 horas
 
 % Quantos workers HTTP instanciar se não especificado no arquivo de configuração
 -define(MIN_HTTP_WORKER, 1).
@@ -159,7 +159,8 @@
 				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)
 				 ems_debug,
-				 ems_result_cache
+				 ems_result_cache,
+				 ems_datasources :: map()
 		 }). 	
 
 

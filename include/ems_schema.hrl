@@ -75,7 +75,8 @@
 				  }).
 
 
--record(service_datasource, {rowid :: non_neg_integer(),
+-record(service_datasource, {id :: non_neg_integer(),
+							 rowid :: non_neg_integer(),
 							 type :: atom(),
 							 driver :: atom(),
 							 connection = <<>> :: binary(),
@@ -88,7 +89,8 @@
 							 conn_ref,
 							 pid_module,
 							 pid_module_ref,
-							 owner
+							 owner,
+							 pool_name :: string()
 							}).
 
 

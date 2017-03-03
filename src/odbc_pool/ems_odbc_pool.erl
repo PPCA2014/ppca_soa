@@ -115,16 +115,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
     
 						
-do_create_connection(Datasource = #service_datasource{connection = Connection,
+do_create_connection(Datasource = #service_datasource{id = Id,
 													  table_name = TableName,
+													  sql = Sql,
 													  primary_key = PrimaryKey}, PidModule) ->
-	PoolName = "pool_" ++ Connection,
-	Pool = find_pool(PoolName),
+	Pool = find_pool(Id),
 	case queue:len(Pool) of
 		0 ->
 			case ems_odbc_pool_worker:start_link(Datasource) of
 				{ok, WorkerPid} ->
-					?DEBUG("ems_odbc_pool start new odbc connection: ~s.", [Connection]),
+					?DEBUG("ems_odbc_pool start new worker for odbc connection ~p.", [Id]),
 					PidModuleRef = erlang:monitor(process, PidModule),
 					Datasource2 = Datasource#service_datasource{owner = WorkerPid, 
 																pid_module = PidModule,
@@ -140,40 +140,39 @@ do_create_connection(Datasource = #service_datasource{connection = Connection,
 			Datasource3 = Datasource2#service_datasource{pid_module = PidModule,
 														 pid_module_ref = PidModuleRef,
 														 table_name = TableName,
+														 sql = Sql,
 														 primary_key = PrimaryKey},
 			erlang:put(PidModuleRef, Datasource3),
-			erlang:put(PoolName, Pool2),
+			erlang:put(Id, Pool2),
 			{ok, Datasource3}
 	end.
 
-do_release_connection(Datasource = #service_datasource{connection = Connection, 
+do_release_connection(Datasource = #service_datasource{id = Id,
 													   owner = Owner, 
 													   pid_module_ref = PidModuleRef,
 													   max_pool_size = MaxPoolSize}) ->
 	erlang:demonitor(PidModuleRef),
-	PoolName = "pool_" ++ Connection,
-	Pool = find_pool(PoolName),
+	Pool = find_pool(Id),
 	PoolSize = queue:len(Pool),
 	case PoolSize < MaxPoolSize of
 		true ->
 			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 														   pid_module_ref = undefined}, Pool),
-			erlang:put(PoolName, Pool2),
-			?DEBUG("ems_odbc_pool release odbc connection ~p.", [Datasource]),
-			?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Connection]);
+			erlang:put(Id, Pool2),
+			?DEBUG("ems_odbc_pool release odbc connection ~p.", [Id]),
+			?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Id]);
 		false -> 
-			?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Datasource]),
+			?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Id]),
 			gen_server:call(Owner, shutdown)
 	end.
 
-find_pool(PoolName) ->
-	case erlang:get(PoolName) of
+find_pool(Id) ->
+	case erlang:get(Id) of
 		undefined -> queue:new();
 		Pool -> Pool
 	end.
 
-get_connection_pool_size(#service_datasource{connection = Connection}) ->
-	PoolName = "pool_" ++ Connection,
-	Pool = find_pool(PoolName),
+get_connection_pool_size(#service_datasource{id = Id}) ->
+	Pool = find_pool(Id),
 	queue:len(Pool).
 
