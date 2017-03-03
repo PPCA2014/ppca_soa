@@ -23,12 +23,27 @@
 # Data       |  Quem           |  Mensagem  
 # -----------------------------------------------------------------------------------------------------
 # 14/02/2017  Everton Agilar     Release inicial    
-#
+# 03/03/2017  Everton Agilar     Add --showlogs option and improve ldap report
 #
 #
 #
 #
 ########################################################################################################
+
+# locale
+export LANG=en_US.UTF-8
+export LC_CTYPE=pt_BR.UTF-8
+export LC_NUMERIC=pt_BR.UTF-8
+export LC_TIME=pt_BR.UTF-8
+export LC_COLLATE="en_US.UTF-8"
+export LC_MONETARY=pt_BR.UTF-8
+export LC_MESSAGES="en_US.UTF-8"
+export LC_PAPER=pt_BR.UTF-8
+export LC_NAME=pt_BR.UTF-8
+export LC_ADDRESS=pt_BR.UTF-8
+export LC_TELEPHONE=pt_BR.UTF-8
+export LC_MEASUREMENT=pt_BR.UTF-8
+export LC_IDENTIFICATION=pt_BR.UTF-8
 
 
 # Get linux description
@@ -46,11 +61,13 @@ LDAP_SERVER="$LINUX_IP_SERVER:2389"
 CURRENT_DIR=$(pwd)
 TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
 EMS_NODE="ems-bus"
-ENVIRONMENT="$LINUX_DESCRIPTION << $LINUX_IP_SERVER >>"
+ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_audit_ldap_log_$(date '+%d%m%Y_%H%M%S').txt"
 SUB_TITLE_REPORT="LAST DAY OF OPERATION"
+SHOW_LOGS="false"
+SEND_EMAIL="false"
 
 # Log destination parameter
 LOG_YEAR=$(date '+%Y')
@@ -62,32 +79,30 @@ LOG_FILE="$TMP_DIR/full_log_file_filtered.tmp"
 # SMTP parameter
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
-SMTP_DE="evertonagilar@unb.br"
+SMTP_DE="erlangms@unb.br"
 #SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br,felipesantos@unb.br"
 SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
-SMTP_PASSWD=unb9601
+SMTP_PASSWD=erl1523
 
 
 # tmpfiles go to /$TMP_DIR
 mkdir -p $TMP_DIR && cd $TMP_DIR
 
 
-if [ "$#" = "1" ]; then
-	if [ "$1" = "--help" ]; then
+if [ "$1" = "--help" ]; then
+	echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
+	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
+	echo "parameter --sendemail is optional and send email to admin"
+	exit 1
+else
+	MMIN="$1"
+	RE='^[0-9]{1,5}$'
+	if ! [[ $MMIN =~ $RE ]] ; then
+		echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99999."
 		echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
 		echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
 		echo "parameter --sendemail is optional and send email to admin"
 		exit 1
-	else
-		MMIN="$1"
-		RE='^[0-9]{1,5}$'
-		if ! [[ $MMIN =~ $RE ]] ; then
-			echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99999."
-			echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail ]"
-			echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-			echo "parameter --sendemail is optional and send email to admin"
-			exit 1
-		fi
 	fi
 fi
 
@@ -123,8 +138,6 @@ generate_report(){
 		exit 1
 	else
 		echo "Reading and parsing the following logfiles:"
-		#echo $LOG_FILE_LIST | xargs printf '    * %s\n' 
-			
 		echo $LOG_FILE_LIST  | tr " " "\n" | awk '{
 			printf "   * "$1 ;
 			printf "  -  ";
@@ -135,7 +148,8 @@ generate_report(){
 
 	# concat all logfiles of ems_ldap_handler and create $LOG_FILE_TMP
 	# remove characters control of the line colors too
-	cat $TMP_DIR/*.log | grep "ems_ldap_handler" | sed -r '/ERROR/ { s/.{7}// ;  s/.{4}$// } ; y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚçÇ/aAaAaAaAeEeEiIoOoOoOuUcC/ ; s/<//g ; s/>//g' > $LOG_FILE_TMP
+	cat $TMP_DIR/*.log | grep "ems_ldap_handler" | sed -r '/ERROR/ { s/.{7}// ;  s/.{4}$// } ; y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚçÇ/aAaAaAaAeEeEiIoOoOoOuUcC/ ; s/<//g; s/>//g ;' > $LOG_FILE_TMP
+	
 	
 
 	# filter only the log lines of the defined interval	$DATE_INIT
@@ -145,6 +159,16 @@ generate_report(){
 				print; 
 			}
 	}' $LOG_FILE_TMP > $LOG_FILE
+	
+
+	# Check if show logfiles content
+	if [ "$SHOW_LOGS" == "true" ]; then
+		echo
+		echo
+		echo "Show content os log files:"
+		cat $LOG_FILE
+		echo
+	fi
 	
 	echo
 
@@ -162,7 +186,7 @@ generate_report(){
 	fi
 	SUB_TITLE_SIZE=$[$(echo $SUB_TITLE_REPORT | wc -c) / 2]
 	printf "%*s\n" $[47 + $SUB_TITLE_SIZE] "$SUB_TITLE_REPORT"
-	printf "%*s\n" $[57 + $SUB_TITLE_SIZE] "$ENVIRONMENT"
+	printf "%*s\n" $[49 + $SUB_TITLE_SIZE] "$ENVIRONMENT"
 	echo
 	
 
@@ -194,7 +218,7 @@ generate_report(){
 
 	echo "3) Number of success search operation per user:"
 	echo '+-----------------------------------+------------------------------------------------------------------+'
-	printf "| %-33s | %-47s | %-14s |\n"  "LOGIN" "NAME" "REQUESTS"
+	printf "| %-33s | %-47s | %14s |\n"  "LOGIN" "NAME" "REQUESTS" " "
 	echo '+-----------------------------------+------------------------------------------------------------------+'
 	
 	TMP_NUMBER_SUCCESS_SEARCH_PER_USER=$TMP_DIR/tmp_number_success_search_per_user.tmp
@@ -219,13 +243,14 @@ generate_report(){
 	echo
 	echo "6) Users not found in the search operation: $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_UNIQ_TOTAL users"
 	echo '+-----------------------------------------------+------------------------------------------------------+'
-	printf "| %-45s | %-52s |\n"  "LOGIN"   "REQUESTS"                                                                  
+	printf "| %-45s | %19s %33s|\n"  "LOGIN"   "REQUESTS"   " "                                                               
 	echo '+-----------------------------------------------+------------------------------------------------------+'
 	TMP_USERS_NOT_FOUND_SEARCH_OP=$TMP_DIR/tmp_users_not_found_search_op.tmp
-	for USER in `cat request_search_login_does_not_exist_uniq.tmp | tr "\"" " "`; do
+	while read USER; do
+		USER=$(echo $USER | tr '"' '\0')
 		REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER=$(grep -w "$USER" request_search_login_does_not_exist.tmp | wc -l | cut -d" " -f1)
-		printf "| %-45s | %19d         %25s|\n"   $USER   $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER " " >> $TMP_USERS_NOT_FOUND_SEARCH_OP
-	done
+		printf "| %-45s | %19d         %25s|\n"   "$USER"   $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER " " >> $TMP_USERS_NOT_FOUND_SEARCH_OP
+	done <  request_search_login_does_not_exist_uniq.tmp
 	if [ -f $TMP_USERS_NOT_FOUND_SEARCH_OP ]; then
 		cat $TMP_USERS_NOT_FOUND_SEARCH_OP | sort -t'|' -n -r  -nk3 
 	else
@@ -243,7 +268,34 @@ generate_report(){
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE)
 	TITULO_MSG="ERLANGMS LDAP Log Analysis Report - $LINUX_IP_SERVER" 
-	SUBJECT="<font size=\"2\" face=\"Courier New, Courier, monospace\"><pre>$REPORT_CONTENT</pre></font>"
+	SUBJECT="<html>
+			<head>
+				<style>
+					pre {
+						font-family: \"Courier New\", Courier, \"Lucida Sans Typewriter\", \"Lucida Typewriter\", monospace;
+						font-size: 14px;
+						font-style: normal;
+						font-variant: normal;
+						font-weight: 460;
+						line-height: 18.5714px;
+					}
+					
+				</style>
+			<head>
+			<body>
+				<!--[if mso]>
+				 <center>
+				 <table><tr><td width=\"980\">
+				<![endif]-->
+				 <div style=\"max-width:980px; margin:0 auto;\"> 
+					<pre>$REPORT_CONTENT<pre>
+				</div>
+				<!--[if mso]>
+				 </td></tr></table>
+				 </center>
+				<![endif]-->
+			</body>
+			</html>"
     python <<EOF
 # -*- coding: utf-8 -*-
 import smtplib
@@ -274,11 +326,21 @@ EOF
 
 # /////////////////// main /////////////////
 
+# check parameter --showlogs
+if [ "$2" == "--showlogs" ] || [ "$3" == "--showlogs" ]; then
+  SHOW_LOGS="true"		
+fi
+
+# check parameter --sendemail
+if [ "$2" == "--sendemail" ] || [ "$3" == "--sendemail" ]; then
+  SEND_EMAIL="true"
+fi
+
 # generate report
 generate_report
 
 # send e-mail to admins
-[ "$2" == "--sendemail" ] && send_email && echo "Report sent by email to administrators."
+[ "$SEND_EMAIL" == "true" ] && send_email && echo "This report was send to administrators."
 
 # remove tmp dir and back to CURRENT_DIR
 cd $CURRENT_DIR
