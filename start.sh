@@ -14,12 +14,14 @@ if [ "$1" == "observer" ]; then
 		-eval "ems_bus:start()" \
 		-boot start_sasl \
 		-config $current_dir/priv/conf/elog \
-		-run observer
+		-run observer \
+		--enable-dirty-schedulers
 else
 	/usr/bin/erl -pa $current_dir/ebin $deps \
 		-sname emsbus -setcookie erlangms \
 		-eval "ems_bus:start()" \
 		-boot start_sasl \
-		-config $current_dir/priv/conf/elog
+		-config $current_dir/priv/conf/elog \
+		--enable-dirty-schedulers
 fi
 

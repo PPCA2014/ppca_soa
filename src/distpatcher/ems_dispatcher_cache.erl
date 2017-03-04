@@ -15,8 +15,7 @@
 -export([start/0, lookup/2, add/4, invalidate/0]).
 
 start() -> 
-	ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
-	ets:new(dispatcher_cache_options, [set, named_table, public, {read_concurrency, true}]).
+	ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}, {write_concurrency, true}]).
 
 lookup(ReqHash, Timestamp2) ->
 	try
@@ -28,12 +27,12 @@ lookup(ReqHash, Timestamp2) ->
 	catch
 		_Exception:_Reason ->
 			ems_logger:warn("ems_dispatcher_cache recreate ets dispatcher_cache_get."),
-			ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}]),
+			ets:new(dispatcher_cache_get, [set, named_table, public, {read_concurrency, true}, {write_concurrency, true}]),
 			lookup(ReqHash, Timestamp2)
 	end.
 
 add(ReqHash, Timestamp, Request, ResultCache) -> ets:insert(dispatcher_cache_get, {ReqHash, Timestamp, Request, ResultCache}).
 
 invalidate() ->
-	?DEBUG("ems_dispatcher_cache invalidate request get cache after POST, PUT or DELETE operation."),
+	?DEBUG("ems_dispatcher_cache invalidate dispatcher_cache_get."),
 	ets:delete_all_objects(dispatcher_cache_get).
