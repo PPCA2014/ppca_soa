@@ -22,7 +22,7 @@
 # Data       |  Quem           |  Mensagem  
 # -----------------------------------------------------------------------------------------------------
 # 28/11/2016  Everton Agilar     Release inicial do script de release
-#
+# 05/03/2017  Everton Agilar     Improve release to deb and rpm
 #
 #
 #
@@ -31,10 +31,12 @@
 #
 ########################################################################################################
 
-# Pasta rel
+# Parameters
 WORKING_DIR=$(pwd)
-BUILD_DEB_FLAG="true"  # is default
-BUILD_RPM_FLAG="false"
+RELEASE_PATH=$(cd $WORKING_DIR/../../releases/ && pwd)
+GIT_RELEASE_REPO=https://github.com/erlangms/releases
+BUILD_RPM_FLAG="$( rpmbuild --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
+BUILD_DEB_FLAG="$( dpkg-deb --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
 
 # Imprime uma mensagem e termina o script
 # Parâmetros:
@@ -76,8 +78,8 @@ clean(){
 
 # show help 
 help(){
+	echo "release.sh tool"
 	echo "How to use: ./release.sh --rpm or --deb"
-	echo "parameter --deb is default"
 }
 
 
@@ -85,43 +87,32 @@ help(){
 # $1 = PACKAGE_FILE
 # $2 = PACKAGE_NAME
 send_build_repo(){
-	PACKAGE_FILE=$1
-	PACKAGE_NAME=$1
 	cd $WORKING_DIR
-	if [ -d $WORKING_DIR/../../releases/ ]; then
-		rm -rf $WORKING_DIR/../../releases/$VERSION_RELEASE/
-		mkdir -p $WORKING_DIR/../../releases/$VERSION_RELEASE/
-		cp $PACKAGE_FILE  $WORKING_DIR/../../releases/$VERSION_RELEASE/
-		
-		# pode usar -y para confirmar o envio para o repositório releases automático
-		FAZER_GIT_PUSH=$(echo $1 | tr "-" "\0")  
-		
-		# pergunta envia para o repositório
-		while [[ ! $FAZER_GIT_PUSH =~ [YyNn] ]]; do
-			printf "Enviar a nova versão $VERSION_RELEASE para o repositório releases? [Yn]"
-			read FAZER_GIT_PUSH
-		done
-
-		# envia se confirmou 
-		if [[ $FAZER_GIT_PUSH =~ [Yy] ]]; then
-			cd $WORKING_DIR/../../releases/
-			echo "$VERSION_RELEASE" > setup/current_version
-			git add $VERSION_RELEASE/$PACKAGE_NAME >> /dev/null
-			git add setup/current_version >> /dev/null
-			git commit -am "new release $VERSION_RELEASE" >> /dev/null
-			echo "Enviando pacote $PACKAGE_NAME para o repositório releases..."
-			git push
-		fi
+	PACKAGE_FILE=$1
+	PACKAGE_NAME=$2
+	if [ -d $RELEASE_PATH ]; then
+		rm -f $RELEASE_PATH/$VERSION_RELEASE/$PACKAGE_NAME
+		mkdir -p $RELEASE_PATH/$VERSION_RELEASE/
+		cp $PACKAGE_FILE  $RELEASE_PATH/$VERSION_RELEASE/
 	else
-		echo "O pacote $PACKAGE_NAME não será enviado para releases, pois este repositório não existe neste computador."  
+		cd $(dirname $RELEASE_PATH)
+		echo "Git clone $GIT_RELEASE_REPO..."
+		git clone $GIT_RELEASE_REPO
 	fi
 }	
 	
+push_release(){
+	cd $RELEASE_PATH
+	echo "$VERSION_RELEASE" > setup/current_version
+	git add $VERSION_RELEASE >> /dev/null
+	git add setup/current_version >> /dev/null
+	git commit -am "New release $VERSION_RELEASE" >> /dev/null
+	echo "Enviando pacote $PACKAGE_NAME para o repositório releases..."
+	git push
+}
 
 
 # Build relase
-# parameter:
-#  $1  --rpm or --deb
 build(){
 	cd $WORKING_DIR
 
@@ -229,7 +220,7 @@ build(){
 			cd $SKEL_RPM_PACKAGE
 			rpmbuild -bb SPECS/emsbus.spec
 
-			send_build_repo
+			send_build_repo $PACKAGE_FILE $PACKAGE_NAME
 		done
 		
 	# build deb packages	
@@ -245,8 +236,8 @@ build(){
 			# Atualiza a versão no arquivo SPEC/emsbus.spec
 			sed -ri "s/Version: .{6}(.*$)/Version: $VERSION_RELEASE\1/" $DEB_CONTROL_FILE
 			RELEASE_PACK=$(grep 'Version' $DEB_CONTROL_FILE | cut -d'-' -f2-)	
-			PACKAGE_NAME=ems-bus-$VERSION_RELEASE-$RELEASE_PACK.x86_64.rpm
-			PACKAGE_FILE=$SKEL_RPM_PACKAGE/RPMS/x86_64/$PACKAGE_NAME
+			PACKAGE_NAME=ems-bus-$VERSION_RELEASE-$RELEASE_PACK.x86_64.deb
+			PACKAGE_FILE=$SKEL_DEB_PACKAGE/$PACKAGE_NAME
 			
 			# Gera a estrutura /usr/lib/ems-bus
 			rm -Rf $SKEL_DEB_PACKAGE/usr/lib/ems-bus || die "Não foi possível remover pasta $SKEL_DEB_PACKAGE/usr/lib/ems-bus!" 
@@ -277,9 +268,9 @@ build(){
 			cp -f deb/preinst $SKEL_DEB_PACKAGE/DEBIAN
 			cp -f deb/prerm $SKEL_DEB_PACKAGE/DEBIAN
 			
-			dpkg-deb -b $SKEL_DEB_PACKAGE deb || die "Falha ao gerar o pacote $SKEL_DEB_PACKAGE com dpkg-deb!"
+			dpkg-deb -b $SKEL_DEB_PACKAGE $PACKAGE_FILE || die "Falha ao gerar o pacote $SKEL_DEB_PACKAGE com dpkg-deb!"
 
-			#send_build_repo
+			send_build_repo $PACKAGE_FILE $PACKAGE_NAME
 		done
 	fi
 }
@@ -293,15 +284,6 @@ if [ "$1" = "--help" ]; then
 	exit 0
 fi
 
-# check if build deb
-if [[ "$1" =~ (-{1,2}deb|deb) ]] || [[ "$2" =~ (-{1,2}deb|deb) ]]; then
-	BUILD_DEB_FLAG="true"
-fi
-
-# check if build rpm
-if [[ "$1" =~ (-{1,2}rpm|rpm) ]] || [[ "$2" =~ (-{1,2}rpm|rpm) ]]; then
-	BUILD_RPM_FLAG="true"
-fi
 
 # check remove link to fix Unable to generate spec: read file info
 if [ -L /usr/lib/erlang/man ]; then
@@ -309,9 +291,14 @@ if [ -L /usr/lib/erlang/man ]; then
 	sudo rm  /usr/lib/erlang/man
 fi	
 
+[ "$BUILD_RPM_FLAG" == "true" ] && echo "Build de pacotes rpm com rpmbuild habilitado."
+[ "$BUILD_DEB_FLAG" == "true" ] && echo "Build de pacotes deb com dpkg-deb habilitado."
+
+
 clean
 build
-#clean
+push_release
+clean
 cd $WORKING_DIR
 echo "Feito!"
 
