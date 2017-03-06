@@ -142,6 +142,8 @@ by graduate student Everton Vargas Agilar.
   # ldconfig
   /sbin/ldconfig  > /dev/null 2>&1 || true
 
+  # Remove DB (auto generate)
+  rm -rf /usr/lib/ems-bus/priv/db
 
   # systemd
   systemctl stop ems-bus.service  > /dev/null 2>&1 || true
@@ -159,6 +161,9 @@ by graduate student Everton Vargas Agilar.
 	# remove user
 	#groupdel erlangms > /dev/null 2>&1 || true
 	#userdel erlangms > /dev/null 2>&1 || true
+
+    # Remove DB (auto generate)
+	rm -rf /usr/lib/ems-bus/priv/db
 
 	/sbin/ldconfig
 	
