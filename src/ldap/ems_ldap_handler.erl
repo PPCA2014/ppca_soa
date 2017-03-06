@@ -207,7 +207,7 @@ make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha, Type, T
 														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
 														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome]},
 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId]},
-														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuNome]},
+														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuLogin]},
 														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [Type]},
 														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [TypeEmail]},
 														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [CtrlInsert]},
