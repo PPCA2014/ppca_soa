@@ -88,7 +88,7 @@ decode_ldap_message(RequestBin) ->
 handle_request({'LDAPMessage', _,
 					{bindRequest, #'BindRequest'{version = _Version, 
 												 name = Name, 
-												 authentication = {_, Password}}} = Msg,
+												 authentication = {_, Password}}},
 				 _}, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
 	 <<Cn:3/binary, _/binary>> = Name,
@@ -112,9 +112,15 @@ handle_request({'LDAPMessage', _,
 					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
 					make_bind_response(success, Name)
 			end;
-		_UnknowCn -> 
-			ems_logger:error("ems_ldap_handler bind unknow ~p.", [Msg]),
-			BindResponse = make_bind_response(invalidCredentials, Name)
+		UserLogin -> 
+			BindResponse = case middleware_autentica(UserLogin, Password, State) of
+				{error, _Reason} ->	
+					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
+					make_bind_response(invalidCredentials, Name);
+				ok -> 
+					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
+					make_bind_response(success, Name)
+			end
 	end,
 	{ok, [BindResponse]};
 handle_request({'LDAPMessage', _,
