@@ -205,7 +205,7 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 make_result_entry(UsuLogin, {UsuId, UsuNome, UsuLogin2, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
-										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
+										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId]},
 														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
 														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
 														#'PartialAttribute'{type = <<"login">>, vals = [UsuLogin2]},
@@ -244,9 +244,9 @@ handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->
 			ems_logger:error("ems_ldap_handler search ~p fail. Reason: ~p.", [UserLogin, Reason]),
 			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
-		{ok, UserRecord = {_, UsuNome, _, _, _, _, _, _, _}} ->
-			ems_logger:info("ems_ldap_handler search ~p ~p success.", [UserLogin, UsuNome]),
-			ResultEntry = make_result_entry(UserLogin, UserRecord, AdminLdap),
+		{ok, UserRecord = {_, UsuLogin, UsuNome, _, _, _, _, _, _, _}} ->
+			ems_logger:info("ems_ldap_handler search ~p ~p success.", [UsuLogin, UsuNome]),
+			ResultEntry = make_result_entry(UsuLogin, UserRecord, AdminLdap),
 			ResultDone = make_result_done(success),
 			{ok, [ResultEntry, ResultDone]}
 	end.
