@@ -47,7 +47,7 @@ get_connection(Datasource) ->
 			?DEBUG("ems_odbc_pool get odbc connection ~p.", [_Datasource2]),
 			Result;
 		{error, Reason} = Error -> 
-			?DEBUG("ems_odbc_pool failed to get a new odbc connection ~p.", [Reason]),
+			ems_logger:error("ems_odbc_pool get connection error ~p.", [Reason]),
 			Error
 	end.
 

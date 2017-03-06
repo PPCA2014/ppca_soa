@@ -154,6 +154,7 @@
 				 cat_node_search,							%% Lista de nodes para pesquisar os serviços
 				 cat_path_search :: list(tuple()),			%% Lista de tuplas com caminhos alternativos para catálogos
 				 cat_disable_services :: list(binary()),	%% Lista de serviços para desativar
+				 cat_enable_services :: list(binary()),		%% Lista de serviços para habilitar
 				 static_file_path :: list(string()),		%% Lista de diretórios para arquivos estáticos
 				 ems_hostname,								%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado

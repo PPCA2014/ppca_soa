@@ -73,7 +73,7 @@ handle_info(timeout, State = #state{datasource = Datasource,
 									last_update = LastUpdate}) ->
 	?DEBUG("ems_user_loader checkpoint. operation: update_users."),
 	NextUpdate = calendar:local_time(),
-	case update_users_from_datasource(Datasource, LastUpdate) of
+	case update_users_from_datasource(Datasource, LastUpdate, ems_util:timestamp_str()) of
 		ok -> 
 			ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 			State2 = State#state{last_update = NextUpdate, 
@@ -89,7 +89,7 @@ handle_info(timeout, State = #state{datasource = Datasource,
 									update_checkpoint = UpdateCheckpoint}) ->
 	?DEBUG("ems_user_loader checkpoint. operation: load_users."),
 	NextUpdate = calendar:local_time(),
-	case load_users_from_datasource(Datasource) of
+	case load_users_from_datasource(Datasource, ems_util:timestamp_str()) of
 		ok -> 
 			ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 			State2 = State#state{operation = load_or_update_operation(),
@@ -120,7 +120,7 @@ load_or_update_operation() ->
 		 _ -> update_users
 	end.
 
-load_users_from_datasource(Datasource) -> 
+load_users_from_datasource(Datasource, CtrlInsert) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -134,7 +134,7 @@ load_users_from_datasource(Datasource) ->
 						ok;
 					{_, _, Records} ->
 						F = fun() ->
-							Count = insert_users(Records, 0),
+							Count = insert_users(Records, 0, CtrlInsert),
 							ems_logger:info("ems_user_loader load ~p users.", [Count])
 						end,
 						?DEBUG("ems_user_loader is loading users....\n"),
@@ -158,7 +158,7 @@ load_users_from_datasource(Datasource) ->
 			{error, Reason3}
 	end.
 
-update_users_from_datasource(Datasource, LastUpdate) -> 
+update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -177,9 +177,6 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 								  {sql_timestamp, [DateInitial]},
 								  {sql_timestamp, [DateInitial]},
 								  {sql_timestamp, [DateInitial]},
-								  {sql_timestamp, [DateInitial]},
-								  {sql_timestamp, [DateInitial]},
-								  {sql_timestamp, [DateInitial]},
 								  {sql_timestamp, [DateInitial]}]
 				end, 
 				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
@@ -189,7 +186,7 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 					{_, _, Records} ->
 						%?DEBUG("Update users ~p.", [Records]),
 						F = fun() ->
-							Count = update_users(Records, 0),
+							Count = update_users(Records, 0, CtrlUpdate),
 							ems_logger:info("ems_user_loader update ~p users.", [Count])
 						end,
 						mnesia:activity(transaction, F),
@@ -211,8 +208,8 @@ update_users_from_datasource(Datasource, LastUpdate) ->
 	end.
 
 
-insert_users([], Count) -> Count;
-insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count) ->
+insert_users([], Count, _CtrlInsert) -> Count;
+insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count, CtrlInsert) ->
 	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
 	User = #user{id = ems_db:sequence(user),
 				 codigo = Codigo,
@@ -227,14 +224,15 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 				 type = Type,
 				 passwd_crypto = PasswdCrypto,
 				 type_email = TypeEmail,
-				 active = Situacao == 1},
+				 active = Situacao == 1,
+				 ctrl_insert = CtrlInsert},
 	%?DEBUG("User  ~p\n", [User]),
 	mnesia:dirty_write(User),
-	insert_users(T, Count+1).
+	insert_users(T, Count+1, CtrlInsert).
 
 
-update_users([], Count) -> Count;
-update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count) ->
+update_users([], Count, _CtrlUpdate) -> Count;
+update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count, CtrlUpdate) ->
 	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
 	case ems_user:find_by_login(Login) of
 		{ok, User} ->
@@ -249,9 +247,10 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 											_ -> ems_util:criptografia_sha1(Password)
 										 end,
 							  type = Type,
-							  passwd_crypto = PasswdCrypto,
+							  passwd_crypto = <<"SHA1">>,
 							  type_email = TypeEmail,
-							  active = Situacao == 1};
+							  active = Situacao == 1,
+							  ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
 			User2 = #user{id = ems_db:sequence(user),
 						  codigo = Codigo,
@@ -264,13 +263,14 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 										_ -> ems_util:criptografia_sha1(Password)
 									 end,
 						  type = Type,
-						  passwd_crypto = PasswdCrypto,
+						  passwd_crypto = <<"SHA1">>,
 						  type_email = TypeEmail,
-						  active = Situacao == 1}
+						  active = Situacao == 1,
+						  ctrl_insert = CtrlUpdate}
 	end,
 	mnesia:write(User2),
 	?DEBUG("ems_user_loader update user: ~p.\n", [User2]),
-	update_users(T, Count+1).
+	update_users(T, Count+1, CtrlUpdate).
 
 sql_load_users() ->	 
 	"select distinct CodigoPessoa, 
@@ -300,25 +300,6 @@ sql_load_users() ->
 						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
 				 join BDPessoa.dbo.TB_Email em
 						 on pfe.PFmEmaCodigo = em.EmaCodigo
-			
-			union all
-			
-			-- Busca dados de pessoa jurídica em BDPessoa
-			select pj.PjuCodigo as CodigoPessoa, 
-				   u.UsuLogin as LoginPessoa,
-				   pj.PjuRazaoSocial as NomePessoa, 
-				   cast(pj.PjuCnpj as varchar(14))  as CpfCnpjPessoa, 
-				   em.EmaEmail as EmailPessoa, 
-				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-				   1 as TipoPessoa,  -- Pessoa jurídica
-				   'SHA1' as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
-			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_PessoaJuridica pj
-						 on u.UsuPesIdPessoa = pj.PjuCodigo
-				 left join BDPessoa.dbo.TB_PessoaJuridicaEmail pje
-						 on pj.PjuCodigo = pje.PJmPJuCodigo
-				 join BDPessoa.dbo.TB_Email em
-						 on pje.PJmEmaCodigo = em.EmaCodigo
 			
 			union all
 			
@@ -372,26 +353,6 @@ sql_update_users() ->
 						 on pfe.PFmEmaCodigo = em.EmaCodigo
 			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 				
-			union all
-			
-			-- Busca dados de pessoa jurídica em BDPessoa
-			select pj.PjuCodigo as CodigoPessoa, 
-				   u.UsuLogin as LoginPessoa,
-				   pj.PjuRazaoSocial as NomePessoa, 
-				   cast(pj.PjuCnpj as varchar(14))  as CpfCnpjPessoa, 
-				   em.EmaEmail as EmailPessoa, 
-				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-				   1 as TipoPessoa,  -- Pessoa jurídica
-				   'SHA1' as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
-			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_PessoaJuridica pj
-						 on u.UsuPesIdPessoa = pj.PjuCodigo
-				 left join BDPessoa.dbo.TB_PessoaJuridicaEmail pje
-						 on pj.PjuCodigo = pje.PJmPJuCodigo
-				 join BDPessoa.dbo.TB_Email em
-						 on pje.PJmEmaCodigo = em.EmaCodigo
-			where u.UsuDataAlteracao >= ? or pj.PjuDataAlteracao >= ? or em.EmaDataAlteracao >= ?
-			
 			union all
 			
 			-- Busca dados de alunos em BDSiac

@@ -365,10 +365,18 @@ parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
 		?DEBUG("Parse catalog ~p.", [H]),
-		Enable = maps:get(<<"enable">>, H, true),
+		Name = maps:get(<<"name">>, H),
+		Enable0 = maps:get(<<"enable">>, H, true),
+		case Enable0 =:= false andalso lists:member(Name, Conf#config.cat_enable_services) of
+			true -> Enable1 = true;
+			false -> Enable1 = Enable0
+		end,
+		case Enable1 =:= true andalso lists:member(Name, Conf#config.cat_disable_services) of
+			true -> Enable = false;
+			false -> Enable = Enable1
+		end,
 		case Enable of 
 			true ->
-				Name = maps:get(<<"name">>, H),
 				Url2 = maps:get(<<"url">>, H),
 				Type = maps:get(<<"type">>, H, <<"GET">>),
 				valida_url_service(Url2),

@@ -53,7 +53,8 @@
 		 replace_all/2,
 		 read_file_as_string/1,
 		 is_number/1,
-		 generate_public_private_key/0]).
+		 generate_public_private_key/0,
+		 is_cpf_valid/1, is_cnpj_valid/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -655,3 +656,27 @@ is_letter_lower(_) -> false.
 is_number("") -> false;
 is_number(V) -> [Char || Char <- V, Char < $0 orelse Char > $9] == [].
 
+
+-spec is_cpf_valid(list() | binary()) -> boolean().
+is_cpf_valid(S) when is_binary(S) ->
+	is_cpf_valid(binary_to_list(S));
+is_cpf_valid(S) ->
+	case ems_util:is_number(S) andalso string:len(S) =:= 11 of
+		true -> 
+			C = [  X || X <- S, X > 47 andalso X < 58 ],
+			D = lists:sum( lists:zipwith(fun(X,Y) -> (X-48)*Y end, C, [1,2,3,4,5,6,7,8,9,0,0]) ) rem 11,
+			D =:= lists:nth(10, C) - 48 andalso	( lists:sum(lists:zipwith(fun(X,Y) -> (X-48)*Y end, C, [0,1,2,3,4,5,6,7,8,0,0]) ) + D * 9 ) rem 11 =:= lists:nth(11, C) - 48;
+		false -> false
+	end.
+
+-spec is_cnpj_valid(list() | binary()) -> boolean().		
+is_cnpj_valid(S) when is_binary(S) -> 
+	is_cnpj_valid(binary_to_list(S));
+is_cnpj_valid(S) ->
+	case ems_util:is_number(S) andalso string:len(S) =:= 13 of
+		true ->
+			C = [  X || X <- S, X > 47 andalso X < 58 ],
+			D = lists:sum( lists:zipwith(fun(X,Y) -> (X-48) * Y end, C, [6,7,8,9,2,3,4,5,6,7,8,9,0,0]) ) rem 11,
+			D =:= lists:nth(13, C) - 48 andalso ( lists:sum(lists:zipwith(fun(X,Y) -> (X-48) * Y end, C, [5,6,7,8,9,2,3,4,5,6,7,8,0,0]) ) + D * 9 ) rem 11 =:= lists:nth(14, C) - 48;
+		_ -> false
+	end.

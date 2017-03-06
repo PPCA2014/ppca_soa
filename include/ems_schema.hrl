@@ -22,7 +22,10 @@
 			   type :: non_neg_integer(),
 			   passwd_crypto :: string(),
 			   type_email :: non_neg_integer(),
-			   active :: boolean() 
+			   active :: boolean(),
+			   ctrl_insert,
+			   ctrl_update 
+			   
 		}).
 
 -record(ctrl_params, {name :: string(),
@@ -84,7 +87,7 @@
 							 primary_key = <<>> :: binary(),
 							 csv_delimiter = <<";">> :: binary(),
 							 sql = <<>> :: binary(),
-							 timeout = 4000 :: non_neg_integer(),
+							 timeout = 30000 :: non_neg_integer(),
 							 max_pool_size = 1 :: non_neg_integer(),
 							 conn_ref,
 							 pid_module,
