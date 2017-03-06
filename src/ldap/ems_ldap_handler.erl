@@ -199,7 +199,7 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
-										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId]},
+										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
 														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
 														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
 														#'PartialAttribute'{type = <<"email">>, vals = [UsuEmail]},
@@ -207,7 +207,7 @@ make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha, Type, T
 														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
 														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome]},
 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId]},
-														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuLogin]},
+														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuNome]},
 														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [Type]},
 														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [TypeEmail]},
 														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [CtrlInsert]},
