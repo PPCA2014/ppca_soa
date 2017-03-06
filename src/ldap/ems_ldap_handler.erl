@@ -202,7 +202,7 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
 
-make_result_entry(UsuLogin, {UsuId, UsuNome, UsuLogin2, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
+make_result_entry(UsuLogin, {UsuId, UsuLogin2, UsuNome, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId]},
