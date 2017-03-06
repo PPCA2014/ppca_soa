@@ -101,6 +101,7 @@ if [ "$1" = "configure" ]; then
 	echo " " >> /etc/odbcinst.ini 
   fi
 
+  rm -Rf /usr/lib/ems-bus/priv/ems-bus/db > /dev/null 2>&1 || true
 
   # ldconfig
   /sbin/ldconfig  > /dev/null 2>&1 || true

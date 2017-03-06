@@ -21,6 +21,7 @@ if [ "$1" = "remove" -o "$1" = "purge" ] ; then
 	rm -f /etc/systemd/system/ems-bus.service > /dev/null 2>&1 || true
 	rm -f /etc/ems-bus > /dev/null 2>&1 || true
 	rm -Rf /var/log/ems-bus > /dev/null 2>&1 || true
+	rm -Rf /usr/lib/ems-bus/priv/ems-bus/db > /dev/null 2>&1 || true
 
 	# remove user
 	#groupdel erlangms > /dev/null 2>&1 || true
