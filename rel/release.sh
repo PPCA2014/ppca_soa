@@ -117,6 +117,7 @@ push_release(){
 	git add setup/current_version >> /dev/null
 	git commit -am "New release $VERSION_RELEASE" >> /dev/null
 	echo "Enviando pacote $PACKAGE_NAME para o repositório releases..."
+	git pull --no-edit
 	git push
 }
 
