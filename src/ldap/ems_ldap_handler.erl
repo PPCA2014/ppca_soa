@@ -88,7 +88,7 @@ decode_ldap_message(RequestBin) ->
 handle_request({'LDAPMessage', _,
 					{bindRequest, #'BindRequest'{version = _Version, 
 												 name = Name, 
-												 authentication = {_, Password}}},
+												 authentication = {_, Password}}} = Msg,
 				 _}, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
 	 <<Cn:3/binary, _/binary>> = Name,
@@ -112,8 +112,8 @@ handle_request({'LDAPMessage', _,
 					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
 					make_bind_response(success, Name)
 			end;
-		UnknowCn -> 
-			ems_logger:error("ems_ldap_handler bind unknow request ~p.", [UnknowCn]),
+		_UnknowCn -> 
+			ems_logger:error("ems_ldap_handler bind unknow ~p.", [Msg]),
 			BindResponse = make_bind_response(invalidCredentials, Name)
 	end,
 	{ok, [BindResponse]};
