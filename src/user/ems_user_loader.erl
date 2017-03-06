@@ -321,6 +321,7 @@ sql_load_users() ->
 						 on pfe.PFmEmaCodigo = em.EmaCodigo 
 
 	) as t_users
+	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 	".
 
 sql_update_users() ->	 
@@ -374,4 +375,5 @@ sql_update_users() ->
 			where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 			
 	) as t_users
+	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 	".
