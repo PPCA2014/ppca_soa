@@ -202,18 +202,19 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
 
-make_result_entry(UsuLogin, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
+make_result_entry(UsuLogin, {UsuId, UsuNome, UsuLogin2, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuLogin]},
 														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
 														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
+														#'PartialAttribute'{type = <<"login">>, vals = [UsuLogin2]},
 														#'PartialAttribute'{type = <<"email">>, vals = [UsuEmail]},
 														#'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf]},
 														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
 														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome]},
 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId]},
-														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuId]},
+														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuLogin2]},
 														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [Type]},
 														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [TypeEmail]},
 														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [CtrlInsert]},
@@ -268,6 +269,7 @@ middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware,
 middleware_find_user_by_login(UserLogin, #state{middleware = undefined}) ->
 	case ems_user:find_by_login(UserLogin) of
 		{ok, _User = #user{codigo = UsuId, 
+						   login = UsuLogin,	
 						   name = UsuNome, 
 						   cpf = UsuCpf, 
 						   email = UsuEmail, 
@@ -278,6 +280,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = undefined}) ->
 						   ctrl_update = CtrlUpdate}} ->
 			?DEBUG("ems_ldap_handler exec ems_user:find_by_login user: ~p.", [_User]),
 			UserRecord2 = {format_user_field(UsuId),
+						   format_user_field(UsuLogin),
 						   format_user_field(UsuNome),
 						   format_user_field(UsuCpf),
 						   format_user_field(UsuEmail),
@@ -299,6 +302,7 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
 							?DEBUG("ems_ldap_handler exec middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
 							UserRecord2 = {format_user_field(UsuId),
+										   format_user_field(UserLogin),
 										   format_user_field(UsuNome),
 										   format_user_field(UsuCpf),
 										   format_user_field(UsuEmail),
