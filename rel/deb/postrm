@@ -13,6 +13,7 @@ if [ "$1" = "remove" -o "$1" = "purge" ] ; then
 	# pare e desative o serviço systemctl
 	systemctl stop ems-bus.service  > /dev/null 2>&1 || true
 	systemctl disable ems-bus.service > /dev/null 2>&1 || true
+	systemctl daemon-reload > /dev/null 2>&1 || true
 
 	# clean
 	rm -Rf /usr/lib/ems-bus > /dev/null 2>&1 || true
@@ -22,8 +23,10 @@ if [ "$1" = "remove" -o "$1" = "purge" ] ; then
 	rm -Rf /var/log/ems-bus > /dev/null 2>&1 || true
 
 	# remove user
-	groupdel erlangms > /dev/null 2>&1 || true
-	userdel erlangms > /dev/null 2>&1 || true
+	#groupdel erlangms > /dev/null 2>&1 || true
+	#userdel erlangms > /dev/null 2>&1 || true
+
+	/sbin/ldconfig || true
 
 	# Automatically added by dh_installdebconf
 	if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
@@ -31,6 +34,7 @@ if [ "$1" = "remove" -o "$1" = "purge" ] ; then
 		db_purge
 	fi
 	# End automatically added section
+	
 
 fi
 

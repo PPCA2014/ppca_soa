@@ -72,6 +72,10 @@ clean(){
 		# remove old
 		rm -Rf $SKEL_DEB_PACKAGE/usr
 		rm -Rf $SKEL_DEB_PACKAGE/etc
+		rm -f $SKEL_DEB_PACKAGE/DEBIAN/postinst
+		rm -f $SKEL_DEB_PACKAGE/DEBIAN/postrm
+		rm -f $SKEL_DEB_PACKAGE/DEBIAN/preinst
+		rm -f $SKEL_DEB_PACKAGE/DEBIAN/prerm
 		rm -f $SKEL_DEB_PACKAGE/*.deb
 		
 		# create new
@@ -166,7 +170,7 @@ build(){
 	tar -czf ems-bus-$VERSION_RELEASE.tar.gz ems-bus/ &
 
 	# build rpm packages
-	if [ "$BUILD_RPM_FLAG" == "true" ]; then
+	if [ "$BUILD_RPM_FLAG" = "true" ]; then
 
 		# ####### Criar os pacotes rpm para cada distro ############
 
@@ -229,7 +233,7 @@ build(){
 		done
 		
 	# build deb packages	
-	elif [ "$BUILD_DEB_FLAG" == "true" ]; then
+	elif [ "$BUILD_DEB_FLAG" = "true" ]; then
 		
 		# ####### Criar os pacotes deb para cada distro ############
 
@@ -304,8 +308,8 @@ if [ -L /usr/lib/erlang/man ]; then
 	sudo rm  /usr/lib/erlang/man
 fi	
 
-[ "$BUILD_RPM_FLAG" == "true" ] && echo "Build de pacotes rpm com rpmbuild disponível."
-[ "$BUILD_DEB_FLAG" == "true" ] && echo "Build de pacotes deb com dpkg-deb disponível."
+[ "$BUILD_RPM_FLAG" = "true" ] && echo "Build de pacotes rpm com rpmbuild disponível."
+[ "$BUILD_DEB_FLAG" = "true" ] && echo "Build de pacotes deb com dpkg-deb disponível."
 
 
 clean
