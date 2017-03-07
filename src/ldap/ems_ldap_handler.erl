@@ -45,7 +45,7 @@ loop(Socket, Transport, State) ->
 		{ok, Data} ->
 			case decode_ldap_message(Data) of
 				{ok, LdapMessage} ->
-					ems_logger:info("ems_ldap_handler request: ~p.", [LdapMessage]),
+					ems_logger:debug2("ems_ldap_handler request: ~p\n.", [LdapMessage]),
 					MessageID = LdapMessage#'LDAPMessage'.messageID,
 					Result = handle_request(LdapMessage, State),
 					case Result of

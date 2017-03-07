@@ -20,7 +20,7 @@
 -export([error/1, error/2, 
 		 info/1, info/2, 
 		 warn/1, warn/2, 
-		 debug/1, debug/2, in_debug/0,
+		 debug/1, debug/2, debug2/1, debug2/2, in_debug/0,
 		 sync/0, 
 		 log_request/1,
 		 mode_debug/1,
@@ -99,6 +99,19 @@ debug(Msg, Params) ->
 		true -> gen_server:cast(?SERVER, {write_msg, debug, Msg, Params});
 		_ -> ok
 	end.
+
+debug2(Msg) -> 
+	case in_debug() of
+		true -> format_debug(Msg);
+		_ -> ok
+	end.
+
+debug2(Msg, Params) -> 
+	case in_debug() of
+		true -> format_debug(Msg, Params);
+		_ -> ok
+	end.
+
 
 in_debug() -> ets:lookup(debug_ets, debug) =:= [{debug, true}].
 
@@ -261,21 +274,21 @@ close_filename_device(undefined) -> ok;
 close_filename_device(IODevice) -> file:close(IODevice).
 
 set_timeout_for_sync_buffer(#state{flag_checkpoint_sync_buffer = false, log_file_checkpoint=Timeout}) ->    
-	?DEBUG("ems_logger set_timeout_for_sync_buffer."),
+	%?DEBUG("ems_logger set_timeout_for_sync_buffer."),
 	erlang:send_after(Timeout, self(), checkpoint);
 
 set_timeout_for_sync_buffer(_State) ->    
 	ok.
 
 set_timeout_for_sync_tela(#state{flag_checkpoint_tela = false}) ->    
-	?DEBUG("ems_logger set_timeout_for_sync_tela."),
+	%?DEBUG("ems_logger set_timeout_for_sync_tela."),
 	erlang:send_after(2000, self(), checkpoint_tela);
 
 set_timeout_for_sync_tela(_State) ->    
 	ok.
 
 set_timeout_archive_log_checkpoint() ->    
-	?DEBUG("ems_logger set_timeout_archive_log_checkpoint."),
+	%?DEBUG("ems_logger set_timeout_archive_log_checkpoint."),
 	erlang:send_after(?LOG_ARCHIVE_CHECKPOINT, self(), checkpoint_archive_log).
 
 write_msg(Tipo, Msg, State) when is_binary(Msg) ->
@@ -329,7 +342,7 @@ sync_buffer(State = #state{buffer = Buffer,
 						   log_file_name = CurrentLogFileName,
 						   log_file_max_size = LogFileMaxSize,
 						   sync_buffer_error_count = SyncBufferErrorCount}) ->
-	?DEBUG("ems_logger sync_buffer to log file ~p. Buffer count: ~p, FileSize: ~p.", [CurrentLogFileName, string:len(Buffer), filelib:file_size(CurrentLogFileName)]),
+	%?DEBUG("ems_logger sync_buffer to log file ~p. Buffer count: ~p, FileSize: ~p.", [CurrentLogFileName, string:len(Buffer), filelib:file_size(CurrentLogFileName)]),
 	% check limit log file max size
 	case filelib:file_size(CurrentLogFileName) > LogFileMaxSize of
 		true -> 

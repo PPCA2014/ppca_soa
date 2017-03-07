@@ -188,7 +188,7 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
-			 ems_debug					= maps:get(<<"debug">>, Json, false),
+			 ems_debug					= parse_bool(maps:get(<<"debug">>, Json, false)),
 			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
 			 ems_datasources			= parse_datasources(Json)
 		}.
@@ -212,4 +212,9 @@ get_default_config() ->
 			 ems_datasources			= #{}
 		}.
 
+parse_bool(<<"true">>) -> true;
+parse_bool(<<"false">>) -> false;
+parse_bool(true) -> true;
+parse_bool(false) -> false;
+parse_bool(_) -> false.
 
