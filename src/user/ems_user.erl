@@ -103,33 +103,30 @@ find_by_cpf(Cpf) ->
 			CpfStr = binary_to_list(Cpf),
 			CpfBin = Cpf
 	end,
-	case ems_util:is_number(CpfStr) of
+	LenCpf = string:len(CpfStr),
+	case (LenCpf =:= 11 andalso ems_util:is_cpf_valid(CpfStr)) orelse
+		 (LenCpf =:= 14 andalso ems_util:is_cnpj_valid(CpfStr)) of
 		true ->
-			LenCpf = string:len(CpfStr),
-			case (LenCpf =:= 11 orelse LenCpf =:= 14) of  % deve ser CPF ou CNPJ
+			case mnesia:dirty_index_read(user, CpfBin, #user.cpf) of
+				[] -> {error, enoent};
+				[Record|_] -> {ok, Record}
+			end;
+		false -> 
+			% tenta inserir zeros na frente e refaz a pesquisa
+			case LenCpf of
+				10 -> Cpf2 = "0" ++ CpfStr;  
+				 9 -> Cpf2 = "00" ++ CpfStr;
+				 _ -> Cpf2 = CpfStr
+			end,
+			LenCpf2 = string:len(Cpf2),
+			case (LenCpf2 =:= 11 orelse LenCpf2 =:= 14) of  % deve ser CPF ou CNPJ
 				true ->
-					case mnesia:dirty_index_read(user, CpfBin, #user.cpf) of
+					case mnesia:dirty_index_read(user, list_to_binary(Cpf2), #user.cpf) of
 								[] -> {error, enoent};
 								[Record|_] -> {ok, Record}
 					end;
-				false -> 
-					% tenta inserir zeros na frente e refaz a pesquisa
-					case LenCpf of
-						10 -> Cpf2 = "0" ++ CpfStr;  
-						 9 -> Cpf2 = "00" ++ CpfStr;
-						 _ -> Cpf2 = CpfStr
-					end,
-					LenCpf2 = string:len(Cpf2),
-					case (LenCpf2 =:= 11 orelse LenCpf2 =:= 14) of  % deve ser CPF ou CNPJ
-						true ->
-							case mnesia:dirty_index_read(user, list_to_binary(Cpf2), #user.cpf) of
-										[] -> {error, enoent};
-										[Record|_] -> {ok, Record}
-							end;
-						false -> {error, enoent}
-					end
-			end;
-		false -> {error, enoent}
+				false -> {error, enoent}
+			end
 	end.
 
 

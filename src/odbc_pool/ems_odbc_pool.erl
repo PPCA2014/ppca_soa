@@ -44,10 +44,10 @@ stop() ->
 get_connection(Datasource) ->
 	case gen_server:call(?SERVER, {create_connection, Datasource}) of
 		{ok, _Datasource2} = Result ->
-			?DEBUG("ems_odbc_pool get odbc connection: ~p.", [_Datasource2]),
+			?DEBUG("ems_odbc_pool get odbc connection ~p.", [_Datasource2]),
 			Result;
-		Error -> 
-			?DEBUG("ems_odbc_pool failed to get a new odbc connection: ~p.", [Error]),
+		{error, Reason} = Error -> 
+			ems_logger:error("ems_odbc_pool get connection error ~p.", [Reason]),
 			Error
 	end.
 

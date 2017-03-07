@@ -48,7 +48,7 @@ by graduate student Everton Vargas Agilar.
   mkdir -p /var/log/ems-bus > /dev/null 2>&1
 
   # create user and group erlangms if it not exist
-  if ! egrep "^erlangms:" /etc/passwd >> /dev/null ; then
+  if ! grep "^erlangms:" /etc/passwd >> /dev/null ; then
 	  groupadd --system  $GROUP_EMS_BUS  > /dev/null 2>&1
 	  password="admin"
 	  #password_crypt=$(perl -e 'print crypt($ARGV[0], "wtf")' $password)
@@ -142,13 +142,14 @@ by graduate student Everton Vargas Agilar.
   # ldconfig
   /sbin/ldconfig  > /dev/null 2>&1 || true
 
+  # Remove DB (auto generate)
+  rm -rf /usr/lib/ems-bus/priv/db
 
   # systemd
   systemctl stop ems-bus.service  > /dev/null 2>&1 || true
   systemctl enable ems-bus.service  > /dev/null 2>&1 || true
   systemctl daemon-reload  > /dev/null 2>&1 || true
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
-  systemctl daemon-reload > /dev/null 2>&1
 
 %postun 
 
@@ -160,6 +161,9 @@ by graduate student Everton Vargas Agilar.
 	# remove user
 	#groupdel erlangms > /dev/null 2>&1 || true
 	#userdel erlangms > /dev/null 2>&1 || true
+
+    # Remove DB (auto generate)
+	rm -rf /usr/lib/ems-bus/priv/db
 
 	/sbin/ldconfig
 	
