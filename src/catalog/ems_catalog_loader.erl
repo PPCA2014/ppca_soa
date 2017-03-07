@@ -13,7 +13,8 @@
 
 %% Client
 -export([init_catalog/0,
-		 list_kernel_catalog/0]).
+		 list_kernel_catalog/0,
+		 compile_page_module/2]).
 
  
 %%====================================================================
