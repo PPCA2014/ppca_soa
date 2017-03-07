@@ -6,13 +6,8 @@
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--ifdef(debug).
-	-define(DEBUG(Msg), io:format("\033[0;34mDEBUG ~s\033[0m\n", [Msg])).
-	-define(DEBUG(Msg, Params), io:format("\033[0;34mDEBUG " ++ Msg ++ "\033[0m\n", Params)).
--else.
-	-define(DEBUG(Msg), ok).
-	-define(DEBUG(Msg, Params), ok).
--endif.
+-define(DEBUG(Msg), ems_logger:debug(Msg)).
+-define(DEBUG(Msg, Params), ems_logger:debug(Msg, Params)).
 
 -ifdef(native_json).
 	-define(JSON_LIB, jiffy).

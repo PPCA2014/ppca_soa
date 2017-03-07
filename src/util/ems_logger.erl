@@ -20,7 +20,7 @@
 -export([error/1, error/2, 
 		 info/1, info/2, 
 		 warn/1, warn/2, 
-		 debug/1, debug/2,
+		 debug/1, debug/2, in_debug/0,
 		 sync/0, 
 		 log_request/1,
 		 mode_debug/1,
@@ -50,7 +50,6 @@
 				log_file_handle,						% IODevice of file
 				log_file_max_size,						% Max file size in KB
 				sync_buffer_error_count = 0,			% Attempts to unload buffer
-				debug = false,							% It indicates whether it is in debug mode
 				level = info,							% level of errors
 				show_response = false					% show response of request
  			   }). 
@@ -90,13 +89,21 @@ info(Msg, Params) ->
 	gen_server:cast(?SERVER, {write_msg, info, Msg, Params}). 
 
 debug(Msg) -> 
-	gen_server:cast(?SERVER, {write_msg, debug, Msg}).
+	case in_debug() of
+		true -> gen_server:cast(?SERVER, {write_msg, debug, Msg});
+		_ -> ok
+	end.
 
 debug(Msg, Params) -> 
-	gen_server:cast(?SERVER, {write_msg, debug, Msg, Params}). 
+	case in_debug() of
+		true -> gen_server:cast(?SERVER, {write_msg, debug, Msg, Params});
+		_ -> ok
+	end.
 
-mode_debug(Flag) ->
-	gen_server:cast(?SERVER, {debug, Flag}). 
+in_debug() -> ets:lookup(debug_ets, debug) =:= [{debug, true}].
+
+mode_debug(true)  -> ets:insert(debug_ets, {debug, true});
+mode_debug(false) -> ets:insert(debug_ets, {debug, false}).
 
 sync() ->
 	gen_server:call(?SERVER, sync_buffer). 		
@@ -131,30 +138,17 @@ init(#service{properties = Props}) ->
 	ems_logger:info("Loading ERLANGMS ~s...", [?SERVER_NAME]),
 	Checkpoint = maps:get(<<"log_file_checkpoint">>, Props, ?LOG_FILE_CHECKPOINT),
 	LogFileMaxSize = maps:get(<<"log_file_max_size">>, Props, ?LOG_FILE_MAX_SIZE),
-	Debug = maps:get(<<"debug">>, Props, false),
+	Conf = ems_config:getConfig(),
+	Debug = Conf#config.ems_debug,
+	mode_debug(Debug),
 	State = checkpoint_arquive_log(#state{log_file_checkpoint = Checkpoint,
 										  log_file_max_size = LogFileMaxSize,
-										  log_file_handle = undefined,
-										  debug = Debug}, false),
+										  log_file_handle = undefined}, false),
     {ok, State}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({write_msg, debug, Msg}, State=#state{debug = true}) ->
-	NewState = write_msg(debug, Msg, State),
-	{noreply, NewState};
-
-handle_cast({write_msg, debug, Msg, Params}, State=#state{debug = true}) ->
-	NewState = write_msg(debug, Msg, Params, State),
-	{noreply, NewState};
-
-handle_cast({write_msg, debug, _Msg}, State) ->
-	{noreply, State};
-
-handle_cast({write_msg, debug, _Msg, _Params}, State) ->
-	{noreply, State};
-    
 handle_cast({write_msg, Tipo, Msg}, State) ->
 	NewState = write_msg(Tipo, Msg, State),
 	{noreply, NewState};
@@ -172,9 +166,6 @@ handle_cast({set_level, Level}, State) ->
 
 handle_cast({show_response, Value}, State) ->
 	{noreply, State#state{show_response = Value}};
-
-handle_cast({ems_debug, Flag}, State) ->
-	{noreply, State#state{debug = Flag}};
 
 handle_cast(sync_buffer, State) ->
 	State2 = sync_buffer_tela(State),

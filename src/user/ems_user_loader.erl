@@ -274,7 +274,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 
 sql_load_users() ->	 
 	"select distinct CodigoPessoa, 
-					rtrim(LoginPessoa) as LoginPessoa, 
+					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
 					lower(rtrim(EmailPessoa)) as EmailPessoa, 
@@ -326,7 +326,7 @@ sql_load_users() ->
 
 sql_update_users() ->	 
 	"select distinct CodigoPessoa, 
-					rtrim(LoginPessoa) as LoginPessoa, 
+					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
 					lower(rtrim(EmailPessoa)) as EmailPessoa, 

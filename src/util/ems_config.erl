@@ -46,6 +46,8 @@ getConfig() -> gen_server:call(?SERVER, get_config).
  
 init([]) -> 
 	try
+		ets:new(debug_ets, [set, named_table, public, {read_concurrency, true}, {write_concurrency, false}]),
+		ets:insert(debug_ets, {debug, false}),
 		Config = load_config(),
 		{ok, Config}
 	catch _Exception: Reason ->
@@ -186,7 +188,7 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
-			 ems_debug					= maps:get(<<"ems_debug">>, Json, false),
+			 ems_debug					= maps:get(<<"debug">>, Json, false),
 			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
 			 ems_datasources			= parse_datasources(Json)
 		}.
