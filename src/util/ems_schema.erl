@@ -102,7 +102,8 @@ item_to_binary(I) when is_atom(I) ->
 	[I2] = io_lib:format("~p", [I]),
 	iolist_to_binary(I2);
 item_to_binary(I) when is_map(I) -> I;
-item_to_binary(I) -> iolist_to_binary(I).
+item_to_binary(I) ->
+	iolist_to_binary(I).
 
 
 to_list_tuple([], L) ->	L;	

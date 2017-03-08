@@ -94,5 +94,13 @@
 	{
 		"catalog": "/emsbus/ems_netadm_service", 
 		"file": "ems_netadm_service.json"
+	},
+	{
+		"catalog": "/emsbus/ems_permission_loader", 
+		"file": "ems_permission_loader.json"
+	},
+	{
+		"catalog": "/emsbus/ems_catalog_auth_permission", 
+		"file": "ems_catalog_auth_permission.json"
 	}
 ]

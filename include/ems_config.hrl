@@ -133,6 +133,9 @@
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
 
+%Define the checkpoint to update permission for ems_permission_loader process
+-define(PERMISSION_LOADRES_UPDATE_CHECKPOINT, 120000).
+
 % HTTP access control (CORS) headers
 -define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, X-CSRF-Token, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
 -define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).

@@ -27,6 +27,22 @@
 			   ctrl_update 
 			   
 		}).
+		
+-record(permission, {id :: non_neg_integer(),
+                     codigo :: integer(),
+                     login :: string(),
+                     perId :: integer(),
+                     perNome :: string(),
+                     traId :: integer(),
+                     traNameFrm :: string(),
+                     traNameMenu :: string(),
+                     traInclude :: integer(),
+                     traExclude :: integer(),
+                     traUpdate :: integer(),
+                     traVisualize :: integer(),
+                     ctrl_insert,
+                     ctrl_update
+          }).
 
 -record(ctrl_params, {name :: string(),
 					  value
