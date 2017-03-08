@@ -40,6 +40,8 @@ ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
 SEND_EMAIL="false"
+PRINT_HEADER="true"
+FALHA_LDAP="false"
 
 # tmpfiles go to /$TMP_DIR
 mkdir -p $TMP_DIR && cd $TMP_DIR
@@ -104,19 +106,24 @@ EOF
 
 
 generate_test(){
-	# Output to report file if send email
-	if [ "$SEND_EMAIL" = "true" ]; then
-		exec > >(tee -a ${REPORT_FILE} )
-		exec 2> >(tee -a ${REPORT_FILE} >&2)
+	if [ "$PRINT_HEADER" = "true" ]; then
+		# Output to report file if send email
+		if [ "$SEND_EMAIL" = "true" ]; then
+			exec > >(tee -a ${REPORT_FILE} )
+			exec 2> >(tee -a ${REPORT_FILE} >&2)
+		fi
+
+		echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
+		echo "Date: $CURRENT_DATE"
+		echo "Server: $LDAP_SERVER"
+		echo "Environment: $ENVIRONMENT"
+
+		PRINT_HEADER="false"
 	fi
 
-	echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
-	echo "Date: $CURRENT_DATE"
-	echo "Server: $LDAP_SERVER"
-	echo "Environment: $ENVIRONMENT"
-
+	echo ""
 	if [ "$COUNTER" = "1" ]; then
-		echo "Realizando 1 requisição LDAP para $LDAP_SERVER com user $USER"
+		echo "Realizando requisição LDAP para $LDAP_SERVER com user $USER"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		echo ""
 		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
@@ -192,6 +199,28 @@ if [ "$#" = "5" -a "$5" = "--sendemail" ]; then
 	SEND_EMAIL="true"
 fi
 
-generate_test
-[ "$SEND_EMAIL" = "true"  -a "$?" = "49" ] && send_email && echo "This report was send to administrators."
+# Quando envia email o teste é mais rigoroso
+# tenta várias vezes antes de notificar falha
+if [ "$SEND_EMAIL" = "true" ]; then
+	for T in 1 2 3 4 5 6; do
+		generate_test  # ocorre erro 49 quando invalid credentials
+		if [ "$?" = "0" ]; then
+			FALHA_LDAP="false"
+			break;
+		else
+			FALHA_LDAP="true"
+		fi
+		echo ""
+		AGUARDA=$(($T*2))
+		echo "Falhou, aguardando $AGUARDA segundos para realizar nova requisição..."
+		sleep $AGUARDA  # aguarda de forma crescente
+	done
+else
+	generate_test  # ocorre erro 49 quando invalid credentials
+fi
+
+if [ "$SEND_EMAIL" = "true"  -a "$FALHA_LDAP" = "true" ]; then
+	echo "Parece que o servidor LDAP está fora de serviço!"
+	send_email && echo "This report was send to administrators."
+fi
 rm -rf $TMP_DIR/
