@@ -50,7 +50,7 @@ loop(Socket, Transport, State) ->
 					Result = handle_request(LdapMessage, State),
 					case Result of
 						{ok, unbindRequest} ->
-							?DEBUG("ems_ldap_handler unbindRequest."),
+							?DEBUG("ems_ldap_handler unbindRequest and close socket."),
 							Transport:close(Socket);
 						{ok, Msg} -> 
 							?DEBUG("ems_ldap_handler response: ~p.", [Msg]),
@@ -64,6 +64,7 @@ loop(Socket, Transport, State) ->
 					loop(Socket, Transport, State)
 			end;
 		_ ->
+			?DEBUG("ems_ldap_handler close socket."),
 			Transport:close(Socket)
 	end.
 
@@ -96,30 +97,30 @@ handle_request({'LDAPMessage', _,
 		<<"cn=">> ->
 			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
 				true -> 
-					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
+					ems_logger:info("ems_ldap_handler bind_cn ~p success.", [Name]),
 					make_bind_response(success, Name);
 				_-> 
-					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
+					ems_logger:error("ems_ldap_handler bind_cn ~p invalid credential.", [Name]),
 					make_bind_response(invalidCredentials, Name)
 			end;
 		<<"uid">> -> 
 			<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
 			BindResponse = case middleware_autentica(UserLogin, Password, State) of
-				{error, _Reason} ->	
-					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
-					make_bind_response(invalidCredentials, Name);
 				ok -> 
-					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
-					make_bind_response(success, Name)
+					ems_logger:info("ems_ldap_handler bind_uid ~p success.", [Name]),
+					make_bind_response(success, Name);
+				{error, _Reason} ->	
+					ems_logger:error("ems_ldap_handler bind_uid ~p invalid credential.", [Name]),
+					make_bind_response(invalidCredentials, Name)
 			end;
 		_ -> 
 			BindResponse = case middleware_autentica(Name, Password, State) of
-				{error, _Reason} ->	
-					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
-					make_bind_response(invalidCredentials, Name);
 				ok -> 
 					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
-					make_bind_response(success, Name)
+					make_bind_response(success, Name);
+				{error, _Reason} ->	
+					ems_logger:error("ems_ldap_handler bind ~p invalid credential.", [Name]),
+					make_bind_response(invalidCredentials, Name)
 			end
 	end,
 	{ok, [BindResponse]};

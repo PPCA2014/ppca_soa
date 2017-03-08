@@ -53,7 +53,7 @@ init(#service{datasource = Datasource,
 				   operation = load_or_update_operation(),
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update = LastUpdate},
-	{ok, State, 5000}.
+	{ok, State, 3000}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -114,11 +114,13 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
+-spec load_or_update_operation() -> load_users | update_users.
 load_or_update_operation() ->
 	case mnesia:table_info(user, size) of
 		 0 -> load_users;
 		 _ -> update_users
 	end.
+
 
 load_users_from_datasource(Datasource, CtrlInsert) -> 
 	try
@@ -137,9 +139,7 @@ load_users_from_datasource(Datasource, CtrlInsert) ->
 							Count = insert_users(Records, 0, CtrlInsert),
 							ems_logger:info("ems_user_loader load ~p users.", [Count])
 						end,
-						?DEBUG("ems_user_loader is loading users....\n"),
 						mnesia:ets(F),
-						?DEBUG("mnesia:change_table_copy_type\n"),
 						mnesia:change_table_copy_type(user, node(), disc_copies),
 						ok;
 					{error, Reason} = Error -> 
@@ -234,7 +234,7 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 update_users([], Count, _CtrlUpdate) -> Count;
 update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count, CtrlUpdate) ->
 	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
-	case ems_user:find_by_login(Login) of
+	case ems_user:find_by_codigo(Codigo) of
 		{ok, User} ->
 			PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
 			User2 = User#user{codigo = Codigo,

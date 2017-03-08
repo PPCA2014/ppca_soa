@@ -14,6 +14,7 @@
 
 -export([get/1, insert/1, update/1, all/0, delete/1, 
 		 authenticate_login_password/2, 
+		 find_by_codigo/1,
 		 find_by_login/1, 
 		 find_by_name/1, 
 		 find_by_email/1, 
@@ -41,6 +42,7 @@ delete(Id) -> ems_db:delete(user, Id).
 
 valida(_User, _Operation) -> ok.
 
+-spec authenticate_login_password(binary(), binary()) -> ok | {error, invalidCredentials}.
 authenticate_login_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
@@ -49,6 +51,14 @@ authenticate_login_password(Login, Password) ->
 				_ -> {error, invalidCredentials}
 			end;
 		_ -> {error, invalidCredentials}
+	end.
+
+
+-spec find_by_codigo(integer()) -> #user{} | {error, enoent}.
+find_by_codigo(Codigo) ->
+	case mnesia:dirty_index_read(user, Codigo, #user.codigo) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end.
 
 

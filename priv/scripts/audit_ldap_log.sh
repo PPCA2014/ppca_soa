@@ -72,7 +72,7 @@ SEND_EMAIL="false"
 # Log destination parameter
 LOG_YEAR=$(date '+%Y')
 LOG_DEST_BASE="/var/log/$EMS_NODE"
-LOG_DEST="$LOG_DEST_BASE/$(ls $LOG_DEST_BASE/ | sed '/ems_bus@.*/ !d; 1q')/$LOG_YEAR"
+LOG_DEST="$LOG_DEST_BASE"
 LOG_FILE_TMP="$TMP_DIR/full_log_file.tmp"
 LOG_FILE="$TMP_DIR/full_log_file_filtered.tmp"
 
@@ -343,6 +343,7 @@ fi
 if [ "$1" == "--sendemail" ] || [ "$2" == "--sendemail" ] || [ "$3" == "--sendemail" ]; then
   SEND_EMAIL="true"
 fi
+
 
 # generate report
 generate_report

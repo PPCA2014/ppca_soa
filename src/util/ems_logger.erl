@@ -102,13 +102,17 @@ debug(Msg, Params) ->
 
 debug2(Msg) -> 
 	case in_debug() of
-		true -> format_debug(Msg);
+		true -> 
+			Msg2 = lists:concat(["\033[0;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]),
+			io:format(Msg2);
 		_ -> ok
 	end.
 
 debug2(Msg, Params) -> 
 	case in_debug() of
-		true -> format_debug(Msg, Params);
+		true -> 
+			Msg2 = lists:concat(["\033[0;34mDEBUG ", ems_clock:local_time_str(), "  ", io_lib:format(Msg, Params), "\033[0m"]),
+			io:format(Msg2);
 		_ -> ok
 	end.
 

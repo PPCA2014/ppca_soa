@@ -41,14 +41,21 @@ stop() ->
     gen_server:cast(?SERVER, shutdown).
  
  
+-spec get_connection(#service_datasource{}) -> {ok, #service_datasource{}} | {error, eunavailable_odbc_connection}.
 get_connection(Datasource) ->
-	case gen_server:call(?SERVER, {create_connection, Datasource}) of
-		{ok, _Datasource2} = Result ->
-			?DEBUG("ems_odbc_pool get odbc connection ~p.", [_Datasource2]),
-			Result;
-		{error, Reason} = Error -> 
-			ems_logger:error("ems_odbc_pool get connection error ~p.", [Reason]),
-			Error
+	try
+		case gen_server:call(?SERVER, {create_connection, Datasource}, 12500) of
+			{ok, _Datasource2} = Result ->
+				?DEBUG("ems_odbc_pool get connection ~p.", [_Datasource2]),
+				Result;
+			{error, Reason} -> 
+				ems_logger:error("ems_odbc_pool get connection error ~p.", [Reason]),
+				{error, eunavailable_odbc_connection}
+		end
+	catch
+		_ : _ ->
+			ems_logger:error("ems_odbc_pool get connection timeout to datasource ~p.", [Datasource]),
+			{error, eunavailable_odbc_connection}
 	end.
 
 
@@ -60,11 +67,24 @@ connection_pool_size(Datasource) -> gen_server:call(?SERVER, {get_size, Datasour
 param_query(#service_datasource{owner = Owner}, Sql) ->
 	gen_server:call(Owner, {param_query, Sql, [], undefined}).
 
-param_query(#service_datasource{owner = Owner}, Sql, Params) ->
-	gen_server:call(Owner, {param_query, Sql, Params, undefined}).
+param_query(Datasource = #service_datasource{owner = Owner, 
+											 timeout = Timeout}, Sql, Params) ->
+	try
+		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
+	catch
+		_ : _ ->
+			ems_logger:error("ems_odbc_pool param query timeout to datasource ~p.", [Datasource]),
+			{error, timeout}
+	end.
 
-param_query(#service_datasource{owner = Owner}, Sql, Params, Timeout) ->
-	gen_server:call(Owner, {param_query, Sql, Params, Timeout}).
+param_query(Datasource = #service_datasource{owner = Owner}, Sql, Params, Timeout) ->
+	try
+		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
+	catch
+		_ : _ ->
+			ems_logger:error("ems_odbc_pool param query timeout to datasource ~p.", [Datasource]),
+			{error, timeout}
+	end.
 
  
  
