@@ -192,7 +192,6 @@ generate_report(){
 	fi
 	SUB_TITLE_SIZE=$[$(echo $SUB_TITLE_REPORT | wc -c) / 2]
 	printf "%*s\n" $[47 + $SUB_TITLE_SIZE] "$SUB_TITLE_REPORT"
-	printf "%*s\n" $[49 + $SUB_TITLE_SIZE] "$ENVIRONMENT"
 	echo
 	
 
@@ -273,7 +272,7 @@ generate_report(){
 
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE)
-	TITULO_MSG="ERLANGMS LDAP Log Analysis Report - $LINUX_IP_SERVER" 
+	TITULO_MSG="ERLANGMS LDAP Log Analysis   -  Date: $CURRENT_DATE  IP: $LINUX_IP_SERVER" 
 	SUBJECT="<html>
 			<head>
 				<style>
