@@ -14,6 +14,7 @@
 
 -export([get/1, insert/1, update/1, all/0, delete/1, 
 		 authenticate_login_password/2, 
+		 find_by_codigo/1,
 		 find_by_login/1, 
 		 find_by_name/1, 
 		 find_by_email/1, 
@@ -41,6 +42,7 @@ delete(Id) -> ems_db:delete(user, Id).
 
 valida(_User, _Operation) -> ok.
 
+-spec authenticate_login_password(binary(), binary()) -> ok | {error, invalidCredentials}.
 authenticate_login_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
@@ -52,14 +54,27 @@ authenticate_login_password(Login, Password) ->
 	end.
 
 
+-spec find_by_codigo(integer()) -> #user{} | {error, enoent}.
+find_by_codigo(Codigo) ->
+	case mnesia:dirty_index_read(user, Codigo, #user.codigo) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
+	end.
+
+
 -spec find_by_login(binary()) -> #user{} | {error, enoent}.
 find_by_login(<<>>) -> {error, enoent};	
 find_by_login("") -> {error, enoent};	
-find_by_login(Login) when is_list(Login) ->	find_by_login(list_to_binary(Login));
+find_by_login(undefined) -> {error, enoent};	
 find_by_login(Login) ->
-	case mnesia:dirty_index_read(user, Login, #user.login) of
+	case is_list(Login) of
+		true -> LoginStr = string:to_lower(Login);
+		false -> LoginStr = string:to_lower(binary_to_list(Login))
+	end,
+	LoginBin = list_to_binary(LoginStr),
+	case mnesia:dirty_index_read(user, LoginBin, #user.login) of
 		[] -> 
-			case find_by_email(Login) of
+			case find_by_email(LoginBin) of
 				{ok, Record} -> {ok, Record};
 				{error, enoent} -> find_by_cpf(Login)
 			end;
@@ -73,15 +88,12 @@ find_by_email("") -> {error, enoent};
 find_by_email(undefined) -> {error, enoent};	
 find_by_email(Email) -> 
 	case is_list(Email) of
-		true -> 
-			EmailStr = string:to_lower(Email),
-			EmailBin = list_to_binary(EmailStr);
-		false ->
-			EmailStr = string:to_lower(binary_to_list(Email)),
-			EmailBin = list_to_binary(EmailStr)
+		true -> EmailStr = string:to_lower(Email);
+		false -> EmailStr = string:to_lower(binary_to_list(Email))
 	end,
 	case string:rchr(EmailStr, $@) > 0 of
 		true -> 
+			EmailBin = list_to_binary(EmailStr),
 			case mnesia:dirty_index_read(user, EmailBin, #user.email) of
 				[] -> {error, enoent};
 				[Record|_] -> {ok, Record}

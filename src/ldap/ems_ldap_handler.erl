@@ -45,12 +45,12 @@ loop(Socket, Transport, State) ->
 		{ok, Data} ->
 			case decode_ldap_message(Data) of
 				{ok, LdapMessage} ->
-					ems_logger:info("ems_ldap_handler request: ~p.", [LdapMessage]),
+					ems_logger:debug2("ems_ldap_handler request: ~p\n.", [LdapMessage]),
 					MessageID = LdapMessage#'LDAPMessage'.messageID,
 					Result = handle_request(LdapMessage, State),
 					case Result of
 						{ok, unbindRequest} ->
-							?DEBUG("ems_ldap_handler unbindRequest."),
+							?DEBUG("ems_ldap_handler unbindRequest and close socket."),
 							Transport:close(Socket);
 						{ok, Msg} -> 
 							?DEBUG("ems_ldap_handler response: ~p.", [Msg]),
@@ -64,6 +64,7 @@ loop(Socket, Transport, State) ->
 					loop(Socket, Transport, State)
 			end;
 		_ ->
+			?DEBUG("ems_ldap_handler close socket."),
 			Transport:close(Socket)
 	end.
 
@@ -96,30 +97,30 @@ handle_request({'LDAPMessage', _,
 		<<"cn=">> ->
 			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
 				true -> 
-					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
+					ems_logger:info("ems_ldap_handler bind_cn ~p success.", [Name]),
 					make_bind_response(success, Name);
 				_-> 
-					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
+					ems_logger:error("ems_ldap_handler bind_cn ~p invalid credential.", [Name]),
 					make_bind_response(invalidCredentials, Name)
 			end;
 		<<"uid">> -> 
 			<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
 			BindResponse = case middleware_autentica(UserLogin, Password, State) of
-				{error, _Reason} ->	
-					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
-					make_bind_response(invalidCredentials, Name);
 				ok -> 
-					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
-					make_bind_response(success, Name)
+					ems_logger:info("ems_ldap_handler bind_uid ~p success.", [Name]),
+					make_bind_response(success, Name);
+				{error, _Reason} ->	
+					ems_logger:error("ems_ldap_handler bind_uid ~p invalid credential.", [Name]),
+					make_bind_response(invalidCredentials, Name)
 			end;
-		UserLogin -> 
-			BindResponse = case middleware_autentica(UserLogin, Password, State) of
-				{error, _Reason} ->	
-					ems_logger:error("ems_ldap_handler bind ~p does not exist.", [Name]),
-					make_bind_response(invalidCredentials, Name);
+		_ -> 
+			BindResponse = case middleware_autentica(Name, Password, State) of
 				ok -> 
 					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
-					make_bind_response(success, Name)
+					make_bind_response(success, Name);
+				{error, _Reason} ->	
+					ems_logger:error("ems_ldap_handler bind ~p invalid credential.", [Name]),
+					make_bind_response(invalidCredentials, Name)
 			end
 	end,
 	{ok, [BindResponse]};
@@ -202,23 +203,43 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
 
-make_result_entry(UsuLogin, {UsuId, UsuLogin2, UsuNome, UsuCpf, UsuEmail, UsuSenha, Type, TypeEmail, CtrlInsert, CtrlUpdate}, AdminLdap) ->
+make_result_entry(#user{codigo = UsuId, 
+					    login = UsuLogin,	
+					    name = UsuName, 
+					    cpf = UsuCpf, 
+					    email = UsuEmail, 
+					    password = UsuPasswd, 
+					    type = UsuType, 
+					    type_email = UsuTypeEmail, 
+					    ctrl_insert = UsuCtrlInsert, 
+						ctrl_update = UsuCtrlUpdate}, 
+				  AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
+	UsuId2 = format_user_field(UsuId),
+	UsuLogin2 = format_user_field(UsuLogin),
+	UsuNome2 = format_user_field(UsuName),
+	UsuCpf2 = format_user_field(UsuCpf),
+	UsuEmail2 = format_user_field(UsuEmail),
+	UsuSenha2 = format_user_field(UsuPasswd),
+	UsuType2 = format_user_field(UsuType),
+	UsuTypeEmail2 = format_user_field(UsuTypeEmail),
+	UsuCtrlInsert2 = format_user_field(UsuCtrlInsert),
+	UsuCtrlUpdate2 = format_user_field(UsuCtrlUpdate),
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
-										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId]},
+										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId2]},
 														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
-														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail]},
+														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail2]},
 														#'PartialAttribute'{type = <<"login">>, vals = [UsuLogin2]},
-														#'PartialAttribute'{type = <<"email">>, vals = [UsuEmail]},
-														#'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf]},
-														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha]},
-														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome]},
-														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId]},
+														#'PartialAttribute'{type = <<"email">>, vals = [UsuEmail2]},
+														#'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf2]},
+														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha2]},
+														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome2]},
+														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId2]},
 														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuLogin2]},
-														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [Type]},
-														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [TypeEmail]},
-														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [CtrlInsert]},
-														#'PartialAttribute'{type = <<"ems_ctrl_update">>, vals = [CtrlUpdate]}
+														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [UsuType2]},
+														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [UsuTypeEmail2]},
+														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [UsuCtrlInsert2]},
+														#'PartialAttribute'{type = <<"ems_ctrl_update">>, vals = [UsuCtrlUpdate2]}
 														]
 										}
 	}.
@@ -244,9 +265,9 @@ handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->
 			ems_logger:error("ems_ldap_handler search ~p fail. Reason: ~p.", [UserLogin, Reason]),
 			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
-		{ok, UserRecord = {_, UsuLogin, UsuNome, _, _, _, _, _, _, _}} ->
-			ems_logger:info("ems_ldap_handler search ~p ~p success.", [UsuLogin, UsuNome]),
-			ResultEntry = make_result_entry(UsuLogin, UserRecord, AdminLdap),
+		{ok, User} ->
+			ems_logger:info("ems_ldap_handler search ~p ~p success.", [UserLogin, User#user.name]),
+			ResultEntry = make_result_entry(User, AdminLdap),
 			ResultDone = make_result_done(success),
 			{ok, [ResultEntry, ResultDone]}
 	end.
@@ -268,28 +289,9 @@ middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware,
 
 middleware_find_user_by_login(UserLogin, #state{middleware = undefined}) ->
 	case ems_user:find_by_login(UserLogin) of
-		{ok, _User = #user{codigo = UsuId, 
-						   login = UsuLogin,	
-						   name = UsuNome, 
-						   cpf = UsuCpf, 
-						   email = UsuEmail, 
-						   password = UsuSenha, 
-						   type = Type, 
-						   type_email = TypeEmail, 
-						   ctrl_insert = CtrlInsert, 
-						   ctrl_update = CtrlUpdate}} ->
-			?DEBUG("ems_ldap_handler exec ems_user:find_by_login user: ~p.", [_User]),
-			UserRecord2 = {format_user_field(UsuId),
-						   format_user_field(UsuLogin),
-						   format_user_field(UsuNome),
-						   format_user_field(UsuCpf),
-						   format_user_field(UsuEmail),
-						   format_user_field(UsuSenha),
-						   format_user_field(Type),
-						   format_user_field(TypeEmail),
-						   format_user_field(CtrlInsert),
-						   format_user_field(CtrlUpdate)}, 
-			{ok, UserRecord2};
+		{ok, User} ->
+			?DEBUG("ems_ldap_handler exec ems_user:find_by_login user: ~p.", [User]),
+			{ok, User};
 		Error -> Error
 	end;
 middleware_find_user_by_login(UserLogin, #state{middleware = Middleware, 
@@ -299,19 +301,9 @@ middleware_find_user_by_login(UserLogin, #state{middleware = Middleware,
 			case erlang:function_exported(Middleware, find_user_by_login, 2) of
 				true -> 
 					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
-						{ok, {UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}} ->
-							?DEBUG("ems_ldap_handler exec middleware_find_user_by_login user: ~p.", [{UsuId, UsuNome, UsuCpf, UsuEmail, UsuSenha}]),
-							UserRecord2 = {format_user_field(UsuId),
-										   format_user_field(UserLogin),
-										   format_user_field(UsuNome),
-										   format_user_field(UsuCpf),
-										   format_user_field(UsuEmail),
-										   format_user_field(UsuSenha),
-										   <<>>,
-										   <<>>,
-										   <<>>,
-										   <<>>}, 
-							{ok, UserRecord2};
+						{ok, User} ->
+							?DEBUG("ems_ldap_handler exec middleware_find_user_by_login user: ~p.", [User]),
+							{ok, User};
 						Error -> Error
 					end;
 				false -> {error, einvalid_middleware}

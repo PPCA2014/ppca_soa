@@ -61,8 +61,8 @@ handle_cast(shutdown, State) ->
 handle_cast(_Msg, State) ->
 	{noreply, State}.
     
-handle_call({param_query, Sql, Params, Timeout}, _From, State) ->
-	case do_param_query(Sql, Params, Timeout, State) of
+handle_call({param_query, Sql, Params}, _From, State) ->
+	case do_param_query(Sql, Params, State) of
 		{ok, Result, Datasource} -> 
 			{reply, Result, #state{datasource = Datasource}};
 		Error -> 
@@ -118,9 +118,9 @@ do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type =
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
-do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						   type = sqlite,
-																						   driver = <<"sqlite3">>}}) ->
+do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																			     type = sqlite,
+																				 driver = <<"sqlite3">>}}) ->
 	Params2 = [hd(V) || {_, V} <- Params],
 	case esqlite3:prepare(Sql, ConnRef) of
         {ok, Statement} ->
@@ -132,9 +132,9 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 			{ok, {selected, Fields2, Records}, Datasource};
         Error -> Error
     end;
-do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						   connection = Connection,
-																						   timeout = Timeout}}) ->
+do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																				 connection = Connection,
+																				 timeout = Timeout}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, Reason} ->

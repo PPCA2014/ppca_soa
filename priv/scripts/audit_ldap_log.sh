@@ -72,7 +72,7 @@ SEND_EMAIL="false"
 # Log destination parameter
 LOG_YEAR=$(date '+%Y')
 LOG_DEST_BASE="/var/log/$EMS_NODE"
-LOG_DEST="$LOG_DEST_BASE/$(ls $LOG_DEST_BASE/ | sed '/ems_bus@.*/ !d; 1q')/$LOG_YEAR"
+LOG_DEST="$LOG_DEST_BASE"
 LOG_FILE_TMP="$TMP_DIR/full_log_file.tmp"
 LOG_FILE="$TMP_DIR/full_log_file_filtered.tmp"
 
@@ -192,7 +192,6 @@ generate_report(){
 	fi
 	SUB_TITLE_SIZE=$[$(echo $SUB_TITLE_REPORT | wc -c) / 2]
 	printf "%*s\n" $[47 + $SUB_TITLE_SIZE] "$SUB_TITLE_REPORT"
-	printf "%*s\n" $[49 + $SUB_TITLE_SIZE] "$ENVIRONMENT"
 	echo
 	
 
@@ -273,7 +272,7 @@ generate_report(){
 
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE)
-	TITULO_MSG="ERLANGMS LDAP Log Analysis Report - $LINUX_IP_SERVER" 
+	TITULO_MSG="ERLANGMS LDAP Log Analysis   -  Date: $CURRENT_DATE  IP: $LINUX_IP_SERVER" 
 	SUBJECT="<html>
 			<head>
 				<style>
@@ -343,6 +342,7 @@ fi
 if [ "$1" == "--sendemail" ] || [ "$2" == "--sendemail" ] || [ "$3" == "--sendemail" ]; then
   SEND_EMAIL="true"
 fi
+
 
 # generate report
 generate_report

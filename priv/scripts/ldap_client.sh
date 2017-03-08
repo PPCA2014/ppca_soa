@@ -7,19 +7,146 @@
 # Requisitos: Necessita do pacote ldap-utils
 #
 
+# locale
+export LANG=en_US.UTF-8
+export LC_CTYPE=pt_BR.UTF-8
+export LC_NUMERIC=pt_BR.UTF-8
+export LC_TIME=pt_BR.UTF-8
+export LC_COLLATE="en_US.UTF-8"
+export LC_MONETARY=pt_BR.UTF-8
+export LC_MESSAGES="en_US.UTF-8"
+export LC_PAPER=pt_BR.UTF-8
+export LC_NAME=pt_BR.UTF-8
+export LC_ADDRESS=pt_BR.UTF-8
+export LC_TELEPHONE=pt_BR.UTF-8
+export LC_MEASUREMENT=pt_BR.UTF-8
+export LC_IDENTIFICATION=pt_BR.UTF-8
+
+# Get linux description
+LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
+									gsub("\"", "", $2);  print $2 
+								 } 
+							   }'  /etc/os-release)
+
+# Primary IP of the server
+LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
+
+
+VERSION=1.0.0
+CURRENT_DIR=$(pwd)
+TMP_DIR="/tmp/erlangms/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')_$$"
+EMS_NODE="ems-bus"
+ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
+CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
+REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
+SEND_EMAIL="false"
+
+# tmpfiles go to /$TMP_DIR
+mkdir -p $TMP_DIR && cd $TMP_DIR
+
+# SMTP parameter
+SMTP_SERVER="mail.unb.br"
+SMTP_PORT=587
+SMTP_DE="erlangms@unb.br"
+SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
+SMTP_PASSWD=erl1523
+
+
+send_email(){	
+	REPORT_CONTENT=$(cat $REPORT_FILE)
+	TITULO_MSG="ERLANGMS LDAP Client Test  -  Date: $CURRENT_DATE   IP: $LINUX_IP_SERVER" 
+	SUBJECT="<html>
+			<head>
+				<style>
+					pre {
+						font-family: \"Courier New\", Courier, \"Lucida Sans Typewriter\", \"Lucida Typewriter\", monospace;
+						font-size: 14px;
+						font-style: normal;
+						font-variant: normal;
+						font-weight: 460;
+						line-height: 18.5714px;
+					}
+					
+				</style>
+			<head>
+			<body>
+				<pre>$REPORT_CONTENT<pre>
+			</body>
+			</html>"
+    python <<EOF
+# -*- coding: utf-8 -*-
+import smtplib
+from email.mime.text import MIMEText
+from email.Utils import formatdate
+from email.mime.multipart import MIMEMultipart
+from email import encoders
+try:
+	smtp = smtplib.SMTP("$SMTP_SERVER", $SMTP_PORT)
+	smtp.starttls()
+	smtp.login("$SMTP_DE", "$SMTP_PASSWD")
+	msg = MIMEMultipart()
+	msg['Subject'] = "$TITULO_MSG"
+	msg['From'] = "$SMTP_DE"
+	msg['To'] = "$SMTP_PARA"
+	msg['Date'] = formatdate(localtime=True)
+	part1 = MIMEText("Relatório em anexo.", 'plain')
+	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
+	msg.attach(part2)
+	smtp.sendmail("$SMTP_DE", ['evertonagilar@unb.br'], msg.as_string())
+	smtp.quit()
+	exit(0)
+except Exception as e:
+	print("Send email error: "+ str(e))
+	exit(1)
+EOF
+	
+}	
+
+
+generate_test(){
+	# Output to report file if send email
+	if [ "$SEND_EMAIL" = "true" ]; then
+		exec > >(tee -a ${REPORT_FILE} )
+		exec 2> >(tee -a ${REPORT_FILE} >&2)
+	fi
+
+	echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
+	echo "Date: $CURRENT_DATE"
+	echo "Server: $LDAP_SERVER"
+	echo "Environment: $ENVIRONMENT"
+
+	if [ "$COUNTER" = "1" ]; then
+		echo "Realizando 1 requisição LDAP para $LDAP_SERVER com user $USER"
+		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
+		echo ""
+		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
+	else
+		echo "Realizando $COUNTER requisições LDAP para $LDAP_SERVER com user $USER"
+		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
+		until [  $COUNTER -lt 1 ]; do
+			echo ""
+			let COUNTER-=1
+			ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
+		done
+	fi
+}
+
+
 # Verifica se não há parâmetros
 if [ "$#" = "0" ] || [ "$1" = "--help" ]; then
-	echo "Modo de usar 1: ./ldap_client.sh qtd_requests host_ldap user"
+	echo "Modo de usar 1: ./ldap_client.sh qtd_requests host_ldap login"
 	echo "Modo de usar 2: ./ldap_client.sh host_ldap user"
-	echo "         qtd_requests  => número de requisições simultâneas (default é 100)"
-	echo "         host_ldap     => host do ldap (default é localhost:2389)"	
-	echo "         user          => login do user"	
-	echo "         admin_passwd  => password do admin do ldap"	
+	echo "Modo de usar 3: ./ldap_client.sh qtd_requests host_ldap login --sendemail"
+	echo "         qtd_requests    => número de requisições simultâneas (default é 100)"
+	echo "         host_ldap       => host do ldap (default é localhost:2389)"	
+	echo "         login           => login do user"	
+	echo "         admin_passwd    => password do admin do ldap"	
+	echo "         --sendemail  => Envia e-mail ao admin em caso de erro"
 	exit
 fi
 
 # Parâmetro qtd_requests
-if [ $# -ge 3 ]; then
+if [ $# -gt 3 ]; then
 	COUNTER=$1
     RE='^[0-9]+$'
     if ! [[ $COUNTER =~ $RE ]] ; then
@@ -30,14 +157,14 @@ else
 fi
 
 # Parâmetro host_ldap
-if [ "$#" = "4" ]; then
-    HOST_LDAP="$2"
+if [ $# -ge 4 ]; then
+    LDAP_SERVER="$2"
     RE='^[0-9a-zA-Z_-.]+:[0-9]+$'
-    if ! [[ $HOST_LDAP =~ $RE ]] ; then
-       echo "Parâmetro host_ldap ( $HOST_LDAP ) deve possuir o seguinte formato: hostname:port. Ex.: localhost:2389" >&2; exit 1
+    if ! [[ $LDAP_SERVER =~ $RE ]] ; then
+       echo "Parâmetro host_ldap ( $LDAP_SERVER ) deve possuir o seguinte formato: hostname:port. Ex.: localhost:2389" >&2; exit 1
     fi
 else
-       HOST_LDAP="localhost:2389"
+       LDAP_SERVER="localhost:2389"
 fi
 
 # Parâmetro user
@@ -49,8 +176,8 @@ else
     USER=$3
 fi
 
-# Parâmetro password
-if [ "$#" = "4" ]; then
+# Parâmetro admin_passwd
+if [ "$#" = "4" -o "$#" = "5" ]; then
 	ADMIN_PASSWD="$4"
 elif [ "$#" = "3" ]; then
     ADMIN_PASSWD="$3"
@@ -61,21 +188,10 @@ else
 	read -s ADMIN_PASSWD
 fi
 
-if [ "$COUNTER" = "1" ]; then
-	echo ""
-	echo "Realizando 1 requisição LDAP para $HOST_LDAP com user $USER"
-	echo "    Cmd: " ldapsearch -xLLL -h "$HOST_LDAP" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
-	echo ""
-	ldapsearch -xLLL -h "$HOST_LDAP" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
-else
-	echo ""
-	echo "Realizando $COUNTER requisições LDAP para $HOST_LDAP com user $USER"
-	echo "    Cmd: " ldapsearch -xLLL -h "$HOST_LDAP" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
-	echo ""
-	until [  $COUNTER -lt 1 ]; do
-		let COUNTER-=1
-		ldapsearch -xLLL -h "$HOST_LDAP" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
-		echo "---"
-	done
+if [ "$#" = "5" -a "$5" = "--sendemail" ]; then
+	SEND_EMAIL="true"
 fi
-			         
+
+generate_test
+[ "$SEND_EMAIL" = "true"  -a "$?" = "49" ] && send_email && echo "This report was send to administrators."
+rm -rf $TMP_DIR/
