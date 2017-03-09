@@ -60,7 +60,7 @@ VERSION=1.0.0
 LDAP_PORT="2389"
 LDAP_SERVER="$LINUX_IP_SERVER:$LDAP_PORT"
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
+TMP_DIR="/tmp/erlangms_$$/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
 ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')

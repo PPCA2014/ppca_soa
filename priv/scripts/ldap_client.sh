@@ -36,7 +36,7 @@ LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
 VERSION=1.0.0
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')_$$"
+TMP_DIR="/tmp/erlangms_$$/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
