@@ -4,7 +4,9 @@
 # Author: Everton de Vargas Agilar
 # Data: 16/03/2016
 #
-# Requisitos: Necessita do pacote ldap-utils
+# Requires ldap-utils package
+#
+# How to use: sudo ./ldap_client.sh 1 localhost geral 123456 --sendemail --auto_restart
 #
 
 # locale
@@ -36,7 +38,6 @@ VERSION=1.0.0
 CURRENT_DIR=$(pwd)
 TMP_DIR="/tmp/erlangms/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')_$$"
 EMS_NODE="ems-bus"
-ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
 SEND_EMAIL="false"
@@ -44,6 +45,15 @@ PRINT_HEADER="true"
 FALHA_LDAP="false"
 AUTO_RESTART="false"
 RESTARTED="false"
+LDAP_PORT="2389"
+LDAP_SERVER="127.0.0.1:$LDAP_PORT"
+ENVIRONMENT="$LINUX_DESCRIPTION  IP $LINUX_IP_SERVER"
+NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
+MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
+LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
+TIME_WAIT_START_SERVER=10  # seconds
+TIME_WAIT_TEST=4 # seconds
+EMAIL_ONLY_ERROR="false"
 
 # tmpfiles go to /$TMP_DIR
 mkdir -p $TMP_DIR && cd $TMP_DIR
@@ -56,6 +66,30 @@ SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
 SMTP_PASSWD=erl1523
 
 
+# imprime o header do comando.
+# O header só impresso uma vz
+print_header(){
+	if [ "$PRINT_HEADER" = "true" ]; then
+		# Output to report file if send email
+		if [ "$SEND_EMAIL" = "true" ]; then
+			exec > >(tee -a ${REPORT_FILE} )
+			exec 2> >(tee -a ${REPORT_FILE} >&2)
+		fi
+
+		echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
+		echo "Date: $CURRENT_DATE"
+		echo "Server: $LDAP_SERVER"
+		echo "Environment: $ENVIRONMENT"
+		echo "Memory $MEM"
+		echo "Listen interfaces: $NET_INTERFACES"
+		echo "Load average: $LOAD_AVERAGE"
+
+		PRINT_HEADER="false"
+		echo ""
+	fi
+}	
+	
+	
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: removido por segurança/')
 	TITULO_MSG="ERLANGMS LDAP Client Test  -  Date: $CURRENT_DATE   IP: $LINUX_IP_SERVER" 
@@ -107,14 +141,15 @@ EOF
 }	
 
 
+# Performs the ldap query using the ldapsearch
 ldap_search(){
 	if [ "$COUNTER" = "1" ]; then
-		echo "Realizando requisição LDAP em $LDAP_SERVER com user $USER"
+		echo "Performing LDAP request on $LDAP_SERVER with user $USER using ldapsearch"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		echo ""
 		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
 	else
-		echo "Realizando $COUNTER requisições LDAP em $LDAP_SERVER com user $USER"
+		echo "Performing $COUNTER LDAP request on $LDAP_SERVER with user $USER using ldapsearch"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		until [  $COUNTER -lt 1 ]; do
 			echo ""
@@ -124,25 +159,10 @@ ldap_search(){
 	fi
 }
 
+# Performs the LDAP request test
 generate_test(){
-	if [ "$PRINT_HEADER" = "true" ]; then
-		# Output to report file if send email
-		if [ "$SEND_EMAIL" = "true" ]; then
-			exec > >(tee -a ${REPORT_FILE} )
-			exec 2> >(tee -a ${REPORT_FILE} >&2)
-		fi
-
-		echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
-		echo "Date: $CURRENT_DATE"
-		echo "Server: $LDAP_SERVER"
-		echo "Environment: $ENVIRONMENT"
-
-		PRINT_HEADER="false"
-	fi
-
-	echo ""
-
-	for T in 1 2 3 4 5 6; do
+	print_header
+	for T in 1; do
 		# ocorre erro 49 quando invalid credentials
 		# ocorre erro 255 quando consegue contactar o servidor na porta
 		ldap_search
@@ -152,53 +172,54 @@ generate_test(){
 		else
 			FALHA_LDAP="true"
 		fi
-		AGUARDA=$(($T*2))
-		echo "Falhou, aguardando $AGUARDA segundos para realizar nova tentativa..."
-		sleep $AGUARDA  # aguarda de forma crescente
+		echo "Failed, waiting $TIME_WAIT_TEST seconds to retry..."
+		WAIT=$(($T*$TIME_WAIT_TEST))
+		sleep $WAIT  # Awaits increasing
 		echo ""
 	done
 }
 
 
-# Verifica se não há parâmetros
+# Check parameters
 if [ "$#" = "0" ] || [ "$1" = "--help" ]; then
 	echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
-	echo "Modo de usar 1: ./ldap_client.sh qtd_requests host_ldap login"
-	echo "Modo de usar 2: ./ldap_client.sh host_ldap user"
-	echo "Modo de usar 3: ./ldap_client.sh qtd_requests host_ldap login --sendemail"
-	echo "Modo de usar 4: ./ldap_client.sh qtd_requests host_ldap login --sendemail --auto_restart"
-	echo "         qtd_requests    => número de requisições simultâneas (default é 100)"
-	echo "         host_ldap       => host do ldap (default é localhost:2389)"	
-	echo "         login           => login do user"	
-	echo "         admin_passwd    => password do admin do ldap"	
-	echo "         --sendemail     => Envia e-mail ao admin em caso de erro"
-	echo "         --auto_restart  => Reinicia o barramento em caso de falha (somente local)"
+	echo "How to use 1: ./ldap_client.sh login"
+	echo "How to use 2: ./ldap_client.sh login admin_passwd"
+	echo "How to use 3: ./ldap_client.sh qtd_requests ldap_server login admin_passwd  [ --sendemail  --auto_restart --email_only_error ]"
+	echo "         login           		=> login do user."	
+	echo "         admin_passwd    		=> password do admin do ldap."	
+	echo "         ldap_server       	=> host do ldap (default é localhost:2389)"	
+	echo "         qtd_requests    		=> Number of simultaneous requests (default is 1)"
+	echo "         --sendemail     		=> Send an email to admin."
+	echo "         --auto_restart  		=> Restarts the bus on failure (local server only)"
+	echo "         --email_only_error  	=> Send email only if there is an error."
 	exit
 fi
 
-# Parâmetro qtd_requests
+# Parameter qtd_requests
 if [ $# -gt 3 ]; then
 	COUNTER=$1
     RE='^[0-9]+$'
     if ! [[ $COUNTER =~ $RE ]] ; then
-       echo "Parâmetro qtd_requests ( $COUNTER ) deve ser um número!" >&2; exit 1
+       echo "Parameter qtd_requests ($COUNTER) must be a number!" >&2; exit 1
     fi
 else
     COUNTER=1
 fi
 
-# Parâmetro host_ldap
+# Parameter LDAP_SERVER
 if [ $# -ge 4 ]; then
     LDAP_SERVER="$2"
-    RE='^[0-9a-zA-Z_-.]+:[0-9]+$'
-    if ! [[ $LDAP_SERVER =~ $RE ]] ; then
-       echo "Parâmetro host_ldap ( $LDAP_SERVER ) deve possuir o seguinte formato: hostname:port. Ex.: localhost:2389" >&2; exit 1
+    if [[ $LDAP_SERVER =~ ^[0-9a-zA-Z_-.]+:[0-9]+$ ]] ; then
+       LDAP_PORT=$(echo $LDAP_SERVER | awk -F: '{ print $2; }')
+    elif [[ $LDAP_SERVER =~ ^[0-9a-zA-Z_-.]+$ ]] ; then
+		LDAP_SERVER=$LDAP_SERVER:$LDAP_PORT
+    else
+		echo "Parameter LDAP_SERVER ( $LDAP_SERVER ) is invalid. Example: localhost:2389" >&2; exit 1
     fi
-else
-       LDAP_SERVER="localhost:2389"
 fi
 
-# Parâmetro user
+# Parameter user
 if [ "$#" = "1" ] || [ "$#" = "2" ]; then
     USER=$1
 elif [ "$#" = "3" ]; then
@@ -207,7 +228,7 @@ else
     USER=$3
 fi
 
-# Parâmetro admin_passwd
+# Parameter admin_passwd
 if [ $# -ge  4 ]; then
 	ADMIN_PASSWD="$4"
 elif [ "$#" = "3" ]; then
@@ -215,48 +236,61 @@ elif [ "$#" = "3" ]; then
 elif [ "$#" = "2" ]; then
 	ADMIN_PASSWD="$2"
 else
-	echo "Informe a senha do administrador do LDAP para autenticação:"
+	echo "Enter the LDAP administrator password for authentication:"
 	read -s ADMIN_PASSWD
 fi
 
 
-echo 
-if [ "$#" = "5" -a "$5" = "--sendemail" ]; then
+
+if [ "$5" = "--sendemail" -o "$6" = "--sendemail" -o "$7" = "--sendemail" ]; then
 	SEND_EMAIL="true"
-	echo aqui
 fi
 
-if [ "$#" = "6" -a "$6" = "--auto_restart" ]; then
+if [ "$5" = "--auto_restart" -o "$6" = "--auto_restart" -o "$7" = "--auto_restart" ]; then
 	AUTO_RESTART="true"
-	echo aqui2
 fi
+
+if [ "$5" = "--email_only_error" -o "$6" = "--email_only_error" -o "$7" = "--email_only_error" ]; then
+	EMAIL_ONLY_ERROR="true"
+fi
+
 
 generate_test
 
-# Opção auto restart reinicia o barramento em caso de falha
-if [ "$AUTO_RESTART" = "true" -a FALHA_LDAP = "true" ]; then
+# Auto restart option resets the bus in case of failure
+if [ "$AUTO_RESTART" = "true" -a "$FALHA_LDAP" = "true" ]; then
 	if systemctl --version > /dev/null 2>&1 ; then
-		echo "Reiniciando o servidor LDAP, aguarde..."
-		sudo systemctl restart ems-bus
-		RESTARTED="true"
-		sleep 5
-		echo "Refazendo a requisição LDAP novamente para verificar se o servidor está ok."
-		generate_test
+		echo "Restarting server in case of failure, please wait..."
+		if sudo systemctl restart ems-bus 2> /dev/null ; then
+			RESTARTED="true"
+			echo "Ok, waiting $TIME_WAIT_START_SERVER seconds to verify that the ldap service is ok...."
+			sleep $TIME_WAIT_START_SERVER
+			generate_test
+		fi
 	else
-		echo "É necessário utilizar o systemctl para reiniciar o servidor LDAP."
+		echo "Systemctl is required to restart the LDAP server."
 	fi
 fi
 
 if [ "$FALHA_LDAP" = "true" ]; then
-	echo "ATENÇÃO: O servidor $LDAP_SERVER está fora de serviço e não foi possível reiniciar!"
+	if [ "$AUTO_RESTART" = "true" ]; then
+		echo "WARNING: $LDAP_SERVER server is out of service and could not be restarted!"
+	else
+		echo "WARNING: $LDAP_SERVER server is out of service!"
+	fi
 else
 	if [ "$RESTARTED" = "true" ]; then
-		echo "O servidor $LDAP_SERVER foi reiniciado com sucesso e está operando normalmente."
+		echo "The $LDAP_SERVER server has been successfully restarted and is operating normally."
 	fi
 fi
 
+
 # Envia e-mail?
 if [ "$SEND_EMAIL" = "true" ]; then
-	send_email && echo "This report was send to administrators."
+	if [ $FALHA_LDAP = "true" -a EMAIL_ONLY_ERROR = "true" ]; then
+		send_email && echo "This report was send to administrators."
+	elif [ $EMAIL_ONLY_ERROR = "false" ]; then
+		send_email && echo "This report was send to administrators."
+	fi
 fi
 rm -rf $TMP_DIR/

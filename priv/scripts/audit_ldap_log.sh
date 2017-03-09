@@ -57,11 +57,15 @@ LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
 # Script version
 VERSION=1.0.0
-LDAP_SERVER="$LINUX_IP_SERVER:2389"
+LDAP_PORT="2389"
+LDAP_SERVER="$LINUX_IP_SERVER:$LDAP_PORT"
 CURRENT_DIR=$(pwd)
 TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
 EMS_NODE="ems-bus"
 ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
+NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
+MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
+LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_audit_ldap_log_$(date '+%d%m%Y_%H%M%S').txt"
@@ -129,6 +133,9 @@ generate_report(){
 	echo "Log dest: $LOG_DEST"
 	echo "Server: $LDAP_SERVER"
 	echo "Environment: $ENVIRONMENT"
+	echo "Memory $MEM"
+	echo "Listen interfaces: $NET_INTERFACES"
+	echo "Load average: $LOAD_AVERAGE"
 	echo "ERLANGMS Node: $EMS_NODE"
 	echo
 	
