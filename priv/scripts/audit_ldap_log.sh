@@ -80,7 +80,6 @@ LOG_FILE="$TMP_DIR/full_log_file_filtered.tmp"
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
 SMTP_DE="erlangms@unb.br"
-#SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br,felipesantos@unb.br"
 SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
 SMTP_PASSWD=erl1523
 
@@ -89,11 +88,14 @@ SMTP_PASSWD=erl1523
 mkdir -p $TMP_DIR && cd $TMP_DIR
 
 
-if [ "$1" = "--help" ]; then
+# Parameters
+if [ "$#" = "0" ]; then
+	MMIN="1440"	
+elif [ "$1" = "--help" ]; then
 	echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail --showlogs ]"
 	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
 	echo "parameter --sendemail is optional and send email to admin"
-	echo "parameter --showlogs show log files content"
+	echo "parameter --showlogs show content of logs"
 	exit 1
 else
 	if [ "$1" == "--sendemail" ] || [ "$1" == "--showlogs" ]; then

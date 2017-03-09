@@ -42,6 +42,8 @@ REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
 SEND_EMAIL="false"
 PRINT_HEADER="true"
 FALHA_LDAP="false"
+AUTO_RESTART="false"
+RESTARTED="false"
 
 # tmpfiles go to /$TMP_DIR
 mkdir -p $TMP_DIR && cd $TMP_DIR
@@ -55,7 +57,7 @@ SMTP_PASSWD=erl1523
 
 
 send_email(){	
-	REPORT_CONTENT=$(cat $REPORT_FILE)
+	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: removido por segurança/')
 	TITULO_MSG="ERLANGMS LDAP Client Test  -  Date: $CURRENT_DATE   IP: $LINUX_IP_SERVER" 
 	SUBJECT="<html>
 			<head>
@@ -105,6 +107,23 @@ EOF
 }	
 
 
+ldap_search(){
+	if [ "$COUNTER" = "1" ]; then
+		echo "Realizando requisição LDAP em $LDAP_SERVER com user $USER"
+		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
+		echo ""
+		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
+	else
+		echo "Realizando $COUNTER requisições LDAP em $LDAP_SERVER com user $USER"
+		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
+		until [  $COUNTER -lt 1 ]; do
+			echo ""
+			let COUNTER-=1
+			ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
+		done
+	fi
+}
+
 generate_test(){
 	if [ "$PRINT_HEADER" = "true" ]; then
 		# Output to report file if send email
@@ -122,33 +141,38 @@ generate_test(){
 	fi
 
 	echo ""
-	if [ "$COUNTER" = "1" ]; then
-		echo "Realizando requisição LDAP para $LDAP_SERVER com user $USER"
-		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
+
+	for T in 1 2 3 4 5 6; do
+		# ocorre erro 49 quando invalid credentials
+		# ocorre erro 255 quando consegue contactar o servidor na porta
+		ldap_search
+		if [ "$?" = "0" ]; then
+			FALHA_LDAP="false"
+			break;
+		else
+			FALHA_LDAP="true"
+		fi
+		AGUARDA=$(($T*2))
+		echo "Falhou, aguardando $AGUARDA segundos para realizar nova tentativa..."
+		sleep $AGUARDA  # aguarda de forma crescente
 		echo ""
-		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
-	else
-		echo "Realizando $COUNTER requisições LDAP para $LDAP_SERVER com user $USER"
-		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
-		until [  $COUNTER -lt 1 ]; do
-			echo ""
-			let COUNTER-=1
-			ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
-		done
-	fi
+	done
 }
 
 
 # Verifica se não há parâmetros
 if [ "$#" = "0" ] || [ "$1" = "--help" ]; then
+	echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
 	echo "Modo de usar 1: ./ldap_client.sh qtd_requests host_ldap login"
 	echo "Modo de usar 2: ./ldap_client.sh host_ldap user"
 	echo "Modo de usar 3: ./ldap_client.sh qtd_requests host_ldap login --sendemail"
+	echo "Modo de usar 4: ./ldap_client.sh qtd_requests host_ldap login --sendemail --auto_restart"
 	echo "         qtd_requests    => número de requisições simultâneas (default é 100)"
 	echo "         host_ldap       => host do ldap (default é localhost:2389)"	
 	echo "         login           => login do user"	
 	echo "         admin_passwd    => password do admin do ldap"	
-	echo "         --sendemail  => Envia e-mail ao admin em caso de erro"
+	echo "         --sendemail     => Envia e-mail ao admin em caso de erro"
+	echo "         --auto_restart  => Reinicia o barramento em caso de falha (somente local)"
 	exit
 fi
 
@@ -184,7 +208,7 @@ else
 fi
 
 # Parâmetro admin_passwd
-if [ "$#" = "4" -o "$#" = "5" ]; then
+if [ $# -ge  4 ]; then
 	ADMIN_PASSWD="$4"
 elif [ "$#" = "3" ]; then
     ADMIN_PASSWD="$3"
@@ -195,32 +219,44 @@ else
 	read -s ADMIN_PASSWD
 fi
 
+
+echo 
 if [ "$#" = "5" -a "$5" = "--sendemail" ]; then
 	SEND_EMAIL="true"
+	echo aqui
 fi
 
-# Quando envia email o teste é mais rigoroso
-# tenta várias vezes antes de notificar falha
-if [ "$SEND_EMAIL" = "true" ]; then
-	for T in 1 2 3 4 5 6; do
-		generate_test  # ocorre erro 49 quando invalid credentials
-		if [ "$?" = "0" ]; then
-			FALHA_LDAP="false"
-			break;
-		else
-			FALHA_LDAP="true"
-		fi
-		echo ""
-		AGUARDA=$(($T*2))
-		echo "Falhou, aguardando $AGUARDA segundos para realizar nova requisição..."
-		sleep $AGUARDA  # aguarda de forma crescente
-	done
+if [ "$#" = "6" -a "$6" = "--auto_restart" ]; then
+	AUTO_RESTART="true"
+	echo aqui2
+fi
+
+generate_test
+
+# Opção auto restart reinicia o barramento em caso de falha
+if [ "$AUTO_RESTART" = "true" -a FALHA_LDAP = "true" ]; then
+	if systemctl --version > /dev/null 2>&1 ; then
+		echo "Reiniciando o servidor LDAP, aguarde..."
+		sudo systemctl restart ems-bus
+		RESTARTED="true"
+		sleep 5
+		echo "Refazendo a requisição LDAP novamente para verificar se o servidor está ok."
+		generate_test
+	else
+		echo "É necessário utilizar o systemctl para reiniciar o servidor LDAP."
+	fi
+fi
+
+if [ "$FALHA_LDAP" = "true" ]; then
+	echo "ATENÇÃO: O servidor $LDAP_SERVER está fora de serviço e não foi possível reiniciar!"
 else
-	generate_test  # ocorre erro 49 quando invalid credentials
+	if [ "$RESTARTED" = "true" ]; then
+		echo "O servidor $LDAP_SERVER foi reiniciado com sucesso e está operando normalmente."
+	fi
 fi
 
-if [ "$SEND_EMAIL" = "true"  -a "$FALHA_LDAP" = "true" ]; then
-	echo "Parece que o servidor LDAP está fora de serviço!"
+# Envia e-mail?
+if [ "$SEND_EMAIL" = "true" ]; then
 	send_email && echo "This report was send to administrators."
 fi
 rm -rf $TMP_DIR/

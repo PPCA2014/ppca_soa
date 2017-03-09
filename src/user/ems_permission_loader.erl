@@ -292,7 +292,7 @@ sql_update_permissions() ->
 					t.TraAlterar as traUpdate, 
 					t.TraExcluir as traExclude, 
 					t.TraVisualizar as traVisualize
-	    from BDPessoa.dbo.TB_Pessoa p inner join  BDAcesso.dbo.TB_Usuario u
+	    from BDPessoa.dbo.TB_Pessoa pes inner join  BDAcesso.dbo.TB_Usuario u
 				on u.UsuPesIdPessoa = p.PesCodigoPessoa
 	    inner join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
