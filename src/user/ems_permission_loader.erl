@@ -281,7 +281,8 @@ sql_load_permissions() ->
 				on pt.PTrTraId = t.TraId ".
 		
 sql_update_permissions() ->
-	   " select distinct u.UsuId as codigo, 
+	   " select distinct pes.PesCodigoPessoa as codigoPessoa, 
+		            u.UsuId as codigo, 
 					u.UsuLogin as login, 
 					p.PerId as perId, 
 					p.PerNome as perNome, 
@@ -293,7 +294,7 @@ sql_update_permissions() ->
 					t.TraExcluir as traExclude, 
 					t.TraVisualizar as traVisualize
 	    from BDPessoa.dbo.TB_Pessoa pes inner join  BDAcesso.dbo.TB_Usuario u
-				on u.UsuPesIdPessoa = p.PesCodigoPessoa
+				on u.UsuPesIdPessoa = pes.PesCodigoPessoa
 	    inner join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
 		inner join BDAcesso.dbo.TB_Perfil p 
@@ -304,7 +305,7 @@ sql_update_permissions() ->
 				on p.PerId = pt.PTrPerId 
 	    inner join BDAcesso.dbo.TB_Transacao t 
 				on pt.PTrTraId = t.TraId 
-		where u.UsuLogin = ? ".
+		where u.UsuDataAlteracao >= ? or pes.PesDataAlteracao >= ? ".
 		
 
 
