@@ -238,7 +238,7 @@ insert_permissions([], Count, _CtrlInsert) ->
        Count;
 insert_permissions([{Codigo, CodigoPessoa, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameMenu, TraInclude, TraExclude, TraUpdate, TraVisualize}|T], Count, CtrlInsert) -> 
 		Permission = #permission {codigo = Codigo,
-								 codigoPessoa = CodigoPessoa,
+				     codigoPessoa = CodigoPessoa,
 	                             login = ?UTF8_STRING(Login),
 	                             perId = PerId,
 	                             perNome = ?UTF8_STRING(PerNome),
