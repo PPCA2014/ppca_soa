@@ -198,10 +198,11 @@ load_permissions_from_datasource(Datasource, CtrlInsert) ->
 				
 update_permissions([], Count, _CtrlUpdate) ->
 		Count;
-update_permissions([{Codigo, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameMenu, TraInclude, TraExclude, TraUpdate, TraVisualize}|T], Count, CtrlUpdate) ->
+update_permissions([{Codigo, CodigoPessoa, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameMenu, TraInclude, TraExclude, TraUpdate, TraVisualize}|T], Count, CtrlUpdate) ->
 	 case ems_permission:find_by_login(Login) of
 	     {ok, Permission} ->
 	          Permission2 = Permission#permission {codigo = Codigo,
+	                             codigoPessoa = CodigoPessoa,
 	                             login = ?UTF8_STRING(Login),
 	                             perId = PerId,
 	                             perNome = ?UTF8_STRING(PerNome),
@@ -216,6 +217,7 @@ update_permissions([{Codigo, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameM
 	     {error, enoent} ->
 	     		Permission2 = #permission {id = ems_db:sequence(permission),
 	     						 codigo = Codigo,
+	     						 codigoPessoa = CodigoPessoa,
 	                             login = ?UTF8_STRING(Login),
 	                             perId = PerId,
 	                             perNome = ?UTF8_STRING(PerNome),
@@ -234,8 +236,9 @@ update_permissions([{Codigo, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameM
 
 insert_permissions([], Count, _CtrlInsert) ->
        Count;
-insert_permissions([{Codigo, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameMenu, TraInclude, TraExclude, TraUpdate, TraVisualize}|T], Count, CtrlInsert) -> 
+insert_permissions([{Codigo, CodigoPessoa, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameMenu, TraInclude, TraExclude, TraUpdate, TraVisualize}|T], Count, CtrlInsert) -> 
 		Permission = #permission {codigo = Codigo,
+								 codigoPessoa = CodigoPessoa,
 	                             login = ?UTF8_STRING(Login),
 	                             perId = PerId,
 	                             perNome = ?UTF8_STRING(PerNome),
@@ -252,7 +255,8 @@ insert_permissions([{Codigo, Login, PerId, PerNome, TraId, TraNameFrm,  TraNameM
 
 
 sql_load_permissions() ->
-  " select distinct u.UsuId as codigo, 
+  " select distinct pes.PesCodigoPessoa as codigoPessoa,
+					u.UsuId as codigo, 
 					u.UsuLogin as login, 
 					p.PerId as perId, 
 					p.PerNome as perNome, 
@@ -263,7 +267,9 @@ sql_load_permissions() ->
 					t.TraAlterar as traUpdate, 
 					t.TraExcluir as traExclude, 
 					t.TraVisualizar as traVisualize
-	    from BDAcesso.dbo.TB_Usuario u inner join BDAcesso.dbo.TB_Acessos_Perfil up  
+	    from BDPessoa.dbo.TB_Pessoa pes inner join  BDAcesso.dbo.TB_Usuario u
+				on u.UsuPesIdPessoa = pes.PesCodigoPessoa
+	    inner join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
 		inner join BDAcesso.dbo.TB_Perfil p 
 				on up.APePerId = p.PerId 
@@ -286,7 +292,9 @@ sql_update_permissions() ->
 					t.TraAlterar as traUpdate, 
 					t.TraExcluir as traExclude, 
 					t.TraVisualizar as traVisualize
-	    from BDAcesso.dbo.TB_Usuario u inner join BDAcesso.dbo.TB_Acessos_Perfil up  
+	    from BDPessoa.dbo.TB_Pessoa p inner join  BDAcesso.dbo.TB_Usuario u
+				on u.UsuPesIdPessoa = p.PesCodigoPessoa
+	    inner join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
 		inner join BDAcesso.dbo.TB_Perfil p 
 				on up.APePerId = p.PerId 

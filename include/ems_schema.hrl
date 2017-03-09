@@ -30,6 +30,7 @@
 		
 -record(permission, {id :: non_neg_integer(),
                      codigo :: integer(),
+                     codigoPessoa :: integer(),
                      login :: string(),
                      perId :: integer(),
                      perNome :: string(),
