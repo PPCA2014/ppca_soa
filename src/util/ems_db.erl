@@ -81,8 +81,11 @@ create_database(Nodes) ->
     mnesia:create_table(ctrl_params, [{type, set},
 									  {disc_copies, Nodes},
 									  {attributes, record_info(fields, ctrl_params)}]),
-
-
+									  
+	mnesia:create_table(permission, [{type, set},
+							   {disc_copies, Nodes},
+							   {index, [#permission.login, #permission.perNome, #permission.traNameFrm, #permission.traNameMenu]},
+							   {attributes, record_info(fields, permission)}]),
 
 	ok.
 

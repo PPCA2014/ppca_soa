@@ -18,7 +18,7 @@
 	{	
 		"name": "/auth/permission",
 		"comment": "List all registered permissions",
-		"owner": "auth_user",
+		"owner": "auth_permission",
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/permission",
 		"type": "GET",

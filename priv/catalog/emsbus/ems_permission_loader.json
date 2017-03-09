@@ -13,7 +13,7 @@
 		"type" : "sqlserver",
 		"connection" : "DSN=ems_user_loader_ds;UID=unb_servicos;PWD=unb_servicos;useUnicode=true;characterEncoding=UTF-8",
 		"primary_key" : "PesCodigoPessoa",
-		"timeout" : 30000,
+		"timeout" : 60000,
 		"max_pool_size" : 1
 	},	
 	"pool_size" : 1,
