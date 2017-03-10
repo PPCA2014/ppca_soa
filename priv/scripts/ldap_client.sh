@@ -252,6 +252,7 @@ fi
 
 if [ "$5" = "--email_only_error" -o "$6" = "--email_only_error" -o "$7" = "--email_only_error" ]; then
 	EMAIL_ONLY_ERROR="true"
+	echo true envia email
 fi
 
 
@@ -287,9 +288,9 @@ fi
 
 # Envia e-mail?
 if [ "$SEND_EMAIL" = "true" ]; then
-	if [ $FALHA_LDAP = "true" -a EMAIL_ONLY_ERROR = "true" ]; then
+	if [ "$FALHA_LDAP" = "true" -a "$EMAIL_ONLY_ERROR" = "true" ]; then
 		send_email && echo "This report was send to administrators."
-	elif [ $EMAIL_ONLY_ERROR = "false" ]; then
+	elif [ "$EMAIL_ONLY_ERROR" = "false" ]; then
 		send_email && echo "This report was send to administrators."
 	fi
 fi
