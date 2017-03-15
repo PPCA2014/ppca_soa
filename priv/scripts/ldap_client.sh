@@ -9,20 +9,7 @@
 # How to use: sudo ./ldap_client.sh 1 localhost geral 123456 --sendemail --auto_restart
 #
 
-# locale
 export LANG=en_US.UTF-8
-export LC_CTYPE=pt_BR.UTF-8
-export LC_NUMERIC=pt_BR.UTF-8
-export LC_TIME=pt_BR.UTF-8
-export LC_COLLATE="en_US.UTF-8"
-export LC_MONETARY=pt_BR.UTF-8
-export LC_MESSAGES="en_US.UTF-8"
-export LC_PAPER=pt_BR.UTF-8
-export LC_NAME=pt_BR.UTF-8
-export LC_ADDRESS=pt_BR.UTF-8
-export LC_TELEPHONE=pt_BR.UTF-8
-export LC_MEASUREMENT=pt_BR.UTF-8
-export LC_IDENTIFICATION=pt_BR.UTF-8
 
 # Get linux description
 LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
@@ -36,7 +23,7 @@ LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
 VERSION=1.0.0
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')_$$"
+TMP_DIR="/tmp/erlangms_$$/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
@@ -287,9 +274,9 @@ fi
 
 # Envia e-mail?
 if [ "$SEND_EMAIL" = "true" ]; then
-	if [ $FALHA_LDAP = "true" -a EMAIL_ONLY_ERROR = "true" ]; then
+	if [ "$FALHA_LDAP" = "true" -a "$EMAIL_ONLY_ERROR" = "true" ]; then
 		send_email && echo "This report was send to administrators."
-	elif [ $EMAIL_ONLY_ERROR = "false" ]; then
+	elif [ "$EMAIL_ONLY_ERROR" = "false" ]; then
 		send_email && echo "This report was send to administrators."
 	fi
 fi

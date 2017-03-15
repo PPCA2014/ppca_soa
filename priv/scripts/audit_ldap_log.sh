@@ -31,19 +31,19 @@
 ########################################################################################################
 
 # locale
-export LANG=en_US.UTF-8
-export LC_CTYPE=pt_BR.UTF-8
-export LC_NUMERIC=pt_BR.UTF-8
-export LC_TIME=pt_BR.UTF-8
-export LC_COLLATE="en_US.UTF-8"
-export LC_MONETARY=pt_BR.UTF-8
-export LC_MESSAGES="en_US.UTF-8"
-export LC_PAPER=pt_BR.UTF-8
-export LC_NAME=pt_BR.UTF-8
-export LC_ADDRESS=pt_BR.UTF-8
-export LC_TELEPHONE=pt_BR.UTF-8
-export LC_MEASUREMENT=pt_BR.UTF-8
-export LC_IDENTIFICATION=pt_BR.UTF-8
+LANG=en_US.UTF-8
+LC_CTYPE=pt_BR.UTF-8
+LC_NUMERIC=pt_BR.UTF-8
+LC_TIME=pt_BR.UTF-8
+LC_COLLATE="en_US.UTF-8"
+LC_MONETARY=pt_BR.UTF-8
+LC_MESSAGES="en_US.UTF-8"
+LC_PAPER=pt_BR.UTF-8
+LC_NAME=pt_BR.UTF-8
+LC_ADDRESS=pt_BR.UTF-8
+LC_TELEPHONE=pt_BR.UTF-8
+LC_MEASUREMENT=pt_BR.UTF-8
+LC_IDENTIFICATION=pt_BR.UTF-8
 
 
 # Get linux description
@@ -60,7 +60,7 @@ VERSION=1.0.0
 LDAP_PORT="2389"
 LDAP_SERVER="$LINUX_IP_SERVER:$LDAP_PORT"
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')_$$"
+TMP_DIR="/tmp/erlangms_$$/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
 ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
