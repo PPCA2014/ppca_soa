@@ -53,7 +53,9 @@
 		 replace_all/2,
 		 read_file_as_string/1,
 		 is_number/1,
-		 generate_public_private_key/0,
+		 encrypt_public_key/2,
+		 decrypt_private_key/2,
+		 open_file/1,
 		 is_cpf_valid/1, is_cnpj_valid/1]).
 
 
@@ -601,9 +603,21 @@ read_file_as_string(FileName) ->
 	end.
 	
 
-generate_public_private_key() ->
-    DHPs = crypto:dh_generate_parameters(512,2),
-    crypto:generate_key(dh, DHPs).
+encrypt_public_key(PlainText, PublicKey) ->
+	[ RSAEntry2 ] = public_key:pem_decode(PublicKey),
+	PubKey = public_key:pem_entry_decode( RSAEntry2 ),
+	public_key:encrypt_public(PlainText, PubKey).
+	
+decrypt_private_key(CryptText,PrivateKey) ->
+    [ RSAEntry2 ] = public_key:pem_decode(PrivateKey),
+	PrivKey = public_key:pem_entry_decode( RSAEntry2 ),
+	Result = public_key:decrypt_private(CryptText, PrivKey),
+	Result.
+   
+
+open_file(FilePath) ->
+   {ok, PemBin2 } = file:read_file(FilePath),
+    PemBin2.
 
 %% Converte arquivo latin1 para utf8 formatando os unicodes
 %% Esta função está desconfigurando os arquivos no formato utf8	

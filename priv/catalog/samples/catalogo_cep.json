@@ -1,11 +1,12 @@
 {
 	"name" : "/buscacep/:id",
-	"comment": "buscacep",
+	"comment": "web service para buscar cep dos correios",
 	"owner": "cep",
 	"version": "1",
 	"service" : "ems_web_service_correios:busca_cep",
 	"url": "/buscacep/:id",
-	"url_correio":"http://localhost:8080/buscacep",
+	"url_correio":"http://www.buscacep.correios.com.br/sistemas/buscacep/resultadoBuscaCepEndereco.cfm",
+	"content_type":"application/x-www-form-urlencoded;charset=UTF-8",
 	"type": "GET",
 	"APIkey":"true",
 	"lang" : "erlang"
