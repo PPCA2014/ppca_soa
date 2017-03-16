@@ -9,7 +9,7 @@
 # How to use: sudo ./ldap_client.sh 1 localhost geral 123456 --sendemail --auto_restart
 #
 
-export LANG=en_US.UTF-8
+LANG=en_US.UTF-8
 
 # Get linux description
 LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
