@@ -1,6 +1,7 @@
 [Unit]
-Description=Enterprise service bus ERLANGMS
-After=network.target epmd.service
+Description=ERLANGMS ESB
+Wants=ems-bus.epmd.service
+After=network.target network-online.target ems-bus.epmd.service
 
 [Service]
 Type=simple
@@ -14,7 +15,6 @@ RestartSec=3
 ExecStart=/usr/lib/ems-bus/bin/ems-bus foreground
 LimitNOFILE=500000
 LimitNPROC=500000
-PIDFile=/var/run/ems-bus.pid
 
 [Install]
 WantedBy=multi-user.target

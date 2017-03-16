@@ -1,22 +1,19 @@
 [Unit]
-Description=Erlang Port Mapper Daemon
-After=network.target
-#Requires=epmd.socket
+Description=Erlang Port Mapper Daemon to ERLANGMS
+After=network.target network-online.target
 
 [Service]
 ExecStart=/usr/bin/epmd
 Type=simple
 StandardOutput=journal
 StandardError=journal
-User=epmd
-Group=epmd
+User=erlangms
+Group=erlangms
 Restart=always
 RestartSec=1
 LimitNOFILE=500000
 LimitNPROC=500000
-PIDFile=/var/run/epmd.pid
 
 
 [Install]
-#Also=epmd.socket
 WantedBy=multi-user.target
