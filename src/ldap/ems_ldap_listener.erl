@@ -41,8 +41,8 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port}, ListenerName, Args}) ->
-	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}], ems_ldap_handler, [Args]),
+init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port, tcp_max_connections = MaxConnections}, ListenerName, Args}) ->
+	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, {max_connections, MaxConnections}], ems_ldap_handler, [Args]),
 	{ok, #state{listener_name = ListenerName, tcp_config = TcpConfig}}.
 		
 handle_cast(shutdown, State) ->

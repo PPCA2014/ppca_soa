@@ -175,6 +175,7 @@ by graduate student Everton Vargas Agilar.
 %files
 %defattr(0755,root,root)
 /etc/ems-bus/*
+/etc/systemd/system/epmd.service
 /etc/systemd/system/ems-bus.service
 /etc/systemd/system/ems-bus.service.d/limits.conf
 /etc/firewalld/services/ems-bus.xml

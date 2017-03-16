@@ -51,13 +51,15 @@ init(Service = #service{name = Name,
 						properties = Props}) ->
  	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Props, [<<"127.0.0.1">>])),
  	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Props, [])),
+ 	MaxConnections = maps:get(<<"tcp_max_connections">>, Props, [?LDAP_MAX_CONNECTIONS]),
  	ServerName = binary_to_list(Name),
 	TcpConfig = #tcp_config{
 		tcp_listen_address = ListenAddress,
 		tcp_listen_address_t = parse_tcp_listen_address(ListenAddress),
 		tcp_allowed_address = AllowedAddress,
 		tcp_allowed_address_t = parse_allowed_address(AllowedAddress),
-		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, ?LDAP_SERVER_PORT))
+		tcp_port = parse_tcp_port(maps:get(<<"tcp_port">>, Props, ?LDAP_SERVER_PORT)),
+		tcp_max_connections = MaxConnections
  	},
  	State = #state{tcp_config = TcpConfig, name = ServerName},
 	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, Service, 1, State) of
@@ -95,7 +97,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 start_listeners([], _TcpConfig, _ServerName, _Service, _ListenerNo, State) -> {ok, State};
 start_listeners([H|T], TcpConfig, ServerName, Service, ListenerNo, State) ->
-	ListenerName = list_to_atom(ServerName ++ integer_to_list(ListenerNo)),
+	ListenerName = list_to_atom(ServerName ++ "_listener_" ++ integer_to_list(ListenerNo)),
 	case do_start_listener(H, TcpConfig, ListenerName, Service, State) of
 		{ok, NewState} -> start_listeners(T, TcpConfig, ServerName, Service, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}

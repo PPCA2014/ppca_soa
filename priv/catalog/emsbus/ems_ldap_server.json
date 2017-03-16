@@ -10,6 +10,7 @@
 	"tcp_listen_address" : ["0.0.0.0"],
 	"tcp_allowed_address" : ["*.*.*.*"],
 	"tcp_port": 2389,
+	"tcp_max_connections" : 100000,
 	"datasource" : {
 		"type" : "sqlserver",
 		"connection" : "DSN=pessoa;UID=usupessoa;PWD=usupessoa",

@@ -145,6 +145,13 @@
 
 % Default ports
 -define(LDAP_SERVER_PORT, 2389).
+-define(LDAP_MAX_CONNECTIONS, 100000).
+
+-define(HTTP_SERVER_PORT, 2381).
+-define(HTTP_MAX_CONNECTIONS, 100000).
+
+
+
 
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 							%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
@@ -170,8 +177,7 @@
 					 tcp_port, 						%% Qual a porta que será utilizada para o barramento
 					 tcp_keepalive, 				%% Propriedade keepalive do TCP (true/false)
 					 tcp_nodelay, 					%% Propriedade nodelay do TCP (true/false)
-					 tcp_max_http_worker,			%% Max workers criados para cada listener
-					 tcp_min_http_worker,			%% Min workers criados para cada listener
+					 tcp_max_connections,			%% Max connections allowed (soft limit)
 					 tcp_accept_timeout,			%% Timeout accept
 					 tcp_send_timeout,				
 					 tcp_backlog,

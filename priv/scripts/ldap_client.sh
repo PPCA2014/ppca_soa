@@ -38,8 +38,8 @@ ENVIRONMENT="$LINUX_DESCRIPTION  IP $LINUX_IP_SERVER"
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
-TIME_WAIT_START_SERVER=10  # seconds
-TIME_WAIT_TEST=4 # seconds
+TIME_WAIT_START_SERVER=20  # seconds
+TIME_WAIT_TEST=5 # seconds
 EMAIL_ONLY_ERROR="false"
 
 # tmpfiles go to /$TMP_DIR
@@ -149,7 +149,7 @@ ldap_search(){
 # Performs the LDAP request test
 generate_test(){
 	print_header
-	for T in 1; do
+	for T in 1, 2, 3, 4, 5; do
 		# ocorre erro 49 quando invalid credentials
 		# ocorre erro 255 quando consegue contactar o servidor na porta
 		ldap_search
