@@ -611,7 +611,7 @@ encrypt_public_key(PlainText, PublicKey) ->
 decrypt_private_key(CryptText,PrivateKey) ->
     [ RSAEntry2 ] = public_key:pem_decode(PrivateKey),
 	PrivKey = public_key:pem_entry_decode( RSAEntry2 ),
-	Result = public_key:decrypt_private(CryptText, PrivKey),
+	Result =  public_key:decrypt_private(CryptText, PrivKey ),
 	Result.
    
 

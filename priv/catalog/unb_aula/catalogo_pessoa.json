@@ -132,6 +132,7 @@
 		"url": "/unb_aula/pessoa",
 		"type": "POST",
 		"APIkey":"true",
+		"authorization":"Barer",
 		"lang" : "java"	
 	},
 

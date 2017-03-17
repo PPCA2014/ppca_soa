@@ -8,6 +8,11 @@
 	{
 		"catalog": "samples", 
 		"file": "samples/catalogo_samples.json"
+	},
+
+	{
+		"catalog": "unb_aula", 
+		"file": "unb_aula/catalogo_unb_aula.json"
 	}
 
 ]

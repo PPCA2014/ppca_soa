@@ -16,6 +16,7 @@
 authenticate(#service{authorization = AuthorizationMode}, Request) ->
 	case AuthorizationMode of
 		<<"Basic">> -> do_basic_authorization(Request);
+		<<"Oauth2">> -> do_barer_authorization(Request);
 		_ -> {ok, undefined}
 	end.
 
@@ -40,6 +41,14 @@ do_basic_authorization(#request{authorization = Authorization}) ->
 			ems_logger:warn("ems_auth_user no HTTP Basic authorization user."),
 			{error, no_authorization}
 	end.
+	
+do_barer_authorization(#request{authorization = Authorization}) ->	
+	CryptoText = ems_http_util:parse_barer_authorization_header(Authorization),
+	PrivateKey = ems_util:open_file(?SSL_PATH ++  "/" ++ binary_to_list(<<"private_key.pem">>)),
+	TextPlain = ems_util:decrypt_private_key(CryptoText,PrivateKey),
+	?DEBUG("TextPlain ~p", [TextPlain]).
+	
+
  	
 
 
