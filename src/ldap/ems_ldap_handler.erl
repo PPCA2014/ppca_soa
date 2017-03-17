@@ -30,7 +30,7 @@ start_link(Ref, Socket, Transport, Service) ->
 init(Ref, Socket, Transport, [#service{datasource = Datasource,
 										middleware = Middleware,
 										properties = Props}]) ->
-	ok = ranch:accept_ack(Ref),
+	ranch:accept_ack(Ref),
 	LdapAdmin = maps:get(<<"ldap_admin">>, Props),
 	LdapPasswdAdmin = maps:get(<<"ldap_password_admin">>, Props),
     State = #state{datasource = Datasource,

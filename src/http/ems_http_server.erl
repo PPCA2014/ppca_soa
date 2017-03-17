@@ -51,6 +51,7 @@ init(#service{name = Name,
 			  properties = Props}) ->
  	ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Props, [<<"127.0.0.1">>])),
  	AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, Props, [])),
+ 	MaxConnections = maps:get(<<"tcp_max_connections">>, Props, [?HTTP_MAX_CONNECTIONS]),
  	ServerName = binary_to_list(Name),
 	TcpConfig = #tcp_config{
 		tcp_listen_address = ListenAddress,
@@ -61,12 +62,13 @@ init(#service{name = Name,
 		tcp_keepalive = maps:get(<<"tcp_keepalive">>, Props, true),
 		tcp_nodelay = ems_util:binary_to_bool(maps:get(<<"tcp_nodelay">>, Props, true)),
 		tcp_accept_timeout = maps:get(<<"tcp_accept_timeout">>, Props, 30000),
-		tcp_backlog = maps:get(<<"tcp_backlog">>, Props, 128),
+		tcp_backlog = maps:get(<<"tcp_backlog">>, Props, 1024),
 		tcp_buffer = maps:get(<<"tcp_buffer">>, Props, 8000),
 		tcp_send_timeout = maps:get(<<"tcp_send_timeout">>, Props, 16000),
 		tcp_delay_send = maps:get(<<"tcp_delay_send">>, Props, false),
 		tcp_ssl = maps:get(<<"tcp_ssl">>, Props, null),
-		tcp_is_ssl = maps:get(<<"tcp_ssl">>, Props, null) =/= null
+		tcp_is_ssl = maps:get(<<"tcp_ssl">>, Props, null) =/= null,
+		tcp_max_connections = MaxConnections
  	},
  	State = #state{tcp_config = TcpConfig, name = ServerName},
 	case start_listeners(TcpConfig#tcp_config.tcp_listen_address_t, TcpConfig, ServerName, 1, State) of
@@ -104,7 +106,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 start_listeners([], _TcpConfig, _ServerName, _ListenerNo, State) -> {ok, State};
 start_listeners([H|T], TcpConfig, ServerName, ListenerNo, State) ->
-	ListenerName = list_to_atom(ServerName ++ integer_to_list(ListenerNo)),
+	ListenerName = list_to_atom(ServerName ++ "_listener_" ++ integer_to_list(ListenerNo)),
 	case do_start_listener(H, TcpConfig, ListenerName, State) of
 		{ok, NewState} -> start_listeners(T, TcpConfig, ServerName, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}

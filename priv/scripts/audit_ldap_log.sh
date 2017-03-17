@@ -32,18 +32,6 @@
 
 # locale
 LANG=en_US.UTF-8
-LC_CTYPE=pt_BR.UTF-8
-LC_NUMERIC=pt_BR.UTF-8
-LC_TIME=pt_BR.UTF-8
-LC_COLLATE="en_US.UTF-8"
-LC_MONETARY=pt_BR.UTF-8
-LC_MESSAGES="en_US.UTF-8"
-LC_PAPER=pt_BR.UTF-8
-LC_NAME=pt_BR.UTF-8
-LC_ADDRESS=pt_BR.UTF-8
-LC_TELEPHONE=pt_BR.UTF-8
-LC_MEASUREMENT=pt_BR.UTF-8
-LC_IDENTIFICATION=pt_BR.UTF-8
 
 
 # Get linux description
@@ -60,18 +48,22 @@ VERSION=1.0.0
 LDAP_PORT="2389"
 LDAP_SERVER="$LINUX_IP_SERVER:$LDAP_PORT"
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms_$$/ldap/audit_ldap_log_$(date '+%d%m%Y_%H%M%S')"
+TMP_DIR="/tmp/erlangms_$$_audit_ldap_log_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
 ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
+UPTIME=$(echo since `uptime -s` " ( " `uptime -p` " )" | sed 's/hours/hs/; s/minutes/min/ ;')
+SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6" "$7" "" ( up "$9" )";  }')
+MAIN_PID=$(systemctl status ems-bus | grep "Main PID:")
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_audit_ldap_log_$(date '+%d%m%Y_%H%M%S').txt"
 SUB_TITLE_REPORT="LAST DAY OF OPERATION"
 SHOW_LOGS="false"
 SEND_EMAIL="false"
+
 
 # Log destination parameter
 LOG_YEAR=$(date '+%Y')
@@ -128,15 +120,15 @@ generate_report(){
 	exec > >(tee -a ${REPORT_FILE} )
 	exec 2> >(tee -a ${REPORT_FILE} >&2)
 	
-	echo "Starting ERLANGMS audit_ldap_log tool   ( Version: $VERSION )"
-	echo "Date: $CURRENT_DATE"
-	echo "Log dest: $LOG_DEST"
-	echo "Server: $LDAP_SERVER"
+	echo "Starting ERLANGMS audit_ldap_log tool   ( Version: $VERSION   Date: $CURRENT_DATE )"
 	echo "Environment: $ENVIRONMENT"
 	echo "Memory $MEM"
 	echo "Listen interfaces: $NET_INTERFACES"
 	echo "Load average: $LOAD_AVERAGE"
-	echo "ERLANGMS Node: $EMS_NODE"
+	echo "Server machine uptime: $UPTIME"
+	echo "Service uptime: $SERVICE_UPTIME"
+	echo "Node: $EMS_NODE $MAIN_PID"
+	echo "Log dest: $LOG_DEST"
 	echo
 	
 	if [ "$MMIN" == "1440" ]; then
@@ -163,7 +155,7 @@ generate_report(){
 
 	# concat all logfiles of ems_ldap_handler and create $LOG_FILE_TMP
 	# remove characters control of the line colors too
-	cat $TMP_DIR/*.log | grep "ems_ldap_handler" | sed -r '/ERROR/ { s/.{7}// ;  s/.{4}$// } ; y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚçÇ/aAaAaAaAeEeEiIoOoOoOuUcC/ ; s/<//g; s/>//g ;' > $LOG_FILE_TMP
+	cat $TMP_DIR/*.log | grep "ems_ldap_handler" | sed -r '/ERROR/ { s/.{7}// ;  s/.{4}$// } ; y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚçÇ/aAaAaAaAeEeEiIoOoOoOuUcC/ ; s/<//g; s/>//g ; /ems_ldap_handler search "erlangms"/d' > $LOG_FILE_TMP
 	
 	
 
@@ -278,7 +270,7 @@ generate_report(){
 
 }
 
-
+# send email with python	
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE)
 	TITULO_MSG="ERLANGMS LDAP Log Analysis   -  Date: $CURRENT_DATE  IP: $LINUX_IP_SERVER" 
@@ -342,24 +334,31 @@ EOF
 
 # /////////////////// main /////////////////
 
-# check parameter --showlogs
-if [ "$1" == "--showlogs" ] || [ "$2" == "--showlogs" ] || [ "$3" == "--showlogs" ]; then
-  SHOW_LOGS="true"		
-fi
 
-# check parameter --sendemail
-if [ "$1" == "--sendemail" ] || [ "$2" == "--sendemail" ] || [ "$3" == "--sendemail" ]; then
-  SEND_EMAIL="true"
-fi
-
+# Optional parameters
+for P in $*; do
+	# check parameter --showlogs
+	if [ "$P" == "--showlogs" ]; then
+		SHOW_LOGS="true"		
+	# check parameter --sendemail
+	elif [ "$P" == "--sendemail" ]; then
+		SEND_EMAIL="true"
+	fi
+done
 
 # generate report
 generate_report
 
-# send e-mail to admins
-[ "$SEND_EMAIL" == "true" ] && send_email && echo "This report was send to administrators."
+# send e-mail to admins. Only send email if has records
+if [ "$SEND_EMAIL" == "true" ]; then
+	if [ $REQ_LDAP_TOTAL -gt 0 ]; then
+		send_email && echo "This report was send to administrators."
+	else
+		echo "No ldap requests in this time for send report to administrators."
+	fi
+fi
 
-# remove tmp dir and back to CURRENT_DIR
+# back to CURRENT_DIR and remove tmp dir
 cd $CURRENT_DIR
 rm -rf $TMP_DIR/
 

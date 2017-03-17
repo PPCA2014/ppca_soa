@@ -9,7 +9,8 @@
 # How to use: sudo ./ldap_client.sh 1 localhost geral 123456 --sendemail --auto_restart
 #
 
-export LANG=en_US.UTF-8
+# locale
+LANG=en_US.UTF-8
 
 # Get linux description
 LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
@@ -23,9 +24,11 @@ LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
 VERSION=1.0.0
 CURRENT_DIR=$(pwd)
-TMP_DIR="/tmp/erlangms_$$/ldap/ldap_client_$(date '+%d%m%Y_%H%M%S')"
+TMP_DIR="/tmp/erlangms_$$_ldap_client_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
+IS_LOCAL_SERVER="false"
+TYPE_SERVER="remote"
 REPORT_FILE="$TMP_DIR/report_ldap_client.txt"
 SEND_EMAIL="false"
 PRINT_HEADER="true"
@@ -38,9 +41,13 @@ ENVIRONMENT="$LINUX_DESCRIPTION  IP $LINUX_IP_SERVER"
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
-TIME_WAIT_START_SERVER=10  # seconds
-TIME_WAIT_TEST=4 # seconds
+UPTIME=$(echo since `uptime -s` " ( " `uptime -p` " )" | sed 's/hours/hs/; s/minutes/min/ ;')
+SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6" "$7" "" ( up "$9" )";  }')
+MAIN_PID=$(systemctl status ems-bus | grep "Main PID:")
+TIME_WAIT_START_SERVER=20  # seconds
+TIME_WAIT_TEST=3 # seconds
 EMAIL_ONLY_ERROR="false"
+RETRY=1
 
 # tmpfiles go to /$TMP_DIR
 mkdir -p $TMP_DIR && cd $TMP_DIR
@@ -53,8 +60,7 @@ SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
 SMTP_PASSWD=erl1523
 
 
-# imprime o header do comando.
-# O header só impresso uma vz
+# print header (only one time)
 print_header(){
 	if [ "$PRINT_HEADER" = "true" ]; then
 		# Output to report file if send email
@@ -63,20 +69,23 @@ print_header(){
 			exec 2> >(tee -a ${REPORT_FILE} >&2)
 		fi
 
-		echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
-		echo "Date: $CURRENT_DATE"
-		echo "Server: $LDAP_SERVER"
-		echo "Environment: $ENVIRONMENT"
-		echo "Memory $MEM"
-		echo "Listen interfaces: $NET_INTERFACES"
-		echo "Load average: $LOAD_AVERAGE"
+		echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION   Date: $CURRENT_DATE )"
+		if [ "$IS_LOCAL_SERVER" = "true" ]; then
+			echo "Server: $LDAP_SERVER"
+			echo "Environment: $ENVIRONMENT"
+			echo "Memory $MEM"
+			echo "Listen interfaces: $NET_INTERFACES"
+			echo "Load average: $LOAD_AVERAGE"
+			echo "Server machine uptime: $UPTIME"
+			echo "Service uptime: $SERVICE_UPTIME"
+			echo "Node: $EMS_NODE $MAIN_PID"
+		fi
 
 		PRINT_HEADER="false"
-		echo ""
 	fi
 }	
 	
-	
+# send email with python	
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: removido por segurança/')
 	TITULO_MSG="ERLANGMS LDAP Client Test  -  Date: $CURRENT_DATE   IP: $LINUX_IP_SERVER" 
@@ -131,12 +140,12 @@ EOF
 # Performs the ldap query using the ldapsearch
 ldap_search(){
 	if [ "$COUNTER" = "1" ]; then
-		echo "Performing LDAP request on $LDAP_SERVER with user $USER using ldapsearch"
+		echo "Performing LDAP request on $TYPE_SERVER $LDAP_SERVER server with user $USER using ldapsearch"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		echo ""
 		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
 	else
-		echo "Performing $COUNTER LDAP request on $LDAP_SERVER with user $USER using ldapsearch"
+		echo "Performing $COUNTER LDAP request on $TYPE_SERVER $LDAP_SERVER server with user $USER using ldapsearch"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		until [  $COUNTER -lt 1 ]; do
 			echo ""
@@ -149,20 +158,24 @@ ldap_search(){
 # Performs the LDAP request test
 generate_test(){
 	print_header
-	for T in 1; do
+	for T in `seq $RETRY`; do
 		# ocorre erro 49 quando invalid credentials
 		# ocorre erro 255 quando consegue contactar o servidor na porta
 		ldap_search
-		if [ "$?" = "0" ]; then
+		if [ "$?" = "0" -o "$?" = "49" ]; then
 			FALHA_LDAP="false"
 			break;
 		else
 			FALHA_LDAP="true"
 		fi
-		echo "Failed, waiting $TIME_WAIT_TEST seconds to retry..."
-		WAIT=$(($T*$TIME_WAIT_TEST))
-		sleep $WAIT  # Awaits increasing
-		echo ""
+
+		if [ $RETRY -gt 1 -a $T -lt $RETRY ]; then
+			WAIT_TIMEOUT=$(($T*$TIME_WAIT_TEST))
+			echo "Failed, waiting $WAIT_TIMEOUT seconds to retry..."
+			sleep $WAIT_TIMEOUT  # Awaits increasing
+			echo 
+			echo "$(($T+1)) attempt..."
+		fi
 	done
 }
 
@@ -172,14 +185,15 @@ if [ "$#" = "0" ] || [ "$1" = "--help" ]; then
 	echo "Starting ERLANGMS ldap_client.sh tool   ( Version: $VERSION )"
 	echo "How to use 1: ./ldap_client.sh login"
 	echo "How to use 2: ./ldap_client.sh login admin_passwd"
-	echo "How to use 3: ./ldap_client.sh qtd_requests ldap_server login admin_passwd  [ --sendemail  --auto_restart --email_only_error ]"
+	echo "How to use 3: ./ldap_client.sh qtd_requests ldap_server login admin_passwd  [ --sendemail  --auto_restart --email_only_error --retry ]"
 	echo "         login           		=> login do user."	
 	echo "         admin_passwd    		=> password do admin do ldap."	
-	echo "         ldap_server       	=> host do ldap (default é localhost:2389)"	
+	echo "         ldap_server			=> host do ldap (default é localhost:2389)"	
 	echo "         qtd_requests    		=> Number of simultaneous requests (default is 1)"
 	echo "         --sendemail     		=> Send an email to admin."
 	echo "         --auto_restart  		=> Restarts the bus on failure (local server only)"
-	echo "         --email_only_error  	=> Send email only if there is an error."
+	echo "         --email_only_error	=> Send email only if there is an error."
+	echo "         --retry  			=> Number of attempts in case of failure. Allowed Range: 1-9."
 	exit
 fi
 
@@ -204,6 +218,7 @@ if [ $# -ge 4 ]; then
     else
 		echo "Parameter LDAP_SERVER ( $LDAP_SERVER ) is invalid. Example: localhost:2389" >&2; exit 1
     fi
+    LDAP_SERVER_IP="$(echo $LDAP_SERVER | cut -d: -f1)"
 fi
 
 # Parameter user
@@ -229,23 +244,44 @@ fi
 
 
 
-if [ "$5" = "--sendemail" -o "$6" = "--sendemail" -o "$7" = "--sendemail" ]; then
-	SEND_EMAIL="true"
-fi
+# Optional parameters
+for P in $*; do
+	if [ "$P" = "--sendemail" ]; then
+		SEND_EMAIL="true"
+	elif [ "$P" = "--auto_restart" ]; then
+		AUTO_RESTART="true"
+	elif [ "$P" = "--email_only_error" ]; then
+		EMAIL_ONLY_ERROR="true"
+	elif [[ "$P" =~ ^--retry=.+$ ]]; then
+		RETRY="$(echo $P | cut -d= -f2)"
+		if [[ ! "$RETRY" =~ ^[0-9]{1}$ ]] ; then
+			echo "Parameter $P is invalid. Allowed Range: 1-99" && exit 1
+			RETRY=1
+		else
+			if [ ! $RETRY -gt 0 ]; then
+				echo "Parameter $P is invalid. Allowed Range: 1-9" && exit 1
+			fi
+		fi
+	fi
+done
 
-if [ "$5" = "--auto_restart" -o "$6" = "--auto_restart" -o "$7" = "--auto_restart" ]; then
-	AUTO_RESTART="true"
-fi
 
-if [ "$5" = "--email_only_error" -o "$6" = "--email_only_error" -o "$7" = "--email_only_error" ]; then
-	EMAIL_ONLY_ERROR="true"
-fi
+# Check if command is running local or remote server
+if [ $LDAP_SERVER = "localhost:$LDAP_PORT" -o $LDAP_SERVER = "127.0.0.1:$LDAP_PORT" -o "$LDAP_SERVER_IP" = "$LINUX_IP_SERVER" ]; then
+	IS_LOCAL_SERVER="true"
+	TYPE_SERVER="local"
+else
+	IS_LOCAL_SERVER="false"
+	TYPE_SERVER="remote"
+fi	
 
 
+# Do test with ldap
 generate_test
 
-# Auto restart option resets the bus in case of failure
-if [ "$AUTO_RESTART" = "true" -a "$FALHA_LDAP" = "true" ]; then
+
+# Auto restart option restart ems-bus in case of failure (local server only)
+if [ "$AUTO_RESTART" = "true" -a "$FALHA_LDAP" = "true" -a $IS_LOCAL_SERVER="true" ]; then
 	if systemctl --version > /dev/null 2>&1 ; then
 		echo "Restarting server in case of failure, please wait..."
 		if sudo systemctl restart ems-bus 2> /dev/null ; then
@@ -257,19 +293,20 @@ if [ "$AUTO_RESTART" = "true" -a "$FALHA_LDAP" = "true" ]; then
 	else
 		echo "Systemctl is required to restart the LDAP server."
 	fi
+
+	if [ "$FALHA_LDAP" = "true" ]; then
+		if [ "$AUTO_RESTART" = "true" ]; then
+			echo "WARNING: $LDAP_SERVER server is out of service and could not be restarted!"
+		else
+			echo "WARNING: $LDAP_SERVER server is out of service!"
+		fi
+	else
+		if [ "$RESTARTED" = "true" ]; then
+			echo "The $LDAP_SERVER server has been successfully restarted and is operating normally."
+		fi
+	fi
 fi
 
-if [ "$FALHA_LDAP" = "true" ]; then
-	if [ "$AUTO_RESTART" = "true" ]; then
-		echo "WARNING: $LDAP_SERVER server is out of service and could not be restarted!"
-	else
-		echo "WARNING: $LDAP_SERVER server is out of service!"
-	fi
-else
-	if [ "$RESTARTED" = "true" ]; then
-		echo "The $LDAP_SERVER server has been successfully restarted and is operating normally."
-	fi
-fi
 
 
 # Envia e-mail?
@@ -280,4 +317,7 @@ if [ "$SEND_EMAIL" = "true" ]; then
 		send_email && echo "This report was send to administrators."
 	fi
 fi
+
+# back to CURRENT_DIR and remove tmp dir
+cd $CURRENT_DIR
 rm -rf $TMP_DIR/

@@ -13,8 +13,7 @@
 
 %% Client
 -export([init_catalog/0,
-		 list_kernel_catalog/0,
-		 compile_page_module/2]).
+		 list_kernel_catalog/0]).
 
  
 %%====================================================================
@@ -431,7 +430,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
 				IdBin = list_to_binary(integer_to_list(Id)),
 				Page = maps:get(<<"page">>, H, undefined),
-				PageModule = compile_page_module(Page, Rowid),
+				PageModule = compile_page_module(Page, Rowid, Conf),
 				ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 												 Type, Enable, Comment, Version, Owner, 
 												 Async, Host, Result_Cache, Authorization, Node, Lang,
@@ -483,9 +482,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 		end
 	catch
-		_Exception:_Reason -> 
-			ems_logger:format_warn("ems_catalog_loader parse invalid catalog specification: \n\t~p.\n", [H]),
-			?DEBUG("ems_catalog_loader reason to invalid catalog specification: ~p.\n", [_Reason]),
+		_Exception:Reason -> 
+			ems_logger:format_warn("ems_catalog_loader parse invalid catalog specification: ~p\n\t~p.\n", [Reason, H]),
 			parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 	end.
 
@@ -493,10 +491,13 @@ parse_middleware(undefined) -> undefined;
 parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 	
 
-compile_page_module(undefined, _) -> undefined;
-compile_page_module(Page, Rowid) -> 
+compile_page_module(undefined, _, _) -> undefined;
+compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	case ems_page:compile_file(binary_to_list(Page), ModuleNamePage) of
+	io:format("Page  is ~p\n", [Page]),
+	PageFile = parse_path_catalog(Page, Conf#config.static_file_path),
+	io:format("page file is ~p\n", [PageFile]),
+	case ems_page:compile_file(binary_to_list(PageFile), ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
 	end.
@@ -527,9 +528,9 @@ parse_node_service(List) -> List.
 	
 %% @doc O host pode ser um alias definido no arquivo de configuração
 parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
-parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
+parse_host_service(_Host, ModuleNameCanonical, Node, Conf) ->
 	ListHost = case net_adm:host_file() of
-		{error, _Reason} -> [list_to_atom(net_adm:localhost())];
+		{error, _Reason} -> [Conf#config.ems_host];
 		Hosts -> Hosts
 	end,
 	case erlang:is_list(Node) of

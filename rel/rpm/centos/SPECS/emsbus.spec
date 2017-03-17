@@ -81,6 +81,7 @@ by graduate student Everton Vargas Agilar.
 	cp /usr/lib/ems-bus/priv/conf/emsbus.conf $HOME_EMS_BUS/.erlangms/ > /dev/null 2>&1
   fi
   ln -s /usr/lib/ems-bus/ $HOME_EMS_BUS/ems-bus > /dev/null 2>&1
+  ln -s /usr/lib/ems-bus/priv/ $HOME_EMS_BUS/ems-bus/priv > /dev/null 2>&1
   
 
   # It only changes the $ HOME_EMS_BUS/.odbc.ini file when the user was created
@@ -94,7 +95,7 @@ by graduate student Everton Vargas Agilar.
 
 
   # create .hosts.erlang if it not exist
-  if [ ! -f ~/.hosts.erlang ]; then
+  if [ ! -f $HOME_EMS_BUS/.hosts.erlang ]; then
 	echo \'$(hostname | cut -d. -f1)\'. > $HOME_EMS_BUS/.hosts.erlang 
   fi
   
@@ -138,17 +139,49 @@ by graduate student Everton Vargas Agilar.
 	echo " " >> /etc/odbcinst.ini 
   fi
 
+  # Config /etc/security/limits.conf if necessary for erlangms group
+  if ! grep -q '@erlangms' /etc/security/limits.conf ; then
+	echo " " >> /etc/security/limits.conf
+	echo "# Security for ERLANGMS ESB" >> /etc/security/limits.conf
+	echo "@erlangms         hard    nofile      500000" >> /etc/security/limits.conf
+	echo "@erlangms         soft    nofile      500000" >> /etc/security/limits.conf
+	echo "@erlangms         hard    nproc       500000" >> /etc/security/limits.conf
+	echo "@erlangms         soft    nproc       500000" >> /etc/security/limits.conf
+	echo "" >> /etc/security/limits.conf
+	sed -ri '/^# *End of file$/d;' /etc/security/limits.conf
+	sed -i '$ a # End of file' /etc/security/limits.conf	 
+  fi
+
+  # Tunning fs.file-max. At least it should be 1000000
+  FILE_MAX_DEF=1000000
+  FILE_MAX=$(cat /proc/sys/fs/file-max)
+  if [ $FILE_MAX -lt $FILE_MAX_DEF ]; then
+		# Ajusta ou adiciona o valor para fs.file-max
+		if grep -q 'fs.file-max' /etc/sysctl.conf ; then
+			sed -ri "s/^fs.file-max=[0-9]{1,10}$/fs.file-max=$FILE_MAX_DEF/" /etc/sysctl.conf
+		else
+			echo "" >> /etc/sysctl.conf
+			echo "# File descriptors limit" >> /etc/sysctl.conf
+			echo "fs.file-max=$FILE_MAX_DEF" >> /etc/sysctl.conf
+		fi
+		sysctl -p > /dev/null 2>&1
+  fi
+
 
   # ldconfig
   /sbin/ldconfig  > /dev/null 2>&1 || true
 
-  # Remove DB (auto generate)
+  # database recreate
   rm -rf /usr/lib/ems-bus/priv/db
 
   # systemd
-  systemctl stop ems-bus.service  > /dev/null 2>&1 || true
-  systemctl enable ems-bus.service  > /dev/null 2>&1 || true
   systemctl daemon-reload  > /dev/null 2>&1 || true
+  systemctl stop ems-bus.service  > /dev/null 2>&1 || true
+  systemctl stop ems-bus.epmd.service  > /dev/null 2>&1 || true
+  systemctl enable ems-bus.service  > /dev/null 2>&1 || true
+  systemctl enable ems-bus.epmd.service  > /dev/null 2>&1 || true
+  systemctl start ems-bus.epmd.service  > /dev/null 2>&1 || true
+  sleep 1
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
 
 %postun 
@@ -156,13 +189,17 @@ by graduate student Everton Vargas Agilar.
 	# pare e desative o serviço systemctl
 	systemctl stop ems-bus.service  > /dev/null 2>&1 || true
 	systemctl disable ems-bus.service > /dev/null 2>&1 || true
+
+	systemctl stop ems-bus.epmd.service  > /dev/null 2>&1 || true
+	systemctl disable ems-bus.epmd.service > /dev/null 2>&1 || true
+
 	systemctl daemon-reload
 
 	# remove user
 	#groupdel erlangms > /dev/null 2>&1 || true
 	#userdel erlangms > /dev/null 2>&1 || true
 
-    # Remove DB (auto generate)
+    # database recreate
 	rm -rf /usr/lib/ems-bus/priv/db
 
 	/sbin/ldconfig
@@ -175,6 +212,8 @@ by graduate student Everton Vargas Agilar.
 %files
 %defattr(0755,root,root)
 /etc/ems-bus/*
+/etc/systemd/system/ems-bus.epmd.service
+/etc/systemd/system/ems-bus.epmd.service.d/limits.conf
 /etc/systemd/system/ems-bus.service
 /etc/systemd/system/ems-bus.service.d/limits.conf
 /etc/firewalld/services/ems-bus.xml

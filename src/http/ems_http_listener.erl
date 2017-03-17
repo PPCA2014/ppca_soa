@@ -40,8 +40,9 @@ stop() ->
  
 init({_IpAddress, 
 	  _TcpConfig = #tcp_config{tcp_port = Port,
-							  tcp_is_ssl = IsSsl,
-							  tcp_ssl = Ssl},
+							   tcp_is_ssl = IsSsl,
+							   tcp_ssl = Ssl,
+							   tcp_max_connections = MaxConnections},
 	  ListenerName}) ->
 	  Dispatch = cowboy_router:compile([
 		{'_', [
@@ -54,13 +55,14 @@ init({_IpAddress,
 		true -> 
 			{ok, _} = cowboy:start_tls(ListenerName, 100, [
 				{port, Port},
+				{max_connections, MaxConnections},
 				{cacertfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"cacertfile">>, Ssl))},
 				{certfile, ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"certfile">>, Ssl))},
 				{keyfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"keyfile">>, Ssl))}
 			], #{compress => true,
 				 env => #{dispatch => Dispatch}});
 		false ->
-			{ok, _} = cowboy:start_clear(ListenerName, 100, [{port, Port}], 
+			{ok, _} = cowboy:start_clear(ListenerName, 100, [{port, Port}, {max_connections, MaxConnections}], 
 				#{compress => true,
 				  env => #{dispatch => Dispatch}
 			})

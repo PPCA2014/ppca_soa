@@ -7,8 +7,8 @@
 		"service" : "ems_netadm_service:names",
 		"url": "/netadm/names",
 		"async": "false",
+		"result_cache" : 0,
 		"type": "GET",
-		"APIkey":"true",
 		"lang" : "erlang"
 	},
 
@@ -20,8 +20,8 @@
 		"service" : "ems_netadm_service:world",
 		"url": "/netadm/world",
 		"async": "false",
+		"result_cache" : 0,
 		"type": "GET",
-		"APIkey":"true",
 		"lang" : "erlang"
 	},
 
@@ -34,7 +34,6 @@
 		"url": "/netadm/hostfile",
 		"async": "false",
 		"type": "GET",
-		"APIkey":"true",
 		"lang" : "erlang"
 	},
 
@@ -47,7 +46,73 @@
 		"url": "/netadm/hostname",
 		"async": "false",
 		"type": "GET",
-		"APIkey":"true",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/netadm/localhost",
+		"comment": "Get ems-bus localhost.",
+		"owner": "emsbus",
+		"version": "1",
+		"service" : "ems_netadm_service:localhost",
+		"url": "/netadm/localhost",
+		"async": "false",
+		"type": "GET",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/netadm/memory",
+		"comment": "Get ems-bus memory.",
+		"owner": "emsbus",
+		"version": "1",
+		"service" : "ems_netadm_service:memory",
+		"url": "/netadm/memory",
+		"result_cache" : 0,
+		"async": "false",
+		"type": "GET",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/netadm/timestamp",
+		"comment": "Get ems-bus timestamp.",
+		"owner": "emsbus",
+		"version": "1",
+		"service" : "ems_netadm_service:timestamp",
+		"url": "/netadm/timestamp",
+		"result_cache" : 0,
+		"async": "false",
+		"type": "GET",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/netadm/threads",
+		"comment": "Get ems-bus threads count.",
+		"owner": "emsbus",
+		"version": "1",
+		"service" : "ems_netadm_service:threads",
+		"url": "/netadm/threads",
+		"result_cache" : 0,
+		"async": "false",
+		"type": "GET",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/netadm/info",
+		"comment": "Get ems-bus info.",
+		"owner": "emsbus",
+		"version": "1",
+		"service" : "ems_netadm_service:info",
+		"url": "/netadm/info",
+		"result_cache" : 0,
+		"async": "false",
+		"type": "GET",
 		"lang" : "erlang"
 	}
+	
+	
+	
 ]

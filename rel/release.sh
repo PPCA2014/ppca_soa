@@ -133,7 +133,7 @@ build(){
 
 
 	# ########## Recompila todo projeto antes de gerar a release ########## 
-	echo "Recompilando os fontes..."
+	echo 'Recompilando os fontes...'
 	cd ..
 	rm -f erl_crash.dump
 	rm -rf priv/db
@@ -144,12 +144,12 @@ build(){
 
 	# ******** Gera o release na pasta rel *********
 	cd rel
-	echo "Gerando release com rebar..."
-	rebar compile generate || die "Falha ao gerar o release com rebar compile generate!"
+	echo 'Gerando release com rebar...'
+	rebar compile generate || die 'Falha ao gerar o release com rebar compile generate!'
 
 
 	# Renomeia a pasta gerada e o nome do script ems_bus para ems-bus
-	mv ems_bus ems-bus || die "Não foi possível renomear a pasta ems_bus para ems-bus!"
+	mv ems_bus ems-bus || die 'Não foi possível renomear a pasta ems_bus para ems-bus!'
 	mv ems-bus/bin/ems_bus ems-bus/bin/ems-bus
 	rm -rf ems-bus/priv/www/
 
@@ -158,8 +158,8 @@ build(){
 	cd ems-bus
 	ln -sf lib/ems_bus-$VERSION_RELEASE/priv/ priv || die "Não foi possível criar o link simbólico priv para lib/ems_bus-$VERSION_RELEASE/priv!"
 	# Faz algumas limpezas para não ir lixo no pacote
-	rm -Rf log || die "Não foi possível remover a pasta log na limpeza!"
-	rm -rf priv/db || die "Não foi possível remover a pasta db na limpeza!"
+	rm -Rf log || die 'Não foi possível remover a pasta log na limpeza!'
+	rm -rf priv/db || die 'Não foi possível remover a pasta db na limpeza!'
 	rm -rf priv/www
 	cd ..
 
@@ -209,8 +209,11 @@ build(){
 			# Gera a estrutura /etc/systemd/system
 			mkdir -p $SKEL_PACKAGE_SOURCES/etc/systemd/system
 			mkdir -p $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d
-			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service!" 
-			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service.d/limits.conf $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d/limits.conf || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service.d/limits.conf!" 
+			mkdir -p $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.epmd.service.d
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service || die 'Não foi possível criar o link simbólico ems-bus.service!' 
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service.d/limits.conf $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d/limits.conf || die 'Não foi possível criar o link simbólico ems-bus.service.d/limits.conf!'
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.epmd.service || die 'Não foi possível criar o link simbólico ems-bus.service!' 
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service.d/limits.conf $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.epmd.service.d/limits.conf || die 'Não foi possível criar o link simbólico ems-bus.service.d/limits.conf!'
 
 			# Gera a estrutura /etc/firewalld
 			mkdir -p $SKEL_PACKAGE_SOURCES/etc/firewalld/services
@@ -269,8 +272,11 @@ build(){
 			# Gera a estrutura /etc/systemd/system
 			mkdir -p $SKEL_PACKAGE_SOURCES/etc/systemd/system
 			mkdir -p $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d
-			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service!" 
-			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service.d/limits.conf $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d/limits.conf || die "Não foi possível criar o link simbólico $SKEL_RPM_PACKAGE/etc/systemd/system/ems-bus.service.d/limits.conf!" 
+			mkdir -p $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.epmd.service.d
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service || die 'Não foi possível criar o link simbólico ems-bus.service!'
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.service.d/limits.conf $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.service.d/limits.conf || die 'Não foi possível criar o link simbólico ems-bus.service.d/limits.conf!'
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.epmd.service || die 'Não foi possível criar o link simbólico ems-bus.service!'
+			ln -s /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service.d/limits.conf $SKEL_PACKAGE_SOURCES/etc/systemd/system/ems-bus.epmd.service.d/limits.conf || die 'Não foi possível criar o link simbólico ems-bus.service.d/limits.conf!'
 
 			# Gera a estrutura /etc/sudoers.d
 			mkdir -p $SKEL_PACKAGE_SOURCES/etc/sudoers.d
