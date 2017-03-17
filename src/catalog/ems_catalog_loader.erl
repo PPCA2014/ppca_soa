@@ -216,6 +216,7 @@ valida_lang(<<"net">>) -> ok;
 valida_lang(_) -> erlang:error(invalid_lang_service).
 
 valida_authorization(<<"Basic">>) -> ok;
+valida_authorization(<<"Oauth2">>) -> ok;
 valida_authorization(<<>>) -> ok;
 valida_authorization(_) -> erlang:error(invalid_authorization).
 

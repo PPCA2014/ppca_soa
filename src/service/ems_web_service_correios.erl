@@ -21,8 +21,25 @@ busca_cep(Request = #request{service = #service{properties = Props}}) ->
 	Body = lists:concat(["relaxation=",Cep,"&tipoCEP=ALL&semelhante=N"]), 
 	case httpc:request(post, {UrlBuscaCep, [], ContentType, Body}, [], []) of
 		{ok, {_, _, Result}} ->
+
+			PositionInitTable = string:str(Result,"<table class=\"tmptabela\""),
+			Table = string:sub_string(Result, PositionInitTable, 12495),
+			PosInitTds = string:str(Table, "</tr>"),
+			Tds = string:sub_string(Table,PosInitTds+10),
+			TdEndIni = string:str(Tds,"<td width=\"150\">"),
+			TdEndEnd = string:str(Tds,"</td>"),
+			Endereco = string:sub_string(Tds,TdEndIni+17,TdEndEnd-7),
+			TdsSemEndereco = string:sub_string(Tds,TdEndEnd+3),
+			TdBairroIni = string:str(TdsSemEndereco,"<td width=\"90\">"),
+			TdBairroEnd = string:str(TdsSemEndereco,"</td>"),
+			Bairro = string:sub_string(TdsSemEndereco,TdBairroIni+15,TdBairroEnd-7),
+			TdsSemBairro = string:sub_string(TdsSemEndereco,TdBairroEnd+3),
+			TdLogradouroIni = string:str(TdsSemBairro,"<td width=\"80\">"),
+			TdLogradouroEnd = string:str(TdsSemBairro,"</td>"),
+			Logradouro = string:sub_string(TdsSemBairro,TdLogradouroIni+15,TdLogradouroEnd-4),
+			
 			{ok, Request#request{code = 200, 
-								 response_data = list_to_binary(Result)}
+								 response_data = ems_schema:prop_list_to_json([{<<"endereco">>,Endereco},{<<"bairro">>,Bairro},{<<"logradouro">>,Logradouro}])}
 			};
 		Error -> 
 			{error, Request#request{code = 400, 

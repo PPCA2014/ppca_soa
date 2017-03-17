@@ -464,6 +464,16 @@ parse_basic_authorization_header(Header) ->
 		false -> 
 			{error, einvalid_authorization_header}
 	end.
+	
+-spec parse_barer_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
+parse_barer_authorization_header(Header) ->
+	<<Barer:5/binary, _:1/binary, Secret/binary>> = Header,
+	case Barer =:= <<"Barer">> of
+		true ->
+			base64:decode(Secret);
+		false -> 
+			{error, einvalid_authorization_header}
+	end.
 
 	
 %% @doc Retorna o mime-type do arquivo
