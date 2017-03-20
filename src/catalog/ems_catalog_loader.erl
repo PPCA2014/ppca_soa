@@ -389,93 +389,99 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Async = maps:get(<<"async">>, H, false),
 				Rowid = ems_util:make_rowid(Url2),
 				Lang = maps:get(<<"lang">>, H, <<>>),
-				Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
-				Result_Cache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
-				Authorization = maps:get(<<"authorization">>, H, <<>>),
-				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
-				UseRE = maps:get(<<"use_re">>, H, false),
-				SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
-				SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
-				PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
-				PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
-				Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
-				Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
-				Cache_Control = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
-				ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
-				Public = maps:get(<<"public">>, H, true),
-				ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
-				Path = parse_path_catalog(maps:get(<<"path">>, H, ?STATIC_FILE_PATH), Conf#config.static_file_path),
-				RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
-				valida_lang(Lang),
-				valida_name_service(Name),
-				valida_type_service(Type),
-				valida_bool(Enable),
-				valida_bool(Async),
-				valida_length(Comment, 1000),
-				valida_length(Version, 10),
-				valida_length(Owner, 30),
-				valida_authorization(Authorization),
-				valida_bool(Debug),
-				valida_bool(UseRE),
-				case Lang of
-					<<"erlang">> -> 
-						Node = <<>>,
-						Host = '',
-						HostName = Conf#config.ems_hostname,
-						valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
-					_ ->	
-						Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-						{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
-				end,
-				{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
-				IdBin = list_to_binary(integer_to_list(Id)),
-				Page = maps:get(<<"page">>, H, undefined),
-				PageModule = compile_page_module(Page, Rowid, Conf),
-				ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
-												 Type, Enable, Comment, Version, Owner, 
-												 Async, Host, Result_Cache, Authorization, Node, Lang,
-												 Datasource, Debug, SchemaIn, SchemaOut, 
-												 Page, Timeout, Middleware, Cache_Control, 
-												 ExpiresMinute, Public, ContentType, Path, RedirectUrl),
-				case UseRE of
-					true -> 
-						Service = new_service_re(Rowid, IdBin, Name, Url2, 
-												   ServiceImpl,
-												   ModuleName, 
-												   ModuleNameCanonical,
-												   FunctionName, Type, Enable, Comment, 
-												   Version, Owner, Async, 
-												   Querystring, QtdQuerystringRequired,
-												   Host, HostName, Result_Cache,
-												   Authorization, Node, Lang,
-												   Datasource, Debug, SchemaIn, SchemaOut, 
-												   PoolSize, PoolMax, H, Page, 
-												   PageModule, Timeout, 
-												   Middleware, Cache_Control, ExpiresMinute, 
-												   Public, ContentType, Path, RedirectUrl),
-						case Type of
-							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-							_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
-						end;
-					false -> 
-						Service = new_service(Rowid, IdBin, Name, Url2, 
-												ServiceImpl,
-												ModuleName,
-												ModuleNameCanonical,
-												FunctionName, Type, Enable, Comment,
-												Version, Owner, Async, 
-												Querystring, QtdQuerystringRequired,
-												Host, HostName, Result_Cache,
-												Authorization, Node, Lang,
-												Datasource, Debug, SchemaIn, SchemaOut, 
-												PoolSize, PoolMax, H, Page, 
-												PageModule, Timeout, 
-												Middleware, Cache_Control, 
-												ExpiresMinute, Public, 
-												ContentType, Path, RedirectUrl),
-						case Type of
-							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-							_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+				Ds = maps:get(<<"datasource">>, H, undefined),
+				case parse_datasource(Ds, Rowid, Conf) of
+					{error, enoent} ->
+						ems_logger:format_warn("Service ~p will be disabled because the datasource ~p was not found in the configuration file.\n", [Name, Ds]),
+						parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf);	
+					Datasource ->
+						Result_Cache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
+						Authorization = maps:get(<<"authorization">>, H, <<>>),
+						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
+						UseRE = maps:get(<<"use_re">>, H, false),
+						SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
+						SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
+						PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
+						PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
+						Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
+						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
+						Cache_Control = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
+						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
+						Public = maps:get(<<"public">>, H, true),
+						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
+						Path = parse_path_catalog(maps:get(<<"path">>, H, ?STATIC_FILE_PATH), Conf#config.static_file_path),
+						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
+						valida_lang(Lang),
+						valida_name_service(Name),
+						valida_type_service(Type),
+						valida_bool(Enable),
+						valida_bool(Async),
+						valida_length(Comment, 1000),
+						valida_length(Version, 10),
+						valida_length(Owner, 30),
+						valida_authorization(Authorization),
+						valida_bool(Debug),
+						valida_bool(UseRE),
+						case Lang of
+							<<"erlang">> -> 
+								Node = <<>>,
+								Host = '',
+								HostName = Conf#config.ems_hostname,
+								valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
+							_ ->	
+								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
+								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+						end,
+						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
+						IdBin = list_to_binary(integer_to_list(Id)),
+						Page = maps:get(<<"page">>, H, undefined),
+						PageModule = compile_page_module(Page, Rowid, Conf),
+						ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
+														 Type, Enable, Comment, Version, Owner, 
+														 Async, Host, Result_Cache, Authorization, Node, Lang,
+														 Datasource, Debug, SchemaIn, SchemaOut, 
+														 Page, Timeout, Middleware, Cache_Control, 
+														 ExpiresMinute, Public, ContentType, Path, RedirectUrl),
+						case UseRE of
+							true -> 
+								Service = new_service_re(Rowid, IdBin, Name, Url2, 
+														   ServiceImpl,
+														   ModuleName, 
+														   ModuleNameCanonical,
+														   FunctionName, Type, Enable, Comment, 
+														   Version, Owner, Async, 
+														   Querystring, QtdQuerystringRequired,
+														   Host, HostName, Result_Cache,
+														   Authorization, Node, Lang,
+														   Datasource, Debug, SchemaIn, SchemaOut, 
+														   PoolSize, PoolMax, H, Page, 
+														   PageModule, Timeout, 
+														   Middleware, Cache_Control, ExpiresMinute, 
+														   Public, ContentType, Path, RedirectUrl),
+								case Type of
+									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
+									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
+								end;
+							false -> 
+								Service = new_service(Rowid, IdBin, Name, Url2, 
+														ServiceImpl,
+														ModuleName,
+														ModuleNameCanonical,
+														FunctionName, Type, Enable, Comment,
+														Version, Owner, Async, 
+														Querystring, QtdQuerystringRequired,
+														Host, HostName, Result_Cache,
+														Authorization, Node, Lang,
+														Datasource, Debug, SchemaIn, SchemaOut, 
+														PoolSize, PoolMax, H, Page, 
+														PageModule, Timeout, 
+														Middleware, Cache_Control, 
+														ExpiresMinute, Public, 
+														ContentType, Path, RedirectUrl),
+								case Type of
+									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
+									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+								end
 						end
 				end;
 			false -> 
@@ -494,9 +500,7 @@ parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 compile_page_module(undefined, _, _) -> undefined;
 compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	io:format("Page  is ~p\n", [Page]),
 	PageFile = parse_path_catalog(Page, Conf#config.static_file_path),
-	io:format("page file is ~p\n", [PageFile]),
 	case ems_page:compile_file(binary_to_list(PageFile), ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
@@ -506,10 +510,14 @@ compile_page_module(Page, Rowid, Conf) ->
 parse_schema(null) -> null;
 parse_schema(Name) -> Name.
 
+parse_datasource(undefined, _, _) -> undefined;
+parse_datasource(M, Rowid, _) when erlang:is_map(M) -> ems_db:create_datasource_from_map(M, Rowid);
+parse_datasource(DsName, _Rowid, Conf) -> 
+	case maps:get(DsName, Conf#config.ems_datasources, undefined) of
+		undefined -> {error, enoent};
+		M -> M
+	end.
 	
-parse_datasource(undefined, _) -> undefined;
-parse_datasource(M, Rowid) -> ems_db:create_datasource_from_map(M, Rowid).
-
 	
 parse_service_service(Service) ->
 	try

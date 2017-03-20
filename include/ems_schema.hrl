@@ -110,7 +110,8 @@
 							 pid_module,
 							 pid_module_ref,
 							 owner,
-							 pool_name :: string()
+							 pool_name :: string(),
+							 parent = undefined :: string()
 							}).
 
 
