@@ -17,6 +17,7 @@
 start(_StartType, StartArgs) ->
 	case ems_config:start() of
 		{ok, _Pid} ->
+			Conf = ems_config:getConfig(),
 			T1 = ems_util:get_milliseconds(),
 			ems_db:start(),
 			case ems_catalog_loader:init_catalog() of
@@ -26,10 +27,11 @@ start(_StartType, StartArgs) ->
 					oauth2ems_backend:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					erlang:send_after(4500, spawn(fun() -> 
-														ems_logger:info("Hosts in the cluster: ~p", [ case net_adm:host_file() of 
+														ems_logger:info("Hosts in the cluster: ~p.", [ case net_adm:host_file() of 
 																											{error, enoent} -> net_adm:localhost(); 
 																											Hosts -> Hosts 
 																									  end]),
+														ems_logger:info("Allowed addresses: ~p.", [Conf#config.tcp_allowed_address]),
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
 														ems_logger:sync(),
 														ems_logger:set_level(info)

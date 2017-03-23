@@ -21,6 +21,7 @@ LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){
 # Primary IP of the server
 LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
+LINUX_HOST=$(hostname)
 
 VERSION=1.0.0
 CURRENT_DIR=$(pwd)
@@ -37,12 +38,12 @@ AUTO_RESTART="false"
 RESTARTED="false"
 LDAP_PORT="2389"
 LDAP_SERVER="127.0.0.1:$LDAP_PORT"
-ENVIRONMENT="$LINUX_DESCRIPTION  IP $LINUX_IP_SERVER"
+ENVIRONMENT="$LINUX_DESCRIPTION   Host: $LINUX_HOST   IP $LINUX_IP_SERVER"
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
 UPTIME=$(echo since `uptime -s` " ( " `uptime -p` " )" | sed 's/hours/hs/; s/minutes/min/ ;')
-SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6" "$7" "" ( up "$9" )";  }' | sed -r 's/(^.+\( up [0-9]+)(min|hs)( \)$)/\1 \2 \3/')
+SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6$7" "" ( up "$9" "$10" )";  }' | sed -r 's/ago //')
 MAIN_PID=$(systemctl status ems-bus | grep "Main PID:")
 TIME_WAIT_START_SERVER=20  # seconds
 TIME_WAIT_TEST=3 # seconds
@@ -57,7 +58,7 @@ mkdir -p $TMP_DIR && cd $TMP_DIR
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
 SMTP_DE="erlangms@unb.br"
-SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
+SMTP_TO="evertonagilar@unb.br"
 SMTP_PASSWD=erl1523
 
 
@@ -88,7 +89,7 @@ print_header(){
 	
 # send email with python	
 send_email(){	
-	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: removido por segurança/')
+	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: ************/')
 	TITULO_MSG="ERLANGMS LDAP Client Test  -  Date: $CURRENT_DATE   IP: $LINUX_IP_SERVER" 
 	SUBJECT="<html>
 			<head>
@@ -122,7 +123,7 @@ try:
 	msg = MIMEMultipart()
 	msg['Subject'] = "$TITULO_MSG"
 	msg['From'] = "$SMTP_DE"
-	msg['To'] = "$SMTP_PARA"
+	msg['To'] = "$SMTP_TO"
 	msg['Date'] = formatdate(localtime=True)
 	part1 = MIMEText("Relatório em anexo.", 'plain')
 	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
@@ -196,6 +197,7 @@ if [ "$#" = "0" ] || [ "$1" = "--help" ]; then
 	printf "%-20s  => %-150s.\n" "--auto_restart"	"Restarts the bus on failure (local server only)"
 	printf "%-20s  => %-150s.\n" "--email_only_error" "Send email only if there is an error"
 	printf "%-20s  => %-150s.\n" "--retry" "Number of attempts in case of failure. Allowed Range: 1-9"
+	printf "%-20s  => %-150s.\n" "--email_to" "Emails to send report"
 	exit
 fi
 
@@ -248,12 +250,14 @@ fi
 
 # Optional parameters
 for P in $*; do
-	if [ "$P" = "--sendemail" ]; then
+	if [[ "$P" =~ ^--send_?email$ ]]; then
 		SEND_EMAIL="true"
 	elif [ "$P" = "--auto_restart" ]; then
 		AUTO_RESTART="true"
 	elif [ "$P" = "--email_only_error" ]; then
 		EMAIL_ONLY_ERROR="true"
+	elif [[ "$P" =~ ^--email_to=.+$ ]]; then
+		SMTP_TO="$(echo $P | cut -d= -f2)"
 	elif [[ "$P" =~ ^--retry=.+$ ]]; then
 		RETRY="$(echo $P | cut -d= -f2)"
 		if [[ ! "$RETRY" =~ ^[0-9]{1}$ ]] ; then
@@ -324,9 +328,9 @@ fi
 # Envia e-mail?
 if [ "$SEND_EMAIL" = "true" ]; then
 	if [ "$FALHA_LDAP" = "true" -a "$EMAIL_ONLY_ERROR" = "true" ]; then
-		send_email && echo "This report was send to administrators."
+		send_email && echo "This report was send to $SMTP_TO."
 	elif [ "$EMAIL_ONLY_ERROR" = "false" ]; then
-		send_email && echo "This report was send to administrators."
+		send_email && echo "This report was send to $SMTP_TO."
 	fi
 fi
 

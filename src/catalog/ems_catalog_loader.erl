@@ -350,6 +350,32 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 	make_ets_catalog(T). 	
 
 
+parse_tcp_listen_address(ListenAddress) ->
+	lists:map(fun(IP) -> 
+					{ok, L2} = inet:parse_address(IP),
+					L2 
+			  end, ListenAddress).
+
+parse_allowed_address(AllowedAddress) ->
+	lists:map(fun(IP) -> 
+					ems_http_util:mask_ipaddress_to_tuple(IP)
+			  end, AllowedAddress).
+
+parse_tcp_port(undefined) -> undefined;
+parse_tcp_port(<<Port/binary>>) -> 
+	parse_tcp_port(binary_to_list(Port));		
+parse_tcp_port(Port) when is_list(Port) -> 
+	parse_tcp_port(list_to_integer(Port));
+parse_tcp_port(Port) when is_integer(Port) -> 
+	case ems_consist:is_range_valido(Port, 1024, 5000) of
+		true -> Port;
+		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
+	end.
+
+parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
+parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
+
+
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	ets:new(ets_get, [ordered_set, named_table, public, {read_concurrency, true}]),
@@ -395,7 +421,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						ems_logger:format_warn("Service ~p will be disabled because the datasource ~p was not found in the configuration file.\n", [Name, Ds]),
 						parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf);	
 					Datasource ->
-						Result_Cache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
+						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
 						Authorization = maps:get(<<"authorization">>, H, <<>>),
 						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 						UseRE = maps:get(<<"use_re">>, H, false),
@@ -405,7 +431,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
 						Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
 						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
-						Cache_Control = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
+						CacheControl = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
 						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
 						Public = maps:get(<<"public">>, H, true),
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
@@ -422,6 +448,25 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						valida_authorization(Authorization),
 						valida_bool(Debug),
 						valida_bool(UseRE),
+						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
+						ListenAddress_t = parse_tcp_listen_address(ListenAddress),
+						AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
+						AllowedAddress_t = parse_allowed_address(AllowedAddress),
+						MaxConnections = maps:get(<<"tcp_max_connections">>, H, [?HTTP_MAX_CONNECTIONS]),
+						Port = parse_tcp_port(maps:get(<<"tcp_port">>, H, undefined)),
+						Ssl = maps:get(<<"tcp_ssl">>, H, undefined),
+						case Ssl of
+							undefined ->
+								IsSsl = false,
+								SslCaCertFile = undefined,
+								SslCertFile = undefined,
+								SslKeyFile = undefined;
+							_ ->
+								IsSsl = true,
+								SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
+								SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
+								SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
+						end,
 						case Lang of
 							<<"erlang">> -> 
 								Node = <<>>,
@@ -438,10 +483,13 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						PageModule = compile_page_module(Page, Rowid, Conf),
 						ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
 														 Type, Enable, Comment, Version, Owner, 
-														 Async, Host, Result_Cache, Authorization, Node, Lang,
+														 Async, Host, ResultCache, Authorization, Node, Lang,
 														 Datasource, Debug, SchemaIn, SchemaOut, 
-														 Page, Timeout, Middleware, Cache_Control, 
-														 ExpiresMinute, Public, ContentType, Path, RedirectUrl),
+														 Page, Timeout, Middleware, CacheControl, 
+														 ExpiresMinute, Public, ContentType, Path, RedirectUrl,
+														 ListenAddress, AllowedAddress, 
+														 Port, MaxConnections,
+														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile),
 						case UseRE of
 							true -> 
 								Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -451,13 +499,16 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														   FunctionName, Type, Enable, Comment, 
 														   Version, Owner, Async, 
 														   Querystring, QtdQuerystringRequired,
-														   Host, HostName, Result_Cache,
+														   Host, HostName, ResultCache,
 														   Authorization, Node, Lang,
 														   Datasource, Debug, SchemaIn, SchemaOut, 
 														   PoolSize, PoolMax, H, Page, 
 														   PageModule, Timeout, 
-														   Middleware, Cache_Control, ExpiresMinute, 
-														   Public, ContentType, Path, RedirectUrl),
+														   Middleware, CacheControl, ExpiresMinute, 
+														   Public, ContentType, Path, RedirectUrl,
+														   ListenAddress, ListenAddress_t, AllowedAddress, 
+														   AllowedAddress_t, Port, MaxConnections,
+														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -470,14 +521,17 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														FunctionName, Type, Enable, Comment,
 														Version, Owner, Async, 
 														Querystring, QtdQuerystringRequired,
-														Host, HostName, Result_Cache,
+														Host, HostName, ResultCache,
 														Authorization, Node, Lang,
 														Datasource, Debug, SchemaIn, SchemaOut, 
 														PoolSize, PoolMax, H, Page, 
 														PageModule, Timeout, 
-														Middleware, Cache_Control, 
+														Middleware, CacheControl, 
 														ExpiresMinute, Public, 
-														ContentType, Path, RedirectUrl),
+														ContentType, Path, RedirectUrl,
+														ListenAddress, ListenAddress_t, AllowedAddress, 
+														AllowedAddress_t, Port, MaxConnections,
+														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -560,11 +614,14 @@ parse_host_service(_Host, ModuleNameCanonical, Node, Conf) ->
 
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Enable, Comment, Version, Owner, Async, Querystring, 
-			   QtdQuerystringRequired, Host, HostName, Result_Cache,
+			   QtdQuerystringRequired, Host, HostName, ResultCache,
 			   Authorization, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			   Page, PageModule, Timeout, Middleware, Cache_Control, 
-			   ExpiresMinute, Public, ContentType, Path, RedirectUrl) ->
+			   Page, PageModule, Timeout, Middleware, CacheControl, 
+			   ExpiresMinute, Public, ContentType, Path, RedirectUrl,
+			   ListenAddress, ListenAddress_t, AllowedAddress, 
+			   AllowedAddress_t, Port, MaxConnections,
+			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -589,7 +646,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
 			    host_name = HostName,
-			    result_cache = Result_Cache,
+			    result_cache = ResultCache,
 			    authorization = Authorization,
 			    node = Node,
 			    page = Page,
@@ -604,20 +661,33 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    timeout = Timeout,
 			    middleware = Middleware,
 			    properties = Properties,
-			    cache_control = Cache_Control,
+			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
 			    path = Path,
 			    redirect_url = RedirectUrl,
-			    enable = Enable
+			    enable = Enable,
+				tcp_listen_address = ListenAddress,
+				tcp_listen_address_t = ListenAddress_t,
+				tcp_allowed_address = AllowedAddress,
+				tcp_allowed_address_t = AllowedAddress_t,
+				tcp_max_connections = MaxConnections,
+				tcp_port = Port,
+				tcp_is_ssl = IsSsl,
+				tcp_ssl_cacertfile = SslCaCertFile,
+				tcp_ssl_certfile = SslCertFile,
+				tcp_ssl_keyfile = SslKeyFile
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Enable, Comment, Version, Owner, Async, Querystring, 
-			QtdQuerystringRequired, Host, HostName, Result_Cache,
+			QtdQuerystringRequired, Host, HostName, ResultCache,
 			Authorization, Node, Lang, Datasource, Debug, SchemaIn, SchemaOut, 
 			PoolSize, PoolMax, Properties, Page, PageModule, Timeout, Middleware, 
-			Cache_Control, ExpiresMinute, Public, ContentType, Path, RedirectUrl) ->
+			CacheControl, ExpiresMinute, Public, ContentType, Path, RedirectUrl,
+			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
+			Port, MaxConnections,
+			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -639,7 +709,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
 			    host_name = HostName,
-			    result_cache = Result_Cache,
+			    result_cache = ResultCache,
 			    authorization = Authorization,
 			    node = Node,
 			    page = Page,
@@ -654,20 +724,33 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    timeout = Timeout,
 			    middleware = Middleware,
 			    properties = Properties,
-			    cache_control = Cache_Control,
+			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
 			    path = Path,
 			    redirect_url = RedirectUrl,
-			    enable = Enable
+			    enable = Enable,
+				tcp_listen_address = ListenAddress,
+				tcp_listen_address_t = ListenAddress_t,
+				tcp_allowed_address = AllowedAddress,
+				tcp_allowed_address_t = AllowedAddress_t,
+				tcp_max_connections = MaxConnections,
+				tcp_port = Port,
+				tcp_is_ssl = IsSsl,
+				tcp_ssl_cacertfile = SslCaCertFile,
+				tcp_ssl_certfile = SslCertFile,
+				tcp_ssl_keyfile = SslKeyFile
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
-				  Comment, Version, Owner, Async, Host, Result_Cache,
+				  Comment, Version, Owner, Async, Host, ResultCache,
 				  Authorization, Node, Lang, _Datasource, 
 				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
-				  Middleware, Cache_Control, ExpiresMinute, 
-				  Public, ContentType, Path, RedirectUrl) ->
+				  Middleware, CacheControl, ExpiresMinute, 
+				  Public, ContentType, Path, RedirectUrl,
+				  ListenAddress, AllowedAddress, 
+				  Port, MaxConnections,
+				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -680,7 +763,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 			    <<"owner">> => Owner,
 			    <<"async">> => Async,
 			    <<"host">> => Host,
-			    <<"result_cache">> => Result_Cache,
+			    <<"result_cache">> => ResultCache,
 			    <<"authorization">> => Authorization,
 			    <<"node">> => Node,
 			    <<"page">> => Page,
@@ -689,13 +772,22 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 			    <<"schema_out">> => SchemaOut,
 			    <<"timeout">> => Timeout,
 			    <<"middleware">> => Middleware,
-   			    <<"cache_control">> => Cache_Control,
+   			    <<"cache_control">> => CacheControl,
 			    <<"expires">> => ExpiresMinute,
 				<<"lang">> => Lang,
 				<<"content_type">> => ContentType,
 				<<"path">> => Path,
 				<<"redirect_url">> => RedirectUrl,
-				<<"enable">> => Enable},
+				<<"enable">> => Enable,
+				<<"tcp_listen_address">> => ListenAddress,
+				<<"tcp_allowed_address">> => AllowedAddress,
+				<<"tcp_max_connections">> => MaxConnections,
+				<<"tcp_port">> => Port,
+				<<"tcp_is_ssl">> => IsSsl,
+				<<"tcp_ssl_cacertfile">> => SslCaCertFile,
+				<<"tcp_ssl_certfile">> => SslCertFile,
+				<<"tcp_ssl_keyfile">> => SslKeyFile
+},
 	Service.
 
 

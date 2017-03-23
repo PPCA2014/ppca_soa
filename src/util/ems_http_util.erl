@@ -205,6 +205,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
+		{Ip, _} = cowboy_req:peer(CowboyReq),
 		Request = #request{
 			rid = RID,
 			rowid = Rowid,
@@ -232,7 +233,8 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			protocol = http,
 			result_cache = false,
 			t1 = T1,
-			req_hash = ReqHash
+			req_hash = ReqHash,
+			ip = Ip
 		},	
 		{ok, Request}
 	catch
@@ -436,17 +438,15 @@ mask_ipaddress_to_tuple(IpAddress) ->
 
 
 %% @doc Retorna true se Ip2 combina com algum Ip da lista Ip1
-match_ip_address([H|T]=Ip1,	Ip2) when erlang:is_list(Ip1) ->
-	case match_ip_address(H, Ip2) of
+match_ip_address([Ip1|T],	Ip2) ->
+	case match_ip_address(Ip1, Ip2) of
 		true -> true;
 		false -> match_ip_address(T, Ip2)
 	end;
 
 %% @doc Retorna true se Ip2 combina com Ip1
 match_ip_address([], _) -> false;
-match_ip_address(Ip1, 	Ip2) ->
-   {O1, O2, O3, O4} = Ip1,
-   {X1, X2, X3, X4} = Ip2,
+match_ip_address({O1, O2, O3, O4}, {X1, X2, X3, X4}) ->
    (O1 == '_' orelse O1 == X1) andalso
    (O2 == '_' orelse O2 == X2) andalso
    (O3 == '_' orelse O3 == X3) andalso

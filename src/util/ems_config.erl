@@ -190,7 +190,10 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_file_dest				= NomeArqConfig,
 			 ems_debug					= parse_bool(maps:get(<<"debug">>, Json, false)),
 			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
-			 ems_datasources			= parse_datasources(Json)
+			 ems_datasources			= parse_datasources(Json),
+			 tcp_allowed_address		= maps:get(<<"tcp_allowed_address">>, Json, [<<"0.0.0.0">>]),
+			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [])
+			 
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -209,7 +212,9 @@ get_default_config() ->
 			 ems_file_dest				= "",
 			 ems_debug					= false,
 			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE,
-			 ems_datasources			= #{}
+			 ems_datasources			= #{},
+			 tcp_allowed_address		= [],
+			 tcp_listen_address			= [<<"0.0.0.0">>]
 		}.
 
 parse_bool(<<"true">>) -> true;

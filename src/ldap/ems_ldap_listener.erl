@@ -29,8 +29,8 @@
 %% Server API
 %%====================================================================
 
-start(IpAddress, TcpConfig, ListenerName, Args) -> 
-    gen_server:start_link(?MODULE, {IpAddress, TcpConfig, ListenerName, Args}, []).
+start(IpAddress, Service, ListenerName, Args) -> 
+    gen_server:start_link(?MODULE, {IpAddress, Service, ListenerName, Args}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -41,9 +41,12 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({_IpAddress, TcpConfig = #tcp_config{tcp_port = Port, tcp_max_connections = MaxConnections}, ListenerName, Args}) ->
-	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, {max_connections, MaxConnections}], ems_ldap_handler, [Args]),
-	{ok, #state{listener_name = ListenerName, tcp_config = TcpConfig}}.
+init({_IpAddress, Service = #service{tcp_port = Port, 
+									 tcp_max_connections = MaxConnections}, ListenerName, Args}) ->
+	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, 
+																  {max_connections, MaxConnections}], 
+								   ems_ldap_handler, [Args]),
+	{ok, #state{listener_name = ListenerName, tcp_config = Service}}.
 		
 handle_cast(shutdown, State) ->
     {stop, normal, State}.
