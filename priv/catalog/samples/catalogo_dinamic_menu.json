@@ -4,9 +4,10 @@
 		"comment": "Dinamic menu",
 		"owner": "samples",
 		"version": "1",
-		"service" : "ems_catalog_loader:compile_page_module",
+		"type": "KERNEL",
+		"service" : "ems_template_loader:start",
 		"url": "/samples/dynamic_menu",
-		"page":"template_routes.html",
+		"url_template":"C:/desenvolvimento/barramento/ems-bus2/priv/www/template_routes.html",
 		"type": "GET",
 		"lang" : "erlang",
 		"enable" : false
