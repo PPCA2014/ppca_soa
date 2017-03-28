@@ -3,7 +3,7 @@ ErlangMS
 
 ErlangMS is a platform developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas Agilar*. 
 
-The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
+The platform consists of a Enterprise Service Bus (ESB), called *ems-bus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
 
 ###Main design features
 
@@ -15,13 +15,11 @@ The platform consists of a Enterprise Service Bus (ESB), called *EmsBus*, and a 
 
 * Services can be published in one or more nodes in the cluster (eg, Containers JBoss in Java EE ou native Erlang node), to avoid single points of failure (SPOFs);
 
-* Support HTTP Authentication;
+* Support HTTP Basic authentication;
  
-* Preliminary support Lightweight Directory Access Protocol (LDAP v3) for authentication;
+* Support Lightweight Directory Access Protocol (LDAP v3) for authentication (Proxy LDAP);
 
 * OAuth2 authentication (in progress);
-
-* Front-end lightweight and optimized for service-oriented computing in HTML5 and Angular 2. Source code of the project in <https://github.com/eliot-framework/eliot>.
 
 
 
