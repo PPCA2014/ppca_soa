@@ -356,10 +356,15 @@ parse_tcp_listen_address(ListenAddress) ->
 					L2 
 			  end, ListenAddress).
 
-parse_allowed_address(AllowedAddress) ->
+parse_allowed_address_t(all) -> all;
+parse_allowed_address_t(AllowedAddress) ->
 	lists:map(fun(IP) -> 
 					ems_http_util:mask_ipaddress_to_tuple(IP)
 			  end, AllowedAddress).
+
+parse_allowed_address(all) -> all;
+parse_allowed_address(AddrList) -> ems_util:binlist_to_list(AddrList).
+
 
 parse_tcp_port(undefined) -> undefined;
 parse_tcp_port(<<Port/binary>>) -> 
@@ -450,8 +455,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						valida_bool(UseRE),
 						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
 						ListenAddress_t = parse_tcp_listen_address(ListenAddress),
-						AllowedAddress = ems_util:binlist_to_list(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
-						AllowedAddress_t = parse_allowed_address(AllowedAddress),
+						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
+						AllowedAddress_t = parse_allowed_address_t(AllowedAddress),
 						MaxConnections = maps:get(<<"tcp_max_connections">>, H, [?HTTP_MAX_CONNECTIONS]),
 						Port = parse_tcp_port(maps:get(<<"tcp_port">>, H, undefined)),
 						Ssl = maps:get(<<"tcp_ssl">>, H, undefined),

@@ -162,9 +162,10 @@ generate_test(){
 	print_header
 	for T in `seq $RETRY`; do
 		# ocorre erro 49 quando invalid credentials
+		# ocorre erro 50 quando não tem permissão de acesso
 		# ocorre erro 255 quando consegue contactar o servidor na porta
 		ldap_search
-		if [ "$?" = "0" -o "$?" = "49" ]; then
+		if [ "$?" = "0" -o "$?" = "49" -o "$?" = "50" ]; then
 			FALHA_LDAP="false"
 			break;
 		else

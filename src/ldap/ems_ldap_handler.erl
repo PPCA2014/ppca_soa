@@ -18,7 +18,8 @@
 -record(state, {datasource,		 	%% datasource
 				middleware,		 	%% middleware to service logic
 				admin,		 		%% admin ldap
-				password_admin}).   %% Password of admin ldap
+				password_admin,     %% Password of admin ldap
+				tcp_allowed_address_t}).   
 
 -export([start_link/4]).
 -export([init/4]).
@@ -29,6 +30,7 @@ start_link(Ref, Socket, Transport, Service) ->
 
 init(Ref, Socket, Transport, [#service{datasource = Datasource,
 										middleware = Middleware,
+										tcp_allowed_address_t = AllowedAddress,
 										properties = Props}]) ->
 	ranch:accept_ack(Ref),
 	LdapAdmin = maps:get(<<"ldap_admin">>, Props),
@@ -36,37 +38,55 @@ init(Ref, Socket, Transport, [#service{datasource = Datasource,
     State = #state{datasource = Datasource,
 				   middleware = Middleware,
 				   admin = LdapAdmin,
-				   password_admin = LdapPasswdAdmin
+				   password_admin = LdapPasswdAdmin,
+				   tcp_allowed_address_t = AllowedAddress
 			   },
 	loop(Socket, Transport, State).
 
-loop(Socket, Transport, State) ->
+loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress}) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
-			case decode_ldap_message(Data) of
-				{ok, LdapMessage} ->
-					ems_logger:debug2("ems_ldap_handler request: ~p\n.", [LdapMessage]),
-					MessageID = LdapMessage#'LDAPMessage'.messageID,
-					Result = handle_request(LdapMessage, State),
-					case Result of
-						{ok, unbindRequest} ->
-							?DEBUG("ems_ldap_handler unbindRequest and close socket."),
-							Transport:close(Socket);
-						{ok, Msg} -> 
-							?DEBUG("ems_ldap_handler response: ~p.", [Msg]),
-							Response = [ encode_response(MessageID, M) || M <- Msg ],
-							Transport:send(Socket, Response)
-					end,
-					loop(Socket, Transport, State);
-				{error, Reason} ->
-					ems_logger:error("ems_ldap_handler decode invalid message. Reason: ~p.", [Reason]),
-					Transport:close(Socket),
-					loop(Socket, Transport, State)
-			end;
+			case inet:peername(Socket) of
+				{ok, {Ip,_Port}} ->
+					case ems_tcp_util:allow_ip_address(Ip, AllowedAddress) of				
+						true ->
+							case decode_ldap_message(Data) of
+								{ok, LdapMessage} ->
+									ems_logger:debug2("ems_ldap_handler request: ~p\n.", [LdapMessage]),
+									MessageID = LdapMessage#'LDAPMessage'.messageID,
+									Result = handle_request(LdapMessage, State),
+									case Result of
+										{ok, unbindRequest} ->
+											?DEBUG("ems_ldap_handler unbindRequest and close socket."),
+											Transport:close(Socket);
+										{ok, Msg} -> 
+											?DEBUG("ems_ldap_handler response: ~p.", [Msg]),
+											Response = [ encode_response(MessageID, M) || M <- Msg ],
+											Transport:send(Socket, Response)
+									end;
+								{error, Reason} ->
+									ems_logger:error("ems_ldap_handler decode invalid message. Reason: ~p.", [Reason]),
+									ResultDone = make_result_done(inappropriateMatching),
+									Response = [ encode_response(1, ResultDone) ],
+									Transport:send(Socket, Response),
+									Transport:close(Socket)
+							end;
+						false ->
+							ems_logger:warn("ems_ldap_handler does not grant access to IP ~p. Reason: IP denied.", [Ip]),
+							ResultDone = make_result_done(insufficientAccessRights),
+							Response = [ encode_response(1, ResultDone) ],
+							Transport:send(Socket, Response),
+							Transport:close(Socket)
+					end;
+				Error -> 
+					ems_logger:error("ems_ldap_handler peername error. Reason: ~p.", [Error]),
+					Transport:close(Socket)
+			end,
+			loop(Socket, Transport, State);		
 		_ ->
-			?DEBUG("ems_ldap_handler close socket."),
 			Transport:close(Socket)
 	end.
+
 
 
 encode_response(MessageID, Msg) ->
@@ -92,36 +112,39 @@ handle_request({'LDAPMessage', _,
 												 authentication = {_, Password}}},
 				 _}, State = #state{admin = AdminLdap, 
 									password_admin = PasswordAdminLdap}) ->
-	 <<Cn:3/binary, _/binary>> = Name,
-	case Cn of
-		<<"cn=">> ->
-			BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
-				true -> 
-					ems_logger:info("ems_ldap_handler bind_cn ~p success.", [Name]),
-					make_bind_response(success, Name);
-				_-> 
-					ems_logger:error("ems_ldap_handler bind_cn ~p invalid credential.", [Name]),
-					make_bind_response(invalidCredentials, Name)
+	case Name of
+		<<Cn:3/binary, _/binary>> ->
+			case Cn of
+				<<"cn=">> ->
+					BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
+						true -> 
+							ems_logger:info("ems_ldap_handler bind_cn ~p success.", [Name]),
+							make_bind_response(success, Name);
+						_-> 
+							ems_logger:error("ems_ldap_handler bind_cn ~p invalid credential.", [Name]),
+							make_bind_response(invalidCredentials, Name)
+					end;
+				<<"uid">> -> 
+					<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
+					BindResponse = case middleware_autentica(UserLogin, Password, State) of
+						ok -> 
+							ems_logger:info("ems_ldap_handler bind_uid ~p success.", [Name]),
+							make_bind_response(success, Name);
+						{error, _Reason} ->	
+							ems_logger:error("ems_ldap_handler bind_uid ~p invalid credential.", [Name]),
+							make_bind_response(invalidCredentials, Name)
+					end;
+				_ -> 
+					BindResponse = case middleware_autentica(Name, Password, State) of
+						ok -> 
+							ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
+							make_bind_response(success, Name);
+						{error, _Reason} ->	
+							ems_logger:error("ems_ldap_handler bind ~p invalid credential.", [Name]),
+							make_bind_response(invalidCredentials, Name)
+					end
 			end;
-		<<"uid">> -> 
-			<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
-			BindResponse = case middleware_autentica(UserLogin, Password, State) of
-				ok -> 
-					ems_logger:info("ems_ldap_handler bind_uid ~p success.", [Name]),
-					make_bind_response(success, Name);
-				{error, _Reason} ->	
-					ems_logger:error("ems_ldap_handler bind_uid ~p invalid credential.", [Name]),
-					make_bind_response(invalidCredentials, Name)
-			end;
-		_ -> 
-			BindResponse = case middleware_autentica(Name, Password, State) of
-				ok -> 
-					ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
-					make_bind_response(success, Name);
-				{error, _Reason} ->	
-					ems_logger:error("ems_ldap_handler bind ~p invalid credential.", [Name]),
-					make_bind_response(invalidCredentials, Name)
-			end
+		_ -> BindResponse = make_bind_response(invalidCredentials, Name)
 	end,
 	{ok, [BindResponse]};
 handle_request({'LDAPMessage', _,

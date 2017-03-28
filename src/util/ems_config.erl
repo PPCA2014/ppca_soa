@@ -174,6 +174,10 @@ parse_datasources(Json) ->
 	Datasources = maps:get(<<"datasources">>, Json, #{}),
 	parse_datasources(maps:keys(Datasources), Datasources, []).
 	
+	
+parse_tcp_allowed_address(undefined) -> undefined;
+parse_tcp_allowed_address([<<"*.*.*.*">>]) -> undefined;
+parse_tcp_allowed_address(V) -> V.
 
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
@@ -191,8 +195,8 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_debug					= parse_bool(maps:get(<<"debug">>, Json, false)),
 			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
 			 ems_datasources			= parse_datasources(Json),
-			 tcp_allowed_address		= maps:get(<<"tcp_allowed_address">>, Json, [<<"0.0.0.0">>]),
-			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [])
+			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
+			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>])
 			 
 		}.
 
@@ -213,7 +217,7 @@ get_default_config() ->
 			 ems_debug					= false,
 			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE,
 			 ems_datasources			= #{},
-			 tcp_allowed_address		= [],
+			 tcp_allowed_address		= all,
 			 tcp_listen_address			= [<<"0.0.0.0">>]
 		}.
 

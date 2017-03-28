@@ -48,8 +48,7 @@ stop() ->
 %%====================================================================
  
 init(S = #service{name = Name, 
-				  tcp_listen_address_t = ListenAddress_t,
-				  properties = Props}) ->
+				  tcp_listen_address_t = ListenAddress_t}) ->
  	ServerName = binary_to_list(Name),
  	State = #state{service = S, name = ServerName},
 	case start_listeners(ListenAddress_t, S, ServerName, 1, State) of

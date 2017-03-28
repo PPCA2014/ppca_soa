@@ -14,14 +14,14 @@
 -include("../include/ems_schema.hrl").
 
 %% Server API
--export([start/4, stop/0]).
+-export([start/3, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
 % estado do servidor
 -record(state, {listener_name,
-				tcp_config}).
+				service}).
 
 -define(SERVER, ?MODULE).
 
@@ -29,8 +29,8 @@
 %% Server API
 %%====================================================================
 
-start(IpAddress, Service, ListenerName, Args) -> 
-    gen_server:start_link(?MODULE, {IpAddress, Service, ListenerName, Args}, []).
+start(IpAddress, Service, ListenerName) -> 
+    gen_server:start_link(?MODULE, {IpAddress, Service, ListenerName}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -42,11 +42,11 @@ stop() ->
 %%====================================================================
  
 init({_IpAddress, Service = #service{tcp_port = Port, 
-									 tcp_max_connections = MaxConnections}, ListenerName, Args}) ->
+									 tcp_max_connections = MaxConnections}, ListenerName}) ->
 	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, 
 																  {max_connections, MaxConnections}], 
-								   ems_ldap_handler, [Args]),
-	{ok, #state{listener_name = ListenerName, tcp_config = Service}}.
+								   ems_ldap_handler, [Service]),
+	{ok, #state{listener_name = ListenerName, service = Service}}.
 		
 handle_cast(shutdown, State) ->
     {stop, normal, State}.

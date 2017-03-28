@@ -7,8 +7,6 @@
 	"url": "/emsbus/ems_ldap_server",
 	"type": "KERNEL",
 	"lang" : "erlang",
-	"tcp_listen_address" : ["0.0.0.0"],
-	"tcp_allowed_address" : ["*.*.*.*"],
 	"tcp_port": 2389,
 	"tcp_max_connections" : 100000,
 	"datasource" : {

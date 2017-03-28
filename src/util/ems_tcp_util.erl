@@ -126,8 +126,7 @@ posix_error_description(enotnam) -> "enotnam - not a named file";
 posix_error_description(Code) -> atom_to_list(Code).
 
 
-allow_ip_address(Ip, AllowedAddress) ->
-	case Ip of
-		{127, 0, _,_} -> true;
-		_ -> ems_http_util:match_ip_address(AllowedAddress, Ip)
-	end.
+allow_ip_address(_, all) -> true;
+allow_ip_address({127, 0, _,_}, _) -> true;
+allow_ip_address(Ip, AllowedAddress) -> ems_http_util:match_ip_address(AllowedAddress, Ip).
+

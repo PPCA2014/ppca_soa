@@ -210,6 +210,9 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]}],
 				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 					{_,_,[]} -> 
@@ -335,9 +338,9 @@ sql_load_users() ->
 			
 			union all
 			
-			-- Busca dados de alunos em BDSiac
+			-- Busca dados de alunos em BDSiac com AluRA
 			select p.PesCodigoPessoa as CodigoPessoa, 
-				   cast(al.AluMatricula as varchar(100)) as LoginPessoa,
+				   cast(al.AluRA as varchar(100)) as LoginPessoa,
 				   p.PesNome as NomePessoa, 
 				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
 				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
@@ -352,6 +355,24 @@ sql_load_users() ->
 				 join BDPessoa.dbo.TB_Email em
 						 on pfe.PFmEmaCodigo = em.EmaCodigo 
 
+			union all
+			
+			-- Busca dados de alunos em BDSiac com AluMatricula
+			select p.PesCodigoPessoa as CodigoPessoa, 
+				   cast(al.AluMatricula as varchar(100)) as LoginPessoa,
+				   p.PesNome as NomePessoa, 
+				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
+				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
+				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
+				   3 as TipoPessoa,  -- Aluno
+				   null as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
+						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
+				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
+						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
+				 join BDPessoa.dbo.TB_Email em
+						 on pfe.PFmEmaCodigo = em.EmaCodigo
 	) as t_users
 	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 	".
@@ -388,14 +409,34 @@ sql_update_users() ->
 				
 			union all
 			
-			-- Busca dados de alunos em BDSiac
+			-- Busca dados de alunos em BDSiac com AluRA
+			select p.PesCodigoPessoa as CodigoPessoa, 
+				   cast(al.AluRA as varchar(100)) as LoginPessoa,
+				   p.PesNome as NomePessoa, 
+				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
+				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
+				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
+				   2 as TipoPessoa,  -- Aluno
+				   null as PasswdCryptoPessoa,
+				   em.EmaTipo as TipoEmailPessoa
+			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
+						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
+				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
+						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
+				 join BDPessoa.dbo.TB_Email em
+						 on pfe.PFmEmaCodigo = em.EmaCodigo 
+			where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
+
+			union all
+			
+			-- Busca dados de alunos em BDSiac com AluMatricula
 			select p.PesCodigoPessoa as CodigoPessoa, 
 				   cast(al.AluMatricula as varchar(100)) as LoginPessoa,
 				   p.PesNome as NomePessoa, 
 				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
 				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
 				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-				   2 as TipoPessoa,  -- Aluno
+				   3 as TipoPessoa,  -- Aluno
 				   null as PasswdCryptoPessoa,
 				   em.EmaTipo as TipoEmailPessoa
 			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p

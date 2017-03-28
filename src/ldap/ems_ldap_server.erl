@@ -47,8 +47,7 @@ stop() ->
 %%====================================================================
  
 init(Service = #service{name = Name, 
-						tcp_listen_address_t = ListenAddress_t,
-						properties = Props}) ->
+						tcp_listen_address_t = ListenAddress_t}) ->
  	ServerName = binary_to_list(Name),
  	State = #state{tcp_config = Service, name = ServerName},
 	case start_listeners(ListenAddress_t, Service, ServerName, Service, 1, State) of
@@ -93,7 +92,7 @@ start_listeners([H|T], Service, ServerName, Service, ListenerNo, State) ->
 	end.
 
 do_start_listener(IpAddress, Service = #service{tcp_port = Port}, ListenerName, Service, State) ->
-	case ems_ldap_listener:start(IpAddress, Service, ListenerName, Service) of
+	case ems_ldap_listener:start(IpAddress, Service, ListenerName) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			{ok, NewState};
