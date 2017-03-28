@@ -46,6 +46,8 @@ lookup_request(Request = #request{rid = Rid,
 								  req_hash = ReqHash,
 								  payload = Payload,
 								  t1 = T1,
+								  ip = Ip,
+								  host = IpBin,
 								  content_type = ContentTypeReq}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	case ems_catalog:lookup(Request) of
@@ -59,7 +61,8 @@ lookup_request(Request = #request{rid = Rid,
 							function_name = FunctionName, 
 							content_type = ContentTypeService,
 							timeout = Timeout,
-							result_cache = ResultCache}, 
+							result_cache = ResultCache,
+							tcp_allowed_address_t = AllowedAddress}, 
 		 ParamsMap, 
 		 QuerystringMap} -> 
 			?DEBUG("ems_dispatcher lookup request found."),
@@ -67,83 +70,91 @@ lookup_request(Request = #request{rid = Rid,
 							  undefined -> ContentTypeService;
 							  _ -> ContentTypeReq
 						  end,
-			case ems_auth_user:authenticate(Service, Request) of
-				{ok, User} ->
-					case Host == '' of
-						true ->	
-							Request2 = Request#request{service = Service,
-													   params_url = ParamsMap,
-													   querystring_map = QuerystringMap,
-													   user = User,
-													   content_type = ContentType},
-							ems_logger:info("ems_dispatcher send local msg to ~s.", [ModuleName]),
-							{Reason, Request3 = #request{response_header = ResponseHeader}} = apply(Module, Function, [Request2]),
-							AllowResultCache = Reason =:= ok andalso Type =:= "GET",
-							Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => node_binary(),
-																						  <<"ems-catalog">> => ServiceName,
-																						  <<"ems-owner">> => ServiceOwner,
-																						  <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
-														latency = ems_util:get_milliseconds() - T1},
-							case AllowResultCache of
-								true -> ems_dispatcher_cache:add(ReqHash, T1, Request4, ResultCache);
-								false -> ems_dispatcher_cache:invalidate()
-							end,
-							{Reason, request, Request4};
-						false ->
-							case get_work_node(Host, Host, HostName, ModuleName, 1) of
-								{ok, Node} ->
-									Msg = {{Rid, Uri, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
-									{Module, Node} ! Msg,
-									NodeBin = erlang:atom_to_binary(Node, utf8),
-									ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
-									receive 
-										{Code, RidRemote, {Reason, ResponseData}} when RidRemote == Rid -> 
-											?DEBUG("ems_dispatcher received msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {Reason, ResponseData}}]),
-											AllowResultCache = Reason =:= ok andalso Type =:= "GET",
-											Request2 = Request#request{service = Service,
-																	   params_url = ParamsMap,
-																	   querystring_map = QuerystringMap,
-																	   user = User,
-																	   content_type = ContentType,
-																	   code = Code,
-																	   reason = Reason,
-																	   response_header = #{<<"ems-node">> => NodeBin,
-									 													   <<"ems-catalog">> => ServiceName,
-																						   <<"ems-owner">> => ServiceOwner,
-																						   <<"content-type">> => ContentType,
-																						   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
-																	   response_data = ResponseData,
-																	   latency = ems_util:get_milliseconds() - T1},
-											case AllowResultCache of
-												true -> ems_dispatcher_cache:add(ReqHash, T1, Request2, ResultCache);
-												false -> ems_dispatcher_cache:invalidate()
-											end,
-											{Reason, request, Request2};
-										Msg -> 
-											ems_logger:error("ems_dispatcher received invalid message ~p.", [Msg]), 
-											{error, request, Request#request{code = 500,
-																			 reason = einvalid_rec_message,
-																			 response_header = #{<<"ems-node">> => NodeBin,
-											 													 <<"ems-catalog">> => ServiceName,
-																								 <<"ems-owner">> => ServiceOwner},
-																			 response_data = ems_schema:to_json({error, einvalid_rec_message}),
-																			 latency = ems_util:get_milliseconds() - T1}}
-										after Timeout ->
-											?DEBUG("ems_dispatcher received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
-											{error, request, Request#request{code = 503,
-																			 reason = etimeout_service,
-																			 response_header = #{<<"ems-node">> => NodeBin,
-											 													 <<"ems-catalog">> => ServiceName,
-																								 <<"ems-owner">> => ServiceOwner},
-																			 response_data = ems_schema:to_json({error, etimeout_service}),
-																			 latency = ems_util:get_milliseconds() - T1}}
-									end;
-								Error ->  
-									ems_logger:warn("ems_dispatcher could not get a node for request ~p.", [Url]),
-									Error
-							end
+			case ems_tcp_util:allow_ip_address(Ip, AllowedAddress) of
+				true ->
+					case ems_auth_user:authenticate(Service, Request) of
+						{ok, User} ->
+							case Host == '' of
+								true ->	
+									Request2 = Request#request{service = Service,
+															   params_url = ParamsMap,
+															   querystring_map = QuerystringMap,
+															   user = User,
+															   content_type = ContentType},
+									ems_logger:info("ems_dispatcher send local msg to ~s.", [ModuleName]),
+									{Reason, Request3 = #request{response_header = ResponseHeader}} = apply(Module, Function, [Request2]),
+									AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+									Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => node_binary(),
+																								  <<"ems-catalog">> => ServiceName,
+																								  <<"ems-owner">> => ServiceOwner,
+																								  <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+																latency = ems_util:get_milliseconds() - T1},
+									case AllowResultCache of
+										true -> ems_dispatcher_cache:add(ReqHash, T1, Request4, ResultCache);
+										false -> ems_dispatcher_cache:invalidate()
+									end,
+									{Reason, request, Request4};
+								false ->
+									case get_work_node(Host, Host, HostName, ModuleName, 1) of
+										{ok, Node} ->
+											Msg = {{Rid, Uri, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
+											{Module, Node} ! Msg,
+											NodeBin = erlang:atom_to_binary(Node, utf8),
+											ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
+											receive 
+												{Code, RidRemote, {Reason, ResponseData}} when RidRemote == Rid -> 
+													?DEBUG("ems_dispatcher received msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {Reason, ResponseData}}]),
+													AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+													Request2 = Request#request{service = Service,
+																			   params_url = ParamsMap,
+																			   querystring_map = QuerystringMap,
+																			   user = User,
+																			   content_type = ContentType,
+																			   code = Code,
+																			   reason = Reason,
+																			   response_header = #{<<"ems-node">> => NodeBin,
+																								   <<"ems-catalog">> => ServiceName,
+																								   <<"ems-owner">> => ServiceOwner,
+																								   <<"content-type">> => ContentType,
+																								   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+																			   response_data = ResponseData,
+																			   latency = ems_util:get_milliseconds() - T1},
+													case AllowResultCache of
+														true -> ems_dispatcher_cache:add(ReqHash, T1, Request2, ResultCache);
+														false -> ems_dispatcher_cache:invalidate()
+													end,
+													{Reason, request, Request2};
+												Msg -> 
+													ems_logger:error("ems_dispatcher received invalid message ~p.", [Msg]), 
+													{error, request, Request#request{code = 500,
+																					 reason = einvalid_rec_message,
+																					 response_header = #{<<"ems-node">> => NodeBin,
+																										 <<"ems-catalog">> => ServiceName,
+																										 <<"ems-owner">> => ServiceOwner},
+																					 response_data = ems_schema:to_json({error, einvalid_rec_message}),
+																					 latency = ems_util:get_milliseconds() - T1}}
+												after Timeout ->
+													?DEBUG("ems_dispatcher received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
+													{error, request, Request#request{code = 503,
+																					 reason = etimeout_service,
+																					 response_header = #{<<"ems-node">> => NodeBin,
+																										 <<"ems-catalog">> => ServiceName,
+																										 <<"ems-owner">> => ServiceOwner},
+																					 response_data = ems_schema:to_json({error, etimeout_service}),
+																					 latency = ems_util:get_milliseconds() - T1}}
+											end;
+										Error ->  
+											ems_logger:warn("ems_dispatcher could not get a node for request ~p.", [Url]),
+											Error
+									end
+							end;
+						Error -> 
+							ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: authenticate denied.", [IpBin]),
+							Error
 					end;
-				Error -> Error
+				false -> 
+					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),
+					{error, eaccess_denied}
 			end;
 		{error, Reason} = Error -> 
 			ems_logger:info("ems_dispatcher request ~p not found. Reason: ~p.", [Url, Reason]),

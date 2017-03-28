@@ -87,6 +87,7 @@ create_database(Nodes) ->
 							   {index, [#permission.login, #permission.perNome, #permission.traNameFrm, #permission.traNameMenu]},
 							   {attributes, record_info(fields, permission)}]),
 
+
 	ok.
 
 

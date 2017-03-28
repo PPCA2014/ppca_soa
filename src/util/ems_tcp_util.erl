@@ -8,7 +8,7 @@
 
 -module(ems_tcp_util).
 
--export([send_data/2, posix_error_description/1]).
+-export([send_data/2, posix_error_description/1, allow_ip_address/2]).
 
 -include("../../include/ems_config.hrl").
 
@@ -124,3 +124,9 @@ posix_error_description(enotdir) -> "enotdir - not a directory";
 posix_error_description(enotempty) -> "enotempty - directory not empty";
 posix_error_description(enotnam) -> "enotnam - not a named file";
 posix_error_description(Code) -> atom_to_list(Code).
+
+
+allow_ip_address(_, all) -> true;
+allow_ip_address({127, 0, _,_}, _) -> true;
+allow_ip_address(Ip, AllowedAddress) -> ems_http_util:match_ip_address(AllowedAddress, Ip).
+

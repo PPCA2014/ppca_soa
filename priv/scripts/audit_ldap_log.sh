@@ -43,6 +43,8 @@ LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){
 # Primary IP of the server
 LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
+LINUX_HOST=$(hostname)
+
 # Script version
 VERSION=1.0.0
 LDAP_PORT="2389"
@@ -50,12 +52,12 @@ LDAP_SERVER="$LINUX_IP_SERVER:$LDAP_PORT"
 CURRENT_DIR=$(pwd)
 TMP_DIR="/tmp/erlangms_$$_audit_ldap_log_$(date '+%d%m%Y_%H%M%S')"
 EMS_NODE="ems-bus"
-ENVIRONMENT="$LINUX_DESCRIPTION IP $LINUX_IP_SERVER "
+ENVIRONMENT="$LINUX_DESCRIPTION  Host: $LINUX_HOST  IP $LINUX_IP_SERVER "
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
 UPTIME=$(echo since `uptime -s` " ( " `uptime -p` " )" | sed 's/hours/hs/; s/minutes/min/ ;')
-SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6" "$7" "" ( up "$9" )";  }')
+SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6$7" "" ( up "$9" "$10" )";  }' | sed -r 's/ago //')
 MAIN_PID=$(systemctl status ems-bus | grep "Main PID:")
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
@@ -76,7 +78,7 @@ LOG_FILE="$TMP_DIR/full_log_file_filtered.tmp"
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
 SMTP_DE="erlangms@unb.br"
-SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
+SMTP_TO="evertonagilar@unb.br"
 SMTP_PASSWD=erl1523
 
 
@@ -88,22 +90,22 @@ mkdir -p $TMP_DIR && cd $TMP_DIR
 if [ "$#" = "0" ]; then
 	MMIN="1440"	
 elif [ "$1" = "--help" ]; then
-	echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail --showlogs ]"
+	echo "How to use: ./audit_ldap_log.sh minutes  [ --send_email --showlogs ]"
 	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-	echo "parameter --sendemail is optional and send email to admin"
+	echo "parameter --send_email is optional and send email to admin"
 	echo "parameter --showlogs show content of logs"
 	exit 1
 else
-	if [ "$1" == "--sendemail" ] || [ "$1" == "--showlogs" ]; then
+	if [ "$1" == "--sendemail" ] || [ "$1" == "--send_email" ] || [ "$1" == "--showlogs" ]; then
 		MMIN="1440"	
 	else
 		MMIN="$1"
-		RE='^[0-9]{1,5}$'
-		if ! [[ $MMIN =~ $RE ]] ; then
+		if ! [[ $MMIN =~ ^[0-9]{1,6}$ ]] ; then
 			echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99999."
 			echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail  --showlogs ]"
 			echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-			echo "parameter --sendemail is optional and send email to admin"
+			echo "parameter --send_email is optional and send email to admin"
+			echo "parameter --send_to is emails to send"			
 			echo "parameter --showlogs show log files content"
 			exit 1
 		fi
@@ -131,8 +133,30 @@ generate_report(){
 	echo "Log dest: $LOG_DEST"
 	echo
 	
-	if [ "$MMIN" == "1440" ]; then
+	if [ "$MMIN" = "1440" ]; then
 		echo "Analyzing logfiles between $DATE_INIT (1 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "2880" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (2 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "4320" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (3 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "5760" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (4 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "7200" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (5 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "8640" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (6 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "10080" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (1 week ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "14400" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (10 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "21600" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (15 day ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "43200" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (1 month ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "86400" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (2 month ago) and $CURRENT_DATE"
+	elif [ "$MMIN" = "129600" ]; then
+		echo "Analyzing logfiles between $DATE_INIT (3 month ago) and $CURRENT_DATE"
 	else
 		echo "Analyzing logfiles between $DATE_INIT ($MMIN minutes ago) and $CURRENT_DATE"
 	fi
@@ -186,6 +210,28 @@ generate_report(){
 	echo "                                 ERLANGMS LDAP REPORT FOR THE"
 	if [ "$MMIN" == "1440" ]; then
 		SUB_TITLE_REPORT="LAST DAY OF OPERATION"
+	elif [ "$MMIN" = "2880" ]; then
+		SUB_TITLE_REPORT="LAST 2 DAY OF OPERATION"
+	elif [ "$MMIN" = "4320" ]; then
+		SUB_TITLE_REPORT="LAST 3 DAY OF OPERATION"
+	elif [ "$MMIN" = "5760" ]; then
+		SUB_TITLE_REPORT="LAST 4 DAY OF OPERATION"
+	elif [ "$MMIN" = "7200" ]; then
+		SUB_TITLE_REPORT="LAST 5 DAY OF OPERATION"
+	elif [ "$MMIN" = "8640" ]; then
+		SUB_TITLE_REPORT="LAST 6 DAY OF OPERATION"
+	elif [ "$MMIN" = "10080" ]; then		
+		SUB_TITLE_REPORT="LAST 1 WEEK OF OPERATION"
+	elif [ "$MMIN" = "14400" ]; then
+		SUB_TITLE_REPORT="LAST 10 DAY OF OPERATION"
+	elif [ "$MMIN" = "21600" ]; then
+		SUB_TITLE_REPORT="LAST 15 DAY OF OPERATION"
+	elif [ "$MMIN" = "43200" ]; then
+		SUB_TITLE_REPORT="LAST 1 MONTH OF OPERATION"
+	elif [ "$MMIN" = "86400" ]; then
+		SUB_TITLE_REPORT="LAST 2 MONTH OF OPERATION"
+	elif [ "$MMIN" = "129600" ]; then
+		SUB_TITLE_REPORT="LAST 3 MONTH OF OPERATION"
 	elif [ "$MMIN" == "1" ]; then
 		SUB_TITLE_REPORT="LAST $MMIN MINUTE OF OPERATION"
 	else 
@@ -273,7 +319,7 @@ generate_report(){
 # send email with python	
 send_email(){	
 	REPORT_CONTENT=$(cat $REPORT_FILE)
-	TITULO_MSG="ERLANGMS LDAP Log Analysis   -  Date: $CURRENT_DATE  IP: $LINUX_IP_SERVER" 
+	TITULO_MSG="ERLANGMS LDAP REPORT    HOST: $LINUX_HOST   IP: $LINUX_IP_SERVER  Date: $CURRENT_DATE" 
 	SUBJECT="<html>
 			<head>
 				<style>
@@ -316,7 +362,7 @@ try:
 	msg = MIMEMultipart()
 	msg['Subject'] = "$TITULO_MSG"
 	msg['From'] = "$SMTP_DE"
-	msg['To'] = "$SMTP_PARA"
+	msg['To'] = "$SMTP_TO"
 	msg['Date'] = formatdate(localtime=True)
 	part1 = MIMEText("Relatório em anexo.", 'plain')
 	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
@@ -341,8 +387,10 @@ for P in $*; do
 	if [ "$P" == "--showlogs" ]; then
 		SHOW_LOGS="true"		
 	# check parameter --sendemail
-	elif [ "$P" == "--sendemail" ]; then
+	elif [[ "$P" =~ ^--send_?email$ ]]; then
 		SEND_EMAIL="true"
+	elif [[ "$P" =~ ^--email_to=.+$ ]]; then
+		SMTP_TO="$(echo $P | cut -d= -f2)"
 	fi
 done
 
@@ -352,9 +400,9 @@ generate_report
 # send e-mail to admins. Only send email if has records
 if [ "$SEND_EMAIL" == "true" ]; then
 	if [ $REQ_LDAP_TOTAL -gt 0 ]; then
-		send_email && echo "This report was send to administrators."
+		send_email && echo "This report was send to $SMTP_TO."
 	else
-		echo "No ldap requests in this time for send report to administrators."
+		echo "No ldap requests in this time for send report to $SMTP_TO."
 	fi
 fi
 

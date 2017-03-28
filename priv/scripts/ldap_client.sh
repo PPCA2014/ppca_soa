@@ -21,6 +21,7 @@ LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){
 # Primary IP of the server
 LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 
+LINUX_HOST=$(hostname)
 
 VERSION=1.0.0
 CURRENT_DIR=$(pwd)
@@ -37,17 +38,18 @@ AUTO_RESTART="false"
 RESTARTED="false"
 LDAP_PORT="2389"
 LDAP_SERVER="127.0.0.1:$LDAP_PORT"
-ENVIRONMENT="$LINUX_DESCRIPTION  IP $LINUX_IP_SERVER"
+ENVIRONMENT="$LINUX_DESCRIPTION   Host: $LINUX_HOST   IP $LINUX_IP_SERVER"
 NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }' | tr '\n' ' ')
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
 UPTIME=$(echo since `uptime -s` " ( " `uptime -p` " )" | sed 's/hours/hs/; s/minutes/min/ ;')
-SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6" "$7" "" ( up "$9" )";  }')
+SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6$7" "" ( up "$9" "$10" )";  }' | sed -r 's/ago //')
 MAIN_PID=$(systemctl status ems-bus | grep "Main PID:")
 TIME_WAIT_START_SERVER=20  # seconds
 TIME_WAIT_TEST=3 # seconds
 EMAIL_ONLY_ERROR="false"
 RETRY=1
+
 
 # tmpfiles go to /$TMP_DIR
 mkdir -p $TMP_DIR && cd $TMP_DIR
@@ -56,7 +58,7 @@ mkdir -p $TMP_DIR && cd $TMP_DIR
 SMTP_SERVER="mail.unb.br"
 SMTP_PORT=587
 SMTP_DE="erlangms@unb.br"
-SMTP_PARA="evertonagilar@unb.br,evertonagilar@unb.br"
+SMTP_TO="evertonagilar@unb.br"
 SMTP_PASSWD=erl1523
 
 
@@ -87,7 +89,7 @@ print_header(){
 	
 # send email with python	
 send_email(){	
-	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: removido por segurança/')
+	REPORT_CONTENT=$(cat $REPORT_FILE | sed 's/passwd:.*/passwd: ************/')
 	TITULO_MSG="ERLANGMS LDAP Client Test  -  Date: $CURRENT_DATE   IP: $LINUX_IP_SERVER" 
 	SUBJECT="<html>
 			<head>
@@ -121,7 +123,7 @@ try:
 	msg = MIMEMultipart()
 	msg['Subject'] = "$TITULO_MSG"
 	msg['From'] = "$SMTP_DE"
-	msg['To'] = "$SMTP_PARA"
+	msg['To'] = "$SMTP_TO"
 	msg['Date'] = formatdate(localtime=True)
 	part1 = MIMEText("Relatório em anexo.", 'plain')
 	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
@@ -140,12 +142,12 @@ EOF
 # Performs the ldap query using the ldapsearch
 ldap_search(){
 	if [ "$COUNTER" = "1" ]; then
-		echo "Performing LDAP request on $TYPE_SERVER $LDAP_SERVER server with user $USER using ldapsearch"
+		echo "Performing LDAP request on $TYPE_SERVER server $LDAP_SERVER with user $USER using ldapsearch"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		echo ""
 		ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "$ADMIN_PASSWD"
 	else
-		echo "Performing $COUNTER LDAP request on $TYPE_SERVER $LDAP_SERVER server with user $USER using ldapsearch"
+		echo "Performing $COUNTER LDAP request on $TYPE_SERVER server $LDAP_SERVER with user $USER using ldapsearch"
 		echo ldapsearch -xLLL -h "$LDAP_SERVER" -b 'dc=unb,dc=br' -D 'cn=admin,dc=unb,dc=br' uid="$USER" -w "xxxxxxx"
 		until [  $COUNTER -lt 1 ]; do
 			echo ""
@@ -160,9 +162,10 @@ generate_test(){
 	print_header
 	for T in `seq $RETRY`; do
 		# ocorre erro 49 quando invalid credentials
+		# ocorre erro 50 quando não tem permissão de acesso
 		# ocorre erro 255 quando consegue contactar o servidor na porta
 		ldap_search
-		if [ "$?" = "0" -o "$?" = "49" ]; then
+		if [ "$?" = "0" -o "$?" = "49" -o "$?" = "50" ]; then
 			FALHA_LDAP="false"
 			break;
 		else
@@ -172,6 +175,7 @@ generate_test(){
 		if [ $RETRY -gt 1 -a $T -lt $RETRY ]; then
 			WAIT_TIMEOUT=$(($T*$TIME_WAIT_TEST))
 			echo "Failed, waiting $WAIT_TIMEOUT seconds to retry..."
+			echo $$ > $EXEC_CONTROL
 			sleep $WAIT_TIMEOUT  # Awaits increasing
 			echo 
 			echo "$(($T+1)) attempt..."
@@ -186,14 +190,15 @@ if [ "$#" = "0" ] || [ "$1" = "--help" ]; then
 	echo "How to use 1: ./ldap_client.sh login"
 	echo "How to use 2: ./ldap_client.sh login admin_passwd"
 	echo "How to use 3: ./ldap_client.sh qtd_requests ldap_server login admin_passwd  [ --sendemail  --auto_restart --email_only_error --retry ]"
-	echo "         login           		=> login do user."	
-	echo "         admin_passwd    		=> password do admin do ldap."	
-	echo "         ldap_server			=> host do ldap (default é localhost:2389)"	
-	echo "         qtd_requests    		=> Number of simultaneous requests (default is 1)"
-	echo "         --sendemail     		=> Send an email to admin."
-	echo "         --auto_restart  		=> Restarts the bus on failure (local server only)"
-	echo "         --email_only_error	=> Send email only if there is an error."
-	echo "         --retry  			=> Number of attempts in case of failure. Allowed Range: 1-9."
+	printf "%-20s  => %-150s.\n" "login" "login do user"
+	printf "%-20s  => %-150s.\n" "admin_passwd" "password do admin do ldap"	
+	printf "%-20s  => %-150s.\n" "ldap_server" "host do ldap (default é localhost:2389)"	
+	printf "%-20s  => %-150s.\n" "qtd_requests" "Number of simultaneous requests (default is 1)"
+	printf "%-20s  => %-150s.\n" "--sendemail"	"Send an email to admin"
+	printf "%-20s  => %-150s.\n" "--auto_restart"	"Restarts the bus on failure (local server only)"
+	printf "%-20s  => %-150s.\n" "--email_only_error" "Send email only if there is an error"
+	printf "%-20s  => %-150s.\n" "--retry" "Number of attempts in case of failure. Allowed Range: 1-9"
+	printf "%-20s  => %-150s.\n" "--email_to" "Emails to send report"
 	exit
 fi
 
@@ -246,12 +251,14 @@ fi
 
 # Optional parameters
 for P in $*; do
-	if [ "$P" = "--sendemail" ]; then
+	if [[ "$P" =~ ^--send_?email$ ]]; then
 		SEND_EMAIL="true"
 	elif [ "$P" = "--auto_restart" ]; then
 		AUTO_RESTART="true"
 	elif [ "$P" = "--email_only_error" ]; then
 		EMAIL_ONLY_ERROR="true"
+	elif [[ "$P" =~ ^--email_to=.+$ ]]; then
+		SMTP_TO="$(echo $P | cut -d= -f2)"
 	elif [[ "$P" =~ ^--retry=.+$ ]]; then
 		RETRY="$(echo $P | cut -d= -f2)"
 		if [[ ! "$RETRY" =~ ^[0-9]{1}$ ]] ; then
@@ -274,6 +281,16 @@ else
 	IS_LOCAL_SERVER="false"
 	TYPE_SERVER="remote"
 fi	
+
+
+# Only one instance of this script can run
+EXEC_CONTROL="/tmp/erlangms_ldap_client"
+TMP_EXEC_CONTROL=$(find $EXEC_CONTROL -type f -mmin 1 2> /dev/null)
+if [ -z "$TMP_EXEC_CONTROL" ]; then
+	echo $$ > $EXEC_CONTROL
+else
+	echo "An instance of this script already exists running." && exit 0
+fi
 
 
 # Do test with ldap
@@ -312,12 +329,13 @@ fi
 # Envia e-mail?
 if [ "$SEND_EMAIL" = "true" ]; then
 	if [ "$FALHA_LDAP" = "true" -a "$EMAIL_ONLY_ERROR" = "true" ]; then
-		send_email && echo "This report was send to administrators."
+		send_email && echo "This report was send to $SMTP_TO."
 	elif [ "$EMAIL_ONLY_ERROR" = "false" ]; then
-		send_email && echo "This report was send to administrators."
+		send_email && echo "This report was send to $SMTP_TO."
 	fi
 fi
 
 # back to CURRENT_DIR and remove tmp dir
 cd $CURRENT_DIR
+rm $EXEC_CONTROL
 rm -rf $TMP_DIR/

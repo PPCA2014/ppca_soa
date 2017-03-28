@@ -91,7 +91,8 @@
 					  result_cache_rid,
 					  response_data,
 					  response_header = #{},
-					  req_hash
+					  req_hash,
+					  ip
 				  }).
 
 
@@ -110,7 +111,8 @@
 							 pid_module,
 							 pid_module_ref,
 							 owner,
-							 pool_name :: string()
+							 pool_name :: string(),
+							 parent = undefined :: string()
 							}).
 
 
@@ -163,7 +165,17 @@
 					enable :: boolean(),
 					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
 					path :: string(),
-					redirect_url :: binary()					%% redirect url						
+					redirect_url :: binary(),					%% redirect url						
+					tcp_listen_address,
+					tcp_listen_address_t,
+					tcp_allowed_address,
+					tcp_allowed_address_t,
+					tcp_max_connections,
+					tcp_port,
+					tcp_is_ssl = false,
+					tcp_ssl_cacertfile,
+					tcp_ssl_certfile,
+					tcp_ssl_keyfile
 				}).
 
 

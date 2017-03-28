@@ -166,27 +166,10 @@
 				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)
 				 ems_debug,
 				 ems_result_cache,
-				 ems_datasources :: map()
+				 ems_datasources :: map(),
+				 tcp_listen_address			= [<<"0.0.0.0">>],
+				 tcp_allowed_address		= []
 		 }). 	
 
-
-
-%  Definição para o arquivo de configuração
--record(tcp_config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
-					 tcp_listen_address_t,			%% Quais IPs das interfaces de rede que o barramento vai ouvir (formato de tupla para inet)
-					 tcp_port, 						%% Qual a porta que será utilizada para o barramento
-					 tcp_keepalive, 				%% Propriedade keepalive do TCP (true/false)
-					 tcp_nodelay, 					%% Propriedade nodelay do TCP (true/false)
-					 tcp_max_connections,			%% Max connections allowed (soft limit)
-					 tcp_accept_timeout,			%% Timeout accept
-					 tcp_send_timeout,				
-					 tcp_backlog,
-					 tcp_buffer,
-					 tcp_delay_send,
-					 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
-					 tcp_allowed_address_t,
-					 tcp_is_ssl,
-					 tcp_ssl
-			 }). 	
 
 
