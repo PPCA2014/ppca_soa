@@ -10,7 +10,7 @@
 		"url_template":"C:/desenvolvimento/barramento/ems-bus2/priv/www/template_routes.html",
 		"type": "GET",
 		"lang" : "erlang",
-		"enable" : true
+		"enable" : false
 	}
 	
 ]
