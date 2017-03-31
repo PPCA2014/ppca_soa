@@ -44,6 +44,11 @@ create_database(Nodes) ->
 							   {index, [#user.login, #user.cpf, #user.email, #user.codigo]},
 							   {attributes, record_info(fields, user)}]),
 
+	mnesia:create_table(user_permission, [{type, set},
+										   {disc_copies, Nodes},
+										   {index, [#user_permission.hash]},
+										   {attributes, record_info(fields, user_permission)}]),
+
     mnesia:create_table(sequence, [{type, set},
 								   {disc_copies, Nodes},
 								   {attributes, record_info(fields, sequence)}]),
@@ -82,10 +87,6 @@ create_database(Nodes) ->
 									  {disc_copies, Nodes},
 									  {attributes, record_info(fields, ctrl_params)}]),
 									  
-	mnesia:create_table(permission, [{type, set},
-							   {disc_copies, Nodes},
-							   {index, [#permission.login, #permission.perNome, #permission.traNameFrm, #permission.traNameMenu]},
-							   {attributes, record_info(fields, permission)}]),
 
 
 	ok.

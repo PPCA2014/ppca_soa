@@ -372,7 +372,7 @@ parse_tcp_port(<<Port/binary>>) ->
 parse_tcp_port(Port) when is_list(Port) -> 
 	parse_tcp_port(list_to_integer(Port));
 parse_tcp_port(Port) when is_integer(Port) -> 
-	case ems_consist:is_range_valido(Port, 1024, 5000) of
+	case ems_consist:is_range_valido(Port, ?TCP_PORT_MIN, ?TCP_PORT_MAX) of
 		true -> Port;
 		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
 	end.

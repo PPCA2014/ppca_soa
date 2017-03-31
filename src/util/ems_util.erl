@@ -44,6 +44,7 @@
 		 json_decode_as_map_file/1,
 		 date_add_minute/2,
 		 date_add_second/2,
+		 date_add_day/2,
 		 remove_quoted_str/1,
 		 boolean_to_binary/1,
 		 normalize_field_utf8/1,
@@ -516,6 +517,9 @@ date_add_minute(Timestamp, Minutes) ->
 
 date_add_second(Timestamp, Seconds) ->
     calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Seconds).
+
+date_add_day(Timestamp, Days) ->
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Days * 86400).
 
 % Return a encrypted password in binary format        
 criptografia_sha1(<<>>) -> <<>>;

@@ -9,26 +9,27 @@
 		"type": "GET",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "permission"
+			"table_name" : "user_permission"
 		},
-		"schema_in" : "permission",
-		"schema_out" : "permission",
+		"schema_in" : "user_permission",
+		"schema_out" : "user_permission",
 		"lang" : "erlang"
 	},
+	
 	{	
 		"name": "/auth/user/permission",
 		"comment": "List all registered user permissions",
-		"owner": "auth_permission",
+		"owner": "auth",
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/user/permission",
 		"type": "GET",
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "permission"
+			"table_name" : "user_permission"
 		},
-		"schema_in" : "permission",
-		"schema_out" : "permission",
+		"schema_in" : "user_permission",
+		"schema_out" : "user_permission",
 		"querystring": [
 				{
 					"name": "filter",

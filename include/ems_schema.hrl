@@ -12,8 +12,8 @@
 -record(counter, {key :: atom(), 
      			  index :: non_neg_integer()}).
 
--record(user, {id :: non_neg_integer(), 
-			   codigo :: integer(),
+-record(user, {id :: non_neg_integer(), 					%% identifica o registro
+			   codigo :: integer(),							%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
 			   login :: string(),
 			   name :: string(), 
 			   cpf :: string(),
@@ -28,21 +28,14 @@
 			   
 		}).
 		
--record(permission, {id :: non_neg_integer(),
-                     codigo :: integer(),
-                     codigoPessoa :: integer(),
-                     login :: string(),
-                     perId :: integer(),
-                     perNome :: string(),
-                     traId :: integer(),
-                     traNameFrm :: string(),
-                     traNameMenu :: string(),
-                     traInclude :: integer(),
-                     traExclude :: integer(),
-                     traUpdate :: integer(),
-                     traVisualize :: integer(),
-                     ctrl_insert,
-                     ctrl_update
+-record(user_permission, {id :: non_neg_integer(),				%% identifica o registro da permissão
+						  hash,
+						  get_grant,
+						  post_grant,
+						  put_grant,
+						  delete_grant,
+						  ctrl_insert,
+						  ctrl_update
           }).
 
 -record(ctrl_params, {name :: string(),

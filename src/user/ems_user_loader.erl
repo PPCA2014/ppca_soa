@@ -142,7 +142,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 					{error, State}
 			end;
 		false ->
-			?DEBUG("ems_user_loader checkpoint. operation: update_users   last_upate: ~s.", [ems_util:timestamp_str(LastUpdate)]),
+			?DEBUG("ems_user_loader checkpoint. operation: update_users   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
 			case update_users_from_datasource(Datasource, LastUpdate, TimestampStr) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
@@ -181,7 +181,7 @@ load_users_from_datasource(Datasource, CtrlInsert) ->
 								{error, efail_load_users}
 						end;
 					{error, Reason} = Error -> 
-						ems_logger:error("ems_user_loader load users error: ~p.", [Reason]),
+						ems_logger:error("ems_user_loader load users query error: ~p.", [Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),

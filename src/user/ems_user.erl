@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_user
 %% @version 1.0.0
-%% @doc Manages information about users
+%% @doc user class
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -12,8 +12,9 @@
 -include("../../include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
--export([get/1, insert/1, update/1, all/0, delete/1, 
+-export([insert/1, update/1, all/0, delete/1, 
 		 authenticate_login_password/2, 
+		 find_by_id/1,		 
 		 find_by_codigo/1,
 		 find_by_login/1, 
 		 find_by_name/1, 
@@ -21,7 +22,7 @@
 		 find_by_cpf/1, 
 		 find_by_login_and_password/2]).
 
-get(Id) -> ems_db:get(user, Id).
+find_by_id(Id) -> ems_db:get(user, Id).
 
 insert(User) -> 
 	case valida(User, insert) of
@@ -153,3 +154,5 @@ find_by_login_and_password(Login, Password) ->
 			end;
 		_ -> {error, enoent}
 	end.
+
+

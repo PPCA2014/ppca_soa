@@ -128,12 +128,12 @@
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
 
-%Define the checkpoint to update permission for ems_permission_loader process
+%Define the checkpoint to update permission for ems_user_permission_loader process
 -define(PERMISSION_LOADRES_UPDATE_CHECKPOINT, 120000).
 
 % HTTP access control (CORS) headers
 -define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, X-CSRF-Token, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
--define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).
+-define(ACCESS_CONTROL_MAX_AGE, <<"604800">>).
 -define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"*">>).
 -define(ACCESS_CONTROL_ALLOW_METHODS, <<"GET, POST, PUT, DELETE, OPTIONS">>).
 -define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
@@ -150,7 +150,8 @@
 -define(HTTP_SERVER_PORT, 2381).
 -define(HTTP_MAX_CONNECTIONS, 100000).
 
-
+-define(TCP_PORT_MIN, 1024).
+-define(TCP_PORT_MAX, 99999).
 
 
 %  Definição para o arquivo de configuração
