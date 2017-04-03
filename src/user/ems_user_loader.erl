@@ -68,7 +68,6 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast(force_load_users, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:warn("ems_user_loader force load the users now."),
 	State2 = State#state{last_update = undefined},
 	update_or_load_users(State2),
 	{noreply, State, UpdateCheckpoint};
@@ -137,6 +136,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
+					ems_user_permission_loader:force_load_permissions(),
 					{ok, State2};
 				_ -> 
 					{error, State}
@@ -147,6 +147,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
+					ems_user_permission_loader:update_or_load_permissions(),
 					{ok, State2};
 				_ -> 
 					{error, State}
