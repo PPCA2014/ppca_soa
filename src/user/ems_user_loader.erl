@@ -101,10 +101,8 @@ handle_info(check_force_load_users, State = #state{update_checkpoint = UpdateChe
 	end;
 
 handle_info(timeout, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	case update_or_load_users(State) of
-		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
-		{error, State2} -> {noreply, State2, UpdateCheckpoint}
-	end;
+	{_, State2} = update_or_load_users(State),
+	{noreply, State2, UpdateCheckpoint};
 	
 handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	ems_logger:warn("ems_user_loader is unable to load or update users. Reason: ~p.", [Reason]),
@@ -150,6 +148,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 					ems_user_permission_loader:update_or_load_permissions(),
 					{ok, State2};
 				_ -> 
+					ems_user_permission_loader:update_or_load_permissions(),
 					{error, State}
 			end
 	end.

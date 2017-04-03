@@ -482,6 +482,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
 						end,
+						CheckGrantPermission = maps:get(<<"check_grant_permission">>, H, false),
+						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
 						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
 						IdBin = list_to_binary(integer_to_list(Id)),
 						Page = maps:get(<<"page">>, H, undefined),
@@ -494,7 +496,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														 ExpiresMinute, Public, ContentType, Path, RedirectUrl,
 														 ListenAddress, AllowedAddress, 
 														 Port, MaxConnections,
-														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile),
+														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														 CheckGrantPermission, OAuth2TokenEncrypt),
 						case UseRE of
 							true -> 
 								Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -513,7 +516,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														   Public, ContentType, Path, RedirectUrl,
 														   ListenAddress, ListenAddress_t, AllowedAddress, 
 														   AllowedAddress_t, Port, MaxConnections,
-														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile),
+														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														   CheckGrantPermission, OAuth2TokenEncrypt),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -536,7 +540,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														ContentType, Path, RedirectUrl,
 														ListenAddress, ListenAddress_t, AllowedAddress, 
 														AllowedAddress_t, Port, MaxConnections,
-														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile),
+														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														CheckGrantPermission, OAuth2TokenEncrypt),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -626,7 +631,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   ExpiresMinute, Public, ContentType, Path, RedirectUrl,
 			   ListenAddress, ListenAddress_t, AllowedAddress, 
 			   AllowedAddress_t, Port, MaxConnections,
-			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile) ->
+			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+			   CheckGrantPermission, OAuth2TokenEncrypt) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -681,7 +687,9 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				tcp_is_ssl = IsSsl,
 				tcp_ssl_cacertfile = SslCaCertFile,
 				tcp_ssl_certfile = SslCertFile,
-				tcp_ssl_keyfile = SslKeyFile
+				tcp_ssl_keyfile = SslKeyFile,
+				check_grant_permission = CheckGrantPermission,
+				oauth2_token_encrypt = OAuth2TokenEncrypt
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
@@ -692,7 +700,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			CacheControl, ExpiresMinute, Public, ContentType, Path, RedirectUrl,
 			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
 			Port, MaxConnections,
-			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile) ->
+			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+			CheckGrantPermission, OAuth2TokenEncrypt) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -744,7 +753,9 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				tcp_is_ssl = IsSsl,
 				tcp_ssl_cacertfile = SslCaCertFile,
 				tcp_ssl_certfile = SslCertFile,
-				tcp_ssl_keyfile = SslKeyFile
+				tcp_ssl_keyfile = SslKeyFile,
+				check_grant_permission = CheckGrantPermission,
+				oauth2_token_encrypt = OAuth2TokenEncrypt
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
@@ -755,7 +766,8 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  Public, ContentType, Path, RedirectUrl,
 				  ListenAddress, AllowedAddress, 
 				  Port, MaxConnections,
-				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile) ->
+				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+				  CheckGrantPermission, OAuth2TokenEncrypt) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -791,7 +803,10 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				<<"tcp_is_ssl">> => IsSsl,
 				<<"tcp_ssl_cacertfile">> => SslCaCertFile,
 				<<"tcp_ssl_certfile">> => SslCertFile,
-				<<"tcp_ssl_keyfile">> => SslKeyFile
+				<<"tcp_ssl_keyfile">> => SslKeyFile,
+				<<"check_grant_permission">> => CheckGrantPermission,
+				<<"oauth2_token_encrypt">> => OAuth2TokenEncrypt
+				
 },
 	Service.
 

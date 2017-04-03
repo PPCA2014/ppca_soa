@@ -50,7 +50,7 @@ force_load_permissions() ->
 	ok.
 
 update_or_load_permissions() -> 
-	gen_server:cast(?SERVER, update),
+	gen_server:cast(?SERVER, update_or_load_permissions),
 	ok.
 
  
@@ -67,7 +67,7 @@ init(#service{datasource = Datasource}) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(update, State) ->
+handle_cast(update_or_load_permissions, State) ->
 	update_or_load_permissions(State),
 	{noreply, State};
 
@@ -85,12 +85,6 @@ handle_call(Msg, _From, State) ->
 handle_info(State) ->
    {noreply, State}.
 
-handle_info(timeout, State) ->
-	case update_or_load_permissions(State) of
-		{ok, State2} ->	{noreply, State2};
-		{error, State2} -> {noreply, State2}
-	end;
-	
 handle_info({_Pid, {error, Reason}}, State) ->
 	ems_logger:warn("ems_user_permission_loader is unable to load or update permissions. Reason: ~p.", [Reason]),
 	{noreply, State}.
@@ -187,7 +181,8 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
-				Params = [{sql_timestamp, [DateInitial]}],
+				Params = [{sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]}],
 				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_permission_loader did not update any user permissions."),
@@ -218,17 +213,17 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 
 insert([], Count, _CtrlInsert) -> Count;
-insert([{Codigo, GetGrant, PostGrant, PutGrant, DeleteGrant, Url}|T], Count, CtrlInsert) ->
+insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, CtrlInsert) ->
 	Rowid = ems_util:make_rowid(Url),
 	Id = ems_db:sequence(user_permission),
 	Hash = ems_user_permission:make_hash(Rowid, Codigo),
 	Permission = #user_permission {
 					id = Id,
 					hash = Hash,
-					get_grant = GetGrant,
-					post_grant = PostGrant,
-					put_grant = PutGrant,
-					delete_grant = DeleteGrant,
+					grant_get = GrantGet,
+					grant_post = GrantPost,
+					grant_put = GrantPut,
+					grant_delete = GrantDelete,
 				    ctrl_insert = CtrlInsert
 				  },
 	mnesia:dirty_write(Permission),
@@ -236,26 +231,26 @@ insert([{Codigo, GetGrant, PostGrant, PutGrant, DeleteGrant, Url}|T], Count, Ctr
 
 
 update([], Count, _CtrlUpdate) -> Count;
-update([{Codigo, GetGrant, PostGrant, PutGrant, DeleteGrant, Url}|T], Count, CtrlUpdate) ->
+update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, CtrlUpdate) ->
 	Rowid = ems_util:make_rowid(Url),
 	Hash = ems_user_permission:make_hash(Rowid, Codigo),
 	case ems_user_permission:find_by_bash(Hash) of
 		{ok, Permission} ->
 			Permission2 = Permission#user_permission {
-							get_grant = GetGrant,
-							post_grant = PostGrant,
-							put_grant = PutGrant,
-							delete_grant = DeleteGrant,
+							grant_get = GrantGet,
+							grant_post = GrantPost,
+							grant_put = GrantPut,
+							grant_delete = GrantDelete,
 							ctrl_update = CtrlUpdate
 						};
 		{error, enoent} -> 
 			Permission2 = #user_permission {
 							id = ems_db:sequence(user_permission),
 							hash = Hash,
-							get_grant = GetGrant,
-							post_grant = PostGrant,
-							put_grant = PutGrant,
-							delete_grant = DeleteGrant,
+							grant_get = GrantGet,
+							grant_post = GrantPost,
+							grant_put = GrantPut,
+							grant_delete = GrantDelete,
 							ctrl_insert = CtrlUpdate
 						  }
 	end,
@@ -265,10 +260,10 @@ update([{Codigo, GetGrant, PostGrant, PutGrant, DeleteGrant, Url}|T], Count, Ctr
 
 sql_load_permissions() ->	 
   "select distinct  u.UsuPesIdPessoa as Codigo,
-  					t.TraVisualizar as GetGrant,
-					t.TraIncluir as PostGrant, 
-					t.TraAlterar as UpdateGrant, 
-					t.TraExcluir as DeleteGrant,
+					pt.PTrVisualizar as GrantGet,
+					pt.PTrIncluir as GrantPost, 
+					pt.PTrAlterar as UpdateGrant, 
+					pt.PTrExcluir as GrantDelete,
 					t.TraNomeFrm as Url 
 	    from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
@@ -278,15 +273,17 @@ sql_load_permissions() ->
 				on p.PerId = pt.PTrPerId 
 	    inner join BDAcesso.dbo.TB_Transacao t 
 				on pt.PTrTraId = t.TraId 
-	where t.TraNomeFrm is not null
+		inner join BDAcesso.dbo.TB_Sistemas s 
+				on s.SisId = t.TraSisId
+	where s.SisSistema = 'erlangms' and t.TraNomeFrm is not null
   ".
 
 sql_update_permissions() ->	 
   "select distinct  u.UsuPesIdPessoa as Codigo,
-  					t.TraVisualizar as GetGrant,
-					t.TraIncluir as PostGrant, 
-					t.TraAlterar as UpdateGrant, 
-					t.TraExcluir as DeleteGrant,
+					pt.PTrVisualizar as GrantGet,
+					pt.PTrIncluir as GrantPost, 
+					pt.PTrAlterar as UpdateGrant, 
+					pt.PTrExcluir as GrantDelete,
 					t.TraNomeFrm as Url 
 	    from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
@@ -296,5 +293,7 @@ sql_update_permissions() ->
 				on p.PerId = pt.PTrPerId 
 	    inner join BDAcesso.dbo.TB_Transacao t 
 				on pt.PTrTraId = t.TraId
-	 where u.UsuDataAlteracao >= ? and t.TraNomeFrm is not null
+		inner join BDAcesso.dbo.TB_Sistemas s 
+				on s.SisId = t.TraSisId
+	 where s.SisSistema = 'erlangms' and t.TraNomeFrm is not null and (t.TraDataAlteracao >= ? or pt.PTrDataAlteracao >= ?)
 	".

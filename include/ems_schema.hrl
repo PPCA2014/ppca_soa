@@ -30,10 +30,10 @@
 		
 -record(user_permission, {id :: non_neg_integer(),				%% identifica o registro da permissão
 						  hash,
-						  get_grant,
-						  post_grant,
-						  put_grant,
-						  delete_grant,
+						  grant_get,
+						  grant_post,
+						  grant_put,
+						  grant_delete,
 						  ctrl_insert,
 						  ctrl_update
           }).
@@ -129,9 +129,9 @@
 					function_name :: string(),					%% Nome da mensagem ou função que vai ser invocada no processo que vai atender a requisição
 					function :: atom(),  						%% Atom da mensagem ou função que vai ser invocada no processo que vai atender a requisição
 					id_re_compiled,   							%% Identificador da expressão regular que vai verificar se a URL bate com a URL da requisição
-					public = true :: boolean(), 						%% Indica se o contrato estará listado no Portal API Management
+					public = true :: boolean(), 				%% Indica se o contrato estará listado no Portal API Management
 					comment :: string(), 						%% Comentário sobre o que o contrato oferece em termos de serviço
-					version = "1.0.0" :: string(), 						%% Versão do contrato do serviço
+					version = "1.0.0" :: string(), 				%% Versão do contrato do serviço
 					owner :: string(),  						%% Quem é o proprietário pelo serviço
 					async = false :: boolean(),					%% Indica se o serviço será processado em segundo plano (chamada assíncrona)
 					querystring :: string(),  					%% Definição da querystring para o contrato do serviço
@@ -155,7 +155,7 @@
 					timeout :: non_neg_integer(),
 					expires :: non_neg_integer(),
 					cache_control :: string(),
-					enable :: boolean(),
+					enable = false :: boolean(),
 					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
 					path :: string(),
 					redirect_url :: binary(),					%% redirect url						
@@ -168,7 +168,9 @@
 					tcp_is_ssl = false,
 					tcp_ssl_cacertfile,
 					tcp_ssl_certfile,
-					tcp_ssl_keyfile
+					tcp_ssl_keyfile,
+					check_grant_permission = false :: boolean(),
+					oauth2_token_encrypt = false :: boolean()
 				}).
 
 

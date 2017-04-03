@@ -148,9 +148,7 @@ lookup_request(Request = #request{rid = Rid,
 											Error
 									end
 							end;
-						Error -> 
-							ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: authenticate denied.", [IpBin]),
-							Error
+						Error -> Error
 					end;
 				false -> 
 					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),

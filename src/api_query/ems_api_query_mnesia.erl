@@ -14,14 +14,10 @@
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}) ->
-	io:format("aqui1\n"),
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
-			io:format("aqui2\n"),
 			TableName2 = list_to_atom(TableName),
-			io:format("aqui3 ~p\n", [{TableName2, FieldList, FilterList, Limit, Offset}]),
 			Result = ems_db:find(TableName2, FieldList, FilterList, Limit, Offset),
-			io:format("aqui4\n"),
 			ResultJson = ems_schema:to_json(Result),
 			{ok, ResultJson};
 		{error, Reason} -> {error, Reason}

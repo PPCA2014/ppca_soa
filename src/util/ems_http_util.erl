@@ -312,8 +312,7 @@ match_ip_address({O1, O2, O3, O4}, {X1, X2, X3, X4}) ->
 	
 	
 -spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
-parse_basic_authorization_header(Header) ->
-	<<Basic:5/binary, _:1/binary, Secret/binary>> = Header,
+parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) ->
 	case Basic =:= <<"Basic">> of
 		true ->
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
@@ -321,7 +320,8 @@ parse_basic_authorization_header(Header) ->
 			{ok, Login, Password};
 		false -> 
 			{error, einvalid_authorization_header}
-	end.
+	end;
+parse_basic_authorization_header(_) -> {error, einvalid_authorization_header}.
 	
 -spec parse_barer_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
 parse_barer_authorization_header(Header) ->
