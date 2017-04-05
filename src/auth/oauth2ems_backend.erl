@@ -65,7 +65,7 @@ start() ->
                   ?TABLES),
 	add_client("geral","123456", "http://localhost:2301/"),
 	add_client("114740","123456", "http://localhost:2301/"),
-	add_client("s6BhdRkqt3","qwer", "http://localhost:2301/"),
+	add_client("s6BhdRkqt3","qwer", "http://164.41.120.42:3000/callback"),
 	add_scope("email","s6BhdRkqt3").
 
 stop() ->
@@ -101,7 +101,7 @@ authenticate_user({Login, Password}, _) ->
         {ok, User = #user{name = Username}} ->	
 			{ok, {[],{<<"user">>, Username}}};
 		%% Padronizar o erro conforme o RFC 6749
-        Error = {error, notfound} ->  Error
+        _ -> {error, notfound}
     end.
 
 authenticate_client({ClientId, ClientSecret},_) ->

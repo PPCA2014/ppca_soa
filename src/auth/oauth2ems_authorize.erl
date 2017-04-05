@@ -22,7 +22,7 @@ execute(Request = #request{type = Type}) ->
 				authorization_request(Request);	
 			"authorization_code" ->
 				access_token_request(Request);	
-			"code2" ->
+			"authn" ->
 				% Apenas para simulação
 				code_request(Request);				
              _ -> {error, invalid_request}
@@ -43,7 +43,7 @@ execute(Request = #request{type = Type}) ->
 														}
 									}
 			};
-		Error ->   {ok, Request#request{code = 400, 
+		Error ->   {ok, Request#request{code = 401, 
 								 response_data = Error}
 					}
 	end.
@@ -88,13 +88,17 @@ authorization_request(Request) ->
 %% Requisita o código de autorização - seções 4.1.1 e 4.1.2 do RFC 6749.
 %% URL de teste: GET http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w
 code_request(Request) ->
+	    io:format("Authz \n"),
+
     ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     Username    = ems_request:get_querystring(<<"username">>, [],Request),
     Password    = ems_request:get_querystring(<<"password">>, [],Request),
-    %State      = ems_request:get_querystring(<<"state">>, [],Request),
+    State      = ems_request:get_querystring(<<"state">>, [],Request),
     Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
-    Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, []),
+    % implementar state
+    Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, State),
+    io:format("\nAuthz: ~p \n", [Authorization]),
    	issue_code(Authorization).
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.

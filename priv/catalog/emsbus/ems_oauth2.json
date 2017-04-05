@@ -126,7 +126,7 @@
 		"version": "1",
 		"service" : "oauth2ems_recurso:execute",
 		"url": "/recurso",
-		"type": "GET",
+		"type": "POST",
 		"querystring": [
 			{
 				"name": "token",
