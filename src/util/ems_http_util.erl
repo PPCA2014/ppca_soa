@@ -316,7 +316,7 @@ parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) 
 	case Basic =:= <<"Basic">> of
 		true ->
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
-			[Login|[Password|_]] = string:tokens(Secret2, ":"),
+			[Login|[Password|_]] = string:tokens(Secret2, ":"),geany 
 			{ok, Login, Password};
 		false -> 
 			{error, einvalid_authorization_header}
@@ -337,7 +337,7 @@ parse_barer_authorization_header(Header) ->
 parse_authorization_type(<<"Basic">>) -> http_basic;
 parse_authorization_type(<<"basic">>) -> http_basic;
 parse_authorization_type(<<"OAuth2">>) -> oauth2;
-parse_authorization_type(<<"oAuth2">>) -> oauth2;
+parse_authorization_type(<<"oauth2">>) -> oauth2;
 parse_authorization_type(<<"Public">>) -> public;
 parse_authorization_type(<<"public">>) -> public;
 parse_authorization_type(<<>>) -> public;
