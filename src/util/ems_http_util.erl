@@ -316,7 +316,7 @@ parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) 
 	case Basic =:= <<"Basic">> of
 		true ->
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
-			[Login|[Password|_]] = string:tokens(Secret2, ":"),geany 
+			[Login|[Password|_]] = string:tokens(Secret2, ":"),
 			{ok, Login, Password};
 		false -> 
 			{error, einvalid_authorization_header}

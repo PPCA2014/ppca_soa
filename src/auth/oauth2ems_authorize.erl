@@ -29,20 +29,24 @@ execute(Request = #request{type = Type}) ->
 	end,  
 	case Result of
 		{ok, ResponseData} ->
-		
 			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
-			
-			UserResponseData = lists:keyfind(<<"resource_owner">>, 1, ResponseData),
-			
-			PublicKey = ems_util:open_file(?SSL_PATH ++  "/" ++ binary_to_list(<<"public_key.pem">>)),
-			
-			CryptoText = ems_util:encrypt_public_key(ResponseData2,PublicKey),
-			
-			CryptoBase64 = base64:encode(CryptoText),
-		
 			{ok, Request#request{code = 200, 
-								 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
-			};
+								 response_data = ResponseData2}
+			};		
+		
+			%ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
+			
+			%UserResponseData = lists:keyfind(<<"resource_owner">>, 1, ResponseData),
+			
+			%PublicKey = ems_util:open_file(?SSL_PATH ++  "/" ++ binary_to_list(<<"public_key.pem">>)),
+			
+			%CryptoText = ems_util:encrypt_public_key(ResponseData2,PublicKey),
+			
+			%CryptoBase64 = base64:encode(CryptoText),
+		
+			%{ok, Request#request{code = 200, 
+			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
+			%};
 		{redirect, ClientId, RedirectUri} ->
 			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
 			LocationPath = lists:concat(["http://127.0.0.1:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
