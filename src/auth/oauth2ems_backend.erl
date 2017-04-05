@@ -98,7 +98,7 @@ add_scope(Scope, Client) ->
 
 authenticate_user({Login, Password}, _) ->
     case ems_user:find_by_login_and_password(Login, Password) of
-        {ok, User = #user{name = Username}} ->	
+        {ok, #user{name = Username}} ->	
 			{ok, {[],{<<"user">>, Username}}};
 		%% Padronizar o erro conforme o RFC 6749
         _ -> {error, notfound}
@@ -137,7 +137,10 @@ resolve_access_code(AccessCode, _) ->
     end.
 
 resolve_refresh_token(RefreshToken, _AppContext) ->
-    resolve_access_token(RefreshToken, _AppContext).
+    case get(?REFRESH_TOKEN_TABLE, RefreshToken) of
+       {ok,Value} -> {ok,{[],Value}};
+        Error = {error, notfound} ->  Error
+    end.
 
 resolve_access_token(AccessToken, _) ->
     case get(?ACCESS_TOKEN_TABLE, AccessToken) of
@@ -192,7 +195,7 @@ verify_resowner_scope(_ResOwner, Scope, _) ->
 
 verify_scope(RegScope, _ , _) ->
     case get(?SCOPE_TABLE, RegScope) of
-        {ok, #scope{scope = RegScope}} -> {ok, RegScope};
+        {ok, #scope{scope = RegScope}} -> {ok, {[],RegScope}};
         Error = {error, notfound} ->  Error
     end.
 

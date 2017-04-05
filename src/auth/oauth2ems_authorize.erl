@@ -13,6 +13,7 @@ execute(Request = #request{type = Type}) ->
 	end,
     Result = case TypeAuth of
             "password" -> 
+				io:format("\nreflesh\n"),
 				password_grant(Request);
             "client_credentials" ->
 				client_credentials_grant(Request);
@@ -22,6 +23,9 @@ execute(Request = #request{type = Type}) ->
 				authorization_request(Request);	
 			"authorization_code" ->
 				access_token_request(Request);	
+			"refresh_token" ->
+				io:format("\nreflesh\n"),
+				refresh_token_request(Request);	
 			"authn" ->
 				% Apenas para simulação
 				code_request(Request);				
@@ -88,8 +92,6 @@ authorization_request(Request) ->
 %% Requisita o código de autorização - seções 4.1.1 e 4.1.2 do RFC 6749.
 %% URL de teste: GET http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w
 code_request(Request) ->
-	    io:format("Authz \n"),
-
     ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     Username    = ems_request:get_querystring(<<"username">>, [],Request),
@@ -98,8 +100,16 @@ code_request(Request) ->
     Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
     % implementar state
     Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, State),
-    io:format("\nAuthz: ~p \n", [Authorization]),
    	issue_code(Authorization).
+
+refresh_token_request(Request) ->
+    ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
+    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+	Reflesh_token = list_to_binary(ems_request:get_querystring(<<"refresh_token">>, [],Request)),
+	Scope    = ems_request:get_querystring(<<"scope">>, [],Request),
+	Authorization = oauth2:refresh_access_token({ClientId, ClientSecret},Reflesh_token,Scope,[]),
+	io:format("\nAuthz = ~p\n", [Authorization]),
+    issue_token(Authorization).  
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
 %% URL de teste: GET http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w&secret=qwer&code=dxUlCWj2JYxnGp59nthGfXFFtn3hJTqx
@@ -109,7 +119,8 @@ access_token_request(Request) ->
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
     Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
-    issue_token(Authorization).  
+   	io:format("\nAuthz = ~p\n", [Authorization]),
+    issue_token_and_refresh(Authorization).  
 		
 
 issue_token({ok, {_, Auth}}) ->
@@ -117,7 +128,13 @@ issue_token({ok, {_, Auth}}) ->
 	{ok, oauth2_response:to_proplist(Response)};
 issue_token(Error) ->
     Error.
-    
+
+issue_token_and_refresh({ok, {_, Auth}}) ->
+	{ok, {_, Response}} = oauth2:issue_token_and_refresh(Auth, []),
+	{ok, oauth2_response:to_proplist(Response)};
+issue_token_and_refresh(Error) ->
+    Error.
+
 issue_code({ok, {_, Auth}}) ->
 	{ok, {_, Response}} = oauth2:issue_code(Auth, []),
 	{ok, oauth2_response:to_proplist(Response)};
