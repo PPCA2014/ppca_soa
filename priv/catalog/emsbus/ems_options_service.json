@@ -9,6 +9,7 @@
 	"async": "false",
 	"type": "OPTIONS",
 	"result_cache" : 5184000,
+	"authorization" : "public",
 	"lang" : "erlang"
 }
 

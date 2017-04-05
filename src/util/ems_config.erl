@@ -122,6 +122,12 @@ get_config_data() ->
 			end
 	end.
 
+print_config_settings(Json = #config{ems_debug = true, config_file = FileName}) ->
+	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [FileName]),
+	ems_logger:format_debug("~p\n", [Json]);
+print_config_settings(#config{ems_debug = false, config_file = FileName}) ->
+	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [FileName]).
+
 % Load the configuration file
 load_config() ->
 	case get_config_data() of
@@ -130,15 +136,15 @@ load_config() ->
 				{ok, Json} -> 
 					try
 						Result = parse_config(Json, FileName),
-						io:format("\nems_config loading configuration file ~p:\n~p\n", [FileName, Json]),
+						print_config_settings(Result),
 						Result
 					catch 
-						_Exception:_Reason ->
-							ems_logger:format_warn("ems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
+						_Exception:Reason ->
+							ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Reason: ~p. Running with default settings.\n", [FileName, Reason]),
 							get_default_config()
 					end;
 				_Error -> 
-					ems_logger:format_warn("ems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
+					ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
 					get_default_config()
 			end;
 		{error, enofile_config} ->
@@ -179,6 +185,7 @@ parse_tcp_allowed_address(undefined) -> undefined;
 parse_tcp_allowed_address([<<"*.*.*.*">>]) -> undefined;
 parse_tcp_allowed_address(V) -> V.
 
+
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
@@ -196,8 +203,9 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
 			 ems_datasources			= parse_datasources(Json),
 			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
-			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>])
-			 
+			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
+			 authorization			    = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
+			 config_file			    = NomeArqConfig
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -218,7 +226,9 @@ get_default_config() ->
 			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE,
 			 ems_datasources			= #{},
 			 tcp_allowed_address		= all,
-			 tcp_listen_address			= [<<"0.0.0.0">>]
+			 tcp_listen_address			= [<<"0.0.0.0">>],
+			 authorization				= http_basic,
+			 config_file			    = undefined
 		}.
 
 parse_bool(<<"true">>) -> true;

@@ -31,7 +31,10 @@
 		 format_error/1, 
 		 format_error/2,
 		 format_debug/1, 
-		 format_debug/2]).
+		 format_debug/2,
+ 		 format_alert/1, 
+		 format_alert/2
+]).
 
 
 %% gen_server callbacks
@@ -145,6 +148,8 @@ format_error(Message, Params) -> io:format("\033[0;31m~s\033[0m", [io_lib:format
 format_debug(Message) -> io:format("\033[0;34m~s\033[0m", [Message]).
 format_debug(Message, Params) -> io:format("\033[0;34m~s\033[0m", [io_lib:format(Message, Params)]).
 
+format_alert(Message) ->	io:format("\033[0;46m~s\033[0m", [Message]).
+format_alert(Message, Params) ->	io:format("\033[0;46m~s\033[0m", [io_lib:format(Message, Params)]).
 
 
 %%====================================================================

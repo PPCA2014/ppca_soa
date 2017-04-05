@@ -9,6 +9,7 @@
 		"async": "false",
 		"result_cache" : 0,
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 
@@ -22,6 +23,7 @@
 		"async": "false",
 		"result_cache" : 0,
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 
@@ -34,6 +36,7 @@
 		"url": "/netadm/hostfile",
 		"async": "false",
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 
@@ -46,6 +49,7 @@
 		"url": "/netadm/hostname",
 		"async": "false",
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 	
@@ -58,6 +62,7 @@
 		"url": "/netadm/localhost",
 		"async": "false",
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 	
@@ -71,9 +76,7 @@
 		"result_cache" : 0,
 		"async": "false",
 		"type": "GET",
-		"authorization" : "Basic",
-		"check_grant_permission" : true,
-		"oauth2_token_encrypt" : false,
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 	
@@ -87,6 +90,7 @@
 		"result_cache" : 0,
 		"async": "false",
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 	
@@ -100,6 +104,7 @@
 		"result_cache" : 0,
 		"async": "false",
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	},
 	
@@ -113,9 +118,8 @@
 		"result_cache" : 0,
 		"async": "false",
 		"type": "GET",
+		"authorization" : "public",
 		"lang" : "erlang"
 	}
-	
-	
 	
 ]

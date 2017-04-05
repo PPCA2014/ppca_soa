@@ -333,6 +333,16 @@ parse_barer_authorization_header(Header) ->
 			{error, einvalid_authorization_header}
 	end.
 
+
+parse_authorization_type(<<"Basic">>) -> http_basic;
+parse_authorization_type(<<"basic">>) -> http_basic;
+parse_authorization_type(<<"OAuth2">>) -> oauth2;
+parse_authorization_type(<<"oAuth2">>) -> oauth2;
+parse_authorization_type(<<"Public">>) -> public;
+parse_authorization_type(<<"public">>) -> public;
+parse_authorization_type(<<>>) -> public;
+parse_authorization_type(_) -> erlang:error(einvalid_authorization_type).
+
 	
 %% @doc Retorna o mime-type do arquivo
 mime_type(".htm") -> <<"text/html">>;

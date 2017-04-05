@@ -139,6 +139,9 @@
 -define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
 
 
+-define(AUTHORIZATION_TYPE_DEFAULT, <<"public">>).
+
+
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
 -define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public">>).
 -define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public">>).
@@ -169,7 +172,9 @@
 				 ems_result_cache,
 				 ems_datasources :: map(),
 				 tcp_listen_address			= [<<"0.0.0.0">>],
-				 tcp_allowed_address		= []
+				 tcp_allowed_address		= [],
+				 authorization,
+				 config_file
 		 }). 	
 
 

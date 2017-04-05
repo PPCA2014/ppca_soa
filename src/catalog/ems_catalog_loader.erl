@@ -214,11 +214,6 @@ valida_lang(<<"erlang">>) -> ok;
 valida_lang(<<"net">>) -> ok;
 valida_lang(_) -> erlang:error(invalid_lang_service).
 
-valida_authorization(<<"Basic">>) -> ok;
-valida_authorization(<<"Oauth2">>) -> ok;
-valida_authorization(<<>>) -> ok;
-valida_authorization(_) -> erlang:error(invalid_authorization).
-
 valida_length(Value, MaxLength) ->
 	case is_valid_length(Value, MaxLength) of
 		true -> ok;
@@ -427,7 +422,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf);	
 					Datasource ->
 						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
-						Authorization = maps:get(<<"authorization">>, H, <<>>),
+						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, ?AUTHORIZATION_TYPE_DEFAULT)),
 						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 						UseRE = maps:get(<<"use_re">>, H, false),
 						SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
@@ -450,7 +445,6 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						valida_length(Comment, 1000),
 						valida_length(Version, 10),
 						valida_length(Owner, 30),
-						valida_authorization(Authorization),
 						valida_bool(Debug),
 						valida_bool(UseRE),
 						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
