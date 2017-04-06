@@ -10,6 +10,7 @@
 
 -export([authenticate_user/2]).
 -export([authenticate_client/2]).
+-export([authorize_refresh_token/3]).
 -export([get_client_identity/2]).
 -export([associate_access_code/3]).
 -export([associate_refresh_token/3]).
@@ -41,12 +42,22 @@
                  ?CLIENT_TABLE,
                  ?SCOPE_TABLE]).
 
+% verificar: unificar os dois records ... %%%%%%%%%%%%%%%
 -record(client, {
           client_id     :: binary(),
           client_secret :: binary(),
           redirect_uri  :: binary()
          }).
 
+         
+-record(a, { client   = undefined    :: undefined | term()
+           , resowner = undefined    :: undefined | term()
+           , scope                   :: oauth2:scope()
+           , ttl      = 0            :: non_neg_integer()
+           }).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -record(scope, {
           scope :: binary(),
           client_id :: binary()
@@ -114,6 +125,28 @@ authenticate_client({ClientId, ClientSecret},_) ->
         _ -> {error, notfound}
     end.
 
+% função criada pois a biblioteca OAuth2 não trata refresh_tokens
+
+authorize_refresh_token(Client, RefreshToken, Scope) ->
+    case authenticate_client(Client, []) of
+        {error, _}      -> {error, invalid_client};
+        {ok, {_, C}} -> 
+			case resolve_refresh_token(RefreshToken, []) of
+				{error, _}=E           -> E;
+				{ok, {_, GrantCtx}} -> 
+					case verify_client_scope(C, Scope, []) of
+						{error, _}           -> {error, invalid_scope};
+						{ok, {Ctx3, _}} ->
+							{ok, {Ctx3, #a{ client  =C
+								, resowner=get_(GrantCtx,<<"resource_owner">>)
+								, scope   =get_(GrantCtx, <<"scope">>)
+								, ttl     =oauth2_config:expiry_time(password_credentials)
+							}}}
+					end
+            end
+    end.
+
+
 get_client_identity(ClientId, _) ->
     case get(?CLIENT_TABLE, ClientId) of
         {ok, Client} -> {ok, {[],Client}};
@@ -180,6 +213,15 @@ verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
 		_Error -> {error, mismatch}
     end.
     
+verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
+    case get(?SCOPE_TABLE, Scope) of
+        {ok, #scope{scope = Scope, client_id = Client}} ->     
+			case ClientId =:= Client of
+				true -> {ok, {[],Scope}};
+				_ -> {error, invalid_client}
+			end;
+        Error = {error, notfound} ->  Error
+    end;
 
 verify_client_scope( #client{client_id = ClientID},Scope, _) ->
 	case get(?SCOPE_TABLE, Scope) of
@@ -212,6 +254,16 @@ get(Table, Key) ->
         [{_Key, Value}] ->
             {ok, Value}
     end.
+get(O, K, _)  ->
+    case lists:keyfind(K, 1, O) of
+        {K, V} -> {ok, V};
+        false  -> {error, notfound}
+    end.
+
+get_(O, K) ->
+    {ok, V} = get(O, K, []),
+    V.
+
 
 put(Table, Key, Value) ->
     ets:insert(Table, {Key, Value}),

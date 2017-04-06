@@ -13,7 +13,6 @@ execute(Request = #request{type = Type}) ->
 	end,
     Result = case TypeAuth of
             "password" -> 
-				io:format("\nreflesh\n"),
 				password_grant(Request);
             "client_credentials" ->
 				client_credentials_grant(Request);
@@ -24,7 +23,6 @@ execute(Request = #request{type = Type}) ->
 			"authorization_code" ->
 				access_token_request(Request);	
 			"refresh_token" ->
-				io:format("\nreflesh\n"),
 				refresh_token_request(Request);	
 			"authn" ->
 				% Apenas para simulação
@@ -107,8 +105,7 @@ refresh_token_request(Request) ->
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
 	Reflesh_token = list_to_binary(ems_request:get_querystring(<<"refresh_token">>, [],Request)),
 	Scope    = ems_request:get_querystring(<<"scope">>, [],Request),
-	Authorization = oauth2:refresh_access_token({ClientId, ClientSecret},Reflesh_token,Scope,[]),
-	io:format("\nAuthz = ~p\n", [Authorization]),
+	Authorization = oauth2ems_backend:authorize_refresh_token({ClientId, ClientSecret},Reflesh_token,Scope),
     issue_token(Authorization).  
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
@@ -119,7 +116,6 @@ access_token_request(Request) ->
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
     Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
-   	io:format("\nAuthz = ~p\n", [Authorization]),
     issue_token_and_refresh(Authorization).  
 		
 
@@ -128,6 +124,7 @@ issue_token({ok, {_, Auth}}) ->
 	{ok, oauth2_response:to_proplist(Response)};
 issue_token(Error) ->
     Error.
+    
 
 issue_token_and_refresh({ok, {_, Auth}}) ->
 	{ok, {_, Response}} = oauth2:issue_token_and_refresh(Auth, []),
