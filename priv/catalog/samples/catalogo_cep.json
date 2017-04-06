@@ -5,8 +5,7 @@
 	"version": "1",
 	"service" : "ems_web_service_correios:busca_cep",
 	"url": "/buscacep/:id",
-	"url_correio":"http://www.buscacep.correios.com.br/sistemas/buscacep/resultadoBuscaCepEndereco.cfm",
-	"content_type":"application/x-www-form-urlencoded;charset=UTF-8",
+	"url_correio":"https://viacep.com.br/ws/",
 	"type": "GET",
 	"APIkey":"true",
 	"lang" : "erlang"
