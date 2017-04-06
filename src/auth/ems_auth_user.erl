@@ -17,7 +17,7 @@ authenticate(Service = #service{authorization = AuthorizationMode}, Request) ->
 	case AuthorizationMode of
 		http_basic -> do_basic_authorization(Service, Request);
 		oauth2 -> do_barer_authorization(Service, Request);
-		_ -> {ok, undefined}
+		_ -> {ok, public}
 	end.
 
 do_basic_authorization(_, #request{authorization = undefined}) -> {error, no_authorization};

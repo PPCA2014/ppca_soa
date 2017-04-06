@@ -118,7 +118,8 @@
 		"result_cache" : 0,
 		"async": "false",
 		"type": "GET",
-		"authorization" : "public",
+		"authorization" : "basic",
+		"check_grant_permission" : true,
 		"lang" : "erlang"
 	}
 	
