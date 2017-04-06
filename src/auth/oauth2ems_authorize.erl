@@ -11,6 +11,9 @@ execute(Request = #request{type = Type}) ->
 		"GET" -> ems_request:get_querystring(<<"response_type">>, "", Request);
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, "", Request)
 	end,
+	
+	
+	io:format("aqui1  ~p\n", [TypeAuth]),
     Result = case TypeAuth of
             "password" -> 
 				password_grant(Request);
@@ -19,8 +22,11 @@ execute(Request = #request{type = Type}) ->
 			"token" ->
 				authorization_request(Request);
 			"code" ->
+				io:format("aqui2\n"),
 				authorization_request(Request);	
 			"authorization_code" ->
+				io:format("aqui3\n"),
+
 				access_token_request(Request);	
 			"code2" ->
 				% Apenas para simulação
@@ -49,10 +55,11 @@ execute(Request = #request{type = Type}) ->
 			%};
 		{redirect, ClientId, RedirectUri} ->
 			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
-			LocationPath = lists:concat(["http://127.0.0.1:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
+			%LocationPath = lists:concat(["http://127.0.0.1:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
+			io:format("redirect ~p\n", [RedirectUri]),
 			{ok, Request#request{code = 302, 
 								 response_header = #{
-														<<"location">> => LocationPath
+														<<"location">> => RedirectUri
 													}
 								}
 			};
@@ -89,7 +96,9 @@ authorization_request(Request) ->
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		ok -> {redirect, ClientId, RedirectUri};
-		Error -> Error
+		Error -> 
+			io:format("error is ~p\n", [Error]),
+			Error
 	end,			
     Resposta.
 

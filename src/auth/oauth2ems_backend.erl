@@ -11,7 +11,7 @@
 -export([authenticate_username_password/3]).
 -export([authenticate_client/2]).
 -export([authenticate_client/3]).
--export([get_client_identity/2]).
+-export([get_codigoentity/2]).
 -export([associate_access_code/3]).
 -export([associate_refresh_token/3]).
 -export([associate_access_token/3]).
@@ -39,12 +39,6 @@
                  ?USER_TABLE,
                  ?CLIENT_TABLE]).
 
--record(client, {
-          client_id     :: binary(),
-          client_secret :: binary(),
-          redirect_uri  :: binary()
-         }).
-
 
 %%%===================================================================
 %%% API
@@ -65,8 +59,8 @@ stop() ->
 
 
 add_client(Id, Secret, RedirectUri) ->
-    put(?CLIENT_TABLE, Id, #client{client_id = Id,
-                                   client_secret = Secret,
+    put(?CLIENT_TABLE, Id, #client{codigo = Id,
+                                   secret = Secret,
                                    redirect_uri = RedirectUri
                                   }).
 
@@ -92,7 +86,7 @@ authenticate_client(ClientId, ClientSecret, _) ->
 
 authenticate_client(ClientId, ClientSecret) ->
     case get(?CLIENT_TABLE, ClientId) of
-        {ok, Client = #client{client_secret = CliSecret}} -> 
+        {ok, Client = #client{secret = CliSecret}} -> 
 			case ClientSecret =:= CliSecret of
 				true -> {ok, Client};
 				_ -> {error, badsecret}
@@ -100,7 +94,7 @@ authenticate_client(ClientId, ClientSecret) ->
         _ -> {error, notfound}
     end.
 
-get_client_identity(ClientId, _) ->
+get_codigoentity(ClientId, _) ->
     case get(?CLIENT_TABLE, ClientId) of
         {ok, Client} -> {ok, Client};
         _ -> {error, notfound}

@@ -244,22 +244,38 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 
 insert_users([], Count, _CtrlInsert) -> Count;
-insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count, CtrlInsert) ->
-	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
+insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, 
+			   TypeEmail, Active, Endereco, ComplementoEndereco, Bairro, 
+			   Cidade, Uf, Cep, Rg, DataNascimento, Sexo, 
+			   Telefone, Celular, DDD, MatSipes, Locatacao, LocatacaoSigla,
+			   LocatacaoCentro, LocatacaoCodigoFuncao, LocatacaoFuncao,
+			   LocatacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T], Count, CtrlInsert) ->
 	User = #user{id = ems_db:sequence(user),
 				 codigo = Codigo,
 				 login = ?UTF8_STRING(Login),
 				 name = ?UTF8_STRING(Name),
 				 cpf = ?UTF8_STRING(Cpf),
 				 email = ?UTF8_STRING(Email),
-				 password = case PasswdCryptoBin of
-								<<"SHA1">> -> ?UTF8_STRING(Password);
+				 password = case PasswdCrypto of
+								"SHA1" -> ?UTF8_STRING(Password);
 								_ -> ems_util:criptografia_sha1(Password)
 							end,
 				 type = Type,
-				 passwd_crypto = PasswdCrypto,
+				 passwd_crypto = <<"SHA1">>,
 				 type_email = TypeEmail,
-				 active = Situacao == 1,
+				 endereco = ?UTF8_STRING(Endereco),
+				 complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
+				 bairro = ?UTF8_STRING(Bairro),
+				 cidade = ?UTF8_STRING(Cidade),
+				 uf = ?UTF8_STRING(Uf),
+				 cep = ?UTF8_STRING(Cep),
+				 rg = ?UTF8_STRING(Rg),
+				 data_nascimento = ems_util:date_to_binary(DataNascimento),
+				 sexo = Sexo,
+				 telefone = ?UTF8_STRING(Telefone),
+				 celular = ?UTF8_STRING(Celular),
+				 ddd = ?UTF8_STRING(DDD),
+				 active = Active == 1,
 				 ctrl_insert = CtrlInsert},
 	%?DEBUG("User  ~p\n", [User]),
 	mnesia:dirty_write(User),
@@ -267,24 +283,39 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 
 
 update_users([], Count, _CtrlUpdate) -> Count;
-update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, TypeEmail, Situacao}|T], Count, CtrlUpdate) ->
-	PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
+update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, 
+			   TypeEmail, Active, Endereco, ComplementoEndereco, Bairro, 
+			   Cidade, Uf, Cep, Rg, DataNascimento, Sexo, 
+			   Telefone, Celular, DDD, MatSipes, Locatacao, LocatacaoSigla,
+			   LocatacaoCentro, LocatacaoCodigoFuncao, LocatacaoFuncao,
+			   LocatacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T], Count, CtrlUpdate) ->
 	case ems_user:find_by_codigo(Codigo) of
 		{ok, User} ->
-			PasswdCryptoBin = ?UTF8_STRING(PasswdCrypto),
 			User2 = User#user{codigo = Codigo,
 							  login = ?UTF8_STRING(Login),
 							  name = ?UTF8_STRING(Name),
 							  cpf = ?UTF8_STRING(Cpf),
 							  email = ?UTF8_STRING(Email),
-							  password = case PasswdCryptoBin of
-											<<"SHA1">> -> ?UTF8_STRING(Password);
+							  password = case PasswdCrypto of
+											"SHA1" -> ?UTF8_STRING(Password);
 											_ -> ems_util:criptografia_sha1(Password)
 										 end,
 							  type = Type,
 							  passwd_crypto = <<"SHA1">>,
 							  type_email = TypeEmail,
-							  active = Situacao == 1,
+							  endereco = ?UTF8_STRING(Endereco),
+							  complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
+							  bairro = ?UTF8_STRING(Bairro),
+							  cidade = ?UTF8_STRING(Cidade),
+							  uf = ?UTF8_STRING(Uf),
+							  cep = ?UTF8_STRING(Cep),
+							  rg = ?UTF8_STRING(Rg),
+							  data_nascimento = ems_util:date_to_binary(DataNascimento),
+							  sexo = Sexo,
+							  telefone = ?UTF8_STRING(Telefone),
+							  celular = ?UTF8_STRING(Celular),
+							  ddd = ?UTF8_STRING(DDD),
+							  active = Active == 1,
 							  ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
 			User2 = #user{id = ems_db:sequence(user),
@@ -293,14 +324,26 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, Ty
 						  name = ?UTF8_STRING(Name),
 						  cpf = ?UTF8_STRING(Cpf),
 						  email = ?UTF8_STRING(Email),
-						  password = case PasswdCryptoBin of
-										<<"SHA1">> -> ?UTF8_STRING(Password);
+						  password = case PasswdCrypto of
+										"SHA1" -> ?UTF8_STRING(Password);
 										_ -> ems_util:criptografia_sha1(Password)
 									 end,
 						  type = Type,
 						  passwd_crypto = <<"SHA1">>,
 						  type_email = TypeEmail,
-						  active = Situacao == 1,
+						  endereco = ?UTF8_STRING(Endereco),
+						  complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
+						  bairro = ?UTF8_STRING(Bairro),
+						  cidade = ?UTF8_STRING(Cidade),
+						  uf = ?UTF8_STRING(Uf),
+						  cep = ?UTF8_STRING(Cep),
+						  rg = ?UTF8_STRING(Rg),
+						  data_nascimento = ems_util:date_to_binary(DataNascimento),
+						  sexo = Sexo,
+						  telefone = ?UTF8_STRING(Telefone),
+						  celular = ?UTF8_STRING(Celular),
+						  ddd = ?UTF8_STRING(DDD),
+						  active = Active == 1,
 						  ctrl_insert = CtrlUpdate}
 	end,
 	mnesia:write(User2),
@@ -317,7 +360,28 @@ sql_load_users() ->
 					TipoPessoa,
 					PasswdCryptoPessoa,
 					TipoEmailPessoa,
-					1 as SituacaoPessoa
+					1 as ActivePessoa,
+					Endereco,
+					ComplementoEndereco,
+					Bairro,
+					Cidade,
+					Uf,
+					Cep,
+					Rg,
+					DataNascimento,
+					Sexo,
+					Telefone,
+					Celular,
+					DDD,
+				    MatSipes,
+				    Locatacao,
+				    LocatacaoSigla,
+				    LocatacaoCentro,
+				    LocatacaoCodigoFuncao,
+				    LocatacaoFuncao,
+				    LocatacaoOrgao,
+				    LotacaoCodigoCargo,
+				    LotacaoCargo
 	from (
 			-- Busca dados de pessoa física em BDPessoa
 			select p.PesCodigoPessoa as CodigoPessoa, 
@@ -328,14 +392,37 @@ sql_load_users() ->
 				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
 				   0 as TipoPessoa,  -- Pessoa física,
 				   'SHA1' as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
+				   em.EmaTipo as TipoEmailPessoa,
+				   p.PesEndereco as	Endereco,
+				   p.PesComplementoEndereco as ComplementoEndereco,
+				   p.PesBairro as Bairro,
+				   p.PesCidade as Cidade,
+				   p.PesUf as Uf,
+				   p.PesCep as Cep,
+				   p.PesRg as Rg,
+				   p.PesDataNascimento as DataNascimento,
+				   p.PesSexo as Sexo,
+				   p.PesTelefone as	Telefone,
+				   p.PesCelular as Celular,
+				   p.PesDDD as DDD,
+				   df.Sipes as MatSipes,
+				   df.CC as Locatacao,
+				   df.Sigla as LocatacaoSigla,
+				   df.Centro as LocatacaoCentro,
+				   df.Codigo as LocatacaoCodigoFuncao,
+				   df.Funcao as LocatacaoFuncao,
+				   df.Órgão as LocatacaoOrgao,
+				   df.Cargo as LotacaoCodigoCargo,
+				   df.Cargo as LotacaoCargo
 			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
 						 on u.UsuPesIdPessoa = p.PesCodigoPessoa
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
 						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
 				 join BDPessoa.dbo.TB_Email em
 						 on pfe.PFmEmaCodigo = em.EmaCodigo
-			
+				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao df
+			             on p.PesCodigoPessoa = df.Sipes						 
+
 			union all
 			
 			-- Busca dados de alunos em BDSiac com AluRA
@@ -347,7 +434,28 @@ sql_load_users() ->
 				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
 				   2 as TipoPessoa,  -- Aluno
 				   null as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
+				   em.EmaTipo as TipoEmailPessoa,
+				   p.PesEndereco as	Endereco,
+				   p.PesComplementoEndereco as ComplementoEndereco,
+				   p.PesBairro as Bairro,
+				   p.PesCidade as Cidade,
+				   p.PesUf as Uf,
+				   p.PesCep as Cep,
+				   p.PesRg as Rg,
+				   p.PesDataNascimento as DataNascimento,
+				   p.PesSexo as Sexo,
+				   p.PesTelefone as	Telefone,
+				   p.PesCelular as Celular,
+				   p.PesDDD as DDD,
+				   null as MatSipes,
+				   null as Locatacao,
+				   null as LocatacaoSigla,
+				   null as LocatacaoCentro,
+				   null as LocatacaoCodigoFuncao,
+				   null as LocatacaoFuncao,
+				   null as LocatacaoOrgao,
+				   null as LotacaoCodigoCargo,
+				   null as LotacaoCargo
 			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
 						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
@@ -366,7 +474,28 @@ sql_load_users() ->
 				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
 				   3 as TipoPessoa,  -- Aluno
 				   null as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
+				   em.EmaTipo as TipoEmailPessoa,
+				   p.PesEndereco as	Endereco,
+				   p.PesComplementoEndereco as ComplementoEndereco,
+				   p.PesBairro as Bairro,
+				   p.PesCidade as Cidade,
+				   p.PesUf as Uf,
+				   p.PesCep as Cep,
+				   p.PesRg as Rg,
+				   p.PesDataNascimento as DataNascimento,
+				   p.PesSexo as Sexo,
+				   p.PesTelefone as	Telefone,
+				   p.PesCelular as Celular,
+				   p.PesDDD as DDD,
+				   null as MatSipes,
+				   null as Locatacao,
+				   null as LocatacaoSigla,
+				   null as LocatacaoCentro,
+				   null as LocatacaoCodigoFuncao,
+				   null as LocatacaoFuncao,
+				   null as LocatacaoOrgao,
+				   null as LotacaoCodigoCargo,
+				   null as LotacaoCargo
 			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
 						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
@@ -387,7 +516,29 @@ sql_update_users() ->
 					TipoPessoa,
 					PasswdCryptoPessoa,
 					TipoEmailPessoa,
-					1 as SituacaoPessoa
+					1 as ActivePessoa,
+					Endereco,
+					ComplementoEndereco,
+					Bairro,
+					Cidade,
+					Uf,
+					Cep,
+					Rg,
+					DataNascimento,
+					Sexo,
+					Telefone,
+					Celular,
+					DDD,
+				    MatSipes,
+				    Locatacao,
+				    LocatacaoSigla,
+				    LocatacaoCentro,
+				    LocatacaoCodigoFuncao,
+				    LocatacaoFuncao,
+				    LocatacaoOrgao,
+				    LotacaoCodigoCargo,
+				    LotacaoCargo
+					
 	from (
 			-- Busca dados de pessoa física em BDPessoa
 			select p.PesCodigoPessoa as CodigoPessoa, 
@@ -398,13 +549,36 @@ sql_update_users() ->
 				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
 				   0 as TipoPessoa,  -- Pessoa física,
 				   'SHA1' as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
+				   em.EmaTipo as TipoEmailPessoa,
+				   p.PesEndereco as	Endereco,
+				   p.PesComplementoEndereco as ComplementoEndereco,
+				   p.PesBairro as Bairro,
+				   p.PesCidade as Cidade,
+				   p.PesUf as Uf,
+				   p.PesCep as Cep,
+				   p.PesRg as Rg,
+				   p.PesDataNascimento as DataNascimento,
+				   p.PesSexo as Sexo,
+				   p.PesTelefone as	Telefone,
+				   p.PesCelular as Celular,
+				   p.PesDDD as DDD,
+				   df.Sipes as MatSipes,
+				   df.CC as Locatacao,
+				   df.Sigla as LocatacaoSigla,
+				   df.Centro as LocatacaoCentro,
+				   df.Codigo as LocatacaoCodigoFuncao,
+				   df.Funcao as LocatacaoFuncao,
+				   df.Órgão as LocatacaoOrgao,
+				   df.Cargo as LotacaoCodigoCargo,
+				   df.Cargo as LotacaoCargo
 			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
 						 on u.UsuPesIdPessoa = p.PesCodigoPessoa
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
 						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
 				 join BDPessoa.dbo.TB_Email em
 						 on pfe.PFmEmaCodigo = em.EmaCodigo
+				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao df
+			             on p.PesCodigoPessoa = df.Sipes						 
 			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 				
 			union all
@@ -418,7 +592,28 @@ sql_update_users() ->
 				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
 				   2 as TipoPessoa,  -- Aluno
 				   null as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
+				   em.EmaTipo as TipoEmailPessoa,
+				   p.PesEndereco as	Endereco,
+				   p.PesComplementoEndereco as ComplementoEndereco,
+				   p.PesBairro as Bairro,
+				   p.PesCidade as Cidade,
+				   p.PesUf as Uf,
+				   p.PesCep as Cep,
+				   p.PesRg as Rg,
+				   p.PesDataNascimento as DataNascimento,
+				   p.PesSexo as Sexo,
+				   p.PesTelefone as	Telefone,
+				   p.PesCelular as Celular,
+				   p.PesDDD as DDD,
+				   null as MatSipes,
+				   null as Locatacao,
+				   null as LocatacaoSigla,
+				   null as LocatacaoCentro,
+				   null as LocatacaoCodigoFuncao,
+				   null as LocatacaoFuncao,
+				   null as LocatacaoOrgao,
+				   null as LotacaoCodigoCargo,
+				   null as LotacaoCargo
 			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
 						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
@@ -438,7 +633,28 @@ sql_update_users() ->
 				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
 				   3 as TipoPessoa,  -- Aluno
 				   null as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa
+				   em.EmaTipo as TipoEmailPessoa,
+				   p.PesEndereco as	Endereco,
+				   p.PesComplementoEndereco as ComplementoEndereco,
+				   p.PesBairro as Bairro,
+				   p.PesCidade as Cidade,
+				   p.PesUf as Uf,
+				   p.PesCep as Cep,
+				   p.PesRg as Rg,
+				   p.PesDataNascimento as DataNascimento,
+				   p.PesSexo as Sexo,
+				   p.PesTelefone as	Telefone,
+				   p.PesCelular as Celular,
+				   p.PesDDD as DDD,
+				   null as MatSipes,
+				   null as Locatacao,
+				   null as LocatacaoSigla,
+				   null as LocatacaoCentro,
+				   null as LocatacaoCodigoFuncao,
+				   null as LocatacaoFuncao,
+				   null as LocatacaoOrgao,
+				   null as LotacaoCodigoCargo,
+				   null as LotacaoCargo
 			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
 						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe

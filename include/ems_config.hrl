@@ -127,6 +127,8 @@
 
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
+-define(CLIENT_LOADER_UPDATE_CHECKPOINT, 60000).
+
 
 %Define the checkpoint to update permission for ems_user_permission_loader process
 -define(PERMISSION_LOADRES_UPDATE_CHECKPOINT, 120000).
