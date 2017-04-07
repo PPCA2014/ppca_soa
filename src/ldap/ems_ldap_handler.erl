@@ -110,8 +110,8 @@ handle_request({'LDAPMessage', _,
 					{bindRequest, #'BindRequest'{version = _Version, 
 												 name = Name, 
 												 authentication = {_, Password}}},
-				 _}, State = #state{admin = AdminLdap, 
-									password_admin = PasswordAdminLdap}) ->
+				 _}, #state{admin = AdminLdap, 
+							password_admin = PasswordAdminLdap}) ->
 	case Name of
 		<<Cn:3/binary, _/binary>> ->
 			case Cn of
@@ -126,7 +126,7 @@ handle_request({'LDAPMessage', _,
 					end;
 				<<"uid">> -> 
 					<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
-					BindResponse = case middleware_autentica(UserLogin, Password, State) of
+					BindResponse = case do_authenticate(UserLogin, Password) of
 						ok -> 
 							ems_logger:info("ems_ldap_handler bind_uid ~p success.", [Name]),
 							make_bind_response(success, Name);
@@ -135,7 +135,7 @@ handle_request({'LDAPMessage', _,
 							make_bind_response(invalidCredentials, Name)
 					end;
 				_ -> 
-					BindResponse = case middleware_autentica(Name, Password, State) of
+					BindResponse = case do_authenticate(Name, Password) of
 						ok -> 
 							ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
 							make_bind_response(success, Name);
@@ -235,7 +235,17 @@ make_result_entry(#user{codigo = UsuId,
 					    type = UsuType, 
 					    type_email = UsuTypeEmail, 
 					    ctrl_insert = UsuCtrlInsert, 
-						ctrl_update = UsuCtrlUpdate}, 
+						ctrl_update = UsuCtrlUpdate,
+					    matricula = Matricula,
+					    lotacao = Lotacao,
+					    lotacao_sigla = LotacaoSigla,
+					    lotacao_centro = LotacaoCentro,
+					    lotacao_codigo_funcao = LotacaoCodigoFuncao,
+					    lotacao_funcao = LotacaoFuncao,
+					    lotacao_orgao = LotacaoOrgao,
+					    lotacao_codigo_cargo = LotacaoCodigoCargo,
+					    lotacao_cargo = LotacaoCargo
+}, 
 				  AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
 	UsuId2 = format_user_field(UsuId),
@@ -248,6 +258,17 @@ make_result_entry(#user{codigo = UsuId,
 	UsuTypeEmail2 = format_user_field(UsuTypeEmail),
 	UsuCtrlInsert2 = format_user_field(UsuCtrlInsert),
 	UsuCtrlUpdate2 = format_user_field(UsuCtrlUpdate),
+	
+	Matricula2 = format_user_field(Matricula),
+	Lotacao2 = format_user_field(Lotacao),
+	LotacaoSigla2 = format_user_field(LotacaoSigla),
+	LotacaoCentro2 = format_user_field(LotacaoCentro),
+	LotacaoCodigoFuncao2 = format_user_field(LotacaoCodigoFuncao),
+	LotacaoFuncao2 = format_user_field(LotacaoFuncao),
+	LotacaoOrgao2 = format_user_field(LotacaoOrgao),
+	LotacaoCodigoCargo2 = format_user_field(LotacaoCodigoCargo),
+	LotacaoCargo2 = format_user_field(LotacaoCargo),
+
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId2]},
 														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
@@ -259,10 +280,22 @@ make_result_entry(#user{codigo = UsuId,
 														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome2]},
 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId2]},
 														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuLogin2]},
+														
+														#'PartialAttribute'{type = <<"matsipes">>, vals = [Matricula2]},
+														#'PartialAttribute'{type = <<"lotacao">>, vals = [Lotacao2]},
+														#'PartialAttribute'{type = <<"lotacaoSigla">>, vals = [LotacaoSigla2]},
+														#'PartialAttribute'{type = <<"lotacaoCentro">>, vals = [LotacaoCentro2]},
+														#'PartialAttribute'{type = <<"lotacaoCodigoFuncao">>, vals = [LotacaoCodigoFuncao2]},
+														#'PartialAttribute'{type = <<"lotacaoFuncao">>, vals = [LotacaoFuncao2]},
+														#'PartialAttribute'{type = <<"lotacaoOrgao">>, vals = [LotacaoOrgao2]},
+														#'PartialAttribute'{type = <<"lotacaoCodigoCargo">>, vals = [LotacaoCodigoCargo2]},
+														#'PartialAttribute'{type = <<"lotacaoCargo">>, vals = [LotacaoCargo2]}
+
 														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [UsuType2]},
 														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [UsuTypeEmail2]},
 														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [UsuCtrlInsert2]},
 														#'PartialAttribute'{type = <<"ems_ctrl_update">>, vals = [UsuCtrlUpdate2]}
+
 														]
 										}
 	}.
@@ -278,8 +311,8 @@ make_result_done(ResultCode) ->
 	
 
 -spec handle_request_search_login(binary(), #state{}) -> {ok, tuple()}.
-handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->	
-	case middleware_find_user_by_login(UserLogin, State) of
+handle_request_search_login(UserLogin, #state{admin = AdminLdap}) ->	
+	case do_find_user_by_login(UserLogin) of
 		{error, enoent} ->
 			ems_logger:error("ems_ldap_handler search ~p does not exist.", [UserLogin]),
 			ResultDone = make_result_done(invalidCredentials),
@@ -296,51 +329,23 @@ handle_request_search_login(UserLogin, State = #state{admin = AdminLdap}) ->
 	end.
 	
 
-middleware_autentica(UserLogin, UserPassword, #state{middleware = undefined}) ->
-	ems_user:authenticate_login_password(UserLogin, UserPassword);
-middleware_autentica(UserLogin, UserPassword, #state{middleware = Middleware, 
-													 datasource = Datasource}) ->
-	case code:ensure_loaded(Middleware) of
-		{module, _} ->
-			case erlang:function_exported(Middleware, autentica, 3) of
-				true -> apply(Middleware, autentica, [UserLogin, UserPassword, Datasource]);
-				false -> {error, einvalid_middleware}
-			end;
-		{error, Reason} -> {
-			error, {Reason, Middleware}}
-	end.
+do_authenticate(UserLogin, UserPassword) ->
+	ems_user:authenticate_login_password(UserLogin, UserPassword).
 
-middleware_find_user_by_login(UserLogin, #state{middleware = undefined}) ->
+do_find_user_by_login(UserLogin) ->
 	case ems_user:find_by_login(UserLogin) of
 		{ok, User} ->
 			?DEBUG("ems_ldap_handler exec ems_user:find_by_login user: ~p.", [User]),
 			{ok, User};
 		Error -> Error
-	end;
-middleware_find_user_by_login(UserLogin, #state{middleware = Middleware, 
-												datasource = Datasource}) ->
-	case code:ensure_loaded(Middleware) of
-		{module, _} ->
-			case erlang:function_exported(Middleware, find_user_by_login, 2) of
-				true -> 
-					case apply(Middleware, find_user_by_login, [UserLogin, Datasource]) of
-						{ok, User} ->
-							?DEBUG("ems_ldap_handler exec middleware_find_user_by_login user: ~p.", [User]),
-							{ok, User};
-						Error -> Error
-					end;
-				false -> {error, einvalid_middleware}
-			end;
-		{error, Reason} -> {
-			error, {Reason, Middleware}}
 	end.
-
 
 format_user_field(undefined) -> <<"">>;
 format_user_field(null) -> <<"">>;
 format_user_field([]) -> <<"">>;
-format_user_field(Number) when is_integer(Number) -> list_to_binary(integer_to_list(Number));
-format_user_field(Text) when is_list(Text) -> list_to_binary(string:strip(Text));
-format_user_field(Text) when is_binary(Text) -> Text.
+format_user_field(Number) when is_integer(Number) -> integer_to_binary(Number);
+format_user_field(Text) when is_list(Text) -> list_to_binary(Text);
+format_user_field(Text) when is_binary(Text) -> 
+	Text.
 	
 

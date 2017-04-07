@@ -459,7 +459,7 @@ normalize_field_utf8(V) ->
 							_ -> Ch 
 					  end || Ch <- V2, Ch > 31]
 			end,
-	list_to_binary(Text).
+	unicode:characters_to_binary(Text, utf8).
 
 json_encode_record(_, [], true, RecordJson) -> 	
 	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"},"/utf8>>];
@@ -572,7 +572,7 @@ utf8_string_win(Text) ->
 	try
 		case ems_util:check_encoding_bin(Text) of
 			utf8 -> normalize_field_utf8(Text);
-			latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8);
+			latin1 -> normalize_field_utf8(Text);
 			Other -> Other
 		end
 	catch
@@ -592,7 +592,7 @@ utf8_string_linux(Text) ->
 	try
 		case ems_util:check_encoding_bin(Text) of
 			utf8 -> normalize_field_utf8(Text);
-			latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8);
+			latin1 -> normalize_field_utf8(Text);
 			Other -> Other
 		end
 	catch
