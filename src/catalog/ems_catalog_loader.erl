@@ -41,15 +41,15 @@ list_kernel_catalog() ->
 %% @doc Get catalog of services
 get_catalog() -> 
 	Conf = ems_config:getConfig(),
-	?DEBUG("Scan catalogs..."),
+	?DEBUG("ems_catalog_loader scan catalogs."),
 	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
-	?DEBUG("Parse catalogs..."),
+	?DEBUG("ems_catalog_loader scan catalogs ok."),
 	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
 		{Cat2, Cat3, Cat4, CatK} ->
-			?DEBUG("Parse catalog: Ok."),
+			?DEBUG("ems_catalog_loader parse catalogs ok."),
 			{ok, Cat4, Cat2, Cat3, CatK};
 		Error -> 
-			?DEBUG("Parse catalog error: ~p.", [Error]),
+			?DEBUG("ems_catalog_loader parse catalog error: ~p.", [Error]),
 			Error
 	end.
 	
@@ -59,11 +59,11 @@ scan_catalogs([], _, Result) -> Result;
 scan_catalogs([{CatName, FileName}|Rest], Conf, Result) ->
 	case parse_filename_catalog(FileName, ?CATALOGO_PATH) of
 		{ok, FileName2} ->
-			io:format("Loading catalog ~p from ~p.\n", [binary_to_list(CatName), FileName2]),
+			io:format("ems_catalog_loader loading ~p from ~p.\n", [binary_to_list(CatName), FileName2]),
 			Result2 = scan_catalog(FileName2, Conf, Result),
 			scan_catalogs(Rest, Conf, Result2);
 		{error, FileName2} ->
-			ems_logger:format_warn("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName2])
+			ems_logger:format_warn("ems_catalog_loader failed to scan invalid catalog ~p. Ignoring this catalog.\n", [FileName2])
 	end.
 		
 		
@@ -76,10 +76,10 @@ scan_catalog(FileName, Conf, Result) ->
 		{ok, CatMap} -> 
 			scan_catalog_entry([CatMap], Conf, CurrentDir, Result);
 		{error, enoent} ->
-			ems_logger:format_warn("Catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
+			ems_logger:format_warn("ems_catalog_loader catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
 			Result;
 		_ -> 
-			ems_logger:format_warn("Catalog ~p with invalid json format, ignoring this catalog.\n", [FileName]),
+			ems_logger:format_warn("ems_catalog_loader failed to read invalid catalog ~p. Ignoring this catalog.\n", [FileName]),
 			Result
 	end.
 	
@@ -91,12 +91,12 @@ scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 		true -> 
 			case parse_filename_catalog(maps:get(<<"file">>, Cat), CurrentDir) of
 				{ok, FileName} ->
-					?DEBUG("Scan catalog ~p.", [FileName]),
+					?DEBUG("ems_catalog_loader scan ~p.", [FileName]),
 					Result2 = scan_catalog(FileName, Conf, Result),
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result2);			
 				{error, FileName} ->
-					?DEBUG("Fail scan catalog ~p: ~p.", [FileName, Cat]),
-					ems_logger:format_warn("Invalid filename catalog ~p. Ignoring this catalog.\n", [FileName]),
+					ems_logger:format_warn("ems_catalog_loader scan invalid catalog ~p. Ignoring this catalog.\n", [FileName]),
+					?DEBUG("~p: ~p.", [FileName, Cat]),
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result)
 			end;
 		false -> 
@@ -213,10 +213,6 @@ valida_lang(<<"java">>) -> ok;
 valida_lang(<<"erlang">>) -> ok;
 valida_lang(<<"net">>) -> ok;
 valida_lang(_) -> erlang:error(invalid_lang_service).
-
-valida_authorization(<<"Basic">>) -> ok;
-valida_authorization(<<>>) -> ok;
-valida_authorization(_) -> erlang:error(invalid_authorization).
 
 valida_length(Value, MaxLength) ->
 	case is_valid_length(Value, MaxLength) of
@@ -349,6 +345,37 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 	make_ets_catalog(T). 	
 
 
+parse_tcp_listen_address(ListenAddress) ->
+	lists:map(fun(IP) -> 
+					{ok, L2} = inet:parse_address(IP),
+					L2 
+			  end, ListenAddress).
+
+parse_allowed_address_t(all) -> all;
+parse_allowed_address_t(AllowedAddress) ->
+	lists:map(fun(IP) -> 
+					ems_http_util:mask_ipaddress_to_tuple(IP)
+			  end, AllowedAddress).
+
+parse_allowed_address(all) -> all;
+parse_allowed_address(AddrList) -> ems_util:binlist_to_list(AddrList).
+
+
+parse_tcp_port(undefined) -> undefined;
+parse_tcp_port(<<Port/binary>>) -> 
+	parse_tcp_port(binary_to_list(Port));		
+parse_tcp_port(Port) when is_list(Port) -> 
+	parse_tcp_port(list_to_integer(Port));
+parse_tcp_port(Port) when is_integer(Port) -> 
+	case ems_consist:is_range_valido(Port, ?TCP_PORT_MIN, ?TCP_PORT_MAX) of
+		true -> Port;
+		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
+	end.
+
+parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
+parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
+
+
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
 parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 	ets:new(ets_get, [ordered_set, named_table, public, {read_concurrency, true}]),
@@ -365,10 +392,18 @@ parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
 parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
 		?DEBUG("Parse catalog ~p.", [H]),
-		Enable = maps:get(<<"enable">>, H, true),
+		Name = maps:get(<<"name">>, H),
+		Enable0 = maps:get(<<"enable">>, H, true),
+		case Enable0 =:= false andalso lists:member(Name, Conf#config.cat_enable_services) of
+			true -> Enable1 = true;
+			false -> Enable1 = Enable0
+		end,
+		case Enable1 =:= true andalso lists:member(Name, Conf#config.cat_disable_services) of
+			true -> Enable = false;
+			false -> Enable = Enable1
+		end,
 		case Enable of 
 			true ->
-				Name = maps:get(<<"name">>, H),
 				Url2 = maps:get(<<"url">>, H),
 				Type = maps:get(<<"type">>, H, <<"GET">>),
 				valida_url_service(Url2),
@@ -380,102 +415,139 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Async = maps:get(<<"async">>, H, false),
 				Rowid = ems_util:make_rowid(Url2),
 				Lang = maps:get(<<"lang">>, H, <<>>),
-				Datasource = parse_datasource(maps:get(<<"datasource">>, H, undefined), Rowid),
-				Result_Cache = maps:get(<<"result_cache">>, H, 0),
-				Authorization = maps:get(<<"authorization">>, H, <<>>),
-				Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
-				UseRE = maps:get(<<"use_re">>, H, false),
-				SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
-				SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
-				PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
-				PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
-				Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
-				Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
-				Cache_Control = maps:get(<<"cache_control">>, H, ?DEFAULT_CACHE_CONTROL),
-				ExpiresMinute = maps:get(<<"expires_minute">>, H, 60),
-				Public = maps:get(<<"public">>, H, true),
-				ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
-				Path = parse_path_catalog(maps:get(<<"path">>, H, ?STATIC_FILE_PATH), Conf#config.static_file_path),
-				RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
-				valida_lang(Lang),
-				valida_name_service(Name),
-				valida_type_service(Type),
-				valida_bool(Enable),
-				valida_bool(Async),
-				valida_length(Comment, 1000),
-				valida_length(Version, 10),
-				valida_length(Owner, 30),
-				valida_authorization(Authorization),
-				valida_bool(Debug),
-				valida_bool(UseRE),
-				case Lang of
-					<<"erlang">> -> 
-						Node = <<>>,
-						Host = '',
-						HostName = Conf#config.ems_hostname,
-						valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
-					_ ->	
-						Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-						{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
-				end,
-				{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
-				IdBin = list_to_binary(integer_to_list(Id)),
-				Page = maps:get(<<"page">>, H, undefined),
-				PageModule = compile_page_module(Page, Rowid),
-				ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
-												 Type, Enable, Comment, Version, Owner, 
-												 Async, Host, Result_Cache, Authorization, Node, Lang,
-												 Datasource, Debug, SchemaIn, SchemaOut, 
-												 Page, Timeout, Middleware, Cache_Control, 
-												 ExpiresMinute, Public, ContentType, Path, RedirectUrl),
-				case UseRE of
-					true -> 
-						Service = new_service_re(Rowid, IdBin, Name, Url2, 
-												   ServiceImpl,
-												   ModuleName, 
-												   ModuleNameCanonical,
-												   FunctionName, Type, Enable, Comment, 
-												   Version, Owner, Async, 
-												   Querystring, QtdQuerystringRequired,
-												   Host, HostName, Result_Cache,
-												   Authorization, Node, Lang,
-												   Datasource, Debug, SchemaIn, SchemaOut, 
-												   PoolSize, PoolMax, H, Page, 
-												   PageModule, Timeout, 
-												   Middleware, Cache_Control, ExpiresMinute, 
-												   Public, ContentType, Path, RedirectUrl),
-						case Type of
-							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-							_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
-						end;
-					false -> 
-						Service = new_service(Rowid, IdBin, Name, Url2, 
-												ServiceImpl,
-												ModuleName,
-												ModuleNameCanonical,
-												FunctionName, Type, Enable, Comment,
-												Version, Owner, Async, 
-												Querystring, QtdQuerystringRequired,
-												Host, HostName, Result_Cache,
-												Authorization, Node, Lang,
-												Datasource, Debug, SchemaIn, SchemaOut, 
-												PoolSize, PoolMax, H, Page, 
-												PageModule, Timeout, 
-												Middleware, Cache_Control, 
-												ExpiresMinute, Public, 
-												ContentType, Path, RedirectUrl),
-						case Type of
-							<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-							_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+				Ds = maps:get(<<"datasource">>, H, undefined),
+				case parse_datasource(Ds, Rowid, Conf) of
+					{error, enoent} ->
+						ems_logger:format_warn("Service ~p will be disabled because the datasource ~p was not found in the configuration file.\n", [Name, Ds]),
+						parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf);	
+					Datasource ->
+						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
+						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, ?AUTHORIZATION_TYPE_DEFAULT)),
+						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
+						UseRE = maps:get(<<"use_re">>, H, false),
+						SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
+						SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
+						PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
+						PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
+						Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
+						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
+						CacheControl = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
+						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
+						Public = maps:get(<<"public">>, H, true),
+						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
+						Path = parse_path_catalog(maps:get(<<"path">>, H, ?STATIC_FILE_PATH), Conf#config.static_file_path),
+						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
+						valida_lang(Lang),
+						valida_name_service(Name),
+						valida_type_service(Type),
+						valida_bool(Enable),
+						valida_bool(Async),
+						valida_length(Comment, 1000),
+						valida_length(Version, 10),
+						valida_length(Owner, 30),
+						valida_bool(Debug),
+						valida_bool(UseRE),
+						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
+						ListenAddress_t = parse_tcp_listen_address(ListenAddress),
+						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
+						AllowedAddress_t = parse_allowed_address_t(AllowedAddress),
+						MaxConnections = maps:get(<<"tcp_max_connections">>, H, [?HTTP_MAX_CONNECTIONS]),
+						Port = parse_tcp_port(maps:get(<<"tcp_port">>, H, undefined)),
+						Ssl = maps:get(<<"tcp_ssl">>, H, undefined),
+						case Ssl of
+							undefined ->
+								IsSsl = false,
+								SslCaCertFile = undefined,
+								SslCertFile = undefined,
+								SslKeyFile = undefined;
+							_ ->
+								IsSsl = true,
+								SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
+								SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
+								SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
+						end,
+						case Lang of
+							<<"erlang">> -> 
+								Node = <<>>,
+								Host = '',
+								HostName = Conf#config.ems_hostname,
+								valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
+							_ ->	
+								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
+								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+						end,
+						CheckGrantPermission = maps:get(<<"check_grant_permission">>, H, false),
+						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
+						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
+						IdBin = list_to_binary(integer_to_list(Id)),
+						Page = maps:get(<<"page">>, H, undefined),
+						PageModule = compile_page_module(Page, Rowid, Conf),
+						ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
+														 Type, Enable, Comment, Version, Owner, 
+														 Async, Host, ResultCache, Authorization, Node, Lang,
+														 Datasource, Debug, SchemaIn, SchemaOut, 
+														 Page, Timeout, Middleware, CacheControl, 
+														 ExpiresMinute, Public, ContentType, Path, RedirectUrl,
+														 ListenAddress, AllowedAddress, 
+														 Port, MaxConnections,
+														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														 CheckGrantPermission, OAuth2TokenEncrypt),
+						case UseRE of
+							true -> 
+								Service = new_service_re(Rowid, IdBin, Name, Url2, 
+														   ServiceImpl,
+														   ModuleName, 
+														   ModuleNameCanonical,
+														   FunctionName, Type, Enable, Comment, 
+														   Version, Owner, Async, 
+														   Querystring, QtdQuerystringRequired,
+														   Host, HostName, ResultCache,
+														   Authorization, Node, Lang,
+														   Datasource, Debug, SchemaIn, SchemaOut, 
+														   PoolSize, PoolMax, H, Page, 
+														   PageModule, Timeout, 
+														   Middleware, CacheControl, ExpiresMinute, 
+														   Public, ContentType, Path, RedirectUrl,
+														   ListenAddress, ListenAddress_t, AllowedAddress, 
+														   AllowedAddress_t, Port, MaxConnections,
+														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														   CheckGrantPermission, OAuth2TokenEncrypt),
+								case Type of
+									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
+									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
+								end;
+							false -> 
+								Service = new_service(Rowid, IdBin, Name, Url2, 
+														ServiceImpl,
+														ModuleName,
+														ModuleNameCanonical,
+														FunctionName, Type, Enable, Comment,
+														Version, Owner, Async, 
+														Querystring, QtdQuerystringRequired,
+														Host, HostName, ResultCache,
+														Authorization, Node, Lang,
+														Datasource, Debug, SchemaIn, SchemaOut, 
+														PoolSize, PoolMax, H, Page, 
+														PageModule, Timeout, 
+														Middleware, CacheControl, 
+														ExpiresMinute, Public, 
+														ContentType, Path, RedirectUrl,
+														ListenAddress, ListenAddress_t, AllowedAddress, 
+														AllowedAddress_t, Port, MaxConnections,
+														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														CheckGrantPermission, OAuth2TokenEncrypt),
+								case Type of
+									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
+									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+								end
 						end
 				end;
 			false -> 
 				parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 		end
 	catch
-		_Exception:_Reason -> 
-			ems_logger:format_warn("Invalid catalog specification: \n\t~p.\n", [H]),
-			?DEBUG("Reason to invalid catalog specification: ~p.\n", [_Reason]),
+		_Exception:Reason -> 
+			ems_logger:format_warn("ems_catalog_loader parse invalid catalog specification: ~p\n\t~p.\n", [Reason, H]),
 			parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
 	end.
 
@@ -483,10 +555,11 @@ parse_middleware(undefined) -> undefined;
 parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 	
 
-compile_page_module(undefined, _) -> undefined;
-compile_page_module(Page, Rowid) -> 
+compile_page_module(undefined, _, _) -> undefined;
+compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	case ems_page:compile_file(Page, ModuleNamePage) of
+	PageFile = parse_path_catalog(Page, Conf#config.static_file_path),
+	case ems_page:compile_file(binary_to_list(PageFile), ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
 	end.
@@ -495,21 +568,13 @@ compile_page_module(Page, Rowid) ->
 parse_schema(null) -> null;
 parse_schema(Name) -> Name.
 
-	
-parse_datasource(undefined, _) -> undefined;
-parse_datasource(M, Rowid) -> 
-	#service_datasource{rowid = Rowid,
-						type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
-						driver = maps:get(<<"driver">>, M, <<>>),
-						connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
-						table_name = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
-						primary_key = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
-						csv_delimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>)),
-						sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
-						timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY),
-						max_pool_size = maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL)
-						}.
-	
+parse_datasource(undefined, _, _) -> undefined;
+parse_datasource(M, Rowid, _) when erlang:is_map(M) -> ems_db:create_datasource_from_map(M, Rowid);
+parse_datasource(DsName, _Rowid, Conf) -> 
+	case maps:get(DsName, Conf#config.ems_datasources, undefined) of
+		undefined -> {error, enoent};
+		M -> M
+	end.
 	
 	
 parse_service_service(Service) ->
@@ -529,9 +594,9 @@ parse_node_service(List) -> List.
 	
 %% @doc O host pode ser um alias definido no arquivo de configuração
 parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
-parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
+parse_host_service(_Host, ModuleNameCanonical, Node, Conf) ->
 	ListHost = case net_adm:host_file() of
-		{error, _Reason} -> [list_to_atom(net_adm:localhost())];
+		{error, _Reason} -> [Conf#config.ems_host];
 		Hosts -> Hosts
 	end,
 	case erlang:is_list(Node) of
@@ -553,11 +618,15 @@ parse_host_service(_Host, ModuleNameCanonical, Node, _Conf) ->
 
 new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
 			   Type, Enable, Comment, Version, Owner, Async, Querystring, 
-			   QtdQuerystringRequired, Host, HostName, Result_Cache,
+			   QtdQuerystringRequired, Host, HostName, ResultCache,
 			   Authorization, Node, Lang, Datasource,
 			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			   Page, PageModule, Timeout, Middleware, Cache_Control, 
-			   ExpiresMinute, Public, ContentType, Path, RedirectUrl) ->
+			   Page, PageModule, Timeout, Middleware, CacheControl, 
+			   ExpiresMinute, Public, ContentType, Path, RedirectUrl,
+			   ListenAddress, ListenAddress_t, AllowedAddress, 
+			   AllowedAddress_t, Port, MaxConnections,
+			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+			   CheckGrantPermission, OAuth2TokenEncrypt) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -582,7 +651,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
 			    host_name = HostName,
-			    result_cache = Result_Cache,
+			    result_cache = ResultCache,
 			    authorization = Authorization,
 			    node = Node,
 			    page = Page,
@@ -597,20 +666,36 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    timeout = Timeout,
 			    middleware = Middleware,
 			    properties = Properties,
-			    cache_control = Cache_Control,
+			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
 			    path = Path,
 			    redirect_url = RedirectUrl,
-			    enable = Enable
+			    enable = Enable,
+				tcp_listen_address = ListenAddress,
+				tcp_listen_address_t = ListenAddress_t,
+				tcp_allowed_address = AllowedAddress,
+				tcp_allowed_address_t = AllowedAddress_t,
+				tcp_max_connections = MaxConnections,
+				tcp_port = Port,
+				tcp_is_ssl = IsSsl,
+				tcp_ssl_cacertfile = SslCaCertFile,
+				tcp_ssl_certfile = SslCertFile,
+				tcp_ssl_keyfile = SslKeyFile,
+				check_grant_permission = CheckGrantPermission,
+				oauth2_token_encrypt = OAuth2TokenEncrypt
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
 			Type, Enable, Comment, Version, Owner, Async, Querystring, 
-			QtdQuerystringRequired, Host, HostName, Result_Cache,
+			QtdQuerystringRequired, Host, HostName, ResultCache,
 			Authorization, Node, Lang, Datasource, Debug, SchemaIn, SchemaOut, 
 			PoolSize, PoolMax, Properties, Page, PageModule, Timeout, Middleware, 
-			Cache_Control, ExpiresMinute, Public, ContentType, Path, RedirectUrl) ->
+			CacheControl, ExpiresMinute, Public, ContentType, Path, RedirectUrl,
+			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
+			Port, MaxConnections,
+			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+			CheckGrantPermission, OAuth2TokenEncrypt) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -632,7 +717,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
 			    host_name = HostName,
-			    result_cache = Result_Cache,
+			    result_cache = ResultCache,
 			    authorization = Authorization,
 			    node = Node,
 			    page = Page,
@@ -647,20 +732,36 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    timeout = Timeout,
 			    middleware = Middleware,
 			    properties = Properties,
-			    cache_control = Cache_Control,
+			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
 			    path = Path,
 			    redirect_url = RedirectUrl,
-			    enable = Enable
+			    enable = Enable,
+				tcp_listen_address = ListenAddress,
+				tcp_listen_address_t = ListenAddress_t,
+				tcp_allowed_address = AllowedAddress,
+				tcp_allowed_address_t = AllowedAddress_t,
+				tcp_max_connections = MaxConnections,
+				tcp_port = Port,
+				tcp_is_ssl = IsSsl,
+				tcp_ssl_cacertfile = SslCaCertFile,
+				tcp_ssl_certfile = SslCertFile,
+				tcp_ssl_keyfile = SslKeyFile,
+				check_grant_permission = CheckGrantPermission,
+				oauth2_token_encrypt = OAuth2TokenEncrypt
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
-				  Comment, Version, Owner, Async, Host, Result_Cache,
+				  Comment, Version, Owner, Async, Host, ResultCache,
 				  Authorization, Node, Lang, _Datasource, 
 				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
-				  Middleware, Cache_Control, ExpiresMinute, 
-				  Public, ContentType, Path, RedirectUrl) ->
+				  Middleware, CacheControl, ExpiresMinute, 
+				  Public, ContentType, Path, RedirectUrl,
+				  ListenAddress, AllowedAddress, 
+				  Port, MaxConnections,
+				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+				  CheckGrantPermission, OAuth2TokenEncrypt) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -673,7 +774,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 			    <<"owner">> => Owner,
 			    <<"async">> => Async,
 			    <<"host">> => Host,
-			    <<"result_cache">> => Result_Cache,
+			    <<"result_cache">> => ResultCache,
 			    <<"authorization">> => Authorization,
 			    <<"node">> => Node,
 			    <<"page">> => Page,
@@ -682,13 +783,25 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 			    <<"schema_out">> => SchemaOut,
 			    <<"timeout">> => Timeout,
 			    <<"middleware">> => Middleware,
-   			    <<"cache_control">> => Cache_Control,
+   			    <<"cache_control">> => CacheControl,
 			    <<"expires">> => ExpiresMinute,
 				<<"lang">> => Lang,
 				<<"content_type">> => ContentType,
 				<<"path">> => Path,
 				<<"redirect_url">> => RedirectUrl,
-				<<"enable">> => Enable},
+				<<"enable">> => Enable,
+				<<"tcp_listen_address">> => ListenAddress,
+				<<"tcp_allowed_address">> => AllowedAddress,
+				<<"tcp_max_connections">> => MaxConnections,
+				<<"tcp_port">> => Port,
+				<<"tcp_is_ssl">> => IsSsl,
+				<<"tcp_ssl_cacertfile">> => SslCaCertFile,
+				<<"tcp_ssl_certfile">> => SslCertFile,
+				<<"tcp_ssl_keyfile">> => SslKeyFile,
+				<<"check_grant_permission">> => CheckGrantPermission,
+				<<"oauth2_token_encrypt">> => OAuth2TokenEncrypt
+				
+},
 	Service.
 
 

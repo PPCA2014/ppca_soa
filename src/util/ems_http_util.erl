@@ -14,135 +14,6 @@
 -include("../../include/ems_schema.hrl").
 -include("../../include/ems_http_messages.hrl").
 
-encode_request(Uri) -> encode_request("GET", Uri).
-
-encode_request(Method, Uri) -> 
-	Method = Method,
-	UriRaw = http_uri:encode(Uri),
-	HttpParams = #{'Accept' => "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				   'Accept-Encoding' => "gzip, deflate, sdch",
-				   'Accept-Language' => "pt-BR,pt;q=0.8,en-US;q=0.6,en;q=0.4",
-				   'Cache-Control' => "max-age=0",
-				   'Connection' => "keep-alive",
-				   'Cookie' => "__utma=111872281.1848474434.1463598791.1464613625.1464618604.7; __utmz=111872281.1463598791.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); pin_nav=true",
-				   'Host' => "localhost:2301",
-				   'User-Agent' => "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.29 Safari/537.36",
-				   "Dnt" => "1",
-				   "Upgrade-Insecure-Requests" => "1"},
-	Http_Version = "HTTP/1.1",
-	Payload = <<>>,
-	encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, undefined, undefined).
-
-encode_request(Method, UriRaw, HttpParams, Http_Version, Payload, Socket, WorkerSend) ->
-	try
-		Uri = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(mochiweb_util:unquote(UriRaw))), utf8),
-		RID = erlang:system_time(),
-		Timestamp = calendar:local_time(),
-		T1 = ems_util:get_milliseconds(),
-		[Url|Querystring] = string:tokens(Uri, "?"),
-		case length(Querystring) =< 1 of
-			 true ->
-				Url2 = ems_util:remove_ult_backslash_url(Url),
-				ContentLength = maps:get('Content-Length', HttpParams, 0),
-				ContentType = maps:get('Content-Type', HttpParams, "application/json"),
-				Accept = maps:get('Accept', HttpParams, "*/*"),
-				Accept_Encoding = maps:get('Accept-Encoding', HttpParams, ""),
-				User_Agent = maps:get('User-Agent', HttpParams, ""),
-				Cache_Control = maps:get('Cache-Control', HttpParams, "false"),
-				Host = maps:get('Host', HttpParams, ""),
-				QuerystringMap = parse_querystring(Querystring),
-				Authorization = maps:get('Authorization', HttpParams, ""),
-				{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
-				Request = #request{
-					rid = RID,
-					rowid = Rowid,
-					type = Method,
-					uri = Uri,
-					url = Url2,
-					version = Http_Version,
-					querystring = Querystring,
-					querystring_map = QuerystringMap,
-					params_url = Params_url,
-					content_length = ContentLength,
-					content_type = ContentType,
-					accept = Accept,
-					user_agent = User_Agent,
-					accept_encoding = Accept_Encoding,
-					cache_control = Cache_Control,
-					host = Host,
-					socket = Socket, 
-					t1 = T1, 
-					payload = binary_to_list(Payload), 
-					payload_map = decode_payload_as_json(Payload),
-					timestamp = Timestamp,
-					authorization = Authorization,
-					worker_send = WorkerSend,
-					protocol = http
-				},	
-				{ok, Request};
-			_ -> {error, einvalid_querystring}
-		end
-	catch
-		_Exception:Reason -> {error, Reason}
-	end.
-
-encode_request_mochiweb(MochiReq, WorkerSend) ->
-	try
-		UriRaw = MochiReq:get(raw_path),
-		Uri = unicode:characters_to_list(mochiutf8:valid_utf8_bytes(list_to_binary(mochiweb_util:unquote(UriRaw))), utf8),
-		RID = erlang:system_time(),
-		Timestamp = calendar:local_time(),
-		T1 = ems_util:get_milliseconds(),
-		[Url|Querystring] = string:tokens(Uri, "?"),
-		Payload = MochiReq:recv_body(),
-		case length(Querystring) =< 1 of
-			 true ->
-				Url2 = ems_util:remove_ult_backslash_url(Url),
-				ContentLength = MochiReq:get(body_length),
-				ContentType = MochiReq:get_header_value("content-type"),
-				Accept = MochiReq:get_header_value("accept"),
-				Accept_Encoding = MochiReq:get_header_value("accept-encoding"),
-				User_Agent = MochiReq:get_header_value("user-agent"),
-				Cache_Control = MochiReq:get_header_value("cache-control"),
-				Host = MochiReq:get(peer),
-				QuerystringMap = parse_querystring(Querystring),
-				Authorization = MochiReq:get_header_value("authorization"),
-				{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
-				Request = #request{
-					rid = RID,
-					rowid = Rowid,
-					type = atom_to_list(MochiReq:get(method)),
-					uri = Uri,
-					url = Url2,
-					version = MochiReq:get(version),
-					querystring = Querystring,
-					querystring_map = QuerystringMap,
-					params_url = Params_url,
-					content_length = ContentLength,
-					content_type = ContentType,
-					accept = Accept,
-					user_agent = User_Agent,
-					accept_encoding = Accept_Encoding,
-					cache_control = Cache_Control,
-					host = Host,
-					socket = MochiReq:get(socket), 
-					t1 = T1, 
-					payload = Payload, 
-					payload_map = decode_payload_as_json(Payload),
-					timestamp = Timestamp,
-					authorization = Authorization,
-					worker_send = WorkerSend,
-					protocol = http,
-					result_cache = false
-				},	
-				{ok, Request};
-			_ -> {error, einvalid_querystring}
-		end
-	catch
-		_Exception:Reason -> {error, Reason}
-	end.
-
-
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
 		Url = cowboy_req:path(CowboyReq),
@@ -205,6 +76,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
+		{Ip, _} = cowboy_req:peer(CowboyReq),
 		Request = #request{
 			rid = RID,
 			rowid = Rowid,
@@ -232,12 +104,13 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			protocol = http,
 			result_cache = false,
 			t1 = T1,
-			req_hash = ReqHash
+			req_hash = ReqHash,
+			ip = Ip
 		},	
 		{ok, Request}
 	catch
 		_Exception:Reason -> 
-			ems_logger:error("Invalid request ~p.\n\tReason: ~p.", [CowboyReq, Reason]),
+			ems_logger:error("ems_http_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.
 
@@ -245,19 +118,6 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 -spec parse_if_modified_since(binary() | undefined) -> calendar:datetime().
 parse_if_modified_since(undefined) -> undefined;
 parse_if_modified_since(IfModifiedSince) -> cow_date:parse_date(IfModifiedSince).
-
-
-%%-spec get_http_header(Header::list()) -> tuple.
-encode_request(Socket, RequestBin, WorkerSend) ->
-	case decode_http_request(RequestBin) of
-		{Method, UriRaw, HttpParams, Http_Version, Payload} -> 
-			encode_request(Method, UriRaw, HttpParams, 
-						   Http_Version, Payload, 
-						   Socket, WorkerSend);
-		Error -> 
-			ems_logger:error("Error in request: ~p\n", [RequestBin]),
-			Error
-	end.
 
 
 %% @doc Gera o response HTTP
@@ -337,7 +197,7 @@ decode_http_header(Headers, Params) ->
 decode_http_request(RequestBin) ->
 	case erlang:decode_packet(http_bin, RequestBin, []) of
 		{ok, {http_error, _}, _} ->
-			ems_logger:error("RequestBin -> ~p", [RequestBin]),
+			ems_logger:error("ems_http_util decode http error: ~p.", [RequestBin]),
 			{error, http_error};
 		{ok, Req, Rest} ->
 			{http_request, Method, {abs_path, Uri}, {Http_Version_Major, Http_Version_Minor}} = Req,
@@ -351,7 +211,7 @@ decode_http_request(RequestBin) ->
 										   Payload}
 			end;
 		{error, Reason} -> 
-			ems_logger:error("RequestBin -> ~p", [RequestBin]),
+			ems_logger:error("ems_http_util decode http error: ~p.", [RequestBin]),
 			{error, Reason}
 	end.
 
@@ -436,17 +296,15 @@ mask_ipaddress_to_tuple(IpAddress) ->
 
 
 %% @doc Retorna true se Ip2 combina com algum Ip da lista Ip1
-match_ip_address([H|T]=Ip1,	Ip2) when erlang:is_list(Ip1) ->
-	case match_ip_address(H, Ip2) of
+match_ip_address([Ip1|T],	Ip2) ->
+	case match_ip_address(Ip1, Ip2) of
 		true -> true;
 		false -> match_ip_address(T, Ip2)
 	end;
 
 %% @doc Retorna true se Ip2 combina com Ip1
 match_ip_address([], _) -> false;
-match_ip_address(Ip1, 	Ip2) ->
-   {O1, O2, O3, O4} = Ip1,
-   {X1, X2, X3, X4} = Ip2,
+match_ip_address({O1, O2, O3, O4}, {X1, X2, X3, X4}) ->
    (O1 == '_' orelse O1 == X1) andalso
    (O2 == '_' orelse O2 == X2) andalso
    (O3 == '_' orelse O3 == X3) andalso
@@ -454,8 +312,7 @@ match_ip_address(Ip1, 	Ip2) ->
 	
 	
 -spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
-parse_basic_authorization_header(Header) ->
-	<<Basic:5/binary, _:1/binary, Secret/binary>> = Header,
+parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) ->
 	case Basic =:= <<"Basic">> of
 		true ->
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
@@ -463,7 +320,28 @@ parse_basic_authorization_header(Header) ->
 			{ok, Login, Password};
 		false -> 
 			{error, einvalid_authorization_header}
+	end;
+parse_basic_authorization_header(_) -> {error, einvalid_authorization_header}.
+	
+-spec parse_barer_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
+parse_barer_authorization_header(Header) ->
+	<<Barer:5/binary, _:1/binary, Secret/binary>> = Header,
+	case Barer =:= <<"Barer">> of
+		true ->
+			base64:decode(Secret);
+		false -> 
+			{error, einvalid_authorization_header}
 	end.
+
+
+parse_authorization_type(<<"Basic">>) -> http_basic;
+parse_authorization_type(<<"basic">>) -> http_basic;
+parse_authorization_type(<<"OAuth2">>) -> oauth2;
+parse_authorization_type(<<"oauth2">>) -> oauth2;
+parse_authorization_type(<<"Public">>) -> public;
+parse_authorization_type(<<"public">>) -> public;
+parse_authorization_type(<<>>) -> public;
+parse_authorization_type(_) -> erlang:error(einvalid_authorization_type).
 
 	
 %% @doc Retorna o mime-type do arquivo

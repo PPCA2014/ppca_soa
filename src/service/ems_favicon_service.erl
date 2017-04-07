@@ -14,7 +14,7 @@
 -export([execute/1]).
 
  
-execute(Request = #request{timestamp = {{Year,Month,Day},{Hour,Min,Secs}}})	->
+execute(Request = #request{timestamp = Timestamp})	->
 	case file_info(?FAVICON_PATH) of
 		{error, Reason} = Err -> {error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 														 reason = Reason,	
@@ -24,7 +24,7 @@ execute(Request = #request{timestamp = {{Year,Month,Day},{Hour,Min,Secs}}})	->
 		{FSize, MTime} -> 
 			ETag = generate_etag(FSize, MTime),
 			LastModified = cowboy_clock:rfc1123(MTime),
-			Expires = cowboy_clock:rfc1123({{Year+1,Month,Day},{Hour,Min,Secs}}),
+			Expires = cowboy_clock:rfc1123(ems_util:date_add_day(Timestamp, 7)),
 			case file:read_file(?FAVICON_PATH) of
 				{ok, FileData} -> 		
 					{ok, Request#request{code = 200,
@@ -34,7 +34,7 @@ execute(Request = #request{timestamp = {{Year,Month,Day},{Hour,Min,Secs}}})	->
 				{error, Reason} = Err -> 
 					{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 										    reason = Reason,
-											response_data = Err, 
+											response_data = ems_schema:to_json(Err), 
 											response_header = error_http_header()}
 					 }
 			end
@@ -53,7 +53,7 @@ generate_etag(FSize, MTime) -> integer_to_binary(erlang:phash2({FSize, MTime}, 1
 generate_header(ETag, LastModified, Expires) ->
 	#{
 		<<"content-type">> => <<"image/x-icon">>,
-		<<"cache-control">> => <<"max-age=290304000, public">>,
+		<<"cache-control">> => <<"max-age=604800, public">>,
 		<<"etag">> => ETag,
 		<<"last-modified">> => LastModified,
 		<<"expires">> => Expires

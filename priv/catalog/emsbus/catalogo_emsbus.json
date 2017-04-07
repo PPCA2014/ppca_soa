@@ -16,8 +16,8 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_user_loader", 
-		"file": "ems_user_loader.json"
+		"catalog": "/emsbus/ems_dns_server", 
+		"file": "ems_dns_server.json"
 	},
 
 	{
@@ -45,10 +45,6 @@
 		"file": "ems_health.json"
 	},
 	
-	{
-		"catalog": "/emsbus/ems_static_file_service", 
-		"file": "ems_static_file_service.json"
-	},
 
 	{
 		"catalog": "/emsbus/ems_catalog", 
@@ -63,11 +59,6 @@
 	{
 		"catalog": "/emsbus/ems_catalog_owner", 
 		"file": "ems_catalog_owner.json"
-	},
-
-	{
-		"catalog": "/emsbus/ems_web_service", 
-		"file": "ems_web_service.json"
 	},
 
 	{
@@ -87,7 +78,17 @@
 
 	{
 		"catalog": "/emsbus/auth_user", 
-		"file": "ems_catalog_auth_user.json"
+		"file": "ems_auth_user.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth_user_permission", 
+		"file": "ems_auth_user_permission.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth_client", 
+		"file": "ems_auth_client.json"
 	},
 
 	{
@@ -103,5 +104,21 @@
 	{
 		"catalog": "/emsbus/ems_netadm_service", 
 		"file": "ems_netadm_service.json"
+	},
+
+	{
+		"catalog": "/emsbus/ems_user_loader", 
+		"file": "ems_user_loader.json"
+	},
+
+	{
+		"catalog": "/emsbus/ems_user_permission_loader", 
+		"file": "ems_user_permission_loader.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_client_loader", 
+		"file": "ems_client_loader.json"
 	}
+	
 ]

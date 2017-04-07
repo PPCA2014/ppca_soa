@@ -12,14 +12,64 @@
 -record(counter, {key :: atom(), 
      			  index :: non_neg_integer()}).
 
--record(user, {id :: non_neg_integer(), 
-			   codigo :: integer(),
-			   login :: string(),
-			   name :: string(), 
-			   cpf :: string(),
-			   email :: string(), 
-			   password :: string()
+-record(user, {id :: non_neg_integer(), 					%% identifica o registro
+			   codigo :: integer(),							%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
+			   login :: binary(),
+			   name :: binary(), 
+			   cpf :: binary(),
+			   email :: binary(), 
+			   password :: binary(),
+			   type :: non_neg_integer(),					%% 0 = pessoa física  1 = pessoa jurídica  2 = aluno  com AluRa   2 = aluno com AluMatricula
+			   passwd_crypto :: binary(),					%% Algoritmo criptografia: SHA1
+			   type_email :: non_neg_integer(),				%% 1 = Institucional  2 = Pessoal
+			   active :: boolean(),
+			   endereco :: binary(),
+			   complemento_endereco :: binary(),
+			   bairro :: binary(),
+			   cidade :: binary(),
+			   uf :: binary(),
+			   cep :: binary(),
+			   rg :: binary(),
+			   data_nascimento :: binary(),
+			   sexo :: non_neg_integer(),
+			   telefone :: binary(),
+			   celular :: binary(),
+			   ddd :: binary(),
+			   mat_sipes :: binary(),
+			   lotacao :: binary(),
+			   lotacao_sigla :: binary(),
+			   lotacao_centro :: binary(),
+			   lotacao_codigo_funcao :: non_neg_integer(),
+			   lotacao_funcao :: binary(),
+			   lotacao_orgao :: binary(),
+			   lotacao_codigo_cargo :: non_neg_integer(),
+			   lotacao_cargo :: binary(),
+			   ctrl_insert,
+			   ctrl_update 
 		}).
+		
+-record(user_permission, {id :: non_neg_integer(),				%% identifica o registro da permissão
+						  hash,
+						  grant_get,
+						  grant_post,
+						  grant_put,
+						  grant_delete,
+						  ctrl_insert,
+						  ctrl_update
+          }).
+
+
+-record(client, {id :: non_neg_integer(), 					%% identifica o client internamente
+				 codigo :: binary(),						%% identifica o client externamente
+				 name :: binary(), 
+			     description :: binary(),
+			     secret :: binary(),
+				 redirect_uri :: binary(),
+				 active :: boolean(),
+				 ctrl_insert,
+				 ctrl_update 
+		}).
+
 
 -record(ctrl_params, {name :: string(),
 					  value
@@ -58,20 +108,22 @@
 					  worker :: pid(),							%% Processo worker http que vai atender a requisição
 					  status_send,								%% Registra que a mensagem foi entregue ou o erro ocorrido na entrega
 					  authorization :: string(),				%% Dados da autenticação da requisição
-					  user :: #user{},							%% Usuário da requisição ou anonimo
+					  user = public :: #user{},					%% Usuário da requisição ou anonimo
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
 					  protocol = http,							%% Protocol (http, ldap)
 					  result_cache = false :: boolean(),
 					  result_cache_rid,
-					  response_data,
+					  response_data = <<>>,
 					  response_header = #{},
-					  req_hash
+					  req_hash,
+					  ip
 				  }).
 
 
--record(service_datasource, {rowid :: non_neg_integer(),
+-record(service_datasource, {id :: non_neg_integer(),
+							 rowid :: non_neg_integer(),
 							 type :: atom(),
 							 driver :: atom(),
 							 connection = <<>> :: binary(),
@@ -79,12 +131,14 @@
 							 primary_key = <<>> :: binary(),
 							 csv_delimiter = <<";">> :: binary(),
 							 sql = <<>> :: binary(),
-							 timeout = 4000 :: non_neg_integer(),
+							 timeout = 30000 :: non_neg_integer(),
 							 max_pool_size = 1 :: non_neg_integer(),
 							 conn_ref,
 							 pid_module,
 							 pid_module_ref,
-							 owner
+							 owner,
+							 pool_name :: string(),
+							 parent = undefined :: string()
 							}).
 
 
@@ -108,9 +162,9 @@
 					function_name :: string(),					%% Nome da mensagem ou função que vai ser invocada no processo que vai atender a requisição
 					function :: atom(),  						%% Atom da mensagem ou função que vai ser invocada no processo que vai atender a requisição
 					id_re_compiled,   							%% Identificador da expressão regular que vai verificar se a URL bate com a URL da requisição
-					public = true :: boolean(), 						%% Indica se o contrato estará listado no Portal API Management
+					public = true :: boolean(), 				%% Indica se o contrato estará listado no Portal API Management
 					comment :: string(), 						%% Comentário sobre o que o contrato oferece em termos de serviço
-					version = "1.0.0" :: string(), 						%% Versão do contrato do serviço
+					version = "1.0.0" :: string(), 				%% Versão do contrato do serviço
 					owner :: string(),  						%% Quem é o proprietário pelo serviço
 					async = false :: boolean(),					%% Indica se o serviço será processado em segundo plano (chamada assíncrona)
 					querystring :: string(),  					%% Definição da querystring para o contrato do serviço
@@ -134,10 +188,22 @@
 					timeout :: non_neg_integer(),
 					expires :: non_neg_integer(),
 					cache_control :: string(),
-					enable :: boolean(),
+					enable = false :: boolean(),
 					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
 					path :: string(),
-					redirect_url :: binary()					%% redirect url						
+					redirect_url :: binary(),					%% redirect url						
+					tcp_listen_address,
+					tcp_listen_address_t,
+					tcp_allowed_address,
+					tcp_allowed_address_t,
+					tcp_max_connections,
+					tcp_port,
+					tcp_is_ssl = false,
+					tcp_ssl_cacertfile,
+					tcp_ssl_certfile,
+					tcp_ssl_keyfile,
+					check_grant_permission = false :: boolean(),
+					oauth2_token_encrypt = false :: boolean()
 				}).
 
 

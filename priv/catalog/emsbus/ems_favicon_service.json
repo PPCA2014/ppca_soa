@@ -7,6 +7,8 @@
 	"url": "/favicon.ico",
 	"async": "false",
 	"type": "GET",
+	"result_cache" : 5184000,
+	"authorization" : "public",
 	"lang" : "erlang"
 }
 

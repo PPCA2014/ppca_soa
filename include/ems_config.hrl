@@ -6,13 +6,8 @@
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--ifdef(debug).
-	-define(DEBUG(Msg), io:format("\033[0;34mDEBUG ~s\033[0m\n", [Msg])).
-	-define(DEBUG(Msg, Params), io:format("\033[0;34mDEBUG " ++ Msg ++ "\033[0m\n", Params)).
--else.
-	-define(DEBUG(Msg), ok).
-	-define(DEBUG(Msg, Params), ok).
--endif.
+-define(DEBUG(Msg), ems_logger:debug(Msg)).
+-define(DEBUG(Msg, Params), ems_logger:debug(Msg, Params)).
 
 -ifdef(native_json).
 	-define(JSON_LIB, jiffy).
@@ -91,7 +86,7 @@
 -define(LOG_FILE_MAX_SIZE, 51200000).  
 
 % Arquiva o log a cada LOG_ARCHIVE_CHECKPOINT ms
--define(LOG_ARCHIVE_CHECKPOINT, 1000 * 60 * 60 * 4).  % Por default são 4 horas
+-define(LOG_ARCHIVE_CHECKPOINT, 1000 * 60 * 60 * 24).  % Por default são 24 horas
 
 % Quantos workers HTTP instanciar se não especificado no arquivo de configuração
 -define(MIN_HTTP_WORKER, 1).
@@ -106,7 +101,7 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Quanto tempo aguardar um serviço
--define(SERVICE_TIMEOUT, 4500). % 4,5 segundos segundos
+-define(SERVICE_TIMEOUT, 12500). % 12,5 segundos segundos
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
 -define(CSV2SQLITE_PATH, ?PRIV_PATH ++ "/scripts/csv2sqlite.py"). 
@@ -124,30 +119,45 @@
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
 % Timeout in ms to expire cache of get request (ems_dispatcher_cache)
--define(TIMEOUT_DISPATCHER_CACHE, 1500).
+-define(TIMEOUT_DISPATCHER_CACHE, 8000).
 
 % Number of datasource entries by odbc connection pool
 -define(MAX_CONNECTION_BY_POOL, 5).
 
-% Header http cache-control 24 horas
--define(DEFAULT_CACHE_CONTROL, <<"no-cache, public">>).
 
 % Define the checkpoint to update user for ems_user_loader process
 -define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
+-define(CLIENT_LOADER_UPDATE_CHECKPOINT, 60000).
+
+
+%Define the checkpoint to update permission for ems_user_permission_loader process
+-define(PERMISSION_LOADRES_UPDATE_CHECKPOINT, 120000).
 
 % HTTP access control (CORS) headers
 -define(ACCESS_CONTROL_ALLOW_HEADERS, <<"Accept, Accept-Language, Content-Language, Content-Type, X-ACCESS_TOKEN, X-CSRF-Token, Access-Control-Allow-Origin, Authorization, Origin, x-requested-with, Content-Range, Content-Disposition, Content-Description">>).
--define(ACCESS_CONTROL_MAX_AGE, <<"86400">>).
+-define(ACCESS_CONTROL_MAX_AGE, <<"604800">>).
 -define(ACCESS_CONTROL_ALLOW_ORIGIN, <<"*">>).
 -define(ACCESS_CONTROL_ALLOW_METHODS, <<"GET, POST, PUT, DELETE, OPTIONS">>).
 -define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
 
 
+-define(AUTHORIZATION_TYPE_DEFAULT, <<"public">>).
+
+
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
--define(CACHE_CONTROL_NO_CACHE, <<"no-cache">>).
+-define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public">>).
+-define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public">>).
 
 % Default ports
 -define(LDAP_SERVER_PORT, 2389).
+-define(LDAP_MAX_CONNECTIONS, 100000).
+
+-define(HTTP_SERVER_PORT, 2381).
+-define(HTTP_MAX_CONNECTIONS, 100000).
+
+-define(TCP_PORT_MIN, 1024).
+-define(TCP_PORT_MAX, 99999).
+
 
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 							%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
@@ -155,32 +165,19 @@
 				 cat_node_search,							%% Lista de nodes para pesquisar os serviços
 				 cat_path_search :: list(tuple()),			%% Lista de tuplas com caminhos alternativos para catálogos
 				 cat_disable_services :: list(binary()),	%% Lista de serviços para desativar
+				 cat_enable_services :: list(binary()),		%% Lista de serviços para habilitar
 				 static_file_path :: list(string()),		%% Lista de diretórios para arquivos estáticos
 				 ems_hostname,								%% Nome da maquina onde o barramento está sendo executado
 				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado
 				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)
-				 ems_debug
+				 ems_debug,
+				 ems_result_cache,
+				 ems_datasources :: map(),
+				 tcp_listen_address			= [<<"0.0.0.0">>],
+				 tcp_allowed_address		= [],
+				 authorization,
+				 config_file
 		 }). 	
 
-
-
-%  Definição para o arquivo de configuração
--record(tcp_config, {tcp_listen_address,    		%% Quais IPs das interfaces de rede que o barramento vai ouvir
-					 tcp_listen_address_t,			%% Quais IPs das interfaces de rede que o barramento vai ouvir (formato de tupla para inet)
-					 tcp_port, 						%% Qual a porta que será utilizada para o barramento
-					 tcp_keepalive, 				%% Propriedade keepalive do TCP (true/false)
-					 tcp_nodelay, 					%% Propriedade nodelay do TCP (true/false)
-					 tcp_max_http_worker,			%% Max workers criados para cada listener
-					 tcp_min_http_worker,			%% Min workers criados para cada listener
-					 tcp_accept_timeout,			%% Timeout accept
-					 tcp_send_timeout,				
-					 tcp_backlog,
-					 tcp_buffer,
-					 tcp_delay_send,
-					 tcp_allowed_address,			%% Faixa de ips que são permitidos acessar os serviços do barramento
-					 tcp_allowed_address_t,
-					 tcp_is_ssl,
-					 tcp_ssl
-			 }). 	
 
 

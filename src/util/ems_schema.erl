@@ -15,7 +15,8 @@
 
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
--export_records([user, catalog_schema, schema_type, produto, service, service_owner]).
+-export_records([user, user_permission, catalog_schema, schema_type, 
+				 produto, service, service_owner, client]).
 
 
 % to_record
@@ -102,7 +103,8 @@ item_to_binary(I) when is_atom(I) ->
 	[I2] = io_lib:format("~p", [I]),
 	iolist_to_binary(I2);
 item_to_binary(I) when is_map(I) -> I;
-item_to_binary(I) -> iolist_to_binary(I).
+item_to_binary(I) ->
+	iolist_to_binary(I).
 
 
 to_list_tuple([], L) ->	L;	
@@ -199,15 +201,19 @@ new(catalog) -> #service{};
 new(service_owner) -> #service_owner{};
 new(catalog_schema) -> #catalog_schema{};
 new(user) -> #user{};
+new(user_permission) -> #user_permission{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
+new(client) -> #client{};
 new(_) -> erlang:error(einvalid_type).
 
 new_(service) -> #service{_ = '_'};
 new_(catalog) -> #service{_ = '_'};
 new_(service_owner) -> #service_owner{_ = '_'};
 new_(catalog_schema) -> #catalog_schema{_ = '_'};
-new_(user) -> #catalog_schema{_ = '_'};
+new_(user) -> #user{_ = '_'};
+new_(user_permission) -> #user_permission{_ = '_'};
+new_(client) -> #client{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).
   
 	

@@ -43,18 +43,18 @@
                  ?SCOPE_TABLE]).
 
 % verificar: unificar os dois records ... %%%%%%%%%%%%%%%
--record(client, {
-          client_id     :: binary(),
-          client_secret :: binary(),
-          redirect_uri  :: binary()
-         }).
-
          
 -record(a, { client   = undefined    :: undefined | term()
            , resowner = undefined    :: undefined | term()
            , scope                   :: oauth2:scope()
            , ttl      = 0            :: non_neg_integer()
            }).
+
+-record(client1, {
+          client_id     :: binary(),
+          client_secret :: binary(),
+          redirect_uri  :: binary()
+         }).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +88,7 @@ stop() ->
 
 
 add_client(Id, Secret, RedirectUri) ->
-    put(?CLIENT_TABLE, Id, #client{client_id = Id,
+    put(?CLIENT_TABLE, Id, #client1{client_id = Id,
                                    client_secret = Secret,
                                    redirect_uri = RedirectUri
                                   }).
@@ -117,7 +117,7 @@ authenticate_user({Login, Password}, _) ->
 
 authenticate_client({ClientId, ClientSecret},_) ->
     case get(?CLIENT_TABLE, ClientId) of
-        {ok, Client = #client{client_secret = CliSecret}} -> 
+        {ok, Client = #client1{client_secret = CliSecret}} -> 
 			case ClientSecret =:= CliSecret of
 				true -> {ok, {[],Client}};
 				_ -> {error, badsecret}
@@ -194,7 +194,7 @@ revoke_refresh_token(_RefreshToken, _) ->
 
 get_redirection_uri(ClientId, _) ->
     case get(?CLIENT_TABLE, ClientId) of
-        {ok, #client{redirect_uri = RedirectUri}} ->
+        {ok, #client1{redirect_uri = RedirectUri}} ->
             {ok, RedirectUri};
         Error = {error, notfound} ->
             Error
@@ -202,12 +202,12 @@ get_redirection_uri(ClientId, _) ->
 
 verify_redirection_uri(ClientId, ClientUri, _) when is_list(ClientId) ->
     case get(?CLIENT_TABLE, ClientId) of
-        {ok, #client{redirect_uri = RedirUri}} when ClientUri =:= RedirUri ->
+        {ok, #client1{redirect_uri = RedirUri}} when ClientUri =:= RedirUri ->
             ok;
         _Error ->
             {error, mismatch}
     end;
-verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
+verify_redirection_uri(#client1{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
 		true -> {ok,[]};
 		_Error -> {error, mismatch}
@@ -223,7 +223,7 @@ verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
         Error = {error, notfound} ->  Error
     end;
 
-verify_client_scope( #client{client_id = ClientID},Scope, _) ->
+verify_client_scope( #client1{client_id = ClientID},Scope, _) ->
 	case get(?SCOPE_TABLE, Scope) of
         {ok, #scope{scope = Scope, client_id = Client}} ->     
 			case ClientID =:= Client of

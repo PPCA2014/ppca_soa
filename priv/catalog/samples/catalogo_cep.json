@@ -1,11 +1,11 @@
 {
 	"name" : "/buscacep/:id",
-	"comment": "buscacep",
+	"comment": "web service para buscar cep dos correios",
 	"owner": "cep",
 	"version": "1",
 	"service" : "ems_web_service_correios:busca_cep",
 	"url": "/buscacep/:id",
-	"url_correio":"http://localhost:8080/buscacep",
+	"url_correio":"https://viacep.com.br/ws/",
 	"type": "GET",
 	"APIkey":"true",
 	"lang" : "erlang"

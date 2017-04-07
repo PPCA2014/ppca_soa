@@ -1,0 +1,94 @@
+<div class="container-fluid">
+	
+<div class="navbar navbar-default navbar-fixed-top fpc-top-bar" role="navigation" >
+  <div class="container">
+	<div class="navbar-header">
+	  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		<span class="sr-only">Toggle navigation</span>
+		<span class="icon-bar"></span>
+		<span class="icon-bar"></span>
+		<span class="icon-bar"></span>
+	  </button>
+	  <a id="nome_sistema" class="navbar-brand" href="#">
+		 <span class="fpc_titulo_app">{{ titulo }}</span>
+	  </a>
+	</div>
+	<div id="fpc_menu" class="navbar-collapse collapse">
+	  <ul id="barra_nav" class="nav navbar-nav">  
+		  {% for item in left_menu %}
+			  <li>
+				  <a  (click)="go("+{{item}}+")" style="cursor:pointer">{{ item.titulo }}</a>
+			  </li>
+		  {% endfor %}	
+	  </ul>
+	  <ul class="nav navbar-nav navbar-right">
+		  <li>
+			  <app-navigation></app-navigation>
+		  </li>
+		  {% for item in right_menu %}
+			 <li>
+				 <a  (click)="go("+{{item}}+")" style="cursor:pointer">{{ item.titulo }}</a>
+			 </li>
+		  {% endfor %}			
+	  </ul>
+	</div>
+  </div>
+</div>
+  <div id="painel_conteudo" class="container">
+		<div id="f_breadcrumb" style="width:90%; display: inline-block">
+			<ol class="breadcrumb">	
+				{% if current != sitemap %}
+					<li><a href="#" (click)="go("+{{sitemap}}+")"><i class="glyphicon glyphicon-home"></i></a></li>
+				{% endif %}
+				{% for item in breadcrumb %}
+					<li  (click)="go("+{{ item }}+")">{{ item.titulo }}</li>
+				{% endfor %}
+			</ol>
+		</div>
+		<div class="fpc_spinner" [ngClass]="{ 'hidden': !loading }"></div>
+
+	<div [ngSwitch]="current.name">
+		{% for item in sitemap %}
+			<template [ngSwitchCase]={{ item.alias }}>
+				{{ item.component }}
+			</template>
+		{% endfor %}
+			<template ngSwitchDefault>
+				<div class="bs-docs-section">
+					<div class="bs-glyphicons">
+						<ul class="bs-glyphicons-list">
+							{% for item in items %}
+								<li (click)="go("+{{item}}+")">
+									<img src={{ item.image_url }} width="68" height="48" />
+									{% if item.image_class %}
+										<div class="fpc-img" ngClass={{ item.image_class }} width="68" height="48" ></div>
+									{% endif %}
+										<span class="glyphicon-class">
+											<label class="fpc_titulo_item_dashboard">{{ item.titulo }}</label>
+										</span>
+								</li>
+							{% endfor %}
+						</ul>
+					</div>
+				</div>
+			</template>	
+	</div>
+
+</div>
+<div style="height: 90px"></div>
+<div id="footer">
+  <div class="container">
+	<div class="col-lg-12" style="text-align:center;">
+		<p class="pull-right"><a href="#">{{voltar}}</a></p>
+		<p style="font-weight:bold">{{copyright}}<br>
+			<small>{{site}} <a href={{url}}>{{nome}}</a></small>
+		</p>
+	</div>
+  </div>
+</div> 
+<a id="btn_abrir_dialog" href="#openModal" style="display:none"></a>
+<div id="f_dialog"></div>
+
+</div>
+
+

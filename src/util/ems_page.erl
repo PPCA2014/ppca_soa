@@ -11,15 +11,25 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([compile_file/2, render/2]).
+-export([compile_file/2, render/2, handle/3]).
 		 
-compile_file(<<Page/binary>>, ModuleName) -> compile_file(binary_to_list(Page), ModuleName);
-compile_file(Page, ModuleName) -> erlydtl:compile_file(?WEBAPPS_PATH ++ Page, ModuleName, [{out_dir, "ebin"}]).
+compile_file(Page, ModuleName) -> erlydtl:compile_file(Page, ModuleName, [{out_dir, "ebin"}]).
+
+%% comando para chamar a função, antes deve ser criado um Json 
+%% file:write_file("c:\\temp\\template.txt", io_lib:fwrite("~p.\n", [binary_to_list(ems_page:render(page114357434,Json))])).
 
 render(PageModule, Args) ->	
-	case PageModule:render(Args) of
+	case PageModule:render(compile_json(Args)) of
 		{ok, Response} -> erlang:iolist_to_binary(Response);
 		Reason -> throw({einvalid_page, Reason, page,  PageModule})
 	end.
+	
+handle(Req,PageModule,Args) ->
+     Body = render(PageModule,compile_json(Args)),
+				io:format(">>>>>>>>>>>>>>>>>>>> ~p",[Body]),
+    {ok, Req2} = cowboy_req:reply(200, [{<<"content-type">>, <<"text/html">>}], Body, Req),
+    {ok, Req2}.
 
+compile_json(Json) ->
+	jsx:decode(unicode:characters_to_binary(Json)).
 

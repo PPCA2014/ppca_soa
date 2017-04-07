@@ -26,7 +26,7 @@ start(_StartType, StartArgs) ->
 					oauth2ems_backend:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					erlang:send_after(4500, spawn(fun() -> 
-														ems_logger:info("Hosts in the cluster: ~p", [ case net_adm:host_file() of 
+														ems_logger:info("Hosts in the cluster: ~p.", [ case net_adm:host_file() of 
 																											{error, enoent} -> net_adm:localhost(); 
 																											Hosts -> Hosts 
 																									  end]),

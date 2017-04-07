@@ -23,17 +23,6 @@ start_link(Args) ->
 
 init([]) ->
 	KernelServices = ems_catalog_loader:list_kernel_catalog(),
-	Conf = ems_config:getConfig(),
-	
-	% Filter active services only
-	ActiveKernelServices = [ K || K <- KernelServices, lists:member(K#service.name, Conf#config.cat_disable_services) == false],
-
-	% print disabled services in the configuration file
-	lists:foreach(fun(S) -> 
-						io:format("Service ~s disabled in the configuration file.\n", [binary_to_list(S)]) 
-				  end, Conf#config.cat_disable_services),
-
-    % Set pool services
     PoolSpecs = lists:map(
 		fun(S = #service{name = WorkerName, 
 						  pool_size = PoolSize, 
@@ -59,7 +48,7 @@ init([]) ->
 								 permanent, 10000, worker, [poolboy]
 							}
 					end
-		end, ActiveKernelServices),
+		end, KernelServices),
 	{ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 	
 

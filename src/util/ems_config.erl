@@ -11,6 +11,7 @@
 -behavior(gen_server). 
 
 -include("../../include/ems_config.hrl").
+-include("../../include/ems_schema.hrl").
 
 %% Server API
 -export([start/0, stop/0]).
@@ -45,6 +46,8 @@ getConfig() -> gen_server:call(?SERVER, get_config).
  
 init([]) -> 
 	try
+		ets:new(debug_ets, [set, named_table, public, {read_concurrency, true}, {write_concurrency, false}]),
+		ets:insert(debug_ets, {debug, false}),
 		Config = load_config(),
 		{ok, Config}
 	catch _Exception: Reason ->
@@ -87,23 +90,23 @@ get_config_data() ->
 			FileName = lists:concat([HomePath, "/.erlangms/", node(), ".conf"]),
 			case file:read_file(FileName) of 
 				{ok, Arq} -> 
-					?DEBUG("Checking if node file configuration ~p exist: Ok", [FileName]),
+					?DEBUG("ems_config checking if node file configuration ~p exist: Ok", [FileName]),
 					{ok, Arq, FileName};
 				_Error -> 
-					?DEBUG("Checking if node file configuration ~p exist: No", [FileName]),
+					?DEBUG("ems_config checking if node file configuration ~p exist: No", [FileName]),
 					FileName2 = lists:concat([HomePath, "/.erlangms/emsbus.conf"]),
 					case file:read_file(FileName2) of 
 						{ok, Arq2} -> 
-							?DEBUG("Checking if file configuration ~p exist: Ok", [FileName2]),
+							?DEBUG("ems_config checking if file configuration ~p exist: Ok", [FileName2]),
 							{ok, Arq2, FileName2};
 						_Error -> 
-							?DEBUG("Checking if file configuration ~p exist: No", [FileName2]),
+							?DEBUG("ems_config checking if file configuration ~p exist: No", [FileName2]),
 							case file:read_file(?CONF_FILE_PATH) of 
 								{ok, Arq3} -> 
-									?DEBUG("Checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
+									?DEBUG("ems_config checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
 									{ok, Arq3, ?CONF_FILE_PATH};
 								_Error -> 
-									?DEBUG("Checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
+									?DEBUG("ems_config checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
 									{error, enofile_config}
 							end
 					end
@@ -111,34 +114,41 @@ get_config_data() ->
 		error ->
 			case file:read_file(?CONF_FILE_PATH) of 
 				{ok, Arq4} -> 
-					?DEBUG("Checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
+					?DEBUG("ems_config checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
 					{ok, Arq4, ?CONF_FILE_PATH};
 				{error, enoent} -> 
-					?DEBUG("Checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
+					?DEBUG("ems_config checking if global file configuration ~p exist: No", [?CONF_FILE_PATH]),
 					{error, enofile_config}
 			end
 	end.
+
+print_config_settings(Json = #config{ems_debug = true, config_file = FileName}) ->
+	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [FileName]),
+	ems_logger:format_debug("~p\n", [Json]);
+print_config_settings(#config{ems_debug = false, config_file = FileName}) ->
+	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [FileName]).
 
 % Load the configuration file
 load_config() ->
 	case get_config_data() of
 		{ok, ConfigData, FileName} ->
-			io:format("\nLoading configuration file: ~p.\n", [FileName]),
 			case ems_util:json_decode_as_map(ConfigData) of
 				{ok, Json} -> 
 					try
-						parse_config(Json, FileName)
+						Result = parse_config(Json, FileName),
+						print_config_settings(Result),
+						Result
 					catch 
-						_Exception:_Reason ->
-							ems_logger:format_warn("Fail to parse invalid configuration file, running with default settings...\n"),
+						_Exception:Reason ->
+							ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Reason: ~p. Running with default settings.\n", [FileName, Reason]),
 							get_default_config()
 					end;
 				_Error -> 
-					ems_logger:format_warn("Configuration file layout is not a valid JSON format, running with default settings...\n"),
+					ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
 					get_default_config()
 			end;
 		{error, enofile_config} ->
-			ems_logger:format_warn("No file configuration exist, running with default settings...\n"),
+			ems_logger:format_warn("ems_config has no file configuration. Running with default settings.\n"),
 			get_default_config()
 	end.
 
@@ -158,7 +168,23 @@ parse_static_file_path(Json) ->
 	StaticFilePathList = maps:to_list(StaticFilePath),
 	[{K, ems_util:remove_ult_backslash_url(binary_to_list(V))} || {K, V} <- StaticFilePathList].
 	
+
+parse_datasources([], _, Result) -> maps:from_list(Result);
+parse_datasources([DsName|T], Datasources, Result) ->
+	M = maps:get(DsName, Datasources),
+	Ds = ems_db:create_datasource_from_map(M),
+	parse_datasources(T, Datasources, [{DsName, Ds} | Result]).
+								
 	
+parse_datasources(Json) ->
+	Datasources = maps:get(<<"datasources">>, Json, #{}),
+	parse_datasources(maps:keys(Datasources), Datasources, []).
+	
+	
+parse_tcp_allowed_address(undefined) -> undefined;
+parse_tcp_allowed_address([<<"*.*.*.*">>]) -> undefined;
+parse_tcp_allowed_address(V) -> V.
+
 
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
@@ -169,10 +195,17 @@ parse_config(Json, NomeArqConfig) ->
 			 cat_path_search			= parse_cat_path_search(Json),
 			 static_file_path			= parse_static_file_path(Json),
 			 cat_disable_services		= maps:get(<<"disable_services">>, Json, []),
+			 cat_enable_services		= maps:get(<<"enable_services">>, Json, []),
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
-			 ems_debug					= maps:get(<<"ems_debug">>, Json, false)
+			 ems_debug					= parse_bool(maps:get(<<"debug">>, Json, false)),
+			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
+			 ems_datasources			= parse_datasources(Json),
+			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
+			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
+			 authorization			    = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
+			 config_file			    = NomeArqConfig
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -184,11 +217,23 @@ get_default_config() ->
 			 cat_node_search			= <<>>,
 			 cat_path_search			= [{<<"ems-bus">>, ?CATALOGO_ESB_PATH}],
 			 cat_disable_services		= [],
+			 cat_enable_services		= [],
 			 static_file_path			= [],
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= "",
-			 ems_debug					= false
+			 ems_debug					= false,
+			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE,
+			 ems_datasources			= #{},
+			 tcp_allowed_address		= all,
+			 tcp_listen_address			= [<<"0.0.0.0">>],
+			 authorization				= http_basic,
+			 config_file			    = undefined
 		}.
 
+parse_bool(<<"true">>) -> true;
+parse_bool(<<"false">>) -> false;
+parse_bool(true) -> true;
+parse_bool(false) -> false;
+parse_bool(_) -> false.
 

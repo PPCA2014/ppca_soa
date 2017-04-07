@@ -8,15 +8,9 @@
 	"async": "false",
 	"type": "KERNEL",
 	"lang" : "erlang",
-	"update_checkpoint" : 60000,
-	"datasource" : {
-		"type" : "sqlserver",
-		"connection" : "DSN=ems_user_loader_ds;UID=usupessoa;PWD=usupessoa;useUnicode=true;characterEncoding=UTF-8",
-		"primary_key" : "PesCodigoPessoa",
-		"timeout" : 30000,
-		"max_pool_size" : 1
-	},	
+	"update_checkpoint" : 65000,
+	"datasource" : "ds_ems_user_loader",
 	"pool_size" : 1,
 	"pool_max" : 1,
-	"enable" : true
+	"enable" : false
 }

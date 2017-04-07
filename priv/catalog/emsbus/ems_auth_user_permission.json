@@ -1,0 +1,66 @@
+[
+	{
+		"name": "/auth/user/permission/:id",
+		"comment": "Returns a user permission through your Id",
+		"owner": "auth",
+		"version": "1",
+		"service" : "ems_api_query_service:find_by_id",
+		"url": "/auth/user/permission/:id",
+		"type": "GET",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_permission"
+		},
+		"schema_in" : "user_permission",
+		"schema_out" : "user_permission",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/user/permission",
+		"comment": "List all registered user permissions",
+		"owner": "auth",
+		"service" : "ems_api_query_service:find",
+		"url": "/auth/user/permission",
+		"type": "GET",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_permission"
+		},
+		"schema_in" : "user_permission",
+		"schema_out" : "user_permission",
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
+	}
+]

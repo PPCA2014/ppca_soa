@@ -45,9 +45,12 @@ execute(Request = #request{type = Type}) ->
 														}
 									}
 			};
-		Error ->   {ok, Request#request{code = 401, 
-								 response_data = Error}
-					}
+		Error ->
+			ResponseData = ems_schema:to_json(Error),
+			{ok, Request#request{code = 401, 
+								 response_data = ResponseData}
+			}
+
 	end.
 
 	
@@ -137,4 +140,3 @@ issue_code({ok, {_, Auth}}) ->
 	{ok, oauth2_response:to_proplist(Response)};
 issue_code(Error) ->
     Error.
-

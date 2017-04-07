@@ -1,6 +1,6 @@
 %%********************************************************************
 %% @title Module ems_web_service_correios
-%% @version 1.0.0
+%% @version 1.0.2
 %% @doc It provides information about location.
 %% @author Renato Carauta Ribeiro <rcarauta6@gmail.com>
 %% @copyright ErlangMS Team
@@ -14,16 +14,19 @@
 -export([busca_cep/1]).
   
 busca_cep(Request = #request{service = #service{properties = Props}}) -> 
-	Cep = ems_request:get_param_url(<<"id">>, 0, Request),
+    Cep = ems_request:get_param_url(<<"id">>, 0, Request),
 	UrlCorreio = binary_to_list(maps:get(<<"url_correio">>, Props, <<>>)),
-	UrlBuscaCep =  lists:concat([UrlCorreio,"/",Cep]),  
+	UrlBuscaCep =  lists:concat([UrlCorreio,Cep,"/json/"]), 
+	io:format("UrlBuscaCep >>>>>>>>>>>>>>>>>>>>>>>>>  ~p~n",[UrlBuscaCep]),
+	io:format("UrlCorreio >>>>>>>>>>>>>>>>>>>>>>>>>>  ~p~n",[UrlCorreio]), 
 	case httpc:request(get, {UrlBuscaCep, []}, [], []) of
-		{ok, {_, _, Result}} ->
+		{ok, {_, _, Result}} ->	
 			{ok, Request#request{code = 200, 
-								response_data = list_to_binary(Result)}
+								 response_data = Result}
 			};
 		Error -> 
 			{error, Request#request{code = 400, 
-							response_data = Error}
+									response_data = Error}
 			}
 	end.
+

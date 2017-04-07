@@ -61,8 +61,8 @@ handle_cast(shutdown, State) ->
 handle_cast(_Msg, State) ->
 	{noreply, State}.
     
-handle_call({param_query, Sql, Params, Timeout}, _From, State) ->
-	case do_param_query(Sql, Params, Timeout, State) of
+handle_call({param_query, Sql, Params}, _From, State) ->
+	case do_param_query(Sql, Params, State) of
 		{ok, Result, Datasource} -> 
 			{reply, Result, #state{datasource = Datasource}};
 		Error -> 
@@ -91,27 +91,25 @@ code_change(_OldVsn, State, _Extra) ->
 
     
 do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite, driver = <<"sqlite3">>}) -> 
-
 	{ok, ConnRef} = esqlite3:open(Connection),
 	Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
 	{ok, Datasource2};
 do_connect(Datasource = #service_datasource{connection = Connection}) -> 
-
 	try
 		case odbc:connect(Connection, []) of
 			{ok, ConnRef}	-> 
 				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
 				{ok, Datasource2};
 			{error, {PosixError, _}} -> 
-				?DEBUG("Invalid Posix odbc connection: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError)]),
+				ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError)]),
 				{error, PosixError};
 			{error, Reason} -> 
-				?DEBUG("Invalid odbc connection: ~s. Reason: ~p.", [Connection, Reason]),
+				ems_logger:error("ems_odbc_pool_worker invalid odbc connection: ~s. Reason: ~p.", [Connection, Reason]),
 				{error, Reason}
 		end
 	catch 
 		_Exception:{PosixError2, _} -> 
-			?DEBUG("Invalid posix odbc connection exception: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError2)]),
+			ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError2)]),
 			{error, PosixError2}
 	end.
 
@@ -120,9 +118,9 @@ do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type =
 do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
 	odbc:disconnect(ConnRef).
 
-do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						   type = sqlite,
-																						   driver = <<"sqlite3">>}}) ->
+do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																			     type = sqlite,
+																				 driver = <<"sqlite3">>}}) ->
 	Params2 = [hd(V) || {_, V} <- Params],
 	case esqlite3:prepare(Sql, ConnRef) of
         {ok, Statement} ->
@@ -134,26 +132,26 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 			{ok, {selected, Fields2, Records}, Datasource};
         Error -> Error
     end;
-do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																						   connection = Connection,
-																						   timeout = Timeout}}) ->
+do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
+																				 connection = Connection,
+																				 timeout = Timeout}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, Reason} ->
 				% O erro pode ser perda de conexão ou falha na rede. Reconecta e tenta novamente
-				ems_logger:error("Odbc param_query error: ~p. Reconecting...", [Reason]),
+				ems_logger:error("ems_odbc_pool_worker param_query error: ~p. Try to reconnect.", [Reason]),
 				case do_connect(Datasource) of
 					{ok, Datasource2} ->
 						case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 							{error, Reason1} -> 
-								ems_logger:error("Odbc param_query fail after reconecting: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
+								ems_logger:error("ems_odbc_pool_worker param_query fail after try reconect: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
 								{error, eodbc_connection_closed};
 							{selected, Fields2, Result2} -> 
 								%?DEBUG("Odbc resultset after reconecting query: ~p.", [Result2]),
 								{ok, {selected, [?UTF8_STRING(F) || F <- Fields2], Result2}, Datasource2}
 						end;
 					{error, Reason2} -> 
-						ems_logger:error("Odbc param_query reconecting fail after: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
+						ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
 						{error, eodbc_connection_closed}
 				end;
 			{selected, Fields1, Result1} -> 
@@ -162,24 +160,24 @@ do_param_query(Sql, Params, _Timeout, #state{datasource = Datasource = #service_
 		end
 	catch
 		_:timeout -> 
-			% O erro pode ser perda de conexão. Reconecta e tenta novamente
-			?DEBUG("odbc param_query timeout connection. Reconecting..."),
+			% O erro pode ser perda de conexão. Tenta novamente
+			ems_logger:error("ems_odbc_pool_worker param_query timeout connection. Try reconnect."),
 			case do_connect(Datasource) of
 				{ok, Datasource3} ->
 					case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 						{error, Reason4} -> 
-							ems_logger:error("Odbc param_query fail after reconecting on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
+							ems_logger:error("ems_odbc_pool_worker param_query fail after try reconnect on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
 							{error, eodbc_connection_closed};
 						{selected, Fields3, Result3} -> 
 							%?DEBUG("Odbc resultset after reconecting query on timeout: ~p.", [Result3]),
 							{ok, {selected, [?UTF8_STRING(F) || F <- Fields3], Result3}, Datasource3}
 					end;
 				{error, Reason5} -> 
-					ems_logger:error("Odbc param_query reconecting fail after timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
+					ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
 					{error, eodbc_connection_closed}
 			end;
 		_:Reason6 -> 
-			ems_logger:error("Odbc param_query exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
+			ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
 			{error, eodbc_connection_closed}
 	end.
 

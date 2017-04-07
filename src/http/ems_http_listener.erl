@@ -26,8 +26,8 @@
 %% Server API
 %%====================================================================
 
-start(IpAddress, TcpConfig, ListenerName) -> 
-    gen_server:start_link(?MODULE, {IpAddress, TcpConfig, ListenerName}, []).
+start(IpAddress, Service, ListenerName) -> 
+    gen_server:start_link(?MODULE, {IpAddress, Service, ListenerName}, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -39,9 +39,12 @@ stop() ->
 %%====================================================================
  
 init({_IpAddress, 
-	  _TcpConfig = #tcp_config{tcp_port = Port,
-							  tcp_is_ssl = IsSsl,
-							  tcp_ssl = Ssl},
+	  _Service = #service{tcp_port = Port,
+						  tcp_is_ssl = IsSsl,
+						  tcp_max_connections = MaxConnections,
+						  tcp_ssl_cacertfile = SslCaCertFile,
+						  tcp_ssl_certfile = SslCertFile,
+						  tcp_ssl_keyfile = SslKeyFile},
 	  ListenerName}) ->
 	  Dispatch = cowboy_router:compile([
 		{'_', [
@@ -54,13 +57,14 @@ init({_IpAddress,
 		true -> 
 			{ok, _} = cowboy:start_tls(ListenerName, 100, [
 				{port, Port},
-				{cacertfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"cacertfile">>, Ssl))},
-				{certfile, ?SSL_PATH ++ "/" ++ binary_to_list(maps:get(<<"certfile">>, Ssl))},
-				{keyfile, ?SSL_PATH ++  "/" ++ binary_to_list(maps:get(<<"keyfile">>, Ssl))}
+				{max_connections, MaxConnections},
+				{cacertfile, SslCaCertFile},
+				{certfile, SslCertFile},
+				{keyfile, SslKeyFile}
 			], #{compress => true,
 				 env => #{dispatch => Dispatch}});
 		false ->
-			{ok, _} = cowboy:start_clear(ListenerName, 100, [{port, Port}], 
+			{ok, _} = cowboy:start_clear(ListenerName, 100, [{port, Port}, {max_connections, MaxConnections}], 
 				#{compress => true,
 				  env => #{dispatch => Dispatch}
 			})

@@ -44,6 +44,11 @@
 		 json_decode_as_map_file/1,
 		 date_add_minute/2,
 		 date_add_second/2,
+		 date_add_day/2,
+		 date_to_string/1,
+		 date_to_binary/1,
+		 timestamp_str/1,
+		 timestamp_binary/1,
 		 remove_quoted_str/1,
 		 boolean_to_binary/1,
 		 normalize_field_utf8/1,
@@ -51,7 +56,12 @@
 		 utf8_string_linux/1,
 		 replace/3,
 		 replace_all/2,
-		 read_file_as_string/1]).
+		 read_file_as_string/1,
+		 is_number/1,
+		 encrypt_public_key/2,
+		 decrypt_private_key/2,
+		 open_file/1,
+		 is_cpf_valid/1, is_cnpj_valid/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -129,12 +139,28 @@ timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+timestamp_str(null) -> "";
+timestamp_str(undefined) -> "";
 timestamp_str({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
   lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+timestamp_binary(null) -> <<>>;
+timestamp_binary(undefined) -> <<>>;
+timestamp_binary({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
+  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+
+date_to_string(null) -> "";
+date_to_string(undefined) -> "";
 date_to_string({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
     lists:flatten(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
+
+
+date_to_binary(null) -> <<>>;
+date_to_binary(undefined) -> <<>>;
+date_to_binary({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
+    iolist_to_binary(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
+
 
 tuple_to_binlist(T) ->
 	L = tuple_to_list(T),
@@ -512,9 +538,15 @@ date_add_minute(Timestamp, Minutes) ->
 date_add_second(Timestamp, Seconds) ->
     calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Seconds).
 
+date_add_day(Timestamp, Days) ->
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Days * 86400).
+
 % Return a encrypted password in binary format        
-criptografia_sha1(Password) when is_binary(Password) ->
-	criptografia_sha1(binary_to_list(Password));
+criptografia_sha1(<<>>) -> <<>>;
+criptografia_sha1("") -> <<>>;	
+criptografia_sha1(undefined) -> <<>>;
+criptografia_sha1(null) -> <<>>;
+criptografia_sha1(Password) when is_binary(Password) ->	criptografia_sha1(binary_to_list(Password));
 criptografia_sha1(Password) -> base64:encode(sha1:binstring(Password)).
 
 boolean_to_binary(true) -> <<"true"/utf8>>;
@@ -528,20 +560,47 @@ boolean_to_binary(<<"0"/utf8>>) -> <<"false"/utf8>>;
 boolean_to_binary(_) -> <<"false"/utf8>>.
 
 
+%%melhorar este método para conversão para utf8
+utf8_string_win(<<>>) -> <<""/utf8>>;
+utf8_string_win("") -> <<""/utf8>>;
+utf8_string_win(undefined) -> <<""/utf8>>;
 utf8_string_win(null) -> <<""/utf8>>;
 utf8_string_win(Text) when is_list(Text) -> 
 	utf8_string_win(list_to_binary(Text));
+utf8_string_win(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_win(Text) ->
-	unicode:characters_to_list(normalize_field_utf8(Text), utf8).
+	try
+		case ems_util:check_encoding_bin(Text) of
+			utf8 -> normalize_field_utf8(Text);
+			latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8);
+			Other -> Other
+		end
+	catch
+		_Exception:Reason -> 
+			?DEBUG("utf8_string_linux convert ~p error: ~p\n", [Text, Reason]),
+			Text
+	end.
 
+utf8_string_linux(<<>>) -> <<""/utf8>>;
+utf8_string_linux("") -> <<""/utf8>>;
+utf8_string_linux(undefined) -> <<""/utf8>>;
 utf8_string_linux(null) -> <<""/utf8>>;
 utf8_string_linux(Text) when is_list(Text) -> 
 	utf8_string_linux(list_to_binary(Text));
+utf8_string_linux(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_linux(Text) ->
-	case ems_util:check_encoding_bin(Text) of
-		utf8 -> normalize_field_utf8(Text);
-		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
+	try
+		case ems_util:check_encoding_bin(Text) of
+			utf8 -> normalize_field_utf8(Text);
+			latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8);
+			Other -> Other
+		end
+	catch
+		_Exception:Reason -> 
+			?DEBUG("utf8_string_linux convert ~p error: ~p\n", [Text, Reason]),
+			Text
 	end.
+	
 
 -spec read_file_as_map(FileName :: string()) -> map().
 read_file_as_map(FileName) -> 	
@@ -573,6 +632,23 @@ read_file_as_string(FileName) ->
 		{ok, Arq} -> Arq;
 		Error -> throw(Error)
 	end.
+	
+
+encrypt_public_key(PlainText, PublicKey) ->
+	[ RSAEntry2 ] = public_key:pem_decode(PublicKey),
+	PubKey = public_key:pem_entry_decode( RSAEntry2 ),
+	public_key:encrypt_public(PlainText, PubKey).
+	
+decrypt_private_key(CryptText,PrivateKey) ->
+    [ RSAEntry2 ] = public_key:pem_decode(PrivateKey),
+	PrivKey = public_key:pem_entry_decode( RSAEntry2 ),
+	Result =  public_key:decrypt_private(CryptText, PrivKey ),
+	Result.
+   
+
+open_file(FilePath) ->
+   {ok, PemBin2 } = file:read_file(FilePath),
+    PemBin2.
 
 %% Converte arquivo latin1 para utf8 formatando os unicodes
 %% Esta função está desconfigurando os arquivos no formato utf8	
@@ -581,15 +657,11 @@ to_utf8(FileName) ->
 		{ok, File} = file:open(FileName, [read,binary]),
 		Size = filelib:file_size(FileName),
 		{ok, Device} = file:read(File,Size),
-		io:format("Conteudo do arquivo ~p~n",[Device]),
-		{Type,Bytes} = unicode:bom_to_encoding(Device),
-		io:format("Tipo do arquivo: ~p   Bytes do arquivo: ~p~n",[Type, Device]),
+		{Type, _Bytes} = unicode:bom_to_encoding(Device),
 		case Type of
 			utf8 -> Device;	
-			latin1 -> unicode:characters_to_binary(Device, latin1, utf8);
-			_ -> {error, undefined}
+			_ -> unicode:characters_to_binary(Device, latin1, utf8)
 		end,
-		io:format("Verificar se funciona: ~p~n",[unicode:characters_to_list(Device)]),
 		{ok, Device}
 	catch
 		_Exception:Reason -> {error, Reason}
@@ -625,5 +697,33 @@ is_letter_lower("b") -> true;
 is_letter_lower(_) -> false.
 
 
+-spec is_number(string()) -> boolean().
+is_number("") -> false;
+is_number(V) -> [Char || Char <- V, Char < $0 orelse Char > $9] == [].
+
+
+-spec is_cpf_valid(list() | binary()) -> boolean().
+is_cpf_valid(S) when is_binary(S) ->
+	is_cpf_valid(binary_to_list(S));
+is_cpf_valid(S) ->
+	case ems_util:is_number(S) andalso string:len(S) =:= 11 of
+		true -> 
+			C = [  X || X <- S, X > 47 andalso X < 58 ],
+			D = lists:sum( lists:zipwith(fun(X,Y) -> (X-48)*Y end, C, [1,2,3,4,5,6,7,8,9,0,0]) ) rem 11,
+			D =:= lists:nth(10, C) - 48 andalso	( lists:sum(lists:zipwith(fun(X,Y) -> (X-48)*Y end, C, [0,1,2,3,4,5,6,7,8,0,0]) ) + D * 9 ) rem 11 =:= lists:nth(11, C) - 48;
+		false -> false
+	end.
+
+-spec is_cnpj_valid(list() | binary()) -> boolean().		
+is_cnpj_valid(S) when is_binary(S) -> 
+	is_cnpj_valid(binary_to_list(S));
+is_cnpj_valid(S) ->
+	case ems_util:is_number(S) andalso string:len(S) =:= 13 of
+		true ->
+			C = [  X || X <- S, X > 47 andalso X < 58 ],
+			D = lists:sum( lists:zipwith(fun(X,Y) -> (X-48) * Y end, C, [6,7,8,9,2,3,4,5,6,7,8,9,0,0]) ) rem 11,
+			D =:= lists:nth(13, C) - 48 andalso ( lists:sum(lists:zipwith(fun(X,Y) -> (X-48) * Y end, C, [5,6,7,8,9,2,3,4,5,6,7,8,0,0]) ) + D * 9 ) rem 11 =:= lists:nth(14, C) - 48;
+		_ -> false
+	end.
 
 
