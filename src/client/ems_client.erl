@@ -39,9 +39,11 @@ delete(Id) -> ems_db:delete(client, Id).
 valida(_Client, _Operation) -> ok.
 
 
--spec find_by_codigo(binary() | integer()) -> #client{} | {error, enoent}.
+-spec find_by_codigo(binary() | list() | integer()) -> #client{} | {error, enoent}.
 find_by_codigo(Codigo) when is_integer(Codigo) ->
 	find_by_codigo(erlang:integer_to_binary(Codigo));
+find_by_codigo(Codigo) when is_list(Codigo) ->
+	find_by_codigo(list_to_binary(Codigo));
 find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(client, Codigo, #client.codigo) of
 		[] -> {error, enoent};

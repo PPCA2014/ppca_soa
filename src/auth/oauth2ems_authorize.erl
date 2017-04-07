@@ -11,24 +11,18 @@ execute(Request = #request{type = Type}) ->
 		"GET" -> ems_request:get_querystring(<<"response_type">>, "", Request);
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, "", Request)
 	end,
-	
-	
-	io:format("aqui1  ~p\n", [TypeAuth]),
     Result = case TypeAuth of
-            "password" -> 
+            <<"password">> -> 
 				password_grant(Request);
-            "client_credentials" ->
+            <<"client_credentials">> ->
 				client_credentials_grant(Request);
-			"token" ->
+			<<"token">> ->
 				authorization_request(Request);
-			"code" ->
-				io:format("aqui2\n"),
+			<<"code">> ->
 				authorization_request(Request);	
-			"authorization_code" ->
-				io:format("aqui3\n"),
-
+			<<"authorization_code">> ->
 				access_token_request(Request);	
-			"code2" ->
+			<<"code2">> ->
 				% Apenas para simulação
 				authorization_request2(Request);				
              _ -> {error, invalid_request}
@@ -40,6 +34,7 @@ execute(Request = #request{type = Type}) ->
 								 response_data = ResponseData2}
 			};		
 		
+			% comentado temporariamente
 			%ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
 			
 			%UserResponseData = lists:keyfind(<<"resource_owner">>, 1, ResponseData),
@@ -54,12 +49,10 @@ execute(Request = #request{type = Type}) ->
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
-			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
-			%LocationPath = lists:concat(["http://127.0.0.1:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
-			io:format("redirect ~p\n", [RedirectUri]),
+			RedirectUri2 = iolist_to_binary([RedirectUri, "?response_type=code2&client_id=", ClientId]),
 			{ok, Request#request{code = 302, 
 								 response_header = #{
-														<<"location">> => RedirectUri
+														<<"location">> => RedirectUri2
 													}
 								}
 			};
@@ -97,7 +90,7 @@ authorization_request(Request) ->
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		ok -> {redirect, ClientId, RedirectUri};
 		Error -> 
-			io:format("error is ~p\n", [Error]),
+			io:format("error que ocorreu is ~p\n", [Error]),
 			Error
 	end,			
     Resposta.
@@ -120,7 +113,7 @@ authorization_request2(Request) ->
     Resposta.
 
 access_token_request(Request) ->
-	Code = list_to_binary(ems_request:get_querystring(<<"code">>, [],Request)),
+	Code = ems_request:get_querystring(<<"code">>, [],Request),
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),

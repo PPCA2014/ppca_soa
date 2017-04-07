@@ -175,6 +175,7 @@ load_users_from_datasource(Datasource, CtrlInsert) ->
 								end,
 								mnesia:ets(F),
 								mnesia:change_table_copy_type(user, node(), disc_copies),
+								erlang:garbage_collect(),
 								ok;
 							_ ->
 								ems_logger:error("Could not clear user table before load users. Load users cancelled!"),

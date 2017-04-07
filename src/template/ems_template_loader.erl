@@ -8,7 +8,7 @@
 
 -module(ems_template_loader).
 
--behavior(gen_server).
+%-behavior(gen_server).
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
@@ -42,7 +42,7 @@ stop() ->
 init(#service{service = Service,
                properties = Props}) ->
         Page = maps:get(<<"url_template">>, Props),
-        {Rowid, Secoundid, Thirdid} = random:seed(),
+        {Rowid, _Secoundid, _Thirdid} = random:seed(),
         State = #state{service = Service,
         			   operation = load_operation(Page,Rowid)},
         {ok, State}.

@@ -66,6 +66,7 @@
 			     secret :: binary(),
 				 redirect_uri :: binary(),
 				 active :: boolean(),
+				 scope :: binary(),
 				 ctrl_insert,
 				 ctrl_update 
 		}).

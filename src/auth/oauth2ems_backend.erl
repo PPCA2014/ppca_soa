@@ -6,7 +6,7 @@
 -include("../../include/ems_schema.hrl").
 
 %%% API
--export([start/0, stop/0, add_client/2, add_client/3, delete_client/1]).
+-export([start/0, stop/0]).
 
 -export([authenticate_username_password/3]).
 -export([authenticate_client/2]).
@@ -35,9 +35,7 @@
 
 -define(TABLES, [?ACCESS_TOKEN_TABLE,
 				 ?ACCESS_CODE_TABLE,
-                 ?REFRESH_TOKEN_TABLE,
-                 ?USER_TABLE,
-                 ?CLIENT_TABLE]).
+                 ?REFRESH_TOKEN_TABLE]).
 
 
 %%%===================================================================
@@ -49,26 +47,12 @@ start() ->
     lists:foreach(fun(Table) ->
                           ets:new(Table, [named_table, public])
                   end,
-                  ?TABLES),
-	add_client("geral","123456", "http://localhost:2301/"),
-	add_client("114740","123456", "http://localhost:2301/"),
-	add_client("s6BhdRkqt3","qwer", "http://localhost:2301/").
+                  ?TABLES).
 
 stop() ->
     lists:foreach(fun ets:delete/1, ?TABLES).
 
 
-add_client(Id, Secret, RedirectUri) ->
-    put(?CLIENT_TABLE, Id, #client{codigo = Id,
-                                   secret = Secret,
-                                   redirect_uri = RedirectUri
-                                  }).
-
-add_client(Id, Secret) ->
-    add_client(Id, Secret, undefined).
-
-delete_client(Id) ->
-    delete(?CLIENT_TABLE, Id).
 
 %%%===================================================================
 %%% OAuth2 backend functions
@@ -76,8 +60,7 @@ delete_client(Id) ->
 
 authenticate_username_password(Login, Password, _) ->
     case ems_user:find_by_login_and_password(Login, Password) of
-		{ok, #user{name = Username}} ->	
-			{ok, {<<"user">>, Username}};
+		{ok, #user{name = Username}} ->	{ok, {<<"user">>, Username}};
 		Error -> Error
 	end.
 
@@ -85,7 +68,7 @@ authenticate_client(ClientId, ClientSecret, _) ->
 	authenticate_client(ClientId, ClientSecret).
 
 authenticate_client(ClientId, ClientSecret) ->
-    case get(?CLIENT_TABLE, ClientId) of
+    case ems_client:find_by_codigo(ClientId) of
         {ok, Client = #client{secret = CliSecret}} -> 
 			case ClientSecret =:= CliSecret of
 				true -> {ok, Client};
@@ -95,7 +78,7 @@ authenticate_client(ClientId, ClientSecret) ->
     end.
 
 get_codigoentity(ClientId, _) ->
-    case get(?CLIENT_TABLE, ClientId) of
+    case ems_client:find_by_codigo(ClientId) of
         {ok, Client} -> {ok, Client};
         _ -> {error, notfound}
     end.
@@ -112,10 +95,8 @@ associate_access_token(AccessToken, Context, _) ->
 
 resolve_access_code(AccessCode, _AppContext) ->
 	case get(?ACCESS_CODE_TABLE, AccessCode) of
-        Value = {ok, _} ->
-            Value;
-        Error = {error, notfound} ->
-            Error
+        Value = {ok, _} -> Value;
+        Error -> Error
     end.
 
 resolve_refresh_token(RefreshToken, _AppContext) ->
@@ -123,10 +104,8 @@ resolve_refresh_token(RefreshToken, _AppContext) ->
 
 resolve_access_token(AccessToken, _) ->
     case get(?ACCESS_TOKEN_TABLE, AccessToken) of
-        Value = {ok, _} ->
-            Value;
-        Error = {error, notfound} ->
-            Error
+        Value = {ok, _} -> Value;
+        Error -> Error
     end.
 
 revoke_access_code(AccessCode, _AppContext) ->
@@ -141,15 +120,15 @@ revoke_refresh_token(_RefreshToken, _) ->
     ok.
 
 get_redirection_uri(ClientId, _) ->
-    case get(?CLIENT_TABLE, ClientId) of
+    case ems_client:find_by_codigo(ClientId) of
         {ok, #client{redirect_uri = RedirectUri}} ->
             {ok, RedirectUri};
         Error = {error, notfound} ->
             Error
     end.
 
-verify_redirection_uri(ClientId, ClientUri, _) when is_list(ClientId) ->
-    case get(?CLIENT_TABLE, ClientId) of
+verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
+    case ems_client:find_by_codigo(ClientId) of
         {ok, #client{redirect_uri = RedirUri}} when ClientUri =:= RedirUri ->
             ok;
         _Error ->
@@ -172,6 +151,7 @@ verify_scope(Scope, Scope, _) ->
     {ok, Scope};
 verify_scope(_, _, _) ->
     {error, invalid_scope}.
+
 
 %%%===================================================================
 %%% Funções internas
