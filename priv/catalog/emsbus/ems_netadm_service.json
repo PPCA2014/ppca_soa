@@ -118,8 +118,8 @@
 		"result_cache" : 0,
 		"async": "false",
 		"type": "GET",
-		"authorization" : "basic",
-		"check_grant_permission" : true,
+		"authorization" : "oauth2",
+		"check_grant_permission" : false,
 		"lang" : "erlang"
 	}
 	

@@ -15,7 +15,8 @@
 
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
--export_records([user, user_permission, catalog_schema, schema_type, produto, service, service_owner]).
+-export_records([user, user_permission, catalog_schema, schema_type, 
+				 produto, service, service_owner, client]).
 
 
 % to_record
@@ -203,6 +204,7 @@ new(user) -> #user{};
 new(user_permission) -> #user_permission{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
+new(client) -> #client{};
 new(_) -> erlang:error(einvalid_type).
 
 new_(service) -> #service{_ = '_'};
@@ -211,6 +213,7 @@ new_(service_owner) -> #service_owner{_ = '_'};
 new_(catalog_schema) -> #catalog_schema{_ = '_'};
 new_(user) -> #user{_ = '_'};
 new_(user_permission) -> #user_permission{_ = '_'};
+new_(client) -> #client{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).
   
 	

@@ -11,7 +11,7 @@
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
--export([find_by_id/1, find_by_hash/1, make_hash/2]).
+-export([find_by_id/1, find_by_hash/1, make_hash/2, has_grant_permission/3]).
 
 
 find_by_id(Id) -> ems_db:get(user_permission, Id).
@@ -23,3 +23,23 @@ find_by_hash(Hash) ->
 	end.
 
 make_hash(Rowid, CodigoPessoa) -> erlang:phash2([Rowid, CodigoPessoa]).
+
+has_grant_permission(#service{check_grant_permission = false}, _, _) -> true;
+has_grant_permission(#service{check_grant_permission = true},
+					 #request{rowid = Rowid, type = Type}, 
+					 #user{codigo = Codigo}) ->
+	Hash = make_hash(Rowid, Codigo),
+	case find_by_hash(Hash) of
+		{ok, #user_permission{grant_get = GrantGet, 
+							  grant_post = GrantPost, 
+							  grant_put = GrantPut, 
+							  grant_delete = GrantDelete}} ->
+			case Type of
+				"GET" -> GrantGet == true;
+				"POST" -> GrantPost == true;
+				"PUT" -> GrantPut == true;
+				"DELETE" -> GrantDelete == true
+			end;
+		_ -> false
+	end.
+

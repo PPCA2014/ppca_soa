@@ -45,6 +45,10 @@
 		 date_add_minute/2,
 		 date_add_second/2,
 		 date_add_day/2,
+		 date_to_string/1,
+		 date_to_binary/1,
+		 timestamp_str/1,
+		 timestamp_binary/1,
 		 remove_quoted_str/1,
 		 boolean_to_binary/1,
 		 normalize_field_utf8/1,
@@ -135,12 +139,28 @@ timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+timestamp_str(null) -> "";
+timestamp_str(undefined) -> "";
 timestamp_str({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
   lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+timestamp_binary(null) -> <<>>;
+timestamp_binary(undefined) -> <<>>;
+timestamp_binary({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
+  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+
+date_to_string(null) -> "";
+date_to_string(undefined) -> "";
 date_to_string({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
     lists:flatten(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
+
+
+date_to_binary(null) -> <<>>;
+date_to_binary(undefined) -> <<>>;
+date_to_binary({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
+    iolist_to_binary(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
+
 
 tuple_to_binlist(T) ->
 	L = tuple_to_list(T),
@@ -439,7 +459,7 @@ normalize_field_utf8(V) ->
 							_ -> Ch 
 					  end || Ch <- V2, Ch > 31]
 			end,
-	list_to_binary(Text).
+	unicode:characters_to_binary(Text, utf8).
 
 json_encode_record(_, [], true, RecordJson) -> 	
 	[<<"{"/utf8>>, lists:reverse(RecordJson), <<"},"/utf8>>];
@@ -549,9 +569,16 @@ utf8_string_win(Text) when is_list(Text) ->
 	utf8_string_win(list_to_binary(Text));
 utf8_string_win(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_win(Text) ->
-	case ems_util:check_encoding_bin(Text) of
-		utf8 -> normalize_field_utf8(Text);
-		latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8)  
+	try
+		case ems_util:check_encoding_bin(Text) of
+			utf8 -> normalize_field_utf8(Text);
+			latin1 -> normalize_field_utf8(Text);
+			Other -> Other
+		end
+	catch
+		_Exception:Reason -> 
+			?DEBUG("utf8_string_linux convert ~p error: ~p\n", [Text, Reason]),
+			Text
 	end.
 
 utf8_string_linux(<<>>) -> <<""/utf8>>;
@@ -565,12 +592,12 @@ utf8_string_linux(Text) ->
 	try
 		case ems_util:check_encoding_bin(Text) of
 			utf8 -> normalize_field_utf8(Text);
-			latin1 -> unicode:characters_to_binary(normalize_field_utf8(Text), latin1, utf8);
+			latin1 -> normalize_field_utf8(Text);
 			Other -> Other
 		end
 	catch
-		_Exception:_Reason -> 
-			?DEBUG("utf8_string_linux error: ~p\n", [_Reason]),
+		_Exception:Reason -> 
+			?DEBUG("utf8_string_linux convert ~p error: ~p\n", [Text, Reason]),
 			Text
 	end.
 	

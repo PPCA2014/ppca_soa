@@ -14,18 +14,38 @@
 
 -record(user, {id :: non_neg_integer(), 					%% identifica o registro
 			   codigo :: integer(),							%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
-			   login :: string(),
-			   name :: string(), 
-			   cpf :: string(),
-			   email :: string(), 
-			   password :: string(),
-			   type :: non_neg_integer(),
-			   passwd_crypto :: string(),
-			   type_email :: non_neg_integer(),
+			   login :: binary(),
+			   name :: binary(), 
+			   cpf :: binary(),
+			   email :: binary(), 
+			   password :: binary(),
+			   type :: non_neg_integer(),					%% 0 = pessoa física  1 = pessoa jurídica  2 = aluno  com AluRa   2 = aluno com AluMatricula
+			   passwd_crypto :: binary(),					%% Algoritmo criptografia: SHA1
+			   type_email :: non_neg_integer(),				%% 1 = Institucional  2 = Pessoal
 			   active :: boolean(),
+			   endereco :: binary(),
+			   complemento_endereco :: binary(),
+			   bairro :: binary(),
+			   cidade :: binary(),
+			   uf :: binary(),
+			   cep :: binary(),
+			   rg :: binary(),
+			   data_nascimento :: binary(),
+			   sexo :: non_neg_integer(),
+			   telefone :: binary(),
+			   celular :: binary(),
+			   ddd :: binary(),
+			   matricula :: non_neg_integer(),
+			   lotacao :: binary(),
+			   lotacao_sigla :: binary(),
+			   lotacao_centro :: binary(),
+			   lotacao_codigo_funcao :: non_neg_integer(),
+			   lotacao_funcao :: binary(),
+			   lotacao_orgao :: binary(),
+			   lotacao_codigo_cargo :: non_neg_integer(),
+			   lotacao_cargo :: binary(),
 			   ctrl_insert,
 			   ctrl_update 
-			   
 		}).
 		
 -record(user_permission, {id :: non_neg_integer(),				%% identifica o registro da permissão
@@ -37,6 +57,20 @@
 						  ctrl_insert,
 						  ctrl_update
           }).
+
+
+-record(client, {id :: non_neg_integer(), 					%% identifica o client internamente
+				 codigo :: binary(),						%% identifica o client externamente
+				 name :: binary(), 
+			     description :: binary(),
+			     secret :: binary(),
+				 redirect_uri :: binary(),
+				 active :: boolean(),
+				 scope :: binary(),
+				 ctrl_insert,
+				 ctrl_update 
+		}).
+
 
 -record(ctrl_params, {name :: string(),
 					  value
