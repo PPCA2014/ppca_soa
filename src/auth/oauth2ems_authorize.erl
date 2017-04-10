@@ -8,8 +8,8 @@
 
 execute(Request = #request{type = Type}) -> 
 	TypeAuth = case Type of
-		"GET" -> ems_request:get_querystring(<<"response_type">>, "", Request);
-		"POST" -> ems_request:get_querystring(<<"grant_type">>, "", Request)
+		"GET" -> ems_request:get_querystring(<<"response_type">>, <<>>, Request);
+		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case TypeAuth of
             <<"password">> -> 
@@ -68,25 +68,42 @@ execute(Request = #request{type = Type}) ->
 %%% Funções internas
 %%%===================================================================
 
-client_credentials_grant(Request) ->
-	ClientId = ems_request:get_querystring(<<"client_id">>, "", Request),
-	Secret = ems_request:get_querystring(<<"secret">>, "", Request),
-	Scope = ems_request:get_querystring(<<"scope">>, "", Request),	
-    Auth = oauth2:authorize_client_credentials(ClientId, Secret, Scope, []),
-	issue_token(Auth).
+client_credentials_grant(Request = #request{authorization = Authorization}) ->
+	ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
+	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
+	% O ClientId também pode ser passado via header Authorization
+	case ClientId == <<>> of
+		true -> 
+			case Authorization =/= undefined of
+				true ->
+					case ems_http_util:parse_basic_authorization_header(Authorization) of
+						{ok, Login, Password} ->
+							ClientId2 = list_to_binary(Login),
+							Secret = list_to_binary(Password),
+							Auth = oauth2:authorize_client_credentials(ClientId2, Secret, Scope, []),
+							issue_token(Auth);
+						_Error -> {error, invalid_request}
+					end;
+				false -> {error, invalid_request}
+			end;
+		false -> 
+			Secret = ems_request:get_querystring(<<"secret">>, <<>>, Request),
+			Auth = oauth2:authorize_client_credentials(ClientId, Secret, Scope, []),
+			issue_token(Auth)
+	end.
     
 password_grant(Request) -> 
-	Username = ems_request:get_querystring(<<"username">>, "", Request),
-	Password = ems_request:get_querystring(<<"password">>, "", Request),
-	Scope = ems_request:get_querystring(<<"scope">>, "", Request),	
+	Username = ems_request:get_querystring(<<"username">>, <<>>, Request),
+	Password = ems_request:get_querystring(<<"password">>, <<>>, Request),
+	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
     Auth = oauth2:authorize_password(Username, Password, Scope, []),
 	issue_token(Auth).
 
 authorization_request(Request) ->
     %State       = ems_request:get_querystring(<<"state">>, [],Request),
     %Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
-    ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
+    ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
+    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		ok -> {redirect, ClientId, RedirectUri};
 		Error -> 
