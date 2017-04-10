@@ -65,7 +65,7 @@
 
 
 %%%===================================================================
-%%% 
+%%% Teste
 %%%===================================================================
 
 start() ->
@@ -74,6 +74,10 @@ start() ->
                           ets:new(Table, [named_table, public])
                   end,
                   ?TABLES),
+    U = #user{login="geral",password="123456"},
+    io:format("~p",[U]),              
+    ems_user:insert(#user{login= <<"geral">>,password=ems_util:criptografia_sha1("123456")}),
+    ems_user:insert(#user{login="alyssondsr",password="123456"}),
 	add_client("geral","123456", "http://localhost:2301/"),
 	add_client("114740","123456", "http://localhost:2301/"),
 	add_client("s6BhdRkqt3","qwer", "http://164.41.120.42:3000/callback"),
