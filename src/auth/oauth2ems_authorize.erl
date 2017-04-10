@@ -113,12 +113,12 @@ authorization_request(Request) ->
     Resposta.
 
 authorization_request2(Request) ->
-    ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
-    Username    = ems_request:get_querystring(<<"username">>, [],Request),
-    Password    = ems_request:get_querystring(<<"password">>, [],Request),
-    %State       = ems_request:get_querystring(<<"state">>, [],Request),
-    Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
+    ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
+    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
+    Username    = ems_request:get_querystring(<<"username">>, <<>>, Request),
+    Password    = ems_request:get_querystring(<<"password">>, <<>>, Request),
+    %State       = ems_request:get_querystring(<<"state">>, <<>>, Request),
+    Scope       = ems_request:get_querystring(<<"scope">>, <<>>, Request),
     Resposta 	= case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, [])  of
         ok ->
             case oauth2:authorize_password(Username, Password, Scope, []) of

@@ -42,7 +42,6 @@ dispatch_request(Request) -> lookup_request(Request).
 lookup_request(Request = #request{rid = Rid,
 								  type = Type,
 								  url = Url,
-	  						      uri = Uri,
 								  req_hash = ReqHash,
 								  payload = Payload,
 								  t1 = T1,
@@ -97,7 +96,7 @@ lookup_request(Request = #request{rid = Rid,
 								false ->
 									case get_work_node(Host, Host, HostName, ModuleName, 1) of
 										{ok, Node} ->
-											Msg = {{Rid, Uri, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
+											Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName}, self()},
 											{Module, Node} ! Msg,
 											NodeBin = erlang:atom_to_binary(Node, utf8),
 											ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
