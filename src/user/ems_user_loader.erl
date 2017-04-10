@@ -379,7 +379,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 	update_users(T, Count+1, CtrlUpdate).
 
 sql_load_users() ->	 
-	"select distinct CodigoPessoa, 
+	"select top 100000  CodigoPessoa, 
 					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
@@ -497,7 +497,7 @@ sql_load_users() ->
 	".
 
 sql_update_users() ->	 
-	"select distinct CodigoPessoa, 
+	"select top 100000 CodigoPessoa, 
 					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 

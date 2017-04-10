@@ -26,7 +26,6 @@ render(PageModule, Args) ->
 	
 handle(Req,PageModule,Args) ->
      Body = render(PageModule,compile_json(Args)),
-				io:format(">>>>>>>>>>>>>>>>>>>> ~p",[Body]),
     {ok, Req2} = cowboy_req:reply(200, [{<<"content-type">>, <<"text/html">>}], Body, Req),
     {ok, Req2}.
 
