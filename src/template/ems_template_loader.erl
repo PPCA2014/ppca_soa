@@ -17,7 +17,7 @@
 -export([start/1,stop/0]).
 
 %%get_setver callbacks
--export([init/1, terminate/2]).
+-export([init/1, terminate/2, render/2]).
 
 -record(state,{service,
 			   operation}).
@@ -50,18 +50,25 @@ init(#service{service = Service,
 
 terminate(_Reason, _State) ->
 	  ok.
-	  
- 
+	 
+
+render(PageModule, Args) ->	
+	case PageModule:render(compile_json(Args)) of
+		{ok, Response} -> 
+		PageCompile = change_values(Response),
+		erlang:iolist_to_binary(PageCompile);
+		Reason -> throw({einvalid_page, Reason, page,  PageModule})
+	end.
+	
+
+	
     
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
 load_operation(Page,Rowid) ->
-	io:format("Verificar ate aqui   ~n"),
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	io:format("Verificar se foi formado corretamente   ~p~n",[ModuleNamePage]),
-	io:format("Page name is ~p~n",[ModuleNamePage]),
 	case compile_file(binary_to_list(Page), ModuleNamePage) of
 		{ok, PageModule} ->  PageModule;
 		_ -> throw({einvalid_page, Page})
@@ -69,12 +76,20 @@ load_operation(Page,Rowid) ->
 		
 compile_file(Page, ModuleName) -> 
 	erlydtl:compile_file(Page, ModuleName, [{out_dir, "ebin"}]).
+	
+	
+compile_json(Json) ->
+	jsx:decode(Json).
 	     
-	  
+change_values(PageModule) ->
+	Page1 = re:replace(PageModule, "&lt;", "<", [global, {return, list}]),
+	Page2 = re:replace(Page1, "&gt;", ">", [global, {return, list}]),
+	Page2.
+	
+	
+%% file:write_file("C:\\desenvolvimento\\workspaceTmp\\portal\\app\\dashboard\\navigator\\navigator.html",ems_template_loader:render(page3172,iolist_to_binary(Json))).
 
 		
-
-
 
 
 

@@ -29,7 +29,7 @@
     "core-js": "^2.4.1",
     "rxjs": "5.0.1",
     "zone.js": "^0.7.4",
-    "seguranca" : "1.0.0",
+    "seguranca" : "^1.1.4",
     "bootstrap": "~3.3.7",
     "jquery": "^3.1.1"
   },
@@ -37,7 +37,6 @@
     "concurrently": "^3.1.0",
     "lite-server": "^2.2.2",
     "typescript": "~2.0.10",
-
     "canonical-path": "0.0.2",
     "http-server": "^0.9.0",
     "tslint": "^3.15.1",
@@ -50,9 +49,8 @@
     "karma-jasmine-html-reporter": "^0.2.2",
     "protractor": "~4.0.14",
     "rimraf": "^2.5.4",
-
     "@types/node": "^6.0.46",
-    "@types/jasmine": "^2.5.36"
+    "@types/jasmine": "2.5.38"
   },
   "repository": {}
 }

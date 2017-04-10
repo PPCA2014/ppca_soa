@@ -109,5 +109,9 @@
 	{
 		"catalog": "/emsbus/ems_user_permission_loader", 
 		"file": "ems_user_permission_loader.json"
+	},
+	{
+		"catalog": "/emsbus/ems_template_loader", 
+		"file": "ems_template_loader.json"
 	}
 ]

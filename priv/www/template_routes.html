@@ -17,7 +17,7 @@
 	  <ul id="barra_nav" class="nav navbar-nav">  
 		  {% for item in left_menu %}
 			  <li>
-				  <a  (click)="go("+{{item}}+")" style="cursor:pointer">{{ item.titulo }}</a>
+				  <a  (click)="go('componente')" style="cursor:pointer">{{ item.titulo }}</a>
 			  </li>
 		  {% endfor %}	
 	  </ul>
@@ -27,7 +27,7 @@
 		  </li>
 		  {% for item in right_menu %}
 			 <li>
-				 <a  (click)="go("+{{item}}+")" style="cursor:pointer">{{ item.titulo }}</a>
+				 <a  (click)="go('component')" style="cursor:pointer">{{ item.titulo }}</a>
 			 </li>
 		  {% endfor %}			
 	  </ul>
@@ -38,10 +38,10 @@
 		<div id="f_breadcrumb" style="width:90%; display: inline-block">
 			<ol class="breadcrumb">	
 				{% if current != sitemap %}
-					<li><a href="#" (click)="go("+{{sitemap}}+")"><i class="glyphicon glyphicon-home"></i></a></li>
+					<li><a href="#" (click)="go('component')"><i class="glyphicon glyphicon-home"></i></a></li>
 				{% endif %}
 				{% for item in breadcrumb %}
-					<li  (click)="go("+{{ item }}+")">{{ item.titulo }}</li>
+					<li  (click)="go('component')">{{ item.titulo }}</li>
 				{% endfor %}
 			</ol>
 		</div>
@@ -49,7 +49,7 @@
 
 	<div [ngSwitch]="current.name">
 		{% for item in sitemap %}
-			<template [ngSwitchCase]={{ item.alias }}>
+			<template [ngSwitchCase]="'{{ item.alias }}'">
 				{{ item.component }}
 			</template>
 		{% endfor %}
@@ -58,7 +58,7 @@
 					<div class="bs-glyphicons">
 						<ul class="bs-glyphicons-list">
 							{% for item in items %}
-								<li (click)="go("+{{item}}+")">
+								<li (click)="go('component')">
 									<img src={{ item.image_url }} width="68" height="48" />
 									{% if item.image_class %}
 										<div class="fpc-img" ngClass={{ item.image_class }} width="68" height="48" ></div>
@@ -81,7 +81,7 @@
 	<div class="col-lg-12" style="text-align:center;">
 		<p class="pull-right"><a href="#">{{voltar}}</a></p>
 		<p style="font-weight:bold">{{copyright}}<br>
-			<small>{{site}} <a href={{url}}>{{nome}}</a></small>
+			<small>{{site}} <a href="{{url}}">{{nome}}</a></small>
 		</p>
 	</div>
   </div>
