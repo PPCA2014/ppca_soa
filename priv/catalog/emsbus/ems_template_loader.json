@@ -1,0 +1,13 @@
+{
+    "name": "ems_template_loader",
+	"comment": "Catalog for ems_template_loader",
+	"owner": "emsbus",
+	"version": "1",
+	"service" : "ems_template_loader:start",
+	"url": "/emsbus/ems_template_loader",
+	"async": "false",
+	"type": "KERNEL",
+	"lang" : "erlang",
+	"url_template": "C:/desenvolvimento/barramento/ems-bus-atual/priv/www/template_routes.html",
+	"enable" : false
+}

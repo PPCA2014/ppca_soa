@@ -325,6 +325,7 @@ parse_basic_authorization_header(_) -> {error, einvalid_authorization_header}.
 	
 -spec parse_barer_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
 parse_barer_authorization_header(Header) ->
+io:format("bearer is ~p\n", [Header]),
 	<<Barer:5/binary, _:1/binary, Secret/binary>> = Header,
 	case Barer =:= <<"Barer">> of
 		true ->

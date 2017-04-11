@@ -35,7 +35,7 @@
 			   telefone :: binary(),
 			   celular :: binary(),
 			   ddd :: binary(),
-			   mat_sipes :: binary(),
+			   matricula :: non_neg_integer(),
 			   lotacao :: binary(),
 			   lotacao_sigla :: binary(),
 			   lotacao_centro :: binary(),
@@ -66,6 +66,7 @@
 			     secret :: binary(),
 				 redirect_uri :: binary(),
 				 active :: boolean(),
+				 scope :: binary(),
 				 ctrl_insert,
 				 ctrl_update 
 		}).
