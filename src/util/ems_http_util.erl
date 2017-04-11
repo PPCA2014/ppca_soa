@@ -23,7 +23,8 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Timestamp = calendar:local_time(),
 		T1 = ems_util:get_milliseconds(),
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
-		Host = cowboy_req:host(CowboyReq),
+		{Ip, _} = cowboy_req:peer(CowboyReq),
+		Host = list_to_binary(inet_parse:ntoa(Ip)),
 		Version = cowboy_req:version(CowboyReq),
 		ContentType = cowboy_req:header(<<"content-type">>, CowboyReq),
 		ContentLength = cowboy_req:body_length(CowboyReq),
@@ -76,7 +77,6 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
-		{Ip, _} = cowboy_req:peer(CowboyReq),
 		Request = #request{
 			rid = RID,
 			rowid = Rowid,
