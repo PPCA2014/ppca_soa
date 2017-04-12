@@ -12,9 +12,9 @@ execute(Request = #request{type = Type}) ->
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case TypeAuth of
-            <<"password">> -> 
+			<<"password">> -> 
 				password_grant(Request);
-            <<"client_credentials">> ->
+			<<"client_credentials">> ->
 				client_credentials_grant(Request);
 			<<"token">> ->
 				authorization_request(Request);
@@ -88,6 +88,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 						{ok, Login, Password} ->
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
+							io:format("\nLogin: ~p e Password: ~p\n",[Login,Password]),
 							Auth = oauth2:authorize_client_credentials({ClientId2, Secret}, Scope, []),
 							issue_token(Auth);
 						_Error -> {error, invalid_request}
@@ -134,14 +135,13 @@ code_request(Request) ->
     State      = ems_request:get_querystring(<<"state">>, [],Request),
     Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
     % implementar state
-    %io:format("\nAqui*** \n"),
     Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, State),
    	issue_code(Authorization).
 
 refresh_token_request(Request) ->
-    ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-	Reflesh_token = list_to_binary(ems_request:get_querystring(<<"refresh_token">>, [],Request)),
+	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
+	ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+	Reflesh_token = ems_request:get_querystring(<<"refresh_token">>, [],Request),
 	Scope    = ems_request:get_querystring(<<"scope">>, [],Request),
 	Authorization = oauth2ems_backend:authorize_refresh_token({ClientId, ClientSecret},Reflesh_token,Scope),
     issue_token(Authorization).  
@@ -151,10 +151,9 @@ refresh_token_request(Request) ->
 access_token_request(Request) ->
 	Code = ems_request:get_querystring(<<"code">>, [],Request),
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
-    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-    Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
-   	%io:format("\nAqui*** \n"),
+	RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
+	ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+	Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
     issue_token_and_refresh(Authorization).  
 		
 
