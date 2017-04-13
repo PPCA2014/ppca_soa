@@ -8,8 +8,8 @@
 
 -module(ems_web_service_correios).
 
--include("../include/ems_schema.hrl").
--include("../include/ems_config.hrl").
+-include("include/ems_schema.hrl").
+-include("include/ems_config.hrl").
 
 -export([busca_cep/1]).
   

@@ -10,9 +10,8 @@
 
 -behavior(gen_server). 
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
--include("../include/ems_http_messages.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 %% Server API
 -export([start/1, stop/0]).
