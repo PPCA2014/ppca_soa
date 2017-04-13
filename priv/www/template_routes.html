@@ -48,11 +48,30 @@
 		<div class="fpc_spinner" [ngClass]="{ 'hidden': !loading }"></div>
 
 	<div [ngSwitch]="current.name">
-		{% for item in sitemap %}
-			<template [ngSwitchCase]="'{{ item.alias }}'">
-				{{ item.component }}
-			</template>
+		{% for item in left_menu %}
+			{% if item.component != 'false' %}
+				<template [ngSwitchCase]="'{{ item.name }}'">
+					{{ item.component }}
+				</template>	
+		    {% endif %}	
 		{% endfor %}
+		
+		{% for item in right_menu %}
+			{% if item.component != 'false' %}
+				<template [ngSwitchCase]="'{{ item.name }}'">
+					{{ item.component }}
+				</template>	
+		    {% endif %}	
+		{% endfor %}
+		
+		{% for item in center_navigation %}
+			{% if item.component != 'false' %}
+				<template [ngSwitchCase]="'{{ item.name }}'">
+					{{ item.component }}
+				</template>	
+		    {% endif %}	
+		{% endfor %}
+		
 			<template ngSwitchDefault>
 				<div class="bs-docs-section">
 					<div class="bs-glyphicons">

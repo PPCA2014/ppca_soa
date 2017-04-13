@@ -13,6 +13,9 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
+% Caminho do diretório atual
+-define(CURRENT_PATH, file:get_cwd()).
+
 %%Server API
 -export([start/1,stop/0]).
 
@@ -41,24 +44,19 @@ stop() ->
 
 init(#service{service = Service,
                properties = Props}) ->
-        Page = maps:get(<<"url_template">>, Props),
+        Template = maps:get(<<"url_template">>, Props),
+        {ok,Path} = ?CURRENT_PATH,
+        Page = Path++"/priv/www/"++binary_to_list(Template),
+        SiteMap = maps:get(<<"file_path">>, Props),
         {Rowid, _Secoundid, _Thirdid} = random:seed(),
         State = #state{service = Service,
-        			   operation = load_operation(Page,Rowid)},
+        			   operation = load_operation(Page,"C:/desenvolvimento/workspaceTmp/portal/",Rowid)},
         {ok, State}.
  
 
 terminate(_Reason, _State) ->
 	  ok.
 	 
-
-render(PageModule, Args) ->	
-	case PageModule:render(compile_json(Args)) of
-		{ok, Response} -> 
-		PageCompile = change_values(Response),
-		erlang:iolist_to_binary(PageCompile);
-		Reason -> throw({einvalid_page, Reason, page,  PageModule})
-	end.
 	
 
 	
@@ -67,11 +65,26 @@ render(PageModule, Args) ->
 %% Internal functions
 %%====================================================================
 
-load_operation(Page,Rowid) ->
+load_operation(Page,SiteMap,Rowid) ->
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	case compile_file(binary_to_list(Page), ModuleNamePage) of
-		{ok, PageModule} ->  PageModule;
+	case compile_file(Page, ModuleNamePage) of
+		{ok, PageModule} ->
+			JsonFile = SiteMap++"sitemap.json",
+		    TemplateInput = SiteMap++"/navigator/navigator.html",
+			{ok, File} = file:read_file(JsonFile),
+			Content = unicode:characters_to_list(File),
+			Rendered =  render(PageModule, erlang:iolist_to_binary(Content)),
+			file:write_file("C:/desenvolvimento/workspaceTmp/portal/app/dashboard/navigator/navigator.html", Rendered),
+			ok;
 		_ -> throw({einvalid_page, Page})
+	end.
+	
+render(PageModule, Args) ->	
+	case PageModule:render(compile_json(Args)) of
+		{ok, Response} -> 
+		PageCompile = change_values(Response),
+		erlang:iolist_to_binary(PageCompile);
+		Reason -> throw({einvalid_page, Reason, page,  PageModule})
 	end.
 		
 compile_file(Page, ModuleName) -> 
@@ -87,7 +100,9 @@ change_values(PageModule) ->
 	Page2.
 	
 	
-%% file:write_file("C:\\desenvolvimento\\workspaceTmp\\portal\\app\\dashboard\\navigator\\navigator.html",ems_template_loader:render(page3172,iolist_to_binary(Json))).
+	
+	
+ 
 
 		
 
