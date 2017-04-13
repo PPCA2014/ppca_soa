@@ -12,9 +12,9 @@ execute(Request = #request{type = Type}) ->
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case TypeAuth of
-			<<"password">> -> 
+            <<"password">> -> 
 				password_grant(Request);
-			<<"client_credentials">> ->
+            <<"client_credentials">> ->
 				client_credentials_grant(Request);
 			<<"token">> ->
 				authorization_request(Request);
@@ -52,7 +52,8 @@ execute(Request = #request{type = Type}) ->
 			%};
 		{redirect, ClientId, RedirectUri} ->
 			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
-			LocationPath = lists:concat(["http://164.41.120.42:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
+			LocationPath = lists:concat(["https://127.0.0.1:2302/login/index.html"]),
+			io:format("aqui"),
 			{ok, Request#request{code = 302, 
 									 response_data = <<"{}">>,
 									 response_header = #{
@@ -88,7 +89,6 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 						{ok, Login, Password} ->
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
-							io:format("\nLogin: ~p e Password: ~p\n",[Login,Password]),
 							Auth = oauth2:authorize_client_credentials({ClientId2, Secret}, Scope, []),
 							issue_token(Auth);
 						_Error -> {error, invalid_request}
@@ -115,13 +115,18 @@ password_grant(Request) ->
 
     
 authorization_request(Request) ->
+							io:format("\naqui\n"),
+
     %State       = ems_request:get_querystring(<<"state">>, [],Request),
     %Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
     ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
-		ok -> {redirect, ClientId, RedirectUri};
-		Error -> Error
+		{ok,_} -> 
+						io:format("\naqui\n"),
+						{redirect, ClientId, RedirectUri};
+		Error -> 						io:format("\nerro\n"),
+					Error
 	end,
     Resposta.
 
@@ -139,9 +144,9 @@ code_request(Request) ->
    	issue_code(Authorization).
 
 refresh_token_request(Request) ->
-	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-	ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-	Reflesh_token = ems_request:get_querystring(<<"refresh_token">>, [],Request),
+    ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
+    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+	Reflesh_token = list_to_binary(ems_request:get_querystring(<<"refresh_token">>, [],Request)),
 	Scope    = ems_request:get_querystring(<<"scope">>, [],Request),
 	Authorization = oauth2ems_backend:authorize_refresh_token({ClientId, ClientSecret},Reflesh_token,Scope),
     issue_token(Authorization).  
@@ -151,9 +156,9 @@ refresh_token_request(Request) ->
 access_token_request(Request) ->
 	Code = ems_request:get_querystring(<<"code">>, [],Request),
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-	RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
-	ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-	Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
+    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
+    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+    Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
     issue_token_and_refresh(Authorization).  
 		
 
