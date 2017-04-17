@@ -9,13 +9,13 @@ import {QuestaoService} from "./questao/questao.service";
 import {QuestaoComponent} from "./questao/questao.component";
 import {HomeComponent} from "./home/home.component";
 import {NavigationComponent, AuthenticationService, AuthGuard, ErroComponent} from "seguranca";
-import {RodapeComponent} from "seguranca";
+import {RodapeComponent, RedirectService} from "seguranca";
 
 
 @NgModule({
   imports:      [ BrowserModule, FormsModule, HttpModule, routing ],
   declarations: [ AppComponent, QuestaoComponent, HomeComponent, NavigationComponent, RodapeComponent, ErroComponent ],
-  providers: [appRoutingProviders, QuestaoService, AuthenticationService, AuthGuard ],
+  providers: [appRoutingProviders, QuestaoService, AuthenticationService, AuthGuard, RedirectService ],
   bootstrap: [ AppComponent ]
 })
 export class AppModule { }
