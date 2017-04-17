@@ -24,7 +24,6 @@ execute(Request = #request{type = Type}) ->
 	case Result of
 		{ok, ResponseData} ->
 			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
-			io:format("\n R: ~p \n",[Request]),
 			{ok, Request#request{code = 200, 
 								 response_data = ResponseData2,
 								 content_type = <<"application/json;charset=UTF-8">>}
@@ -164,7 +163,8 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 	Code = ems_request:get_querystring(<<"code">>, [],Request),
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
-    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+    ClientSecret = ems_request:get_querystring(<<"client_secret">>, [],Request),
+    State       = ems_request:get_querystring(<<"state">>, [],Request),
     case ClientSecret == <<>> of
 		true -> 
 			case Authorization =/= undefined of
@@ -173,13 +173,14 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 						{ok, Login, Password} ->
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
+							io:format("\n secret: ~p \n", [Secret]),
 							Auth = oauth2:authorize_code_grant({ClientId2, Secret}, Code, RedirectUri, []),
-							issue_token(Auth);						
+							issue_token_and_refresh(Auth);						
 						_Error -> {error, invalid_request}
 					end;
 				false -> {error, invalid_request}
 			end;
-		false -> 							
+		false -> 
 			Authz = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
 			issue_token_and_refresh(Authz)
 		end.  

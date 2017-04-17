@@ -26,12 +26,12 @@ Login.LoginSistemas = (function() {
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
 		//this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s), tente de novo.</div>'),
-						window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&state=123456&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
+			window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&state=123456&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
 	}
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {
-			window.location.replace('http://127.0.0.1:2301/code_request?client_id=q1w2e3&state=123456&redirect_uri=https%3A%2F%2F1www.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
+			window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&state=123456&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
 	}
 	
 	function getRdirectUri(){

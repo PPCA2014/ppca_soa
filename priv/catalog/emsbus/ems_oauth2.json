@@ -101,10 +101,15 @@
 				"comment": ""
 			},
 			{
+				"name": "client_secret",
+				"type": "string",
+				"comment": ""
+			},
+			{
 				"name": "secret",
 				"type": "string",
 				"comment": ""
-				},
+			},
 			{
 				"name": "code",
 				"type": "string",

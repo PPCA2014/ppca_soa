@@ -77,8 +77,8 @@ stop() ->
 %%%===================================================================
 
 authenticate_user({Login, Password}, _) ->
-    case ems_user:find_by_login_and_password(Login, Password) of
-		{ok, User} ->	{ok, {<<>>,User}};
+    case ems_user:authenticate_login_password(Login, Password) of
+		ok ->	{ok, {<<>>,Login}};
 		%% Padronizar o erro conforme o RFC 6749
 		Error -> Error
 	end.
