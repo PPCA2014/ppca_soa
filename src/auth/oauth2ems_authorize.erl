@@ -24,8 +24,10 @@ execute(Request = #request{type = Type}) ->
 	case Result of
 		{ok, ResponseData} ->
 			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
+			io:format("\n R: ~p \n",[Request]),
 			{ok, Request#request{code = 200, 
-								 response_data = ResponseData2}
+								 response_data = ResponseData2,
+								 content_type = <<"application/json;charset=UTF-8">>}
 			};		
 		
 			% comentado temporariamente
@@ -43,8 +45,7 @@ execute(Request = #request{type = Type}) ->
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
-			LocationPath = "http://164.41.120.42:2301/authz/index.html",
-			io:format("aqui"),
+			LocationPath = "http://127.0.0.1:2301/authz/index.html",
 			{ok, Request#request{code = 302, 
 									 response_data = <<"{}">>,
 									 response_header = #{
@@ -74,7 +75,7 @@ code_request(Request) ->
     case issue_code(Authorization) of
     {ok, Response} ->
 		Code = element(2,lists:nth(1,Response)),
-		LocationPath = binary_to_list(<<RedirectUri/binary,"&code=", Code/binary>>),
+		LocationPath = binary_to_list(<<RedirectUri/binary,"?code=", Code/binary>>),
 		{ok, Request#request{code = 302, 
 						 response_data = <<"{}">>,
 						 response_header = #{
@@ -159,13 +160,30 @@ refresh_token_request(Request) ->
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
 %% URL de teste: GET http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w&secret=qwer&code=dxUlCWj2JYxnGp59nthGfXFFtn3hJTqx
-access_token_request(Request) ->
+access_token_request(Request = #request{authorization = Authorization}) ->
 	Code = ems_request:get_querystring(<<"code">>, [],Request),
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-    Authorization = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
-    issue_token_and_refresh(Authorization).  
+    case ClientSecret == <<>> of
+		true -> 
+			case Authorization =/= undefined of
+				true ->
+					case ems_http_util:parse_basic_authorization_header(Authorization) of
+						{ok, Login, Password} ->
+							ClientId2 = list_to_binary(Login),
+							Secret = list_to_binary(Password),
+							Auth = oauth2:authorize_code_grant({ClientId2, Secret}, Code, RedirectUri, []),
+							issue_token(Auth);						
+						_Error -> {error, invalid_request}
+					end;
+				false -> {error, invalid_request}
+			end;
+		false -> 							
+			Authz = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),
+			issue_token_and_refresh(Authz)
+		end.  
+
 		
 
 issue_token({ok, {_, Auth}}) ->

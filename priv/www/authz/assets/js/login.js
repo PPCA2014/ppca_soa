@@ -15,8 +15,8 @@ Login.LoginSistemas = (function() {
 	
 	function onBotaoLoginClick() {
 		$.ajax({
-			url: 'http://127.0.0.1:2301/authz?client_id=q1w2e3&state=123456&redirect_uri=https%3A%2F%2F164.41.120.42%3A2302%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val(),
-			method: 'GET',
+			url: 'http://127.0.0.1:2301/',
+			method: 'POST',
 			contentType: 'application/json',
 			error: onErroSalvandoEstilo.bind(this),
 			success: onEstiloSalvo.bind(this)
@@ -25,12 +25,13 @@ Login.LoginSistemas = (function() {
 	
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
-		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
+		//this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s), tente de novo.</div>'),
+						window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&state=123456&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
 	}
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {
-		console.log('Autenticado com sucesso');
+			window.location.replace('http://127.0.0.1:2301/code_request?client_id=q1w2e3&state=123456&redirect_uri=https%3A%2F%2F1www.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
 	}
 	
 	function getRdirectUri(){

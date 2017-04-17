@@ -130,7 +130,7 @@
 		"version": "1",
 		"service" : "oauth2ems_authorize:code_request",
 		"url": "/code_request",
-		"type": "POST",
+		"type": "GET",
 		"authorization" : "public",
 		"querystring": [
 			{
@@ -172,6 +172,23 @@
 		"lang" : "erlang"
 	},
 	{
+		"name" : "/callback",
+		"comment": "Simulção de recurso",
+		"owner": "oauth2ems",
+		"version": "1",
+		"service" : "oauth2ems_client:callback",
+		"url": "/callback",
+		"type": "GET",
+		"querystring": [
+			{
+				"name": "code",
+				"type": "string",
+				"comment": "Token de acesso"
+			}
+		],
+		"lang" : "erlang"
+	},
+	{
 		"name" : "/recurso",
 		"comment": "Simulção de recurso",
 		"owner": "oauth2ems",
@@ -203,7 +220,7 @@
 		"lang" : "erlang"
 	},
 	{
-		"name": "/lgin",
+		"name": "authz",
 		"comment": "Pagina de authz ErlangMS",
 		"owner": "seguranca",
 		"version": "1.0.0",
