@@ -353,13 +353,16 @@ parse_tcp_listen_address(ListenAddress) ->
 			  end, ListenAddress).
 
 parse_allowed_address_t(all) -> all;
+parse_allowed_address_t(undefined) -> undefined;
 parse_allowed_address_t(AllowedAddress) ->
 	lists:map(fun(IP) -> 
 					ems_http_util:mask_ipaddress_to_tuple(IP)
 			  end, AllowedAddress).
 
 parse_allowed_address(all) -> all;
-parse_allowed_address(AddrList) -> ems_util:binlist_to_list(AddrList).
+parse_allowed_address(undefined) -> all;
+parse_allowed_address(AddrList) -> 
+	ems_util:binlist_to_list(AddrList).
 
 
 parse_tcp_port(undefined) -> undefined;
@@ -456,6 +459,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
 						Path = parse_path_catalog(maps:get(<<"path">>, H, <<>>), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
+
 						valida_lang(Lang),
 						valida_name_service(Name),
 						valida_type_service(Type),
@@ -491,11 +495,11 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 								Host = '',
 								HostName = Conf#config.ems_hostname,
 								compile_modulo_erlang(Path, ModuleNameCanonical);
-								%valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
 							_ ->	
 								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
 						end,
+
 						CheckGrantPermission = maps:get(<<"check_grant_permission">>, H, false),
 						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
 						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
