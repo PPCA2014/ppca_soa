@@ -181,8 +181,8 @@ parse_datasources(Json) ->
 	parse_datasources(maps:keys(Datasources), Datasources, []).
 	
 	
-parse_tcp_allowed_address(undefined) -> undefined;
-parse_tcp_allowed_address([<<"*.*.*.*">>]) -> undefined;
+parse_tcp_allowed_address(undefined) -> all;
+parse_tcp_allowed_address([<<"*.*.*.*">>]) -> all;
 parse_tcp_allowed_address(V) -> V.
 
 
