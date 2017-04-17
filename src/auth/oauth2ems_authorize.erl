@@ -31,6 +31,7 @@ execute(Request = #request{type = Type}) ->
 	end,  
 	case Result of
 		{ok, ResponseData} ->
+			io:format("response datais ~p\n", [ResponseData]),
 			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
 			{ok, Request#request{code = 200, 
 								 response_data = ResponseData2}
@@ -105,7 +106,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 password_grant(Request) -> 
 	Username = ems_request:get_querystring(<<"username">>, <<>>, Request),
 	Password = ems_request:get_querystring(<<"password">>, <<>>, Request),
-	Scope = ems_request:get_querystring(<<"scope">>, "", Request),	
+	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
 	Authorization = oauth2:authorize_password({Username,Password}, Scope, []),
 	issue_token(Authorization).
 	

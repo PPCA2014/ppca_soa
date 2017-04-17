@@ -6,6 +6,7 @@
 	"service" : "ems_web_service_correios:busca_cep",
 	"url": "/buscacep/:id",
 	"url_correio":"https://viacep.com.br/ws/",
+	"path" : "{{ portal_api_management }}",
 	"type": "GET",
 	"APIkey":"true",
 	"lang" : "erlang"
