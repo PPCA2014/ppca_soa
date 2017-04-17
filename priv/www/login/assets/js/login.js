@@ -30,7 +30,7 @@ Login.LoginSistemas = (function() {
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {
-		console.log('Autenticado com sucesso');
+		localStorage.setItem('currentUser', estilo);
 	}
 	
 	function getRdirectUri(){
