@@ -43,7 +43,7 @@ execute(Request = #request{type = Type}) ->
 			%{ok, Request#request{code = 200, 
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
-		{redirect, ClientId, RedirectUri} ->
+		{redirect, _, _} ->
 			LocationPath = "http://127.0.0.1:2301/authz/index.html",
 			{ok, Request#request{code = 302, 
 									 response_data = <<"{}">>,
@@ -164,7 +164,7 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"client_secret">>, [],Request),
-    State       = ems_request:get_querystring(<<"state">>, [],Request),
+    %State       = ems_request:get_querystring(<<"state">>, [],Request),
     case ClientSecret == <<>> of
 		true -> 
 			case Authorization =/= undefined of
@@ -173,7 +173,6 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 						{ok, Login, Password} ->
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
-							io:format("\n secret: ~p \n", [Secret]),
 							Auth = oauth2:authorize_code_grant({ClientId2, Secret}, Code, RedirectUri, []),
 							issue_token_and_refresh(Auth);						
 						_Error -> {error, invalid_request}

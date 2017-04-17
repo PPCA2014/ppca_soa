@@ -222,6 +222,13 @@
 		"type": "GET",
 		"cache_control" : "no-cache",
 		"expires_minute" : 0,
+		"querystring": [
+			{
+				"name": "client_id",
+				"type": "string",
+				"comment": ""
+			}
+		],
 		"lang" : "erlang"
 	},
 	{
