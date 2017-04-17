@@ -281,11 +281,15 @@ get_milliseconds() ->
 
 %% @doc Remove o último backslash da Url
 remove_ult_backslash_url("/") -> "/";
-remove_ult_backslash_url(Url) -> 
-	case lists:suffix("/", Url) of
-		true -> lists:droplast(Url);
-		false -> Url
-	end.
+remove_ult_backslash_url([H|T]) -> 
+	remove_ult_backslash_url(T, [H]).
+
+remove_ult_backslash_url([], Result) -> 
+	lists:reverse(Result);
+remove_ult_backslash_url("/", Result) -> 
+	lists:reverse(Result);
+remove_ult_backslash_url([H|T], Result) -> 
+	remove_ult_backslash_url(T, [H|Result]).
 
 %% @doc Função name case
 name_case([H|T]) when H >= $a, H =< $z -> 

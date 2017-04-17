@@ -50,10 +50,6 @@ init(_Service) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast({inotify_event, Fun, EventTag, Msg}, State) ->
-	do_inotify_event(Fun, EventTag, Msg),
-	{noreply, State, 0};
-
 handle_cast({watch, Path, Fun}, State) ->
 	do_watch(Path, Fun),
 	{noreply, State, 0};
@@ -110,8 +106,6 @@ do_unwatch(Path) ->
 	end,
 	ok.
 	
-do_inotify_event(Fun, EventTag, Msg) ->	ok.
-
 do_monitor() ->
 	Paths = ets:match(ems_file_watcher_watch, '$1'),
 	do_monitor(Paths).
