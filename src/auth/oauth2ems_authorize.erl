@@ -20,8 +20,6 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -
 			<<"token">> ->
 				authorization_request(Request);
 			<<"code">> ->
-				io:format("is code\n"),
-
 				authorization_request(Request);	
 			<<"authorization_code">> ->
 				access_token_request(Request);
@@ -30,11 +28,11 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -
 			<<"authz">> ->
 				% Apenas para simulação
 				code_request(Request);				
-             _ -> {error, invalid_request}
+             _ -> 
+				{error, invalid_oauth2_typeauth}
 	end,  
 	case Result of
 		{ok, ResponseData} ->
-			io:format("response datais ~p\n", [ResponseData]),
 			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
 			{ok, Request#request{code = 200, 
 								 response_data = ResponseData2}
@@ -55,8 +53,7 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
-			LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":2301/login/index.html?response_type=code2&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
-			io:format("redirect 2 ~p  \n", [LocationPath]),
+			LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":2301/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
 			{ok, Request#request{code = 302, 
 									 response_header = #{
 															<<"location">> => LocationPath
@@ -128,10 +125,8 @@ authorization_request(Request) ->
     ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
-		ok -> io:format("passou\n"), {redirect, ClientId, RedirectUri};
-		Error ->
-			io:format("error is ~p\n", [Error]),
-		 Error
+		ok -> {redirect, ClientId, RedirectUri};
+		Error -> Error
 	end,
     Resposta.
 
