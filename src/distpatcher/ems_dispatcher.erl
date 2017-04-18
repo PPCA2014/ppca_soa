@@ -46,7 +46,7 @@ lookup_request(Request = #request{rid = Rid,
 								  payload = Payload,
 								  t1 = T1,
 								  ip = Ip,
-								  host = IpBin,
+								  ip_bin = IpBin,
 								  content_type = ContentTypeReq}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	case ems_catalog:lookup(Request) of

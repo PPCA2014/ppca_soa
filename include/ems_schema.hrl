@@ -103,23 +103,25 @@
 					  etag :: string(),							%% Parâmetro ETag
 					  if_modified_since :: string(),			%% Parâmetro If-Modified-Since
 					  if_none_match :: string(),			    %% Parâmetro If-None-Match
-					  host :: string(),							%% Host que iniciou a requisição
+					  ip :: tuple(),
+					  ip_bin :: binary(),						%% Peer que iniciou a requisição
 					  t1,										%% Utilizado para cálculo da latência (Tempo inicial em milisegundos)
 					  socket :: gen_tcp:socket(),				%% Socket da requisição
 					  worker :: pid(),							%% Processo worker http que vai atender a requisição
 					  status_send,								%% Registra que a mensagem foi entregue ou o erro ocorrido na entrega
-					  authorization :: string(),				%% Dados da autenticação da requisição
+					  authorization :: binary(),				%% Dados da autenticação da requisição
 					  user = public :: #user{},					%% Usuário da requisição ou anonimo
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
-					  protocol = http,							%% Protocol (http, ldap)
+					  protocol :: atom(),						%% Protocol (http, ldap)
+					  protocol_bin :: binary(),					
 					  result_cache = false :: boolean(),
 					  result_cache_rid,
 					  response_data = <<>>,
 					  response_header = #{},
 					  req_hash,
-					  ip
+					  host :: binary()							%% Ip do barramento
 				  }).
 
 

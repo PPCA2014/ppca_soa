@@ -2,11 +2,12 @@
 
 -export([execute/1]).
 
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 
 
-execute(Request = #request{type = Type}) -> 
+execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -> 
 	TypeAuth = case Type of
 		"GET" -> ems_request:get_querystring(<<"response_type">>, <<>>, Request);
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
@@ -19,6 +20,8 @@ execute(Request = #request{type = Type}) ->
 			<<"token">> ->
 				authorization_request(Request);
 			<<"code">> ->
+				io:format("is code\n"),
+
 				authorization_request(Request);	
 			<<"authorization_code">> ->
 				access_token_request(Request);
@@ -52,10 +55,9 @@ execute(Request = #request{type = Type}) ->
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
-			%LocationPath = lists:concat(["http://127.0.0.1:2301/authorize?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
-			LocationPath = lists:concat(["http://164.41.120.42:2301/portal/index.html?response_type=code2&client_id=", ClientId, "&redirect_uri=", RedirectUri]),
+			LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":2301/login/index.html?response_type=code2&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
+			io:format("redirect 2 ~p  \n", [LocationPath]),
 			{ok, Request#request{code = 302, 
-									 response_data = <<"{}">>,
 									 response_header = #{
 															<<"location">> => LocationPath
 														}
@@ -78,15 +80,19 @@ execute(Request = #request{type = Type}) ->
 %% Cliente Credencial Grant- seção 4.4.1 do RFC 6749. 
 %% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=client_credentials&client_id=s6BhdRkqt3&secret=qwer
 client_credentials_grant(Request = #request{authorization = Authorization}) ->
+	io:format("teste2\n"),
 	ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
 	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
 	% O ClientId também pode ser passado via header Authorization
 	case ClientId == <<>> of
 		true -> 
+			io:format("teste3\n"),
 			case Authorization =/= undefined of
 				true ->
+					io:format("teste4\n"),
 					case ems_http_util:parse_basic_authorization_header(Authorization) of
 						{ok, Login, Password} ->
+							io:format("teste5\n"),
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
 							Auth = oauth2:authorize_client_credentials({ClientId2, Secret}, Scope, []),
@@ -95,8 +101,10 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 					end;
 				false -> {error, invalid_request}
 			end;
-		false -> 							
+		false -> 			
+							io:format("teste6\n"),
 			Secret = ems_request:get_querystring(<<"secret">>, <<>>, Request),
+			io:format("teste7 ~p ~p\n", [ClientId, Secret]),
 			Auth = oauth2:authorize_client_credentials({ClientId, Secret}, Scope, []),
 			issue_token(Auth)
 	end.
@@ -120,8 +128,10 @@ authorization_request(Request) ->
     ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
-		ok -> {redirect, ClientId, RedirectUri};
-		Error -> Error
+		ok -> io:format("passou\n"), {redirect, ClientId, RedirectUri};
+		Error ->
+			io:format("error is ~p\n", [Error]),
+		 Error
 	end,
     Resposta.
 

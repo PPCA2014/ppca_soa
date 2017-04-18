@@ -129,6 +129,13 @@
 	{
 		"catalog": "/emsbus/ems_file_watcher", 
 		"file": "ems_file_watcher.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_auth_login", 
+		"file": "ems_auth_login.json"
 	}
+
+
 	
 ]

@@ -78,7 +78,6 @@ stop() ->
 authenticate_user({Login, Password}, _) ->
     case ems_user:find_by_login_and_password(Login, Password) of
 		{ok, User} ->	
-			io:format("encontrou!\n"),
 			{ok, {<<>>,User}};
 		%% Padronizar o erro conforme o RFC 6749
 		Error -> Error
@@ -147,17 +146,17 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
     case get_client_identity(ClientId,[]) of
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
-				true ->	{ok,[]};
-				_ -> {error, mismatch}
+				true ->	ok;
+				_ -> {error, einvalid_redirection_uri}
 			end;
         _Error ->
-            {error, mismatch}
+            {error, einvalid_redirection_uri}
     end;
 
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
-		true -> {ok,[]};
-		_Error -> {error, mismatch}
+		true -> ok;
+		_Error -> {error, einvalid_redirection_uri}
     end.
     
 verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
@@ -167,17 +166,17 @@ verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
 				true -> {ok, {[],Scope}};
 				_ -> {error, invalid_client}
 			end;
-        Error = {error, notfound} ->  Error
+        Error ->  Error
     end;
 
-verify_client_scope(#client{codigo = ClientID},Scope, _) ->
-	case ems_client:find_by_codigo(ClientID) of
+verify_client_scope(#client{codigo = ClientId},Scope, _) ->
+	case ems_client:find_by_codigo(ClientId) of
         {ok, #client{scope = Scope0}} ->     
 			case Scope =:= Scope0 of
 				true -> {ok, {[],Scope0}};
 				_ -> {error, invalid_client}
 			end;
-        Error = {error, notfound} ->  Error
+        Error ->  Error
     end.
 verify_resowner_scope(_ResOwner, Scope, _) ->
     {ok, {[],Scope}}.

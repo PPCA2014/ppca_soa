@@ -55,7 +55,7 @@ find_by_codigo(Codigo) ->
 find_by_codigo_and_secret(Codigo, Secret) ->
 	case find_by_codigo(Codigo) of
 		{ok, Client = #client{secret = CliSecret}} -> 
-			case CliSecret =:= ems_util:criptografia_sha1(Secret) of
+			case CliSecret =:= Secret of
 				true -> {ok, Client};
 				false -> {error, enoent}
 			end;
