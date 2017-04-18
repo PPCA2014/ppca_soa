@@ -77,19 +77,15 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -
 %% Cliente Credencial Grant- seção 4.4.1 do RFC 6749. 
 %% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=client_credentials&client_id=s6BhdRkqt3&secret=qwer
 client_credentials_grant(Request = #request{authorization = Authorization}) ->
-	io:format("teste2\n"),
 	ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
 	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
 	% O ClientId também pode ser passado via header Authorization
 	case ClientId == <<>> of
 		true -> 
-			io:format("teste3\n"),
 			case Authorization =/= undefined of
 				true ->
-					io:format("teste4\n"),
 					case ems_http_util:parse_basic_authorization_header(Authorization) of
 						{ok, Login, Password} ->
-							io:format("teste5\n"),
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
 							Auth = oauth2:authorize_client_credentials({ClientId2, Secret}, Scope, []),
@@ -99,9 +95,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 				false -> {error, invalid_request}
 			end;
 		false -> 			
-							io:format("teste6\n"),
 			Secret = ems_request:get_querystring(<<"secret">>, <<>>, Request),
-			io:format("teste7 ~p ~p\n", [ClientId, Secret]),
 			Auth = oauth2:authorize_client_credentials({ClientId, Secret}, Scope, []),
 			issue_token(Auth)
 	end.
