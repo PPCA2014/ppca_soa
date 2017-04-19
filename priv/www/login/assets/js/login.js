@@ -164,9 +164,10 @@ Login.LoginSistemas = (function() {
 		}
 		var baseUrl=protocol + '//' + window.location.hostname + port; 
 		$.ajax({
-			url: baseUrl + '/authorize?response_type=code'+
+			url: baseUrl + '/authorize?response_type=authorization_code'+
 				 '&client_id='+getRdirectUri()['client_id']+
 				 '&state='+getRdirectUri()['state']+
+				 '&secret='+getRdirectUri()['secret']+
 				 '&redirect_uri='+getRdirectUri()['redirect_uri'],
 			method: 'GET',
 			beforeSend: function (xhr) {
