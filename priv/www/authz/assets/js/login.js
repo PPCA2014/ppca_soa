@@ -33,6 +33,13 @@ Login.LoginSistemas = (function() {
 		//this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s), tente de novo.</div>');
 		window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
 	}
+	function httpGet(theUrl){
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open( "GET", theUrl, false ); // false for synchronous request
+		xmlHttp.send( null );
+		return xmlHttp.responseText;
+	}
+
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {

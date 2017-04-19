@@ -13,8 +13,8 @@ execute(Request = #request{type = Type}) ->
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case TypeAuth of
-            <<"password">> -> password_grant(Request);
-            <<"client_credentials">> ->	client_credentials_grant(Request);
+			<<"password">> -> password_grant(Request);
+			<<"client_credentials">> ->	client_credentials_grant(Request);
 			<<"token">> -> authorization_request(Request);
 			<<"code">> ->	authorization_request(Request);	
 			<<"authorization_code">> ->		access_token_request(Request);
@@ -43,8 +43,8 @@ execute(Request = #request{type = Type}) ->
 			%{ok, Request#request{code = 200, 
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
-		{redirect, _, _} ->
-			LocationPath = "http://127.0.0.1:2301/authz/index.html",
+		{redirect, ClientID, RedirectUri} ->
+			LocationPath = <<"http://127.0.0.1:2301/authz/index.html?client_id=",ClientID/binary,"&redirect_uri=",RedirectUri/binary>>,
 			{ok, Request#request{code = 302, 
 									 response_data = <<"{}">>,
 									 response_header = #{
@@ -70,11 +70,11 @@ code_request(Request) ->
     State      = ems_request:get_querystring(<<"state">>, [],Request),
     Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
     % implementar state
-    Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, State),
+    Authorization = oauth2:authorize_code_request({Username,Password}, ClientId, RedirectUri, Scope, []),
     case issue_code(Authorization) of
     {ok, Response} ->
 		Code = element(2,lists:nth(1,Response)),
-		LocationPath = binary_to_list(<<RedirectUri/binary,"?code=", Code/binary>>),
+		LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
 		{ok, Request#request{code = 302, 
 						 response_data = <<"{}">>,
 						 response_header = #{
@@ -83,10 +83,14 @@ code_request(Request) ->
 						}
 		};
 	Error ->
-			ResponseData = ems_schema:to_json(Error),
-			{ok, Request#request{code = 401, 
-								 response_data = ResponseData}
-			}
+			LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
+			{ok, Request#request{code = 302, 
+						 response_data = <<"{}">>,
+						 response_header = #{
+												<<"location">> => LocationPath
+											}
+						}
+		}
 	end.
 
 	
@@ -135,7 +139,6 @@ password_grant(Request) ->
 
     
 authorization_request(Request) ->
-    %State       = ems_request:get_querystring(<<"state">>, [],Request),
     %Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
     ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
@@ -152,7 +155,7 @@ authorization_request(Request) ->
 refresh_token_request(Request) ->
     ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
-	Reflesh_token = list_to_binary(ems_request:get_querystring(<<"refresh_token">>, [],Request)),
+	Reflesh_token = ems_request:get_querystring(<<"refresh_token">>, [],Request),
 	Scope    = ems_request:get_querystring(<<"scope">>, [],Request),
 	Authorization = oauth2ems_backend:authorize_refresh_token({ClientId, ClientSecret},Reflesh_token,Scope),
     issue_token(Authorization).  
@@ -164,7 +167,6 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 	ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     ClientSecret = ems_request:get_querystring(<<"client_secret">>, [],Request),
-    %State       = ems_request:get_querystring(<<"state">>, [],Request),
     case ClientSecret == <<>> of
 		true -> 
 			case Authorization =/= undefined of
