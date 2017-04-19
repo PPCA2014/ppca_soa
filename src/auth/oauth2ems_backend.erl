@@ -77,6 +77,8 @@ stop() ->
 %%%===================================================================
 
 authenticate_user({Login, Password}, _) ->
+   	io:format("\n ems_user:authenticate_login_password(Login, Password): ~p\n",[ems_user:authenticate_login_password(Login, Password)]),
+
     case ems_user:authenticate_login_password(Login, Password) of
 		ok ->	{ok, {<<>>,Login}};
 		%% Padronizar o erro conforme o RFC 6749
