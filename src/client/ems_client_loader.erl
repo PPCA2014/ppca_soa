@@ -240,6 +240,7 @@ insert_clients([{Codigo, Name, Secret, RedirectUri, Description, Active}|T], Cou
 				     secret = ?UTF8_STRING(Secret),
 				     redirect_uri = ?UTF8_STRING(RedirectUri),
 				     description = ?UTF8_STRING(Description),
+				     scope = <<>>,
 				     active = Active,
 				     ctrl_insert = CtrlInsert},
 	mnesia:dirty_write(Client),
@@ -254,6 +255,7 @@ update_clients([{Codigo, Name, Secret, RedirectUri, Description, Active}|T], Cou
 									secret = ?UTF8_STRING(Secret),
 									redirect_uri = ?UTF8_STRING(RedirectUri),
 									description = ?UTF8_STRING(Description),
+									scope = <<>>,
 									active = Active,
 									ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
@@ -263,6 +265,7 @@ update_clients([{Codigo, Name, Secret, RedirectUri, Description, Active}|T], Cou
 							 secret = ?UTF8_STRING(Secret),
 							 redirect_uri = ?UTF8_STRING(RedirectUri),
 							 description = ?UTF8_STRING(Description),
+							 scope = <<>>,
 							 active = Active,
 							 ctrl_insert = CtrlUpdate}
 	end,

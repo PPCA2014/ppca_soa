@@ -24,11 +24,14 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		T1 = ems_util:get_milliseconds(),
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
 		{Ip, _} = cowboy_req:peer(CowboyReq),
-		Host = list_to_binary(inet_parse:ntoa(Ip)),
+		IpBin = list_to_binary(inet_parse:ntoa(Ip)),
+		Host = cowboy_req:host(CowboyReq),
 		Version = cowboy_req:version(CowboyReq),
 		ContentType = cowboy_req:header(<<"content-type">>, CowboyReq),
 		ContentLength = cowboy_req:body_length(CowboyReq),
 		QuerystringBin = cowboy_req:qs(CowboyReq),
+		ProtocolBin = cowboy_req:scheme(CowboyReq),
+		Protocol = parse_protocol(ProtocolBin),
 		case QuerystringBin of
 			<<>> -> QuerystringMap = #{};
 			_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
@@ -93,6 +96,8 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			user_agent = User_Agent,
 			accept_encoding = Accept_Encoding,
 			cache_control = Cache_Control,
+			ip = Ip,
+			ip_bin = IpBin,
 			host = Host,
 			payload = Payload, 
 			payload_map = PayloadMap,
@@ -101,11 +106,11 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			worker_send = WorkerSend,
 			if_modified_since = IfModifiedSince,
 			if_none_match = IfNoneMatch,
-			protocol = http,
+			protocol = Protocol,
+			protocol_bin = ProtocolBin,
 			result_cache = false,
 			t1 = T1,
-			req_hash = ReqHash,
-			ip = Ip
+			req_hash = ReqHash
 		},	
 		{ok, Request}
 	catch
@@ -113,6 +118,11 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			ems_logger:error("ems_http_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.
+
+
+parse_protocol(<<"http">>) -> http;
+parse_protocol(<<"https">>) -> https;
+parse_protocol(_) -> erlang:error(einvalid_protocol).
 
 
 -spec parse_if_modified_since(binary() | undefined) -> calendar:datetime().
@@ -171,6 +181,7 @@ header_cache_control(<<"application/font-woff">>) ->
 header_cache_control(<<_MimeType/binary>>) ->
 	<<"Cache-Control: no-cache"/utf8>>.
 
+-spec parse_querystring(list()) -> list(tuple()).
 parse_querystring(Q) ->
 	Q1 = httpd:parse_query(Q),
 	Q2 = [{iolist_to_binary(P), 
@@ -325,7 +336,6 @@ parse_basic_authorization_header(_) -> {error, einvalid_authorization_header}.
 	
 -spec parse_barer_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
 parse_barer_authorization_header(Header) ->
-io:format("bearer is ~p\n", [Header]),
 	<<Barer:5/binary, _:1/binary, Secret/binary>> = Header,
 	case Barer =:= <<"Barer">> of
 		true ->

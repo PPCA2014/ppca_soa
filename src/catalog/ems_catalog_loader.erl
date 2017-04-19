@@ -220,19 +220,20 @@ valida_length(Value, MaxLength) ->
 		false -> erlang:error(invalid_length)
 	end.
 
-valida_web_service(_, _, _, _, false) -> ok;
-valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
-	Module = list_to_atom(ModuleName),
-	Function = list_to_atom(FunctionName),
-	case proplists:lookup(Function, apply(Module, module_info, [exports])) of
-		{Function, 1} -> ok;
-		{Function, 2} -> ok;
-		_ -> throw({enoent, ServiceImpl, Cat})
-	end.
+%valida_web_service(_, _, _, _, false) -> ok;
+%valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
+%	Module = list_to_atom(ModuleName),
+%	Function = list_to_atom(FunctionName),
+%	case proplists:lookup(Function, apply(Module, module_info, [exports])) of
+%		{Function, 1} -> ok;
+%		{Function, 2} -> ok;
+%		_ -> throw({enoent, ServiceImpl, Cat})
+%	end.
 
 
 % Process the path "~" and "." wildcards and variable path. Return path
 -spec parse_path_catalog(string(), list(tuple())) -> string().
+parse_path_catalog(<<>>, _) -> undefined;
 parse_path_catalog(Path, StaticFilePathList) when is_binary(Path) ->
 	parse_path_catalog(binary_to_list(Path), StaticFilePathList);
 parse_path_catalog(Path, StaticFilePathList) ->
@@ -352,13 +353,16 @@ parse_tcp_listen_address(ListenAddress) ->
 			  end, ListenAddress).
 
 parse_allowed_address_t(all) -> all;
+parse_allowed_address_t(undefined) -> undefined;
 parse_allowed_address_t(AllowedAddress) ->
 	lists:map(fun(IP) -> 
 					ems_http_util:mask_ipaddress_to_tuple(IP)
 			  end, AllowedAddress).
 
 parse_allowed_address(all) -> all;
-parse_allowed_address(AddrList) -> ems_util:binlist_to_list(AddrList).
+parse_allowed_address(undefined) -> all;
+parse_allowed_address(AddrList) -> 
+	ems_util:binlist_to_list(AddrList).
 
 
 parse_tcp_port(undefined) -> undefined;
@@ -374,6 +378,24 @@ parse_tcp_port(Port) when is_integer(Port) ->
 
 parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
 parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
+
+
+compile_modulo_erlang(undefined, _) -> ok;
+compile_modulo_erlang(Path, ModuleNameCanonical) ->
+	FileName = Path ++ "/" ++ ModuleNameCanonical ++ ".erl",
+	case filelib:is_regular(FileName) of
+		true ->
+			io:format("Compile file ~p ", [FileName]),
+			code:add_path(Path), 
+			case compile:file(FileName, [{outdir, Path ++ "/"}]) of
+				error -> io:format("[ ERROR ]\n");
+				{error, Errors, _Warnings} -> 
+					io:format("[ ERROR ]\n"),
+					io:format_error("~p\n", [Errors]);
+				_ -> io:format("[ OK ]\n")
+			end;
+		_ -> ok
+	end.
 
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
@@ -435,7 +457,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
 						Public = maps:get(<<"public">>, H, true),
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
-						Path = parse_path_catalog(maps:get(<<"path">>, H, ?STATIC_FILE_PATH), Conf#config.static_file_path),
+						Path = parse_path_catalog(maps:get(<<"path">>, H, <<>>), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
 						valida_lang(Lang),
 						valida_name_service(Name),
@@ -471,7 +493,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 								Node = <<>>,
 								Host = '',
 								HostName = Conf#config.ems_hostname,
-								valida_web_service(H, ServiceImpl, ModuleName, FunctionName, Enable);
+								compile_modulo_erlang(Path, ModuleNameCanonical);
 							_ ->	
 								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)

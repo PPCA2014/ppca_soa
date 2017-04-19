@@ -96,7 +96,7 @@ do_connect(Datasource = #service_datasource{connection = Connection, type = sqli
 	{ok, Datasource2};
 do_connect(Datasource = #service_datasource{connection = Connection}) -> 
 	try
-		case odbc:connect(Connection, [{scrollable_cursors, off}, {timeout, 15000}, {trace_driver, off}, {extended_errors, off}]) of
+		case odbc:connect(Connection, [{scrollable_cursors, on}, {timeout, 120000}, {trace_driver, off}, {extended_errors, off}]) of
 			{ok, ConnRef}	-> 
 				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
 				{ok, Datasource2};

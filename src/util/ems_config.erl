@@ -166,7 +166,9 @@ parse_cat_path_search(Json) ->
 parse_static_file_path(Json) ->
 	StaticFilePath = maps:get(<<"static_file_path">>, Json, #{}),
 	StaticFilePathList = maps:to_list(StaticFilePath),
-	[{K, ems_util:remove_ult_backslash_url(binary_to_list(V))} || {K, V} <- StaticFilePathList].
+	StaticFilePathList2 = [{<<"login_path">>, list_to_binary(?STATIC_FILE_PATH ++ "/login")} | StaticFilePathList],
+	StaticFilePathList3 = [{<<"www_path">>, list_to_binary(?STATIC_FILE_PATH)} | StaticFilePathList2],
+	[{K, ems_util:remove_ult_backslash_url(binary_to_list(V))} || {K, V} <- StaticFilePathList3].
 	
 
 parse_datasources([], _, Result) -> maps:from_list(Result);
@@ -181,8 +183,8 @@ parse_datasources(Json) ->
 	parse_datasources(maps:keys(Datasources), Datasources, []).
 	
 	
-parse_tcp_allowed_address(undefined) -> undefined;
-parse_tcp_allowed_address([<<"*.*.*.*">>]) -> undefined;
+parse_tcp_allowed_address(undefined) -> all;
+parse_tcp_allowed_address([<<"*.*.*.*">>]) -> all;
 parse_tcp_allowed_address(V) -> V.
 
 

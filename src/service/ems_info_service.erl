@@ -8,7 +8,7 @@
 
 -module(ems_info_service).
 
--include("../include/ems_schema.hrl").
+-include("include/ems_schema.hrl").
 
 -export([info/1]).
   

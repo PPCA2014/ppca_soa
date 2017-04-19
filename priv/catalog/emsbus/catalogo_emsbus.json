@@ -120,8 +120,22 @@
 		"catalog": "/emsbus/ems_client_loader", 
 		"file": "ems_client_loader.json"
 	},
+	
 	{
 		"catalog": "/emsbus/ems_template_loader", 
 		"file": "ems_template_loader.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_file_watcher", 
+		"file": "ems_file_watcher.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_auth_login", 
+		"file": "ems_auth_login.json"
 	}
+
+
+	
 ]

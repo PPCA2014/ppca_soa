@@ -3,11 +3,12 @@
 -export([execute/1]).
 -export([code_request/1]).
 
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 
 
-execute(Request = #request{type = Type}) -> 
+execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -> 
 	TypeAuth = case Type of
 		"GET" -> ems_request:get_querystring(<<"response_type">>, <<>>, Request);
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
@@ -19,7 +20,7 @@ execute(Request = #request{type = Type}) ->
 			<<"code">> ->	authorization_request(Request);	
 			<<"authorization_code">> ->		access_token_request(Request);
 			<<"refresh_token">> ->	refresh_token_request(Request);	
-			 _ -> {error, invalid_request}
+			 _ -> {error, invalid_oauth2_typeauth}
 	end,  
 	case Result of
 		{ok, ResponseData} ->
@@ -43,16 +44,17 @@ execute(Request = #request{type = Type}) ->
 			%{ok, Request#request{code = 200, 
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
-		{redirect, ClientID, RedirectUri} ->
-			LocationPath = <<"http://127.0.0.1:2301/authz/index.html?client_id=",ClientID/binary,"&redirect_uri=",RedirectUri/binary>>,
+		{redirect, ClientId, RedirectUri} ->
+			LocationPath = iolist_to_binary([<<"http://"/utf8>>, Host, <<":2301/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
+			io:format("\nURL: ~p\n",[LocationPath]),
 			{ok, Request#request{code = 302, 
-									 response_data = <<"{}">>,
 									 response_header = #{
 															<<"location">> => LocationPath
 														}
 									}
 			};
 		Error ->
+			io:format("\n Error: ~p\n",[Error]),
 			ResponseData = ems_schema:to_json(Error),
 			{ok, Request#request{code = 401, 
 								 response_data = ResponseData}
@@ -119,7 +121,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 					end;
 				false -> {error, invalid_request}
 			end;
-		false -> 							
+		false -> 			
 			Secret = ems_request:get_querystring(<<"secret">>, <<>>, Request),
 			Auth = oauth2:authorize_client_credentials({ClientId, Secret}, Scope, []),
 			issue_token(Auth)
@@ -130,7 +132,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 password_grant(Request) -> 
 	Username = ems_request:get_querystring(<<"username">>, <<>>, Request),
 	Password = ems_request:get_querystring(<<"password">>, <<>>, Request),
-	Scope = ems_request:get_querystring(<<"scope">>, "", Request),	
+	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
 	Authorization = oauth2:authorize_password({Username,Password}, Scope, []),
 	issue_token(Authorization).
 	

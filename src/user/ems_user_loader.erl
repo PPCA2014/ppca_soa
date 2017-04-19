@@ -24,7 +24,8 @@
 % estado do servidor
 -record(state, {datasource,
 				update_checkpoint,
-				last_update}).
+				last_update,
+				allow_load_aluno}).
 
 -define(SERVER, ?MODULE).
 
@@ -58,11 +59,13 @@ init(#service{datasource = Datasource,
 			  properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_user_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
+	AllowLoadAluno = maps:get(<<"allow_load_aluno">>, Props, false),
 	set_force_load_users_checkpoint(),
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,
-				   last_update = LastUpdate},
-	{ok, State, 2000}.
+				   last_update = LastUpdate,
+				   allow_load_aluno = AllowLoadAluno},
+	{ok, State, 2500}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -130,7 +133,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
 			ems_logger:info("ems_user_loader checkpoint. operation: load_users."),
-			case load_users_from_datasource(Datasource, TimestampStr) of
+			case load_users_from_datasource(Datasource, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -141,7 +144,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 			end;
 		false ->
 			?DEBUG("ems_user_loader checkpoint. operation: update_users   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
-			case update_users_from_datasource(Datasource, LastUpdate, TimestampStr) of
+			case update_users_from_datasource(Datasource, LastUpdate, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -154,29 +157,48 @@ update_or_load_users(State = #state{datasource = Datasource,
 	end.
 
 
-load_users_from_datasource(Datasource, CtrlInsert) -> 
+load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = AllowLoadAluno}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				ems_logger:info("ems_user_loader load users from database..."),
 				Result = case ems_odbc_pool:param_query(Datasource2, 
-														sql_load_users(), 
-														[], 
-														?MAX_TIME_ODBC_QUERY) of
+														sql_load_users_tipo_pessoa(), 
+														[]) of
 					{_,_,[]} -> 
-						?DEBUG("ems_user_loader did not load any users."),
+						?DEBUG("ems_user_loader did not load any users tipo pessoa."),
 						ok;
 					{_, _, Records} ->
 						case mnesia:clear_table(user) of
 							{atomic, ok} ->
-								F = fun() ->
+								InsertUserPessoa = fun() ->
 									Count = insert_users(Records, 0, CtrlInsert),
-									ems_logger:info("ems_user_loader load ~p users.", [Count])
+									ems_logger:info("ems_user_loader load ~p users tipo pessoa.", [Count])
 								end,
-								mnesia:ets(F),
-								mnesia:change_table_copy_type(user, node(), disc_copies),
-								erlang:garbage_collect(),
-								ok;
+								mnesia:ets(InsertUserPessoa),
+								case AllowLoadAluno of
+									true ->
+										case ems_odbc_pool:param_query(Datasource2, 
+																		sql_load_users_tipo_aluno(), 
+																		[]) of
+											{_,_,[]} -> 
+												?DEBUG("ems_user_loader did not load any users tipo aluno."),
+												ok;
+											{_, _, Records} ->
+												InsertUserAluno = fun() ->
+													Count = insert_users(Records, 0, CtrlInsert),
+													ems_logger:info("ems_user_loader load ~p users tipo aluno.", [Count])
+												end,
+												mnesia:ets(InsertUserAluno),
+												mnesia:change_table_copy_type(user, node(), disc_copies),
+												erlang:garbage_collect(),
+												ok;
+											{error, Reason} = Error -> 
+												ems_logger:error("ems_user_loader load users query error: ~p.", [Reason]),
+												Error
+										end;
+									false -> ok
+								end;
 							_ ->
 								ems_logger:error("Could not clear user table before load users. Load users cancelled!"),
 								{error, efail_load_users}
@@ -197,38 +219,49 @@ load_users_from_datasource(Datasource, CtrlInsert) ->
 			{error, Reason3}
 	end.
 
-update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate) -> 
+update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_load_aluno = AllowLoadAluno}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_loader got a connection ~p to update users.", [Datasource#service_datasource.id]),
-				Sql = sql_update_users(),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 				Params = [{sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]}],
-				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, sql_update_users_tipo_pessoa(), Params) of
 					{_,_,[]} -> 
-						?DEBUG("ems_user_loader did not update any users."),
+						?DEBUG("ems_user_loader did not update any users tipo pessoa."),
 						ok;
 					{_, _, Records} ->
 						%?DEBUG("Update users ~p.", [Records]),
-						F = fun() ->
+						UpdatePessoaFunc = fun() ->
 							Count = update_users(Records, 0, CtrlUpdate),
-							ems_logger:info("ems_user_loader update ~p users since ~s.", [Count, ems_util:timestamp_str(LastUpdate)])
+							ems_logger:info("ems_user_loader update ~p users tipo pessoa since ~s.", [Count, ems_util:timestamp_str(LastUpdate)])
 						end,
-						mnesia:activity(transaction, F),
-						ok;
+						mnesia:activity(transaction, UpdatePessoaFunc),
+						case AllowLoadAluno of
+							true ->
+								case ems_odbc_pool:param_query(Datasource2, sql_update_users_tipo_aluno(), Params) of
+									{_,_,[]} -> 
+										?DEBUG("ems_user_loader did not update any users tipo aluno."),
+										ok;
+									{_, _, Records} ->
+										%?DEBUG("Update users ~p.", [Records]),
+										UpdateAlunoFunc = fun() ->
+											Count = update_users(Records, 0, CtrlUpdate),
+											ems_logger:info("ems_user_loader update ~p users tipo aluno since ~s.", [Count, ems_util:timestamp_str(LastUpdate)])
+										end,
+										mnesia:activity(transaction, UpdateAlunoFunc);
+									{error, Reason} = Error -> 
+										ems_logger:error("ems_user_loader update users tipo aluno error: ~p.", [Reason]),
+										Error
+								end;		
+							false -> ok
+						end;
 					{error, Reason} = Error -> 
-						ems_logger:error("ems_user_loader update users error: ~p.", [Reason]),
+						ems_logger:error("ems_user_loader update users tipo pessoa error: ~p.", [Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
@@ -378,8 +411,8 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 	?DEBUG("ems_user_loader update user: ~p.\n", [User2]),
 	update_users(T, Count+1, CtrlUpdate).
 
-sql_load_users() ->	 
-	"select distinct  CodigoPessoa, 
+sql_load_users_tipo_pessoa() ->	 
+	"select  		CodigoPessoa, 
 					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
@@ -452,9 +485,44 @@ sql_load_users() ->
 						 on p.PesCodigoPessoa = df.PesCodigoPessoa
 				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
 						 on df.MatSipes = lf.Sipes
+	) as t_users
+	order by t_users.TipoEmailPessoa
+	".
 
-			union all
-			
+
+sql_load_users_tipo_aluno() ->	 
+	"select  		CodigoPessoa, 
+					lower(rtrim(LoginPessoa)) as LoginPessoa, 
+					rtrim(NomePessoa) as NomePessoa, 
+					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
+					lower(rtrim(EmailPessoa)) as EmailPessoa, 
+					rtrim(SenhaPessoa) as SenhaPessoa,
+					TipoPessoa,
+					PasswdCryptoPessoa,
+					TipoEmailPessoa,
+					1 as ActivePessoa,
+					rtrim(Endereco) as Endereco,
+					rtrim(ComplementoEndereco) as ComplementoEndereco,
+					rtrim(Bairro) as Bairro,
+					rtrim(Cidade) as Cidade,
+					Uf,
+					Cep,
+					Rg,
+					DataNascimento,
+					Sexo,
+					Telefone,
+					Celular,
+					DDD,
+				    Matricula,
+				    rtrim(Lotacao) as Lotacao,
+				    LotacaoSigla,
+				    rtrim(LotacaoCentro) as LotacaoCentro,
+				    LotacaoCodigoFuncao,
+				    rtrim(LotacaoFuncao) as LotacaoFuncao,
+				    rtrim(LotacaoOrgao) as LotacaoOrgao,
+				    LotacaoCodigoCargo,
+				    rtrim(LotacaoCargo) as LotacaoCargo
+	from (
 			-- Busca dados de alunos em BDSiac com AluRA
 			select p.PesCodigoPessoa as CodigoPessoa, 
 				   cast(al.AluRA as varchar(100)) as LoginPessoa,
@@ -491,13 +559,15 @@ sql_load_users() ->
 				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
 						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
 				 join BDPessoa.dbo.TB_Email em
-						 on pfe.PFmEmaCodigo = em.EmaCodigo 
+						 on pfe.PFmEmaCodigo = em.EmaCodigo
+			where al.AluPerSaiUnB = 99999
 	) as t_users
-	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
+	order by t_users.TipoEmailPessoa
 	".
 
-sql_update_users() ->	 
-	"select distinct CodigoPessoa, 
+
+sql_update_users_tipo_pessoa() ->	 
+	"select 		CodigoPessoa, 
 					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
@@ -571,9 +641,43 @@ sql_update_users() ->
 				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
 						 on df.MatSipes = lf.Sipes
 			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
-			
-			union all
-			
+	) as t_users
+	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
+	".
+	
+sql_update_users_tipo_aluno() ->	 
+	"select 		CodigoPessoa, 
+					lower(rtrim(LoginPessoa)) as LoginPessoa, 
+					rtrim(NomePessoa) as NomePessoa, 
+					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
+					lower(rtrim(EmailPessoa)) as EmailPessoa, 
+					rtrim(SenhaPessoa) as SenhaPessoa,
+					TipoPessoa,
+					PasswdCryptoPessoa,
+					TipoEmailPessoa,
+					1 as ActivePessoa,
+					rtrim(Endereco) as Endereco,
+					rtrim(ComplementoEndereco) as ComplementoEndereco,
+					rtrim(Bairro) as Bairro,
+					rtrim(Cidade) as Cidade,
+					Uf,
+					Cep,
+					Rg,
+					DataNascimento,
+					Sexo,
+					Telefone,
+					Celular,
+					DDD,
+				    Matricula,
+				    rtrim(Lotacao) as Lotacao,
+				    LotacaoSigla,
+				    rtrim(LotacaoCentro) as LotacaoCentro,
+				    LotacaoCodigoFuncao,
+				    rtrim(LotacaoFuncao) as LotacaoFuncao,
+				    rtrim(LotacaoOrgao) as LotacaoOrgao,
+				    LotacaoCodigoCargo,
+				    rtrim(LotacaoCargo) as LotacaoCargo
+	from (
 			-- Busca dados de alunos em BDSiac com AluRA
 			select p.PesCodigoPessoa as CodigoPessoa, 
 				   cast(al.AluRA as varchar(100)) as LoginPessoa,
@@ -611,8 +715,7 @@ sql_update_users() ->
 						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
 				 join BDPessoa.dbo.TB_Email em
 						 on pfe.PFmEmaCodigo = em.EmaCodigo 
-			where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
+			where al.AluPerSaiUnB = 99999 and (al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?)
 	) as t_users
 	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 	".
-	
