@@ -101,10 +101,15 @@
 				"comment": ""
 			},
 			{
+				"name": "client_secret",
+				"type": "string",
+				"comment": ""
+			},
+			{
 				"name": "secret",
 				"type": "string",
 				"comment": ""
-				},
+			},
 			{
 				"name": "code",
 				"type": "string",
@@ -123,7 +128,71 @@
 		],
 		"lang" : "erlang"
 	},
-
+	{
+		"name" : "/code_request",
+		"comment": "Oauth 2.0",
+		"owner": "oauth2ems",
+		"version": "1",
+		"service" : "oauth2ems_authorize:code_request",
+		"url": "/code_request",
+		"type": "GET",
+		"authorization" : "public",
+		"querystring": [
+			{
+				"name": "client_id",
+				"type": "string",
+				"comment": "The client identifier"
+			},
+			{
+				"name": "username",
+				"type": "string",
+				"comment": "Username"
+			},
+			{
+				"name": "password",
+				"type": "string",
+				"comment": "Password"
+			},			
+			{
+				"name": "redirect_uri",
+				"type": "string",
+				"comment": ""
+			},
+			{
+				"name": "scope",
+				"type": "string",
+				"comment": ""
+			},
+			{
+				"name": "code",
+				"type": "string",
+				"comment": ""
+				},
+			{
+				"name": "state",
+				"type": "string",
+				"comment": ""
+			}
+		],
+		"lang" : "erlang"
+	},
+	{
+		"name" : "/callback",
+		"comment": "Simulção de recurso",
+		"owner": "oauth2ems",
+		"version": "1",
+		"service" : "oauth2ems_client:callback",
+		"url": "/callback",
+		"type": "GET",
+		"querystring": [
+			{
+				"name": "code",
+				"type": "string",
+				"comment": "Token de acesso"
+			}
+		],
+		"lang" : "erlang"
+	},
 	{
 		"name" : "/recurso",
 		"comment": "Simulção de recurso",
@@ -140,5 +209,41 @@
 			}
 		],
 		"lang" : "erlang"
+	},
+	{
+		"name": "redirect_url_login",
+		"comment": "Redirect url /authz to /authz/index.html",
+		"owner": "seguranca",
+		"version": "1.0.0",
+		"service" : "ems_redirect_url_service:execute",
+		"url": "/authz",
+		"redirect_url" : "/authz/index.html",
+		"path" : "{{priv/www/authz}}",
+		"type": "GET",
+		"cache_control" : "no-cache",
+		"expires_minute" : 0,
+		"querystring": [
+			{
+				"name": "client_id",
+				"type": "string",
+				"comment": ""
+			}
+		],
+		"lang" : "erlang"
+	},
+	{
+		"name": "authz",
+		"comment": "Pagina de authz ErlangMS",
+		"owner": "seguranca",
+		"version": "1.0.0",
+		"service" : "ems_static_file_service:execute",
+		"url": "/authz/",
+		"use_re" : true,
+		"path" : "priv/www/authz",
+		"type": "GET",
+		"cache_control" : "no-cache",
+		"expires_minute" : 0,
+		"lang" : "erlang"
 	}
+
 ]
