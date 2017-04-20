@@ -172,7 +172,6 @@ Login.LoginSistemas = (function() {
 			beforeSend: function (xhr) {
 				xhr.setRequestHeader ("Authorization", "Basic " + btoa($('#username').val() + ":" + sha1($('#pass').val())));
 			},
-			window.location.replace(url),
 			contentType: 'application/json',
 			error: onErroSalvandoEstilo.bind(this),
 			success: onEstiloSalvo.bind(this)
@@ -186,7 +185,7 @@ Login.LoginSistemas = (function() {
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {
-		localStorage.setItem('currentUser', estilo);
+		this.error.append('<div class="alert alert-danger" role="alert">Ok.</div>');
 	}
 	
 	function getRdirectUri(){

@@ -68,22 +68,33 @@ code_request(Request = #request{authorization = Authorization}) ->
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, [],Request),
     State      = ems_request:get_querystring(<<"state">>, [],Request),
     Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
-    {ok, Username, Password} = ems_http_util:parse_basic_authorization_header(Authorization),
-    % implementar state
-    Authz = oauth2:authorize_code_request({Username,list_to_binary(Password)}, ClientId, RedirectUri, Scope, []),
-    case issue_code(Authz) of
-    {ok, Response} ->
-		Code = element(2,lists:nth(1,Response)),
-		LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
-		io:format("\n LocationPath: ~p\n",[LocationPath]),
-		{ok, Request#request{code = 302, 
+    case ems_http_util:parse_basic_authorization_header(Authorization) of
+		{ok, Username, Password} ->
+		    Authz = oauth2:authorize_code_request({Username,list_to_binary(Password)}, ClientId, RedirectUri, Scope, []),
+			case issue_code(Authz) of
+				{ok, Response} ->
+					Code = element(2,lists:nth(1,Response)),
+					LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
+					io:format("\n LocationPath: ~p\n",[LocationPath]),
+					{ok, Request#request{code = 302, 
+						response_data = <<"{}">>,
+						response_header = #{
+											<<"location">> => LocationPath
+											}
+						}
+					};
+				Error ->
+					LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
+					{ok, Request#request{code = 302, 
 						 response_data = <<"{}">>,
 						 response_header = #{
 												<<"location">> => LocationPath
 											}
 						}
-		};
-	Error ->
+					}
+				end;
+			
+		Error ->
 			LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
 			{ok, Request#request{code = 302, 
 						 response_data = <<"{}">>,
@@ -91,8 +102,8 @@ code_request(Request = #request{authorization = Authorization}) ->
 												<<"location">> => LocationPath
 											}
 						}
-		}
-	end.
+			}
+		end.
 
 	
 %%%===================================================================
