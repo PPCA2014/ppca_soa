@@ -459,7 +459,6 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
 						Path = parse_path_catalog(maps:get(<<"path">>, H, <<>>), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
-
 						valida_lang(Lang),
 						valida_name_service(Name),
 						valida_type_service(Type),
@@ -499,7 +498,6 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
 						end,
-
 						CheckGrantPermission = maps:get(<<"check_grant_permission">>, H, false),
 						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
 						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),

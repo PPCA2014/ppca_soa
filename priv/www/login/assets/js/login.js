@@ -156,11 +156,19 @@ Login.LoginSistemas = (function() {
 	}
 	
 	function onBotaoLoginClick() {
+		var protocol=window.location.protocol;
+		if (protocol == 'http:'){
+			var port=':2301';
+		}else{
+			var port=':2302';
+		}
+		var baseUrl=protocol + '//' + window.location.hostname + port; 
 		$.ajax({
-			url: 'http://127.0.0.1:2301/authorize?response_type='+getRdirectUri()['response_type']+
-												 '&client_id='+getRdirectUri()['client_id']+
-												 '&state='+getRdirectUri()['state']+
-												 '&redirect_uri='+getRdirectUri()['redirect_uri'],
+			url: baseUrl + '/authorize?response_type=authorization_code'+
+				 '&client_id='+getRdirectUri()['client_id']+
+				 '&state='+getRdirectUri()['state']+
+				 '&secret='+getRdirectUri()['secret']+
+				 '&redirect_uri='+getRdirectUri()['redirect_uri'],
 			method: 'GET',
 			beforeSend: function (xhr) {
 				xhr.setRequestHeader ("Authorization", "Basic " + btoa($('#username').val() + ":" + sha1($('#pass').val())));

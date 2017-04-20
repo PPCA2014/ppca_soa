@@ -121,7 +121,8 @@
 					  response_data = <<>>,
 					  response_header = #{},
 					  req_hash,
-					  host :: binary()							%% Ip do barramento
+					  host :: binary(),							%% Ip do barramento
+					  filename :: string()
 				  }).
 
 
