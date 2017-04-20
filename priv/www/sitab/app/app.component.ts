@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {AuthenticationService, RedirectService} from 'seguranca';
+import {FileService} from "./_file/file.service";
 
 @Component({
   selector: 'my-app',
@@ -7,12 +7,16 @@ import {AuthenticationService, RedirectService} from 'seguranca';
 })
 export class AppComponent implements OnInit  {
 
-	constructor(private redirectService: RedirectService) {
+	constructor( private fileService: FileService) {
 	}
 
 	 ngOnInit() {
-		  localStorage.setItem('externalFile',('http://localhost:2301/sitab/config.json'));
-      this.redirectService.initVerificationRedirect();
+
+     this.fileService.startRedirect()
+       .subscribe(resultado => {
+         console.log('Resultado');
+       });
+
 	 }
 
 
