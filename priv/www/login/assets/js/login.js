@@ -164,10 +164,9 @@ Login.LoginSistemas = (function() {
 		}
 		var baseUrl=protocol + '//' + window.location.hostname + port; 
 		$.ajax({
-			url: baseUrl + '/authorize?response_type=authorization_code'+
-				 '&client_id='+getRdirectUri()['client_id']+
+			url: baseUrl + '/code_request?'+
+				 'client_id='+getRdirectUri()['client_id']+
 				 '&state='+getRdirectUri()['state']+
-				 '&secret='+getRdirectUri()['secret']+
 				 '&redirect_uri='+getRdirectUri()['redirect_uri'],
 			method: 'GET',
 			beforeSend: function (xhr) {
@@ -181,12 +180,12 @@ Login.LoginSistemas = (function() {
 	
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
-		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
+		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s), tente de novo.</div>');
 	}
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {
-		localStorage.setItem('currentUser', estilo);
+		this.error.append('<div class="alert alert-danger" role="alert">Ok.</div>');
 	}
 	
 	function getRdirectUri(){

@@ -58,9 +58,10 @@
 
 start() ->
     application:set_env(oauth2, backend, oauth2ems_backend),
-    %ems_user:insert(#user{login= <<"geral">>,password= ems_util:criptografia_sha1("123456")}),
-    %ems_user:insert(#user{login= <<"alyssondsr">>,password=ems_util:criptografia_sha1("123456")}),
-    %ems_user:insert(#client{codigo= <<"q1w2e3">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"http://164.41.120.42:3000/callback">>, scope= <<"email">>}),
+    ems_user:insert(#user{login= <<"geral">>,password= ems_util:criptografia_sha1("123456")}),
+    ems_user:insert(#user{login= <<"alyssondsr">>,password=ems_util:criptografia_sha1("123456")}),
+    ems_user:insert(#client{codigo= <<"q1w2e3">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://127.0.0.1:2302/callback">>, scope= <<"email">>}),
+    ems_user:insert(#client{codigo= <<"man">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://www.getpostman.com/oauth2/callback">>, scope= <<"email">>}),
     lists:foreach(fun(Table) ->
                           ets:new(Table, [named_table, public])
                   end,
@@ -76,9 +77,8 @@ stop() ->
 %%%===================================================================
 
 authenticate_user({Login, Password}, _) ->
-    case ems_user:find_by_login_and_password(Login, Password) of
-		{ok, User} ->	
-			{ok, {<<>>,User}};
+    case ems_user:authenticate_login_password(Login, Password) of
+		ok ->	{ok, {<<>>,Login}};
 		%% Padronizar o erro conforme o RFC 6749
 		Error -> Error
 	end.
@@ -146,17 +146,17 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
     case get_client_identity(ClientId,[]) of
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
-				true ->	ok;
-				_ -> {error, einvalid_redirection_uri}
+				true ->	{ok,[]};
+				_ -> {error, mismatch}
 			end;
         _Error ->
-            {error, einvalid_redirection_uri}
+            {error, mismatch}
     end;
 
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
-		true -> ok;
-		_Error -> {error, einvalid_redirection_uri}
+		true -> {ok,[]};
+		_Error -> {error, mismatch}
     end.
     
 verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
@@ -166,17 +166,17 @@ verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
 				true -> {ok, {[],Scope}};
 				_ -> {error, invalid_client}
 			end;
-        Error ->  Error
+        Error = {error, notfound} ->  Error
     end;
 
-verify_client_scope(#client{codigo = ClientId},Scope, _) ->
-	case ems_client:find_by_codigo(ClientId) of
+verify_client_scope(#client{codigo = ClientID},Scope, _) ->
+	case ems_client:find_by_codigo(ClientID) of
         {ok, #client{scope = Scope0}} ->     
 			case Scope =:= Scope0 of
 				true -> {ok, {[],Scope0}};
 				_ -> {error, invalid_client}
 			end;
-        Error ->  Error
+        Error = {error, notfound} ->  Error
     end.
 verify_resowner_scope(_ResOwner, Scope, _) ->
     {ok, {[],Scope}}.
