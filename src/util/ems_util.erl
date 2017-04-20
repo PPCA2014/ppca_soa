@@ -731,3 +731,29 @@ is_cnpj_valid(S) ->
 	end.
 
 
+load_erlang_module(FileName) ->
+	ModuleName = list_to_atom(filename:rootname(filename:basename(FileName))),
+	FileNameMod = filename:rootname(FileName) ++ ".erl",
+	case filelib:is_regular(FileNameMod) of
+		true ->
+			case code:ensure_loaded(ModuleName) of
+				{module, _} -> {ok, ModuleName};
+				_Error -> 
+					io:format("Compile file ~p ", [FileName]),
+					FileNamePath = filename:dirname(FileName), 
+					code:add_path(FileNamePath), 
+					case compile:file(FileNameMod, [{outdir, FileNamePath ++ "/"}]) of
+						error -> 
+							io:format("[ ERROR ]\n"),
+							{error, einvalid_module_sintax};
+						{error, Errors, _Warnings} -> 
+							io:format("[ ERROR ]\n"),
+							io:format_error("~p\n", [Errors]),
+							{error, einvalid_module_sintax};
+						_ -> 
+							io:format("[ OK ]\n"),
+							{ok, ModuleName}
+					end
+			end;
+		false -> {error, enoent}
+	end.

@@ -12,7 +12,7 @@
 -include("../include/ems_schema.hrl").
 
 %% Client API
--export([start/0, dispatch_request/1]).
+-export([start/0, dispatch_request/1, dispatch_service_work/2]).
 
 
 start() -> 

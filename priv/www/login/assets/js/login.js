@@ -168,13 +168,36 @@ Login.LoginSistemas = (function() {
 				 'client_id='+getRdirectUri()['client_id']+
 				 '&state='+getRdirectUri()['state']+
 				 '&redirect_uri='+getRdirectUri()['redirect_uri'],
-			method: 'GET',
+			crossDomain: true,
+			contentType: 'application/json',
 			beforeSend: function (xhr) {
 				xhr.setRequestHeader ("Authorization", "Basic " + btoa($('#username').val() + ":" + sha1($('#pass').val())));
 			},
-			contentType: 'application/json',
-			error: onErroSalvandoEstilo.bind(this),
-			success: onEstiloSalvo.bind(this)
+			headers: {
+				  'name-api-key':'ewf45r4435trge',
+				  'Content-Type':'application/x-www-form-urlencoded'
+		    },			
+			error: function(data, textStatus){
+				var doc = document;
+				if (data.redirect) {
+					// data.redirect contains the string URL to redirect to
+					window.location.href = data.redirect;
+				}
+        
+			},
+			success: function(data, textStatus){
+				var doc = document;
+				if (data.redirect) {
+					// data.redirect contains the string URL to redirect to
+					window.location.href = data.redirect;
+				}
+
+			},
+			complete: function(xmlHttp) {
+				// xmlHttp is a XMLHttpRquest object
+				alert(xmlHttp.status);
+			  }
+  			
 		});
 	}
 	

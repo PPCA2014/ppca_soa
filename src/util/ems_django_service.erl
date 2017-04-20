@@ -7,44 +7,36 @@
 
 execute(Request) ->	
 	case ems_request:load_from_file_req(Request) of
-		{ok, Request2 = #request{filename = Filename, 
-								 service = Service}} ->
-			FileNameTemplate =  Filename ++ ".django.template",
-			ModuleNameTemplate = filename:basename(FileNameTemplate),
-			case load_module_template(FileNameTemplate, ModuleNameTemplate) of
-				{ok, ModuleTemplate} -> 
-					%Request3 = Request2#request{module_name = Filename,
-				%								module = list_to_atom(FileName),
-			%									function = execute},
-					%case ems_dispatcher:dispatch_service_work(Request3, 
-					case ems_page:render(ModuleTemplate, []) of
-						{ok, Content} ->
-							{ok, Request#request{code = 200, 
-												 reason = ok,
-												 response_data = Content}
-							};
-						Error2 -> Error2
+		{ok, Request2 = #request{filename = FileName, service = Service}} = FileReq->
+			case ems_util:load_erlang_module(FileName) of
+				{ok, ModuleController} ->
+					case ems_django:load_module_template(FileName) of
+						{ok, ModuleTemplate} -> 
+							Service2 = Service#service{module_name = atom_to_list(ModuleController),
+													   module = ModuleController,
+													   function = execute},
+							case ems_dispatcher:dispatch_service_work(Request2, Service2) of
+								{ok, request, #request{response_data = Args}} ->
+									io:format("cheguei com os args ~p\n\n", [Args]),
+									case ems_django:render(ModuleTemplate, Args) of
+										{ok, Content} ->
+											{ok, Request2#request{code = 200, 
+																  reason = ok,
+																  response_data = Content}
+											};
+										Error2 -> Error2
+									end;
+								Error -> Error
+							end;
+						_ -> {error, Request2#request{code = 500, 
+													  reason = einvalid_django_sintax,
+													  response_data = ems_schema:to_json({error, einvalid_django_sintax})}
+							 }
 					end;
-				_ -> {error, Request2#request{code = 500, 
-											  reason = einvalid_django_sintax,
-											  response_data = ems_schema:to_json({error, einvalid_django_sintax})}
-					 }
+				{error, enoent} -> FileReq
 			end;
 		Error -> Error
 	end.
    
     
-load_module_template(FileNameTemplate, ModuleNameTemplate) ->
-	case code:ensure_loaded(ModuleNameTemplate) of
-		{module, _} -> {ok , ModuleNameTemplate};
-		_Error -> 
-			case ems_page:compile_file(FileNameTemplate, ModuleNameTemplate) of
-				{ok, ModuleTemplate} -> 
-					ems_logger:error("ems_django_service compile django template to ~p.", [FileNameTemplate]),
-					{ok , ModuleNameTemplate};
-				{error, Reason} = Error ->
-					ems_logger:error("ems_django_service compile invalid django template to ~p. Reason: ~p.", [FileNameTemplate, Reason]),
-					Error
-			end
-	end.
 	

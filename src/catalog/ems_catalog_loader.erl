@@ -581,7 +581,7 @@ compile_page_module(undefined, _, _) -> undefined;
 compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
 	PageFile = parse_path_catalog(Page, Conf#config.static_file_path),
-	case ems_page:compile_file(binary_to_list(PageFile), ModuleNamePage) of
+	case ems_django:compile_file(binary_to_list(PageFile), ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
 	end.
