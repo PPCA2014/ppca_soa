@@ -174,7 +174,8 @@ Login.LoginSistemas = (function() {
 			},
 			contentType: 'application/json',
 			error: onErroSalvandoEstilo.bind(this),
-			success: onEstiloSalvo.bind(this)
+			success: onEstiloSalvo.bind(this),
+			complete: onComplete.bind(this)
 		});
 	}
 	
@@ -188,6 +189,10 @@ Login.LoginSistemas = (function() {
 		this.error.append('<div class="alert alert-danger" role="alert">Ok.</div>');
 	}
 	
+	function onComplete(estilo) {
+				window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
+	}
+
 	function getRdirectUri(){
 		var vars = [], hash;
 		var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
