@@ -194,10 +194,10 @@ Login.LoginSistemas = (function() {
 				}
 
 			},
-			complete: function(xmlHttp) {
-				// xmlHttp is a XMLHttpRquest object
-				alert(xmlHttp.status);
-			  }		
+			complete: function(data, textStatus) {
+				window.location.href = data.getResponseHeader("Location");
+			  }
+
 		});
 	}
 	
