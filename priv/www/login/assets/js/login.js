@@ -173,18 +173,12 @@ Login.LoginSistemas = (function() {
 			beforeSend: function (xhr) {
 				xhr.setRequestHeader ("Authorization", "Basic " + btoa($('#username').val() + ":" + sha1($('#pass').val())));
 			},
+
 			headers: {
 				  'name-api-key':'ewf45r4435trge',
 				  'Content-Type':'application/x-www-form-urlencoded'
 		    },			
-			error: function(data, textStatus){
-				var doc = document;
-				if (data.redirect) {
-					// data.redirect contains the string URL to redirect to
-					window.location.href = data.redirect;
-				}
-        
-			},
+			error: onErroSalvandoEstilo.bind(this),
 			success: function(data, textStatus){
 				var doc = document;
 				if (data.redirect) {
@@ -193,17 +187,16 @@ Login.LoginSistemas = (function() {
 				}
 
 			},
-			complete: function(xmlHttp) {
-				// xmlHttp is a XMLHttpRquest object
-				alert(xmlHttp.status);
+			complete: function(data, textStatus) {
+				window.location.href = data.getResponseHeader("Location");
 			  }
-  			
+
 		});
 	}
 	
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
-		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s), tente de novo.</div>');
+		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
 	}
 	
 	//sucesso na autenticado
