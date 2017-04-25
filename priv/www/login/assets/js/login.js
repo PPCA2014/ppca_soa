@@ -178,14 +178,7 @@ Login.LoginSistemas = (function() {
 				  'name-api-key':'ewf45r4435trge',
 				  'Content-Type':'application/x-www-form-urlencoded'
 		    },			
-			error: function(data, textStatus){
-				var doc = document;
-				if (data.redirect) {
-					// data.redirect contains the string URL to redirect to
-					window.location.href = data.redirect;
-				}
-        
-			},
+			error: onErroSalvandoEstilo.bind(this),
 			success: function(data, textStatus){
 				var doc = document;
 				if (data.redirect) {
@@ -203,7 +196,7 @@ Login.LoginSistemas = (function() {
 	
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
-		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s), tente de novo.</div>');
+		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
 	}
 	
 	//sucesso na autenticado
@@ -211,10 +204,6 @@ Login.LoginSistemas = (function() {
 		this.error.append('<div class="alert alert-danger" role="alert">Ok.</div>');
 	}
 	
-	function onComplete(estilo) {
-				window.location.replace('http://127.0.0.1:2301/code_request?client_id=man&redirect_uri=https%3A%2F%2Fwww.getpostman.com%2Foauth2%2Fcallback'+'&username='+this.username.val()+'&password='+this.pass.val());
-	}
-
 	function getRdirectUri(){
 		var vars = [], hash;
 		var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
