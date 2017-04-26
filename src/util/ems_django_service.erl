@@ -17,7 +17,6 @@ execute(Request) ->
 													   function = execute},
 							case ems_dispatcher:dispatch_service_work(Request2, Service2) of
 								{ok, request, #request{response_data = Args}} ->
-									io:format("cheguei com os args ~p\n\n", [Args]),
 									case ems_django:render(ModuleTemplate, Args) of
 										{ok, Content} ->
 											{ok, Request2#request{code = 200, 
@@ -28,12 +27,17 @@ execute(Request) ->
 									end;
 								Error -> Error
 							end;
-						_ -> {error, Request2#request{code = 500, 
-													  reason = einvalid_django_sintax,
-													  response_data = ems_schema:to_json({error, einvalid_django_sintax})}
+						{error, Reason} -> {error, Request2#request{code = 500, 
+																	reason = einvalid_django_sintax,
+																	response_data = ems_schema:to_json({error, Reason})}
 							 }
 					end;
-				{error, enoent} -> FileReq
+				{error, enoent} -> FileReq;
+				{error, Reason} -> 
+					{error, Request2#request{code = 500, 
+											 reason = einvalid_django_sintax,
+											 response_data = ems_schema:to_json({error, Reason})}
+							 }
 			end;
 		Error -> Error
 	end.
