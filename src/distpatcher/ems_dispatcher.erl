@@ -226,10 +226,11 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 	
 	% Este node está vivo? Temos que rotear para um node existente
 	Ping = net_adm:ping(Node),
-	?DEBUG("ems_dispatcher ping ~p: ~p.", [Node, Ping]),
 	case Ping of
 		pong -> {ok, Node};
-		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
+		pang -> 
+			?DEBUG("ems_dispatcher pang ~p.", [Node]),
+			get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.
 		
 
