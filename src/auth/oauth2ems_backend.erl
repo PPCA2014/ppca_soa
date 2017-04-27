@@ -60,7 +60,7 @@ start() ->
     application:set_env(oauth2, backend, oauth2ems_backend),
     %ems_user:insert(#user{login= <<"geral">>,password= ems_util:criptografia_sha1("123456")}),
     %ems_user:insert(#user{login= <<"alyssondsr">>,password=ems_util:criptografia_sha1("123456")}),
-    %ems_user:insert(#client{codigo= <<"q1w2e3">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://127.0.0.1:2302/callback">>, scope= <<"email">>}),
+    %ems_client:insert(#client{codigo= <<"q1w2e3">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://127.0.0.1:2302/callback">>, scope= <<"email">>}),
     %ems_user:insert(#client{codigo= <<"man">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://www.getpostman.com/oauth2/callback">>, scope= <<"email">>}),
     lists:foreach(fun(Table) ->
                           ets:new(Table, [named_table, public])

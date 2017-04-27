@@ -73,7 +73,7 @@ code_request(Request = #request{authorization = Authorization}) ->
 			case issue_code(Authz) of
 				{ok, Response} ->
 					Code = element(2,lists:nth(1,Response)),
-					LocationPath = <<RedirectUri/binary,"?code=", Code/binary>>,
+					LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
 					% mudar code para 302
 					{ok, Request#request{code = 200, 
 						response_data = <<"{}">>,
