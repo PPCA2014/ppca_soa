@@ -35,7 +35,6 @@
 
 -define(TABLES, [?ACCESS_TOKEN_TABLE,
 				 ?ACCESS_CODE_TABLE,
-                 ?SCOPE_TABLE,
                  ?REFRESH_TOKEN_TABLE]).
 
 % verificar: unificar os dois records ... %%%%%%%%%%%%%%%
@@ -46,12 +45,6 @@
            , ttl      = 0            :: non_neg_integer()
            }).
 
--record(scope, {
-          scope :: binary(),
-          client_id :: binary()
-         }).
-
-
 %%%===================================================================
 %%% Teste
 %%%===================================================================
@@ -60,7 +53,7 @@ start() ->
     application:set_env(oauth2, backend, oauth2ems_backend),
     %ems_user:insert(#user{login= <<"geral">>,password= ems_util:criptografia_sha1("123456")}),
     %ems_user:insert(#user{login= <<"alyssondsr">>,password=ems_util:criptografia_sha1("123456")}),
-    %ems_user:insert(#client{codigo= <<"q1w2e3">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://127.0.0.1:2302/callback">>, scope= <<"email">>}),
+    %ems_client:insert(#client{codigo= <<"q1w2e3">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://127.0.0.1:2302/callback">>, scope= <<"email">>}),
     %ems_user:insert(#client{codigo= <<"man">>,secret=ems_util:criptografia_sha1("123456"), redirect_uri= <<"https://www.getpostman.com/oauth2/callback">>, scope= <<"email">>}),
     lists:foreach(fun(Table) ->
                           ets:new(Table, [named_table, public])
@@ -80,19 +73,19 @@ authenticate_user({Login, Password}, _) ->
     case ems_user:authenticate_login_password(Login, Password) of
 		ok ->	{ok, {<<>>,Login}};
 		%% Padronizar o erro conforme o RFC 6749
-		Error -> Error
+		_ -> {error, user_notfound}
 	end.
 authenticate_client({ClientId, Secret},_) ->
     case ems_client:find_by_codigo_and_secret(ClientId,Secret) of
 			{ok, Client} ->	{ok, {<<>>,Client}};
-			Error -> Error		
+			_ -> {error, unauthorized_client}		
     end.
 
     
 get_client_identity(ClientId, _) ->
     case ems_client:find_by_codigo(ClientId) of
         {ok, Client} -> {ok, {[],Client}};
-        _ -> {error, notfound}
+        _ -> {error, unauthorized_client}
     end.
         
 
@@ -108,19 +101,19 @@ associate_access_token(AccessToken, Context, _) ->
 resolve_access_code(AccessCode, _) ->
 	case get(?ACCESS_CODE_TABLE, AccessCode) of
         {ok,Value} -> 	{ok,{[],Value}};
-        Error = {error, notfound} -> Error
+        Error -> {error, invalid_code} 
     end.
 
 resolve_refresh_token(RefreshToken, _AppContext) ->
     case get(?REFRESH_TOKEN_TABLE, RefreshToken) of
        {ok,Value} -> {ok,{[],Value}};
-        Error = {error, notfound} ->  Error
+        Error -> {error, invalid_token} 
     end.
 
 resolve_access_token(AccessToken, _) ->
     case get(?ACCESS_TOKEN_TABLE, AccessToken) of
        {ok,Value} -> {ok,{[],Value}};
-        Error = {error, notfound} ->  Error
+        Error -> {error, invalid_token} 
     end.
 
 revoke_access_code(AccessCode, _AppContext) ->
@@ -138,8 +131,7 @@ get_redirection_uri(ClientId, _) ->
     case get_client_identity(ClientId,[])  of
         {ok, #client{redirect_uri = RedirectUri}} ->
             {ok, RedirectUri};
-        Error = {error, notfound} ->
-            Error
+        _ -> {error, error_uri} 
     end.
 
 verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
@@ -147,45 +139,33 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
 				true ->	{ok,[]};
-				_ -> {error, mismatch}
+				_ -> {error, error_uri}
 			end;
-        _Error ->
-            {error, mismatch}
+        Error -> Error
     end;
 
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
 		true -> {ok,[]};
-		_Error -> {error, mismatch}
+		_Error -> {error, error_uri}
     end.
     
-verify_client_scope(ClientId,Scope, _) when is_list(ClientId) ->
-    case get(?SCOPE_TABLE, Scope) of
-        {ok, #scope{scope = Scope, client_id = Client}} ->     
-			case ClientId =:= Client of
-				true -> {ok, {[],Scope}};
-				_ -> {error, invalid_client}
-			end;
-        Error = {error, notfound} ->  Error
-    end;
 
 verify_client_scope(#client{codigo = ClientID},Scope, _) ->
 	case ems_client:find_by_codigo(ClientID) of
         {ok, #client{scope = Scope0}} ->     
 			case Scope =:= Scope0 of
 				true -> {ok, {[],Scope0}};
-				_ -> {error, invalid_client}
+				_ -> {error, unauthorized_client}
 			end;
-        Error = {error, notfound} ->  Error
+        _ -> {error, invalid_scope}
     end.
 verify_resowner_scope(_ResOwner, Scope, _) ->
     {ok, {[],Scope}}.
 
-verify_scope(RegScope, _ , _) ->
-    case get(?SCOPE_TABLE, RegScope) of
-        {ok, #scope{scope = RegScope}} -> {ok, {[],RegScope}};
-        Error = {error, notfound} ->  Error
-    end.
+verify_scope(RegScope, Scope , _) ->
+    {ok, {[],Scope}}.
+
     
 % função criada pois a biblioteca OAuth2 não trata refresh_tokens
 authorize_refresh_token(Client, RefreshToken, Scope) ->
