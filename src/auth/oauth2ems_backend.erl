@@ -73,7 +73,7 @@ authenticate_user({Login, Password}, _) ->
     case ems_user:authenticate_login_password(Login, Password) of
 		ok ->	{ok, {<<>>,Login}};
 		%% Padronizar o erro conforme o RFC 6749
-		Error -> Error
+		_ -> {error, user_notfound}
 	end.
 authenticate_client({ClientId, Secret},_) ->
     case ems_client:find_by_codigo_and_secret(ClientId,Secret) of
@@ -158,7 +158,7 @@ verify_client_scope(#client{codigo = ClientID},Scope, _) ->
 				true -> {ok, {[],Scope0}};
 				_ -> {error, unauthorized_client}
 			end;
-        Error = {error, invalid_scope} ->  Error
+        _ -> {error, invalid_scope}
     end.
 verify_resowner_scope(_ResOwner, Scope, _) ->
     {ok, {[],Scope}}.
