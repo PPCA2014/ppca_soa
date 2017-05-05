@@ -1,57 +1,5 @@
 [
 	{
-		"name": "/hackathon/certificado2",
-		"comment": "Lista as pessoas",
-		"owner": "hackathon",
-		"version": "1",
-		"service" : "ems_api_query_service:find",
-		"url": "/hackathon/certificado2",
-		"type": "GET",
-		"APIkey":"true",
-		"datasource" : {
-			"type" : "sqlserver",
-			"connection" : "DSN=siex;UID=usuextensao;PWD=usuextensao",
-			"table_name" : "BDExtensao.dbo.vw_CertificadoTemaAluno",
-			"primary_key" : "TemAexCodigoAcaoExtensao",
-			"timeout" : 99999999
-		},
-		"lang" : "erlang",
-		"debug" : false,
-		"querystring": [
-				{
-					"name": "filter",
-					"type": "string",
-					"default" : "",
-					"comment": "Filtro principal da pesquisa"
-				},
-				{
-					"name": "fields",
-					"type": "string",
-					"default" : "",
-					"comment": "Campos que devem ser retornados na pesquisa"
-				},
-				{
-					"name": "limit",
-					"type": "int",
-					"default" : "100",
-					"comment": "Quantidade máxima de registros retornados"
-				},
-				{
-					"name": "offset",
-					"type": "int",
-					"default" : "0",
-					"comment": "Offset retornado da consulta"
-				},
-				{
-					"name": "sort",
-					"type": "string",
-					"default" : "",
-					"comment": "Campos que devem ser ordenados"
-				}
-			]	
-	},
-
-	{
 		"name": "/hackathon/pessoa",
 		"comment": "Lista as pessoas",
 		"owner": "hackathon",
@@ -220,6 +168,7 @@
 		"APIkey":"true",
 		"datasource" : {
 			"type" : "csvfile",
+			"driver" : "sqlite3",
 			"connection" : "BuscaListaDeOferta.csv",
 			"table_name" : "Tbl_Ofertas"
 		},

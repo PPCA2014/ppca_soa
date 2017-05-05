@@ -496,7 +496,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 								compile_modulo_erlang(Path, ModuleNameCanonical);
 							_ ->	
 								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleNameCanonical, Node, Conf)
+								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleName, Node, Conf)
 						end,
 						CheckGrantPermission = maps:get(<<"check_grant_permission">>, H, false),
 						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
@@ -616,7 +616,8 @@ parse_node_service(List) -> List.
 	
 %% @doc O host pode ser um alias definido no arquivo de configuração
 parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
-parse_host_service(_Host, ModuleNameCanonical, Node, Conf) ->
+parse_host_service(_Host, ModuleName, Node, Conf) ->
+	ModuleNameCanonical = [case X of 46 -> 95; _ -> X end || X <- ModuleName], % Troca . por _
 	ListHost = case net_adm:host_file() of
 		{error, _Reason} -> [Conf#config.ems_host];
 		Hosts -> Hosts

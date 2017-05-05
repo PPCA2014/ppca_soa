@@ -237,6 +237,20 @@ make_result_entry(#user{codigo = UsuId,
 					    ctrl_insert = UsuCtrlInsert, 
 						ctrl_update = UsuCtrlUpdate,
 					    matricula = Matricula,
+	
+						active = Active,
+						endereco = Endereco,
+						complemento_endereco = ComplementoEndereco,
+						bairro = Bairro,
+						cidade = Cidade,
+						uf = UF,
+						rg = RG,
+						data_nascimento = DataNascimento,
+						sexo = Sexo,
+						telefone = Telefone,
+						celular = Celular,
+						ddd = DDD,
+		
 					    lotacao = Lotacao,
 					    lotacao_sigla = LotacaoSigla,
 					    lotacao_centro = LotacaoCentro,
@@ -259,6 +273,19 @@ make_result_entry(#user{codigo = UsuId,
 	UsuCtrlInsert2 = format_user_field(UsuCtrlInsert),
 	UsuCtrlUpdate2 = format_user_field(UsuCtrlUpdate),
 	
+	Active2 = format_user_field(Active),
+	Endereco2 = format_user_field(Endereco),
+	ComplementoEndereco2 = format_user_field(ComplementoEndereco),
+	Bairro2 = format_user_field(Bairro),
+	Cidade2 = format_user_field(Cidade),
+	UF2 = format_user_field(UF),
+	RG2 = format_user_field(RG),
+	DataNascimento2 = format_user_field(DataNascimento),
+	Sexo2 = format_user_field(Sexo),
+	Telefone2 = format_user_field(Telefone),
+	Celular2 = format_user_field(Celular),
+	DDD2 = format_user_field(DDD),
+
 	Matricula2 = format_user_field(Matricula),
 	Lotacao2 = format_user_field(Lotacao),
 	LotacaoSigla2 = format_user_field(LotacaoSigla),
@@ -269,19 +296,56 @@ make_result_entry(#user{codigo = UsuId,
 	LotacaoCodigoCargo2 = format_user_field(LotacaoCodigoCargo),
 	LotacaoCargo2 = format_user_field(LotacaoCargo),
 
+	Names = binary:split(UsuName, <<" ">>),
+	SN = format_user_field(lists:last(Names)),
+	GivenName = format_user_field(hd(Names)),
+
+
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId2]},
-														#'PartialAttribute'{type = <<"cn">>, vals = [AdminLdap]},
+ 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId2]},
+														#'PartialAttribute'{type = <<"uidNumber">>, vals = [UsuId2]},
+														
+														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"top">>]},
+														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"person">>]},
+														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"organizationalPerson">>]},
+														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"inetOrgPerson">>]},
+														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"posixAccount">>]},
+														
+														#'PartialAttribute'{type = <<"gecos">>, vals = [UsuNome2]},
+														#'PartialAttribute'{type = <<"cn">>, vals = [UsuNome2]},
+														#'PartialAttribute'{type = <<"givenName">>, vals = [GivenName]},
+														#'PartialAttribute'{type = <<"sn">>, vals = [SN]},
+
+														#'PartialAttribute'{type = <<"creatorsName">>, vals = [AdminLdap]},
+														#'PartialAttribute'{type = <<"o">>, vals = [<<"UnB">>]},
+														
+														
 														#'PartialAttribute'{type = <<"mail">>, vals = [UsuEmail2]},
-														#'PartialAttribute'{type = <<"login">>, vals = [UsuLogin2]},
 														#'PartialAttribute'{type = <<"email">>, vals = [UsuEmail2]},
+														#'PartialAttribute'{type = <<"login">>, vals = [UsuLogin2]},
 														#'PartialAttribute'{type = <<"cpf">>, vals = [UsuCpf2]},
 														#'PartialAttribute'{type = <<"passwd">>, vals = [UsuSenha2]},
-														#'PartialAttribute'{type = <<"givenName">>, vals = [UsuNome2]},
-														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId2]},
+														
 														#'PartialAttribute'{type = <<"distinguishedName">>, vals = [UsuLogin2]},
 														
+														#'PartialAttribute'{type = <<"active">>, vals = [Active2]},
+														#'PartialAttribute'{type = <<"endereco">>, vals = [Endereco2]},
+														#'PartialAttribute'{type = <<"complemento_endereco">>, vals = [ComplementoEndereco2]},
+														#'PartialAttribute'{type = <<"bairro">>, vals = [Bairro2]},
+														#'PartialAttribute'{type = <<"cidade">>, vals = [Cidade2]},
+														#'PartialAttribute'{type = <<"uf">>, vals = [UF2]},
+														#'PartialAttribute'{type = <<"rg">>, vals = [RG2]},
+														#'PartialAttribute'{type = <<"dataNascimento">>, vals = [DataNascimento2]},
+														#'PartialAttribute'{type = <<"sexo">>, vals = [Sexo2]},
+														#'PartialAttribute'{type = <<"telefone">>, vals = [Telefone2]},
+
+														#'PartialAttribute'{type = <<"celular">>, vals = [Celular2]},
+
+														#'PartialAttribute'{type = <<"ddd">>, vals = [DDD2]},
+														
 														#'PartialAttribute'{type = <<"matsipes">>, vals = [Matricula2]},
+
 														#'PartialAttribute'{type = <<"lotacao">>, vals = [Lotacao2]},
 														#'PartialAttribute'{type = <<"lotacaoSigla">>, vals = [LotacaoSigla2]},
 														#'PartialAttribute'{type = <<"lotacaoCentro">>, vals = [LotacaoCentro2]},
@@ -343,9 +407,9 @@ do_find_user_by_login(UserLogin) ->
 format_user_field(undefined) -> <<"">>;
 format_user_field(null) -> <<"">>;
 format_user_field([]) -> <<"">>;
-format_user_field(Number) when is_integer(Number) -> integer_to_binary(Number);
-format_user_field(Text) when is_list(Text) -> list_to_binary(Text);
-format_user_field(Text) when is_binary(Text) -> 
-	Text.
+format_user_field(Value) when is_integer(Value) -> integer_to_binary(Value);
+format_user_field(Value) when is_boolean(Value) -> ems_util:boolean_to_binary(Value);
+format_user_field(Value) when is_list(Value) -> list_to_binary(Value);
+format_user_field(Value) when is_binary(Value) -> Value.
 	
 
