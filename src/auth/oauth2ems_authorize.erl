@@ -8,9 +8,9 @@
 
 
 
-execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -> 
+execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, host = Host}) -> 
 	TypeAuth = case Type of
-		"GET" -> ems_request:get_querystring(<<"response_type">>, <<>>, Request);
+		"GET" ->  ems_request:get_querystring(<<"response_type">>, <<>>, Request);
 		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case TypeAuth of
@@ -45,7 +45,7 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, host = Host}) -
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
-			LocationPath = iolist_to_binary([<<"http://"/utf8>>, Host, <<":2301/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
+			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":",Port/utf8>>, <<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
 			{ok, Request#request{code = 302, 
 									 response_header = #{
 															<<"location">> => LocationPath
