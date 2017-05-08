@@ -32,6 +32,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		QuerystringBin = cowboy_req:qs(CowboyReq),
 		ProtocolBin = cowboy_req:scheme(CowboyReq),
 		Protocol = parse_protocol(ProtocolBin),
+		Port = cowboy_req:port(CowboyReq),
 		case QuerystringBin of
 			<<>> -> QuerystringMap = #{};
 			_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
@@ -108,6 +109,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			if_none_match = IfNoneMatch,
 			protocol = Protocol,
 			protocol_bin = ProtocolBin,
+			port = Port,
 			result_cache = false,
 			t1 = T1,
 			req_hash = ReqHash

@@ -115,7 +115,8 @@
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
 					  protocol :: atom(),						%% Protocol (http, ldap)
-					  protocol_bin :: binary(),					
+					  protocol_bin :: binary(),	
+					  port :: non_neg_integer(),				
 					  result_cache = false :: boolean(),
 					  result_cache_rid,
 					  response_data = <<>>,

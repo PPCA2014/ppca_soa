@@ -73,7 +73,7 @@ code_request(Request = #request{authorization = Authorization}) ->
 			case issue_code(Authz) of
 				{ok, Response} ->
 					Code = element(2,lists:nth(1,Response)),
-					LocationPath = <<RedirectUri/binary,"?code=", Code/binary>>,
+					LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
 					% mudar code para 302
 					{ok, Request#request{code = 200, 
 						response_data = <<"{}">>,
@@ -167,7 +167,7 @@ authorization_request(Request) ->
 
 refresh_token_request(Request) ->
     ClientId    = ems_request:get_querystring(<<"client_id">>, [],Request),
-    ClientSecret = ems_request:get_querystring(<<"secret">>, [],Request),
+    ClientSecret = ems_request:get_querystring(<<"client_secret">>, [],Request),
 	Reflesh_token = ems_request:get_querystring(<<"refresh_token">>, [],Request),
 	Scope    = ems_request:get_querystring(<<"scope">>, [],Request),
 	Authorization = oauth2ems_backend:authorize_refresh_token({ClientId, ClientSecret},Reflesh_token,Scope),
