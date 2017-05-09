@@ -74,7 +74,6 @@ code_request(Request = #request{authorization = Authorization}) ->
 				{ok, Response} ->
 					Code = element(2,lists:nth(1,Response)),
 					LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
-					% mudar code para 302
 					{ok, Request#request{code = 200, 
 						response_data = <<"{}">>,
 						response_header = #{
@@ -82,27 +81,16 @@ code_request(Request = #request{authorization = Authorization}) ->
 											}
 						}
 					};
-				Error ->
-					LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
-					% mudar code para 302
-					{ok, Request#request{code = 200, 
-						 response_data = <<"{}">>,
-						 response_header = #{
-												<<"location">> => LocationPath
-											}
-						}
-					}
+				{error, Reason} = Error ->
+					{error, Request#request{code = 400, 
+												    reason = invalid_credentials}
+							}
 				end;
 			
-		Error ->
-			LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
-			{ok, Request#request{code = 302, 
-						 response_data = <<"{}">>,
-						 response_header = #{
-												<<"location">> => LocationPath
-											}
-						}
-			}
+		{error, Reason} = Error ->
+					{error, Request#request{code = 400, 
+												    reason = invalid_credentials}
+							}
 		end.
 
 	
