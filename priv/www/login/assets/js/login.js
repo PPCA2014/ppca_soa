@@ -157,11 +157,13 @@ Login.LoginSistemas = (function() {
 		this.pass.on('focus', onRemoveDiv.bind(this));
 	}
 	
-	function onBotaoLoginClick() {
+	function onBotaoLoginClick(e) {
 		if($('#username').val() == "" || $('#pass').val() == ""){
+			onRemoveDiv();
 			this.error.append('<div id="validate" class="alert alert-danger" role="alert">O login e a senha devem ser preenchidos.</div>');
 			return;
 		}
+		
 		var protocol=window.location.protocol;
 		if (protocol == 'http:'){
 			var port=':2301';
@@ -205,6 +207,7 @@ Login.LoginSistemas = (function() {
 	
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
+		onRemoveDiv();
 		this.error.append('<div id="validate" class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
 	}
 	
