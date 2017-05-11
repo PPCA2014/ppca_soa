@@ -153,9 +153,17 @@ Login.LoginSistemas = (function() {
 	
 	LoginSistemas.prototype.iniciar = function() {
 		this.botaoLogin.on('click', onBotaoLoginClick.bind(this));
+		this.username.on('focus', onRemoveDiv.bind(this));
+		this.pass.on('focus', onRemoveDiv.bind(this));
 	}
 	
-	function onBotaoLoginClick() {
+	function onBotaoLoginClick(e) {
+		if($('#username').val() == "" || $('#pass').val() == ""){
+			onRemoveDiv();
+			this.error.append('<div id="validate" class="alert alert-danger" role="alert">O login e a senha devem ser preenchidos.</div>');
+			return;
+		}
+		
 		var protocol=window.location.protocol;
 		if (protocol == 'http:'){
 			var port=':2301';
@@ -185,23 +193,35 @@ Login.LoginSistemas = (function() {
 					// data.redirect contains the string URL to redirect to
 					window.location.href = data.redirect;
 				}
+				
 
 			},
-			complete: function(data, textStatus) {
-				window.location.href = data.getResponseHeader("Location");
-			  }
+			complete: function(data, textStatus) {	
+				if(textStatus == 'success'){
+					window.location.href = data.getResponseHeader("Location");
+				}
+			}
 
 		});
 	}
 	
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
-		this.error.append('<div class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
+		onRemoveDiv();
+		this.error.append('<div id="validate" class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
 	}
 	
 	//sucesso na autenticado
 	function onEstiloSalvo(estilo) {
 		this.error.append('<div class="alert alert-danger" role="alert">Ok.</div>');
+	}
+	
+	function onRemoveDiv() {
+		 var divElement = $("#validate");
+		
+		if(divElement != undefined){
+			divElement.remove("#validate");		
+		}
 	}
 	
 	function getRdirectUri(){

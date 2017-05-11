@@ -45,8 +45,12 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
+<<<<<<< HEAD
 			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":"/utf8>>,list_to_binary(integer_to_list(Port)),<<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
 			io:format("LocationPath >>>>>>>>>>>>>>>>>>>>>>>>> ~p~n~n",[LocationPath]),
+=======
+			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":">>,list_to_binary(integer_to_list(Port)),<<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
+>>>>>>> 8244490df12f3d2c01fe29736158c2c234b6cca0
 			{ok, Request#request{code = 302, 
 									 response_header = #{
 															<<"location">> => LocationPath
@@ -75,7 +79,6 @@ code_request(Request = #request{authorization = Authorization}) ->
 				{ok, Response} ->
 					Code = element(2,lists:nth(1,Response)),
 					LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
-					% mudar code para 302
 					{ok, Request#request{code = 200, 
 						response_data = <<"{}">>,
 						response_header = #{
@@ -83,27 +86,16 @@ code_request(Request = #request{authorization = Authorization}) ->
 											}
 						}
 					};
-				Error ->
-					LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
-					% mudar code para 302
-					{ok, Request#request{code = 200, 
-						 response_data = <<"{}">>,
-						 response_header = #{
-												<<"location">> => LocationPath
-											}
-						}
-					}
+				{error, Reason} = Error ->
+					{error, Request#request{code = 400, 
+												    reason = invalid_credentials}
+							}
 				end;
 			
-		Error ->
-			LocationPath = <<RedirectUri/binary,"?error=access_denied&state=",State/binary>>,
-			{ok, Request#request{code = 302, 
-						 response_data = <<"{}">>,
-						 response_header = #{
-												<<"location">> => LocationPath
-											}
-						}
-			}
+		{error, Reason} = Error ->
+					{error, Request#request{code = 400, 
+												    reason = invalid_credentials}
+							}
 		end.
 
 	
