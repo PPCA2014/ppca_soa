@@ -131,7 +131,10 @@ get_redirection_uri(ClientId, _) ->
     case get_client_identity(ClientId,[])  of
         {ok, #client{redirect_uri = RedirectUri}} ->
             {ok, RedirectUri};
-        _ -> {error, error_uri} 
+        _ -> 
+			io:format("aqui clientid ~p\n", [ClientId]),
+			
+			{error, error_uri} 
     end.
 
 verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
@@ -139,7 +142,9 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
 				true ->	{ok,[]};
-				_ -> {error, error_uri}
+				_ -> 
+				io:format("redirect2 ~p ~p  \n", [RedirUri, ClientUri]),
+				{error, error_uri}
 			end;
         Error -> Error
     end;
@@ -147,7 +152,7 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
 		true -> {ok,[]};
-		_Error -> {error, error_uri}
+		_Error -> io:format("redirect3 ~p ~p \n", [RedirUri, ClientUri]), {error, error_uri}
     end.
     
 
