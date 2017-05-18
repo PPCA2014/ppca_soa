@@ -472,7 +472,7 @@ sql_load_users_tipo_pessoa() ->
 				   lf.Centro as LotacaoCentro,
 				   lf.Codigo as LotacaoCodigoFuncao,
 				   lf.Funcao as LotacaoFuncao,
-				   lf.Órgão as LotacaoOrgao,
+				   '' as LotacaoOrgao,
 				   lf.Cod as LotacaoCodigoCargo,
 				   lf.Cargo as LotacaoCargo
 			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
@@ -627,7 +627,7 @@ sql_update_users_tipo_pessoa() ->
 				   lf.Centro as LotacaoCentro,
 				   lf.Codigo as LotacaoCodigoFuncao,
 				   lf.Funcao as LotacaoFuncao,
-				   lf.Órgão as LotacaoOrgao,
+				   '' as LotacaoOrgao,
 				   lf.Cod as LotacaoCodigoCargo,
 				   lf.Cargo as LotacaoCargo
 			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
