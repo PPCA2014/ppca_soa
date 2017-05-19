@@ -24,7 +24,7 @@
 # -----------------------------------------------------------------------------------------------------
 # 14/02/2017  Everton Agilar     Release inicial    
 # 03/03/2017  Everton Agilar     Add --showlogs option and improve ldap report
-#
+# 19/05/2017  Everton Agilar     Add --email_to option
 #
 #
 #
@@ -46,7 +46,7 @@ LINUX_IP_SERVER=$(hostname -I | cut -d" " -f1)
 LINUX_HOST=$(hostname)
 
 # Script version
-VERSION=1.0.0
+VERSION=1.0.1
 LDAP_PORT="2389"
 LDAP_SERVER="$LINUX_IP_SERVER:$LDAP_PORT"
 CURRENT_DIR=$(pwd)
@@ -93,6 +93,7 @@ elif [ "$1" = "--help" ]; then
 	echo "How to use: ./audit_ldap_log.sh minutes  [ --send_email --showlogs ]"
 	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
 	echo "parameter --send_email is optional and send email to admin"
+	echo "parameter --send_to is emails to send"			
 	echo "parameter --showlogs show content of logs"
 	exit 1
 else
@@ -348,6 +349,7 @@ send_email(){
 				<![endif]-->
 			</body>
 			</html>"
+    SEND_TO=["'''$SMTP_TO'''"]
     python <<EOF
 # -*- coding: utf-8 -*-
 import smtplib
@@ -367,7 +369,7 @@ try:
 	part1 = MIMEText("Relatório em anexo.", 'plain')
 	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
 	msg.attach(part2)
-	smtp.sendmail("$SMTP_DE", ['evertonagilar@unb.br'], msg.as_string())
+	smtp.sendmail("$SMTP_DE", $SEND_TO, msg.as_string())
 	smtp.quit()
 	exit(0)
 except Exception as e:
@@ -409,6 +411,4 @@ fi
 # back to CURRENT_DIR and remove tmp dir
 cd $CURRENT_DIR
 rm -rf $TMP_DIR/
-
-
 
