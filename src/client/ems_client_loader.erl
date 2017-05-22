@@ -85,7 +85,7 @@ handle_info(check_force_load_clients, State = #state{update_checkpoint = UpdateC
 	{{_, _, _}, {Hour, _, _}} = calendar:local_time(),
 	case Hour >= 4 andalso Hour =< 6 of
 		true ->
-			ems_logger:info("ems_client_loader force load clients checkpoint."),
+			?DEBUG("ems_client_loader force load clients checkpoint."),
 			State2 = State#state{last_update = undefined},
 			case update_or_load_clients(State2) of
 				{ok, State3} ->
@@ -129,7 +129,7 @@ update_or_load_clients(State = #state{datasource = Datasource,
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
-			ems_logger:info("ems_client_loader checkpoint. operation: load_clients."),
+			?DEBUG("ems_client_loader checkpoint. operation: load_clients."),
 			case load_clients_from_datasource(Datasource, TimestampStr) of
 				ok -> 
 					ems_db:set_param(<<"ems_client_loader_lastupdate">>, NextUpdate),
@@ -155,7 +155,7 @@ load_clients_from_datasource(Datasource, CtrlInsert) ->
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				ems_logger:info("ems_client_loader load clients from database..."),
+				?DEBUG("ems_client_loader load clients from database..."),
 				Result = case ems_odbc_pool:param_query(Datasource2, 
 														sql_load_clients(), 
 														[], 
@@ -166,6 +166,7 @@ load_clients_from_datasource(Datasource, CtrlInsert) ->
 					{_, _, Records} ->
 						case mnesia:clear_table(client) of
 							{atomic, ok} ->
+								ems_db:init_sequence(client, 0),
 								F = fun() ->
 									Count = insert_clients(Records, 0, CtrlInsert),
 									ems_logger:info("ems_client_loader load ~p clients.", [Count])
@@ -174,7 +175,7 @@ load_clients_from_datasource(Datasource, CtrlInsert) ->
 								mnesia:change_table_copy_type(client, node(), disc_copies),
 								ok;
 							_ ->
-								ems_logger:error("Could not clear client table before load clients. Load clients cancelled!"),
+								ems_logger:error("ems_client_loader could not clear client table before load clients. Load clients cancelled!"),
 								{error, efail_load_clients}
 						end;
 					{error, Reason} = Error -> 

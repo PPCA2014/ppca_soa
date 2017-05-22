@@ -108,7 +108,7 @@ update_or_load_permissions(State = #state{datasource = Datasource,
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
-			ems_logger:info("ems_user_permission_loader checkpoint. operation: load_permissions."),
+			?DEBUG("ems_user_permission_loader checkpoint. operation: load_permissions."),
 			case load_permissions_from_datasource(Datasource, TimestampStr) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_permission_loader_lastupdate">>, NextUpdate),
@@ -134,7 +134,7 @@ load_permissions_from_datasource(Datasource, CtrlInsert) ->
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				ems_logger:info("ems_user_permission_loader load user permissions from database..."),
+				?DEBUG("ems_user_permission_loader load user permissions from database..."),
 				Result = case ems_odbc_pool:param_query(Datasource2, 
 														sql_load_permissions(), 
 														[], 
@@ -145,16 +145,16 @@ load_permissions_from_datasource(Datasource, CtrlInsert) ->
 					{_, _, Records} ->
 						case mnesia:clear_table(user_permission) of
 							{atomic, ok} ->
+								ems_db:init_sequence(user_permission, 0),
 								F = fun() ->
 									Count = insert(Records, 0, CtrlInsert),
 									ems_logger:info("ems_user_permission_loader load ~p user permissions.", [Count])
 								end,
-								mnesia:ets(F),
-								mnesia:change_table_copy_type(user_permission, node(), disc_copies),
+								mnesia:activity(transaction, F),
 								erlang:garbage_collect(),
 								ok;
 							_ ->
-								ems_logger:error("Could not clear user_permission table before load user permissions. Load permissions cancelled!"),
+								ems_logger:error("ems_user_permission_loader could not clear user_permission table before load user permissions. Load permissions cancelled!"),
 								{error, efail_load_permissions}
 						end;
 					{error, Reason} = Error -> 
@@ -227,7 +227,7 @@ insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, Ctr
 					grant_delete = GrantDelete,
 				    ctrl_insert = CtrlInsert
 				  },
-	mnesia:dirty_write(Permission),
+	mnesia:write(Permission),
 	insert(T, Count+1, CtrlInsert).
 
 

@@ -132,7 +132,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
-			ems_logger:info("ems_user_loader checkpoint. operation: load_users."),
+			?DEBUG("ems_user_loader checkpoint. operation: load_users."),
 			case load_users_from_datasource(Datasource, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
@@ -151,7 +151,6 @@ update_or_load_users(State = #state{datasource = Datasource,
 					ems_user_permission_loader:update_or_load_permissions(),
 					{ok, State2};
 				_ -> 
-					ems_user_permission_loader:update_or_load_permissions(),
 					{error, State}
 			end
 	end.
@@ -161,7 +160,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				ems_logger:info("ems_user_loader load users from database..."),
+				?DEBUG("ems_user_loader load users from database..."),
 				Result = case ems_odbc_pool:param_query(Datasource2, 
 														sql_load_users_tipo_pessoa(), 
 														[]) of
@@ -171,11 +170,12 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 					{_, _, Records} ->
 						case mnesia:clear_table(user) of
 							{atomic, ok} ->
-								InsertUserPessoa = fun() ->
+								ems_db:init_sequence(user, 0),
+								InsertUserPessoaFunc = fun() ->
 									Count = insert_users(Records, 0, CtrlInsert),
 									ems_logger:info("ems_user_loader load ~p users tipo pessoa.", [Count])
 								end,
-								mnesia:ets(InsertUserPessoa),
+								mnesia:activity(transaction, InsertUserPessoaFunc),
 								case AllowLoadAluno of
 									true ->
 										case ems_odbc_pool:param_query(Datasource2, 
@@ -185,22 +185,22 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 												?DEBUG("ems_user_loader did not load any users tipo aluno."),
 												ok;
 											{_, _, Records} ->
-												InsertUserAluno = fun() ->
+												InsertUserAlunoFunc = fun() ->
 													Count = insert_users(Records, 0, CtrlInsert),
 													ems_logger:info("ems_user_loader load ~p users tipo aluno.", [Count])
 												end,
-												mnesia:ets(InsertUserAluno),
-												mnesia:change_table_copy_type(user, node(), disc_copies),
-												erlang:garbage_collect(),
+												mnesia:activity(transaction, InsertUserAlunoFunc),
 												ok;
 											{error, Reason} = Error -> 
 												ems_logger:error("ems_user_loader load users query error: ~p.", [Reason]),
 												Error
 										end;
 									false -> ok
-								end;
+								end,
+								erlang:garbage_collect(),
+								ok;
 							_ ->
-								ems_logger:error("Could not clear user table before load users. Load users cancelled!"),
+								ems_logger:error("ems_user_loader could not clear user table before load users. Load users cancelled!"),
 								{error, efail_load_users}
 						end;
 					{error, Reason} = Error -> 
@@ -321,7 +321,7 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 				 active = Active == 1,
 				 ctrl_insert = CtrlInsert},
 	%?DEBUG("User  ~p\n", [User]),
-	mnesia:dirty_write(User),
+	mnesia:write(User),
 	insert_users(T, Count+1, CtrlInsert).
 
 
