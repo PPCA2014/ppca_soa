@@ -164,6 +164,8 @@ Login.LoginSistemas = (function() {
 			return;
 		}
 		
+		var urlBase = '';
+		
 		var protocol=window.location.protocol;
 		if (protocol == 'http:'){
 			var port=':2301';
@@ -187,8 +189,11 @@ Login.LoginSistemas = (function() {
 				  'Content-Type':'application/x-www-form-urlencoded'
 		    },			
 			error: onErroSalvandoEstilo.bind(this),
-			success: function(data, textStatus){
+			success: function(data, textStatus, headers){
 				var doc = document;
+				urlBase = document.referrer;
+				urlBase = urlBase.split('/');
+				
 				if (data.redirect) {
 					// data.redirect contains the string URL to redirect to
 					window.location.href = data.redirect;
@@ -196,9 +201,9 @@ Login.LoginSistemas = (function() {
 				
 
 			},
-			complete: function(data, textStatus) {	
+			complete: function(data, textStatus) {
 				if(textStatus == 'success'){
-					window.location.href = data.getResponseHeader("Location");
+					window.location.href = urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
 				}
 			}
 
