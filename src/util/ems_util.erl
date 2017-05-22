@@ -43,7 +43,9 @@
 		 json_encode_table/2,
 		 json_decode_as_map_file/1,
 		 date_add_minute/2,
+		 date_dec_minute/2,
 		 date_add_second/2,
+		 date_dec_second/2,
 		 date_add_day/2,
 		 date_to_string/1,
 		 date_to_binary/1,
@@ -537,13 +539,19 @@ check_encoding_bin(Bin) when is_binary(Bin) ->
     end.
 
 date_add_minute(Timestamp, Minutes) ->
-    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Minutes * 60).
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + (Minutes * 60)).
+
+date_dec_minute(Timestamp, Minutes) ->
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) - (Minutes * 60)).
 
 date_add_second(Timestamp, Seconds) ->
     calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Seconds).
 
+date_dec_second(Timestamp, Seconds) ->
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) - Seconds).
+
 date_add_day(Timestamp, Days) ->
-    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + Days * 86400).
+    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Timestamp) + (Days * 86400)).
 
 % Return a encrypted password in binary format        
 criptografia_sha1(<<>>) -> <<>>;

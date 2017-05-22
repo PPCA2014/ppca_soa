@@ -104,7 +104,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 update_or_load_permissions(State = #state{datasource = Datasource,
 										  last_update = LastUpdate}) ->
-	NextUpdate = calendar:local_time(),
+	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 

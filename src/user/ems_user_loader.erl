@@ -128,7 +128,7 @@ set_force_load_users_checkpoint() ->
 
 update_or_load_users(State = #state{datasource = Datasource,
 									last_update = LastUpdate}) ->
-	NextUpdate = calendar:local_time(),
+	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
@@ -225,7 +225,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_loader got a connection ~p to update users.", [Datasource#service_datasource.id]),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
-				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
+				% Zera os segundos
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 				Params = [{sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]},
