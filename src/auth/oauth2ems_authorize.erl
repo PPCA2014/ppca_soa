@@ -45,7 +45,8 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
 			%};
 		{redirect, ClientId, RedirectUri} ->
-			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":">>,list_to_binary(integer_to_list(Port)),<<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
+			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":"/utf8>>,list_to_binary(integer_to_list(Port)),<<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
+			io:format("LocationPath >>>>>>>>>>>>>>>>>>>>>>>>> ~p~n~n",[LocationPath]),
 			{ok, Request#request{code = 302, 
 									 response_header = #{
 															<<"location">> => LocationPath

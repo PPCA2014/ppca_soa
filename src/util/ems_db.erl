@@ -422,9 +422,9 @@ field_has_index(FldPos, Tab) ->
 %
 filter_with_limit(Tab, [], Limit, Offset) -> 
 	F = fun() ->
-		  qlc:e(
-			 qlc:q([R || R <- mnesia:table(Tab), element(2, R) >= Offset, element(2, R) =< Limit + Offset - 1])
-		  )
+		  Q = qlc:q([R || R <- mnesia:table(Tab), element(2, R) >= Offset, element(2, R) =< Limit + Offset - 1]),
+		  qlc:info(Q, [{n_elements, Limit}]),
+		  qlc:e(Q)
 	   end,
 	mnesia:activity(async_dirty, F);
 filter_with_limit(Tab, Filter = [{_, "==", _}], Limit, Offset) ->

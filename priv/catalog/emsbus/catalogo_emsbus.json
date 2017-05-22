@@ -122,11 +122,6 @@
 	},
 	
 	{
-		"catalog": "/emsbus/ems_template_loader", 
-		"file": "ems_template_loader.json"
-	},
-	
-	{
 		"catalog": "/emsbus/ems_file_watcher", 
 		"file": "ems_file_watcher.json"
 	},

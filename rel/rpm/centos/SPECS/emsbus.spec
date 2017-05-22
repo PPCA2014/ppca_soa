@@ -1,6 +1,6 @@
 Summary: A service-oriented bus developed in Erlang/OTP by Everton de Vargas Agilar
 Name: ems-bus
-Version: 1.0.12
+Version: 1.0.13
 Release: centos.7
 License: GPL
 Group: System/Utilities

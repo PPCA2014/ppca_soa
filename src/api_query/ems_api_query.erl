@@ -14,49 +14,71 @@
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{type = ConnType}) ->
-	case ConnType of
-		sqlserver -> ems_api_query_sqlserver:find(FilterJson, Fields, Limit, Offset, Sort, Datasource);
-		sqlite -> ems_api_query_sqlite:find(FilterJson, Fields, Limit, Offset, Sort, Datasource);
-		mnesia -> ems_api_query_mnesia:find(FilterJson, Fields, Limit, Offset, Sort, Datasource);
-		_ -> erlang:raise(einvalid_datasource)
+	try
+		case ConnType of
+			sqlserver -> ems_api_query_sqlserver:find(FilterJson, Fields, Limit, Offset, Sort, Datasource);
+			sqlite -> ems_api_query_sqlite:find(FilterJson, Fields, Limit, Offset, Sort, Datasource);
+			mnesia -> ems_api_query_mnesia:find(FilterJson, Fields, Limit, Offset, Sort, Datasource);
+			_ -> erlang:error(einvalid_datasource_type)
+		end
+	catch
+		_Exception:Reason -> {error, Reason}
 	end.
 
 
 find_by_id(Id, Fields, Datasource =  #service_datasource{type = ConnType}) ->
-	case ConnType of
-		sqlserver -> ems_api_query_sqlserver:find_by_id(Id, Fields, Datasource);
-		sqlite -> ems_api_query_sqlite:find_by_id(Id, Fields, Datasource);
-		mnesia -> ems_api_query_mnesia:find_by_id(Id, Fields, Datasource);
-		_ -> erlang:raise(einvalid_datasource)
+	try
+		case ConnType of
+			sqlserver -> ems_api_query_sqlserver:find_by_id(Id, Fields, Datasource);
+			sqlite -> ems_api_query_sqlite:find_by_id(Id, Fields, Datasource);
+			mnesia -> ems_api_query_mnesia:find_by_id(Id, Fields, Datasource);
+			_ -> erlang:error(einvalid_datasource_type)
+		end
+	catch
+		_Exception:Reason -> {error, Reason}
 	end.
 		
 		
 insert(Payload, Service, Datasource = #service_datasource{type = ConnType}) ->
-	case ConnType of
-		sqlserver -> ok;
-		sqlite -> ok;
-		mnesia -> ems_api_query_mnesia:insert(Payload, Service, Datasource);
-		_ -> erlang:raise(einvalid_datasource)
+	try
+		case ConnType of
+			sqlserver -> ok;
+			sqlite -> ok;
+			mnesia -> ems_api_query_mnesia:insert(Payload, Service, Datasource);
+			_ -> erlang:error(einvalid_datasource_type)
+		end
+	catch
+		_Exception:Reason -> {error, Reason}
 	end.
 		
 
 update(Id, Payload, Service, Datasource = #service_datasource{type = ConnType}) ->
-	case maps:is_key(<<"id">>, Payload) of
-		true -> {error, eupdate_id_not_allowed};
-		_ ->
-			case ConnType of
-				sqlserver -> ok;
-				sqlite -> ok;
-				mnesia -> ems_api_query_mnesia:update(Id, Payload, Service, Datasource);
-				_ -> erlang:raise(einvalid_datasource)
-			end
+	try
+		case maps:is_key(<<"id">>, Payload) of
+			true -> {error, eupdate_id_not_allowed};
+			_ ->
+				case ConnType of
+					sqlserver -> ok;
+					sqlite -> ok;
+					mnesia -> ems_api_query_mnesia:update(Id, Payload, Service, Datasource);
+					_ -> erlang:error(einvalid_datasource_type)
+				end
+		end
+	catch
+		_Exception:Reason -> {error, Reason}
 	end.
+		
 
 delete(Id, Service, Datasource = #service_datasource{type = ConnType}) -> 
-	case ConnType of
-		sqlserver -> ems_api_query_sqlserver:delete(Id, Datasource);
-		sqlite -> ok;
-		mnesia -> ems_api_query_mnesia:delete(Id, Service, Datasource);
-		_ -> erlang:raise(einvalid_datasource)
+	try
+		case ConnType of
+			sqlserver -> ems_api_query_sqlserver:delete(Id, Datasource);
+			sqlite -> ok;
+			mnesia -> ems_api_query_mnesia:delete(Id, Service, Datasource);
+			_ -> erlang:error(einvalid_datasource_type)
+		end
+	catch
+		_Exception:Reason -> {error, Reason}
 	end.
+		
 
