@@ -218,14 +218,23 @@ get_querystring(QueryName, Default, #request{querystring_map = QuerystringMap}) 
 
 
 load_from_file_req(Request = #request{url = Url,
-									   if_modified_since = IfModifiedSinceReq, 
-									   if_none_match = IfNoneMatchReq,
-									   timestamp = Timestamp,
-									   service = #service{cache_control = CacheControl,
-														  expires = ExpiresMinute,
-														  path = Path}}) ->
+									  if_modified_since = IfModifiedSinceReq, 
+									  if_none_match = IfNoneMatchReq,
+									  timestamp = Timestamp,
+									  referer = Referer,
+									  service = #service{cache_control = CacheControl,
+														 expires = ExpiresMinute,
+														 path = Path}}) ->
+	
+	io:format("refer is ~p\n", [Referer]),
+	io:format("path is ~p\n", [Path]),
+	io:format("url is ~p\n", [Url]),
+	
+	io:format("p0 is ~p\n", [string:tokens(Url, "/")]),
+	io:format("p3 is ~p\n", [string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2)]),
 	
 	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
+	io:format("filename is ~p\n", [FileName]),
 	case file_info(FileName) of
 		{error, Reason} = Error -> 
 			ems_logger:warn("ems_static_file_service file ~p does not exist.", [FileName]),

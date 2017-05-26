@@ -163,7 +163,6 @@ Login.LoginSistemas = (function() {
 			this.error.append('<div id="validate" class="alert alert-danger" role="alert">O login e a senha devem ser preenchidos.</div>');
 			return;
 		}
-		
 		var urlBase = '';
 		
 		var protocol=window.location.protocol;
@@ -173,11 +172,14 @@ Login.LoginSistemas = (function() {
 			var port=':2302';
 		}
 		var baseUrl=protocol + '//' + window.location.hostname + port; 
-		$.ajax({
-			url: baseUrl + '/code_request?'+
+		alert("baseUrl=" + protocol + '//' + window.location.hostname + port);
+		var url=baseUrl + '/code_request?'+
 				 'client_id='+getRdirectUri()['client_id']+
 				 '&state='+getRdirectUri()['state']+
-				 '&redirect_uri='+getRdirectUri()['redirect_uri'],
+				 '&redirect_uri='+getRdirectUri()['redirect_uri'];
+		alert("url: "+ url);
+		$.ajax({
+			url: url,
 			crossDomain: true,
 			contentType: 'application/json',
 			beforeSend: function (xhr) {
@@ -190,10 +192,6 @@ Login.LoginSistemas = (function() {
 		    },			
 			error: onErroSalvandoEstilo.bind(this),
 			success: function(data, textStatus, headers){
-				var doc = document;
-				urlBase = document.referrer;
-				urlBase = urlBase.split('/');
-				
 				if (data.redirect) {
 					// data.redirect contains the string URL to redirect to
 					window.location.href = data.redirect;
@@ -202,8 +200,21 @@ Login.LoginSistemas = (function() {
 
 			},
 			complete: function(data, textStatus) {
+				alert("succcess "+ textStatus);
 				if(textStatus == 'success'){
-					window.location.href = urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
+					alert("referer is "+ document.referrer);
+					urlBase = document.referrer;
+					urlBase = urlBase.split('/');
+
+					url=urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
+					
+					alert("array: "+ urlBase);
+					
+					alert("succcess antes: " + url);
+					alert("succcess depois: " + data.getResponseHeader("Location"));
+					
+					window.location.href=url;
+					//window.location.href = data.getResponseHeader("Location");
 				}
 			}
 

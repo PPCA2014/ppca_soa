@@ -80,6 +80,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
+		Referer = cowboy_req:header(<<"referer">>, CowboyReq),
 		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
 		Request = #request{
 			rid = RID,
@@ -112,7 +113,8 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 			port = Port,
 			result_cache = false,
 			t1 = T1,
-			req_hash = ReqHash
+			req_hash = ReqHash,
+			referer = Referer
 		},	
 		{ok, Request}
 	catch

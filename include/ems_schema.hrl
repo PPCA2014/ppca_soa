@@ -97,7 +97,7 @@
 					  content_length :: non_neg_integer(), 		%% Largura da requisição
 					  content_type :: string(),					%% Tipo de conteúdo (Ex.: application/json)
 					  accept :: string(),						%% Parâmetro ACCEPT HTTP
-					  user_agent :: string(),					%% Parâmetro USER_AGENT HTTP
+					  user_agent :: binary(),					%% Parâmetro USER_AGENT HTTP
 					  accept_encoding :: string(),				%% Parâmetro ACCEPT_ENCODING HTTP
 					  cache_control :: string(),				%% Parâmetro CACHE-CONTROL HTTP
 					  etag :: string(),							%% Parâmetro ETag
@@ -123,7 +123,8 @@
 					  response_header = #{},
 					  req_hash,
 					  host :: binary(),							%% Ip do barramento
-					  filename :: string()
+					  filename :: string(),
+					  referer :: binary()
 				  }).
 
 
