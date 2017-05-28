@@ -54,7 +54,7 @@ get_connection(Datasource) ->
 		end
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool get connection timeout to datasource ~p.", [Datasource]),
+			ems_logger:error("ems_odbc_pool catch timeout connection to datasource ~p.", [Datasource]),
 			{error, eunavailable_odbc_connection}
 	end.
 
@@ -73,7 +73,7 @@ param_query(Datasource = #service_datasource{owner = Owner,
 		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool param query timeout to datasource ~p.", [Datasource]),
+			ems_logger:error("ems_odbc_pool catch param query timeout to datasource ~p.", [Datasource]),
 			{error, timeout}
 	end.
 
@@ -82,7 +82,7 @@ param_query(Datasource = #service_datasource{owner = Owner}, Sql, Params, Timeou
 		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool param query timeout to datasource ~p.", [Datasource]),
+			ems_logger:error("ems_odbc_pool catch param query timeout to datasource ~p.", [Datasource]),
 			{error, timeout}
 	end.
 
