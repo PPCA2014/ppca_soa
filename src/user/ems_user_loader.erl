@@ -19,7 +19,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, 
-		 last_update/0, is_empty/0, size_table/0, force_load_users/0]).
+		 last_update/0, is_empty/0, size_table/0, force_load_users/0, pause/0, resume/0]).
 
 % estado do servidor
 -record(state, {datasource,
@@ -50,6 +50,14 @@ force_load_users() ->
 	gen_server:cast(?SERVER, force_load_users),
 	ok.
 
+pause() ->
+	gen_server:cast(?SERVER, pause),
+	ok.
+
+resume() ->
+	gen_server:cast(?SERVER, resume),
+	ok.
+
  
 %%====================================================================
 %% gen_server callbacks
@@ -60,7 +68,7 @@ init(#service{datasource = Datasource,
 	LastUpdate = ems_db:get_param(<<"ems_user_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
 	AllowLoadAluno = maps:get(<<"allow_load_aluno">>, Props, false),
-	set_force_load_users_checkpoint(),
+	erlang:send_after(60000 * 60, self(), check_force_load_users),
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update = LastUpdate,
@@ -72,7 +80,17 @@ handle_cast(shutdown, State) ->
 
 handle_cast(force_load_users, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	State2 = State#state{last_update = undefined},
-	update_or_load_users(State2),
+	case update_or_load_users(State2) of
+		{ok, State3} ->  {noreply, State3, UpdateCheckpoint};
+		_Error -> {noreply, State, UpdateCheckpoint}
+	end;
+
+handle_cast(pause, State) ->
+	ems_logger:info("ems_user_loader paused."),
+	{noreply, State};
+
+handle_cast(resume, State = #state{update_checkpoint = UpdateCheckpoint}) ->
+	ems_logger:info("ems_user_loader resume."),
 	{noreply, State, UpdateCheckpoint};
 
 handle_cast(_Msg, State = #state{update_checkpoint = UpdateCheckpoint}) ->
@@ -94,24 +112,30 @@ handle_info(check_force_load_users, State = #state{update_checkpoint = UpdateChe
 				{ok, State3} ->
 					erlang:send_after(86400 * 1000, self(), check_force_load_users),
 					{noreply, State3, UpdateCheckpoint};
-				{error, State3} -> 
-					erlang:send_after(60000 * 5, self(), check_force_load_users),
-					{noreply, State3, UpdateCheckpoint}
+				{error, _Reason} -> 
+					erlang:send_after(86400 * 1000, self(), check_force_load_users),
+					{noreply, State, UpdateCheckpoint}
 			end;
 		_ -> 
-			set_force_load_users_checkpoint(),
+			erlang:send_after(60000 * 60, self(), check_force_load_users),
 			{noreply, State, UpdateCheckpoint}
 	end;
 
 handle_info(timeout, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	{_, State2} = update_or_load_users(State),
-	{noreply, State2, UpdateCheckpoint};
-	
+	case update_or_load_users(State) of
+		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
+		{error, eunavailable_odbc_connection} -> 
+			ems_logger:warn("ems_user_loader wait 5 minutes for next checkpoint while has no connection to load users."),
+			{noreply, State, 60000 * 5};
+		_Error -> {noreply, State, UpdateCheckpoint}
+	end;
+			
 handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	ems_logger:warn("ems_user_loader is unable to load or update users. Reason: ~p.", [Reason]),
 	{noreply, State, UpdateCheckpoint}.
 			
-terminate(_Reason, _State) ->
+terminate(Reason, _State) ->
+    ems_logger:warn("ems_user_loader was terminated. Reason: ~p.", [Reason]),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -123,8 +147,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-set_force_load_users_checkpoint() ->
-	erlang:send_after(60000 * 60, self(), check_force_load_users).
 
 update_or_load_users(State = #state{datasource = Datasource,
 									last_update = LastUpdate}) ->
@@ -139,8 +161,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 					State2 = State#state{last_update = NextUpdate},
 					ems_user_permission_loader:force_load_permissions(),
 					{ok, State2};
-				_ -> 
-					{error, State}
+				Error -> Error
 			end;
 		false ->
 			?DEBUG("ems_user_loader checkpoint. operation: update_users   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
@@ -150,8 +171,7 @@ update_or_load_users(State = #state{datasource = Datasource,
 					State2 = State#state{last_update = NextUpdate},
 					ems_user_permission_loader:update_or_load_permissions(),
 					{ok, State2};
-				_ -> 
-					{error, State}
+				Error -> Error
 			end
 	end.
 
@@ -192,7 +212,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 												mnesia:activity(transaction, InsertUserAlunoFunc),
 												ok;
 											{error, Reason} = Error -> 
-												ems_logger:error("ems_user_loader load users query error: ~p.", [Reason]),
+												ems_logger:error("ems_user_loader load users tipo aluno query error: ~p.", [Reason]),
 												Error
 										end;
 									false -> ok
@@ -204,7 +224,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 								{error, efail_load_users}
 						end;
 					{error, Reason} = Error -> 
-						ems_logger:error("ems_user_loader load users query error: ~p.", [Reason]),
+						ems_logger:error("ems_user_loader load users tipo pessoa query error: ~p.", [Reason]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
@@ -215,7 +235,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("ems_user_loader load users error: ~p.", [Reason3]),
+			ems_logger:error("ems_user_loader load users exception error: ~p.", [Reason3]),
 			{error, Reason3}
 	end.
 
@@ -272,7 +292,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("ems_user_loader udpate users error: ~p.", [Reason3]),
+			ems_logger:error("ems_user_loader udpate users exception error: ~p.", [Reason3]),
 			{error, Reason3}
 	end.
 

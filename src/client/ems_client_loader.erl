@@ -19,7 +19,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, 
-		 last_update/0, is_empty/0, size_table/0, force_load_clients/0]).
+		 last_update/0, is_empty/0, size_table/0, force_load_clients/0, pause/0, resume/0]).
 
 % estado do servidor
 -record(state, {datasource,
@@ -49,6 +49,14 @@ force_load_clients() ->
 	gen_server:cast(?SERVER, force_load_clients),
 	ok.
 
+pause() ->
+	gen_server:cast(?SERVER, pause),
+	ok.
+
+resume() ->
+	gen_server:cast(?SERVER, resume),
+	ok.
+
  
 %%====================================================================
 %% gen_server callbacks
@@ -70,6 +78,14 @@ handle_cast(shutdown, State) ->
 handle_cast(force_load_clients, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	State2 = State#state{last_update = undefined},
 	update_or_load_clients(State2),
+	{noreply, State, UpdateCheckpoint};
+
+handle_cast(pause, State) ->
+	ems_logger:info("ems_client_loader paused."),
+	{noreply, State};
+
+handle_cast(resume, State = #state{update_checkpoint = UpdateCheckpoint}) ->
+	ems_logger:info("ems_client_loader resume."),
 	{noreply, State, UpdateCheckpoint};
 
 handle_cast(_Msg, State = #state{update_checkpoint = UpdateCheckpoint}) ->
