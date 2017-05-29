@@ -89,17 +89,17 @@
 					  uri :: string(),							%% URI da requisição do serviço
 					  url :: string(),							%% URL da requisição do serviço
 					  version :: string(),						%% Versão do cabeçalho HTTP
-					  payload :: string(),						%% Corpo da requisição (aceita somente JSON)
+					  payload :: binary(),						%% Corpo da requisição (aceita somente JSON)
 					  payload_map :: map(),						%% Corpo da requisição convertida para map após o parser e validação
-					  querystring :: string(),					%% Querystring da requisição
+					  querystring :: binary(),					%% Querystring da requisição
 					  querystring_map,							%% Querystring convertida para map após o parser e validação
 					  params_url,								%% Map com os parâmetros da URL
 					  content_length :: non_neg_integer(), 		%% Largura da requisição
 					  content_type :: string(),					%% Tipo de conteúdo (Ex.: application/json)
-					  accept :: string(),						%% Parâmetro ACCEPT HTTP
+					  accept :: binary(),						%% Parâmetro ACCEPT HTTP
 					  user_agent :: binary(),					%% Parâmetro USER_AGENT HTTP
 					  accept_encoding :: string(),				%% Parâmetro ACCEPT_ENCODING HTTP
-					  cache_control :: string(),				%% Parâmetro CACHE-CONTROL HTTP
+					  cache_control :: binary(),				%% Parâmetro CACHE-CONTROL HTTP
 					  etag :: string(),							%% Parâmetro ETag
 					  if_modified_since :: string(),			%% Parâmetro If-Modified-Since
 					  if_none_match :: string(),			    %% Parâmetro If-None-Match

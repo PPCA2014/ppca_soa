@@ -291,7 +291,7 @@ is_metodo_suportado(_) -> false.
 
 %% @doc Indica se a URL é valida
 is_url_valido(Url) ->
-	case re:run(Url, "^((http:\/\/)|(\/))?([a-z_0-9\-]+\.)?[a-z_0-9\-]+\.[a-z_0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
+	case re:run(Url, "^((http:\/\/)|(\/))?([a-z_0-9\-]+\.)?[a-z_0-9\-.\/]+\.[a-z_0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
 		nomatch -> false;
 		_ -> true
 	end.

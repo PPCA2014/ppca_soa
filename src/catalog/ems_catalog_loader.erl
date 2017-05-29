@@ -144,7 +144,7 @@ is_name_querystring_valido(Name) ->
 
 %% @doc Indica se o name da querystring é valido
 is_name_service_valido(Name) ->
-	case re:run(Name, "^[/_a-zA-Z][.:/_a-zA-Z0-9]{0,300}$") of
+	case re:run(Name, "^[/_a-zA-Z-.][.:/_a-zA-Z0-9-]{0,300}$") of
 		nomatch -> false;
 		_ -> true
 	end.

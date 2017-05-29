@@ -67,9 +67,10 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 	catch
 		_Exception:Reason3 -> 
 			% Pode ocorrer einvalid_driver_datasource
+			Error3 = {error, Reason3},
 			{error, Request#request{code = 400,
 									reason = Reason3,
-									response_data = ems_schema:to_json(Reason3)}}
+									response_data = ems_schema:to_json(Error3)}}
 	end.
 
 

@@ -71,7 +71,7 @@ lookup_request(Request = #request{url = Url,
 					{error, eaccess_denied}
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:info("ems_dispatcher request ~p not found. Reason: ~p.", [Url, Reason]),
+			ems_logger:warn("ems_dispatcher request ~p not found. Reason: ~p.", [Url, Reason]),
 			Error
 	end.
 
