@@ -1,7 +1,0 @@
-{
-  "url": "http://127.0.0.1:2301/authorize?",
-  "param1": "grant_type=password&username=",
-  "param2": "&password=",
-  "body" : ""
-}
-

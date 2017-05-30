@@ -172,7 +172,7 @@ Login.LoginSistemas = (function() {
 			var port=':2302';
 		}
 		var baseUrl=protocol + '//' + window.location.hostname + port; 
-		alert("baseUrl=" + protocol + '//' + window.location.hostname + port);
+		//alert("baseUrl=" + protocol + '//' + window.location.hostname + port);
 		var url=baseUrl + '/code_request?'+
 				 'client_id='+getRdirectUri()['client_id']+
 				 '&state='+getRdirectUri()['state']+
@@ -200,18 +200,18 @@ Login.LoginSistemas = (function() {
 
 			},
 			complete: function(data, textStatus) {
-				alert("succcess "+ textStatus);
+				//alert("succcess "+ textStatus);
 				if(textStatus == 'success'){
-					alert("referer is "+ document.referrer);
+					//alert("referer is "+ document.referrer);
 					urlBase = document.referrer;
 					urlBase = urlBase.split('/');
 
 					url=urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
 					
-					alert("array: "+ urlBase);
+					//alert("array: "+ urlBase);
 					
-					alert("succcess antes: " + url);
-					alert("succcess depois: " + data.getResponseHeader("Location"));
+					//alert("succcess antes: " + url);
+					//alert("succcess depois: " + data.getResponseHeader("Location"));
 					
 					window.location.href=url;
 					//window.location.href = data.getResponseHeader("Location");
