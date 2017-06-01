@@ -68,7 +68,7 @@ lookup_request(Request = #request{url = Url,
 					end;
 				false -> 
 					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),
-					{error, ehost_denied}
+					{error, host_denied}
 			end;
 		{error, Reason} = Error -> 
 			ems_logger:warn("ems_dispatcher request ~p not found. Reason: ~p.", [Url, Reason]),

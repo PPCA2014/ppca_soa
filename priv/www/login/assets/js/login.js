@@ -177,7 +177,6 @@ Login.LoginSistemas = (function() {
 				 'client_id='+getRdirectUri()['client_id']+
 				 '&state='+getRdirectUri()['state']+
 				 '&redirect_uri='+getRdirectUri()['redirect_uri'];
-		alert("url: "+ url);
 		$.ajax({
 			url: url,
 			crossDomain: true,
@@ -200,19 +199,11 @@ Login.LoginSistemas = (function() {
 
 			},
 			complete: function(data, textStatus) {
-				//alert("succcess "+ textStatus);
 				if(textStatus == 'success'){
 					//alert("referer is "+ document.referrer);
 					urlBase = document.referrer;
 					urlBase = urlBase.split('/');
-
 					url=urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
-					
-					//alert("array: "+ urlBase);
-					
-					//alert("succcess antes: " + url);
-					//alert("succcess depois: " + data.getResponseHeader("Location"));
-					
 					//window.location.href=url;
 					window.location.href = data.getResponseHeader("Location");
 				}

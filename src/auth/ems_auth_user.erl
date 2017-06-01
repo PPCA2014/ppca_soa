@@ -27,8 +27,8 @@ authenticate(Service = #service{authorization = AuthorizationMode}, Request) ->
 %%====================================================================
 
 
-do_basic_authorization(_, #request{authorization = undefined}) -> {error, eaccess_denied};
-do_basic_authorization(_, #request{authorization = <<>>}) -> {error, eaccess_denied};
+do_basic_authorization(_, #request{authorization = undefined}) -> {error, access_denied};
+do_basic_authorization(_, #request{authorization = <<>>}) -> {error, access_denied};
 do_basic_authorization(Service, Req = #request{authorization = Authorization}) ->
 	case ems_http_util:parse_basic_authorization_header(Authorization) of
 		{ok, Login, Password} ->
@@ -44,9 +44,9 @@ do_basic_authorization(Service, Req = #request{authorization = Authorization}) -
 	end.
 
 	
-do_bearer_authorization(_, #request{authorization = <<>>}) -> {error, eaccess_denied};
+do_bearer_authorization(_, #request{authorization = <<>>}) -> {error, access_denied};
 do_bearer_authorization(Service, Req = #request{authorization = undefined}) ->
-	AccessToken = ems_request:get_querystring(<<"access_token">>, <<>>, Req),
+	AccessToken = ems_request:get_querystring(<<"token">>, <<"access_token">>, <<>>, Req), % a querystring pode ser token ou access_token
 	do_oauth2_check_access_token(AccessToken, Service, Req);
 do_bearer_authorization(Service, Req = #request{authorization = Authorization}) ->	
 	case ems_http_util:parse_bearer_authorization_header(Authorization) of
@@ -60,7 +60,7 @@ do_bearer_authorization(Service, Req = #request{authorization = Authorization}) 
 	%?DEBUG("TextPlain ~p", [TextPlain]).
 
 
-do_oauth2_check_access_token(<<>>, _, _) -> {error, eaccess_denied};
+do_oauth2_check_access_token(<<>>, _, _) -> {error, access_denied};
 do_oauth2_check_access_token(AccessToken, Service, Req) ->
 	case oauth2:verify_access_token(AccessToken, undefined) of
 		{ok, {[], [{<<"client">>, User}|_]}} -> 
@@ -71,13 +71,13 @@ do_oauth2_check_access_token(AccessToken, Service, Req) ->
 	end.
 	
 
--spec do_check_grant_permission(#service{}, #request{}, #user{}) -> {ok, #user{}} | {error, eaccess_denied}.
+-spec do_check_grant_permission(#service{}, #request{}, #user{}) -> {ok, #user{}} | {error, access_denied}.
 do_check_grant_permission(Service, Req, User) ->
 	case ems_user_permission:has_grant_permission(Service, Req, User) of
 		true -> {ok, User};
 		false -> 
 			ems_logger:warn("ems_auth_user does not grant access to user ~p. Reason: permission denied."),
-			{error, eaccess_denied}
+			{error, access_denied}
 	end.
 
 

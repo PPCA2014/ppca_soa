@@ -27,7 +27,8 @@
 
 -export([get_property_request/2, 
 		 get_param_url/3,
-		 get_querystring/3]).
+		 get_querystring/3,
+		 get_querystring/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
@@ -211,6 +212,16 @@ get_param_url(NomeParam, Default, Request) ->
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, #request{querystring_map = QuerystringMap}) ->
 	Value = maps:get(QueryName, QuerystringMap, Default),
+	case erlang:is_list(Value) of
+		true -> list_to_binary(Value);
+		false -> Value
+	end.
+
+get_querystring(QueryName, OrQueryName2, Default, #request{querystring_map = QuerystringMap}) ->
+	case maps:is_key(QueryName, QuerystringMap) of
+		true ->	Value = maps:get(QueryName, QuerystringMap, Default);
+		false -> Value = maps:get(OrQueryName2, QuerystringMap, Default)
+	end,
 	case erlang:is_list(Value) of
 		true -> list_to_binary(Value);
 		false -> Value
