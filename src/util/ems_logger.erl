@@ -418,6 +418,7 @@ do_log_request(#request{rid = RID,
 						latency = Latency,
 						result_cache = ResultCache,
 						result_cache_rid = ResultCacheRid,
+						response_header = ResponseHeader,
 						response_data = ResponseData,
 						authorization = Authorization,
 						cache_control = CacheControl,
@@ -446,7 +447,7 @@ do_log_request(#request{rid = RID,
 								   Params,
 								   Query, 
 								   Payload, 
-								   case ShowResponse of true -> io_lib:format("Response: ~p\n\t", [ResponseData]); false -> <<>> end,
+								   case ShowResponse of true -> io_lib:format("Header Response: ~p\n\tResponse: ~p\n\t", [ResponseHeader, ResponseData]); false -> <<>> end,
 								   case Service =/= undefined of
 										true ->
 										   case ResultCache of 

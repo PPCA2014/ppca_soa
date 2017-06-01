@@ -148,7 +148,6 @@ find_by_name(Name) -> ems_db:find_first(user, [{"name", "==", Name}]).
 find_by_login_and_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, User = #user{password = PasswordUser}} -> 
-			io:format("passo1 ~p ~p ~p\n", [Login, Password, PasswordUser]),
 			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of
 				true -> {ok, User};
 				false -> {error, enoent}

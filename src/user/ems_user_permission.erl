@@ -24,8 +24,8 @@ find_by_hash(Hash) ->
 
 make_hash(Rowid, CodigoPessoa) -> erlang:phash2([Rowid, CodigoPessoa]).
 
-has_grant_permission(#service{check_grant_permission = false}, _, _) -> true;
-has_grant_permission(#service{check_grant_permission = true},
+has_grant_permission(#service{oauth2_with_check_constraint = false}, _, _) -> true;
+has_grant_permission(#service{oauth2_with_check_constraint = true},
 					 #request{rowid = Rowid, type = Type}, 
 					 #user{codigo = Codigo}) ->
 	Hash = make_hash(Rowid, Codigo),

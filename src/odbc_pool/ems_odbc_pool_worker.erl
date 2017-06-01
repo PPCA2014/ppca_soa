@@ -96,7 +96,7 @@ do_connect(Datasource = #service_datasource{connection = Connection, type = sqli
 	{ok, Datasource2};
 do_connect(Datasource = #service_datasource{connection = Connection}) -> 
 	try
-		case odbc:connect(Connection, [{scrollable_cursors, on}, {timeout, 120000}, {trace_driver, off}, {extended_errors, off}]) of
+		case odbc:connect(Connection, [{scrollable_cursors, on}, {timeout, 12000}, {trace_driver, off}, {extended_errors, off}]) of
 			{ok, ConnRef}	-> 
 				Datasource2 = Datasource#service_datasource{owner = self(), conn_ref = ConnRef},
 				{ok, Datasource2};
@@ -138,47 +138,19 @@ do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, Reason} ->
-				% O erro pode ser perda de conexão ou falha na rede. Reconecta e tenta novamente
-				ems_logger:error("ems_odbc_pool_worker param_query error: ~p. Try to reconnect.", [Reason]),
-				case do_connect(Datasource) of
-					{ok, Datasource2} ->
-						case odbc:param_query(ConnRef, Sql, Params, Timeout) of
-							{error, Reason1} -> 
-								ems_logger:error("ems_odbc_pool_worker param_query fail after try reconect: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason1]),
-								{error, eodbc_connection_closed};
-							{selected, Fields2, Result2} -> 
-								%?DEBUG("Odbc resultset after reconecting query: ~p.", [Result2]),
-								{ok, {selected, [?UTF8_STRING(F) || F <- Fields2], Result2}, Datasource2}
-						end;
-					{error, Reason2} -> 
-						ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason2]),
-						{error, eodbc_connection_closed}
-				end;
+				ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
+				{error, eodbc_connection_closed};
 			{selected, Fields1, Result1} -> 
 				%?DEBUG("Odbc resultset query: ~p.", [Result1]),
 				{ok, {selected, [?UTF8_STRING(F) || F <- Fields1], Result1}, Datasource}
 		end
 	catch
 		_:timeout -> 
-			% O erro pode ser perda de conexão. Tenta novamente
-			ems_logger:error("ems_odbc_pool_worker param_query timeout connection. Try reconnect."),
-			case do_connect(Datasource) of
-				{ok, Datasource3} ->
-					case odbc:param_query(ConnRef, Sql, Params, Timeout) of
-						{error, Reason4} -> 
-							ems_logger:error("ems_odbc_pool_worker param_query fail after try reconnect on timeout: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason4]),
-							{error, eodbc_connection_closed};
-						{selected, Fields3, Result3} -> 
-							%?DEBUG("Odbc resultset after reconecting query on timeout: ~p.", [Result3]),
-							{ok, {selected, [?UTF8_STRING(F) || F <- Fields3], Result3}, Datasource3}
-					end;
-				{error, Reason5} -> 
-					ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason5]),
-					{error, eodbc_connection_closed}
-			end;
+			ems_logger:error("ems_odbc_pool_worker param_query connection timeout: \n\tSQL: ~s \n\tConnection: ~s.", [Sql, Connection]),
+			{error, eodbc_connection_timeout};
 		_:Reason6 -> 
-			ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
-			{error, eodbc_connection_closed}
+			ems_logger:error("ems_odbc_pool_worker param_query catch exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
+			{error, eodbc_invalid_connection}
 	end.
 
     

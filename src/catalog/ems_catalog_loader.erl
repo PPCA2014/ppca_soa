@@ -444,7 +444,9 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf);	
 					Datasource ->
 						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
-						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, ?AUTHORIZATION_TYPE_DEFAULT)),
+						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
+						OAuth2WithCheckConstraint = maps:get(<<"oauth2_with_check_constraint">>, H, Conf#config.oauth2_with_check_constraint),
+						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
 						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 						UseRE = maps:get(<<"use_re">>, H, false),
 						SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
@@ -467,8 +469,11 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						valida_length(Comment, 1000),
 						valida_length(Version, 10),
 						valida_length(Owner, 30),
+						valida_bool(Public),
 						valida_bool(Debug),
 						valida_bool(UseRE),
+						valida_bool(OAuth2WithCheckConstraint),
+						valida_bool(OAuth2TokenEncrypt),
 						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
 						ListenAddress_t = parse_tcp_listen_address(ListenAddress),
 						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
@@ -498,8 +503,6 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
 								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleName, Node, Conf)
 						end,
-						CheckGrantPermission = maps:get(<<"check_grant_permission">>, H, false),
-						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
 						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
 						IdBin = list_to_binary(integer_to_list(Id)),
 						Page = maps:get(<<"page">>, H, undefined),
@@ -513,7 +516,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														 ListenAddress, AllowedAddress, 
 														 Port, MaxConnections,
 														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														 CheckGrantPermission, OAuth2TokenEncrypt),
+														 OAuth2WithCheckConstraint, OAuth2TokenEncrypt),
 						case UseRE of
 							true -> 
 								Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -533,7 +536,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														   ListenAddress, ListenAddress_t, AllowedAddress, 
 														   AllowedAddress_t, Port, MaxConnections,
 														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														   CheckGrantPermission, OAuth2TokenEncrypt),
+														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -557,7 +560,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														ListenAddress, ListenAddress_t, AllowedAddress, 
 														AllowedAddress_t, Port, MaxConnections,
 														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														CheckGrantPermission, OAuth2TokenEncrypt),
+														OAuth2WithCheckConstraint, OAuth2TokenEncrypt),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -649,7 +652,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   ListenAddress, ListenAddress_t, AllowedAddress, 
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			   CheckGrantPermission, OAuth2TokenEncrypt) ->
+			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -705,7 +708,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				tcp_ssl_cacertfile = SslCaCertFile,
 				tcp_ssl_certfile = SslCertFile,
 				tcp_ssl_keyfile = SslKeyFile,
-				check_grant_permission = CheckGrantPermission,
+				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
 				oauth2_token_encrypt = OAuth2TokenEncrypt
 			}.
 
@@ -718,7 +721,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
 			Port, MaxConnections,
 			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			CheckGrantPermission, OAuth2TokenEncrypt) ->
+			OAuth2WithCheckConstraint, OAuth2TokenEncrypt) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -771,7 +774,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				tcp_ssl_cacertfile = SslCaCertFile,
 				tcp_ssl_certfile = SslCertFile,
 				tcp_ssl_keyfile = SslKeyFile,
-				check_grant_permission = CheckGrantPermission,
+				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
 				oauth2_token_encrypt = OAuth2TokenEncrypt
 			}.
 
@@ -784,7 +787,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  ListenAddress, AllowedAddress, 
 				  Port, MaxConnections,
 				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-				  CheckGrantPermission, OAuth2TokenEncrypt) ->
+				  OAuth2WithCheckConstraint, OAuth2TokenEncrypt) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -821,7 +824,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				<<"tcp_ssl_cacertfile">> => SslCaCertFile,
 				<<"tcp_ssl_certfile">> => SslCertFile,
 				<<"tcp_ssl_keyfile">> => SslKeyFile,
-				<<"check_grant_permission">> => CheckGrantPermission,
+				<<"oauth2_with_check_constraint">> => OAuth2WithCheckConstraint,
 				<<"oauth2_token_encrypt">> => OAuth2TokenEncrypt
 				
 },

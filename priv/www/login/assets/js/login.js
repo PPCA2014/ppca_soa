@@ -213,8 +213,8 @@ Login.LoginSistemas = (function() {
 					//alert("succcess antes: " + url);
 					//alert("succcess depois: " + data.getResponseHeader("Location"));
 					
-					window.location.href=url;
-					//window.location.href = data.getResponseHeader("Location");
+					//window.location.href=url;
+					window.location.href = data.getResponseHeader("Location");
 				}
 			}
 

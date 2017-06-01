@@ -20,7 +20,7 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			<<"code">> ->	authorization_request(Request);	
 			<<"authorization_code">> ->		access_token_request(Request);
 			<<"refresh_token">> ->	refresh_token_request(Request);	
-			 _ -> {error, invalid_oauth2_typeauth}
+			 _ -> {error, einvalid_oauth2_typeauth}
 	end,  
 	case Result of
 		{ok, ResponseData} ->
@@ -46,12 +46,11 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			%};
 		{redirect, ClientId, RedirectUri} ->
 			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":"/utf8>>,list_to_binary(integer_to_list(Port)),<<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
-			io:format("LocationPath >>>>>>>>>>>>>>>>>>>>>>>>> ~p~n~n",[LocationPath]),
 			{ok, Request#request{code = 302, 
-									 response_header = #{
-															<<"location">> => LocationPath
-														}
-									}
+								 response_header = #{
+														<<"location">> => LocationPath
+													}
+								}
 			};
 		Error ->
 			ResponseData = ems_schema:to_json(Error),
@@ -82,15 +81,14 @@ code_request(Request = #request{authorization = Authorization}) ->
 											}
 						}
 					};
-				{error, Reason} = Error ->
+				_ ->
 					{error, Request#request{code = 400, 
-												    reason = invalid_credentials}
+											reason = ecode_request_issue_code}
 							}
-				end;
-			
-		{error, Reason} = Error ->
+			end;
+		{error, Reason} ->
 					{error, Request#request{code = 400, 
-												    reason = invalid_credentials}
+											reason = Reason}
 							}
 		end.
 
@@ -116,9 +114,9 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 							Secret = list_to_binary(Password),
 							Auth = oauth2:authorize_client_credentials({ClientId2, Secret}, Scope, []),
 							issue_token(Auth);
-						_Error -> {error, invalid_request}
+						Error -> Error
 					end;
-				false -> {error, invalid_request}
+				false -> {error, einvalid_client_credentials}
 			end;
 		false -> 			
 			Secret = ems_request:get_querystring(<<"client_secret">>, <<>>, Request),
@@ -142,7 +140,7 @@ password_grant(Request) ->
 authorization_request(Request) ->
     %Scope       = ems_request:get_querystring(<<"scope">>, [],Request),
     ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-    State    = ems_request:get_querystring(<<"state">>, <<>>, Request),
+    %State    = ems_request:get_querystring(<<"state">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		{ok,_} -> 	{redirect, ClientId, RedirectUri};
@@ -181,7 +179,7 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 							issue_token_and_refresh(Auth);						
 						_Error -> {error, invalid_request}
 					end;
-				false -> {error, invalid_request}
+				false -> {error, einvalid_request}
 			end;
 		false -> 
 			Authz = oauth2:authorize_code_grant({ClientId, ClientSecret}, Code, RedirectUri, []),

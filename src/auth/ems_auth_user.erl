@@ -16,7 +16,7 @@
 authenticate(Service = #service{authorization = AuthorizationMode}, Request) ->
 	case AuthorizationMode of
 		http_basic -> do_basic_authorization(Service, Request);
-		oauth2 -> do_barer_authorization(Service, Request);
+		oauth2 -> do_bearer_authorization(Service, Request);
 		_ -> {ok, public}
 	end.
 
@@ -27,53 +27,57 @@ authenticate(Service = #service{authorization = AuthorizationMode}, Request) ->
 %%====================================================================
 
 
-do_basic_authorization(_, #request{authorization = undefined}) -> {error, no_authorization};
-do_basic_authorization(_, #request{authorization = <<>>}) -> {error, no_authorization};
+do_basic_authorization(_, #request{authorization = undefined}) -> {error, eaccess_denied};
+do_basic_authorization(_, #request{authorization = <<>>}) -> {error, eaccess_denied};
 do_basic_authorization(Service, Req = #request{authorization = Authorization}) ->
 	case ems_http_util:parse_basic_authorization_header(Authorization) of
 		{ok, Login, Password} ->
 			case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
 				{ok, User} -> do_check_grant_permission(Service, Req, User);
-				_ -> 
-					ems_logger:warn("ems_auth_user does not grant access to user ~p with HTTP Basic protocol. Reason: user does not exist.", [Login]),
-					{error, no_authorization}
+				{error, Reason} = Error -> 
+					ems_logger:warn("ems_auth_user does not grant access to user ~p with HTTP Basic protocol. Reason: ~p.", [Login, Reason]),
+					Error
 			end;
-		_Error -> 
-			ems_logger:warn("ems_auth_user does not grant access to user ~p with HTTP Basic protocol. Reason: parse invalid authorization header."),
-			{error, no_authorization}
+		{error, Reason} = Error2 -> 
+			ems_logger:warn("ems_auth_user does not grant access to user ~p with HTTP Basic protocol. Reason: ~p.", [Reason]),
+			Error2
 	end.
 
 	
-do_barer_authorization(_, #request{authorization = <<>>}) -> {error, no_authorization};
-do_barer_authorization(Service, Req = #request{authorization = undefined}) ->
+do_bearer_authorization(_, #request{authorization = <<>>}) -> {error, eaccess_denied};
+do_bearer_authorization(Service, Req = #request{authorization = undefined}) ->
 	AccessToken = ems_request:get_querystring(<<"access_token">>, <<>>, Req),
 	do_oauth2_check_access_token(AccessToken, Service, Req);
-do_barer_authorization(Service, Req = #request{authorization = Authorization}) ->	
-	AccessToken = ems_http_util:parse_barer_authorization_header(Authorization), 
-	do_oauth2_check_access_token(AccessToken, Service, Req).
+do_bearer_authorization(Service, Req = #request{authorization = Authorization}) ->	
+	case ems_http_util:parse_bearer_authorization_header(Authorization) of
+		{ok, AccessToken} ->  do_oauth2_check_access_token(AccessToken, Service, Req);
+		Error -> Error
+	end.
+	
 
 	%PrivateKey = ems_util:open_file(?SSL_PATH ++  "/" ++ binary_to_list(<<"private_key.pem">>)),
 	%TextPlain = ems_util:decrypt_private_key(AccessToken,PrivateKey),
 	%?DEBUG("TextPlain ~p", [TextPlain]).
 
 
-do_oauth2_check_access_token(<<>>, _, _) -> {error, no_authorization};
+do_oauth2_check_access_token(<<>>, _, _) -> {error, eaccess_denied};
 do_oauth2_check_access_token(AccessToken, Service, Req) ->
 	case oauth2:verify_access_token(AccessToken, undefined) of
-		{ok, [{<<"client">>, User}|_]} -> do_check_grant_permission(Service, Req, User);
-		Error -> 
-			ems_logger:warn("ems_auth_user does not grant access with invalid OAuth2 access token."),
+		{ok, {[], [{<<"client">>, User}|_]}} -> 
+			do_check_grant_permission(Service, Req, User);
+		{error, Reason} = Error -> 
+			ems_logger:warn("ems_auth_user does not grant access with invalid OAuth2 access token. Reason: ~p.", [Reason]),
 			Error
 	end.
 	
 
--spec do_check_grant_permission(#service{}, #request{}, #user{}) -> {ok, #user{}} | {error, no_authorization}.
+-spec do_check_grant_permission(#service{}, #request{}, #user{}) -> {ok, #user{}} | {error, eaccess_denied}.
 do_check_grant_permission(Service, Req, User) ->
 	case ems_user_permission:has_grant_permission(Service, Req, User) of
 		true -> {ok, User};
 		false -> 
 			ems_logger:warn("ems_auth_user does not grant access to user ~p. Reason: permission denied."),
-			{error, no_authorization}
+			{error, eaccess_denied}
 	end.
 
 

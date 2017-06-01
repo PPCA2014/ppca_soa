@@ -208,7 +208,7 @@
 					tcp_ssl_cacertfile,
 					tcp_ssl_certfile,
 					tcp_ssl_keyfile,
-					check_grant_permission = false :: boolean(),
+					oauth2_with_check_constraint = false :: boolean(),
 					oauth2_token_encrypt = false :: boolean()
 				}).
 

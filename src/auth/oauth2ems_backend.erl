@@ -73,7 +73,7 @@ authenticate_user({Login, Password}, _) ->
     case ems_user:authenticate_login_password(Login, Password) of
 		ok ->	{ok, {<<>>,Login}};
 		%% Padronizar o erro conforme o RFC 6749
-		_ -> {error, user_notfound}
+		_ -> {error, unauthorized_user}
 	end.
 authenticate_client({ClientId, Secret},_) ->
     case ems_client:find_by_codigo_and_secret(ClientId,Secret) of
@@ -131,10 +131,7 @@ get_redirection_uri(ClientId, _) ->
     case get_client_identity(ClientId,[])  of
         {ok, #client{redirect_uri = RedirectUri}} ->
             {ok, RedirectUri};
-        _ -> 
-			io:format("aqui clientid ~p\n", [ClientId]),
-			
-			{error, error_uri} 
+        _ -> {error, eredirection_uri} 
     end.
 
 verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
@@ -142,9 +139,7 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
 				true ->	{ok,[]};
-				_ -> 
-				io:format("redirect2 ~p ~p  \n", [RedirUri, ClientUri]),
-				{error, error_uri}
+				_ -> {error, everify_redirection_uri}
 			end;
         Error -> Error
     end;
@@ -152,7 +147,7 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
 		true -> {ok,[]};
-		_Error -> io:format("redirect3 ~p ~p \n", [RedirUri, ClientUri]), {error, error_uri}
+		_Error -> {error, everify_redirection_uri}
     end.
     
 
@@ -184,9 +179,9 @@ authorize_refresh_token(Client, RefreshToken, Scope) ->
 						{error, _}           -> {error, invalid_scope};
 						{ok, {Ctx3, _}} ->
 							{ok, {Ctx3, #a{ client  =C
-								, resowner=get_(GrantCtx,<<"resource_owner">>)
-								, scope   =get_(GrantCtx, <<"scope">>)
-								, ttl     =oauth2_config:expiry_time(password_credentials)
+								, resowner= get_(GrantCtx,<<"resource_owner">>)
+								, scope   = get_(GrantCtx, <<"scope">>)
+								, ttl     = oauth2_config:expiry_time(password_credentials)
 							}}}
 					end
             end

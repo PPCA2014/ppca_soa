@@ -141,7 +141,7 @@
 -define(ACCESS_CONTROL_EXPOSE_HEADERS, <<"Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Content-Length, ems-catalog, ems_owner, ems_node">>).
 
 
--define(AUTHORIZATION_TYPE_DEFAULT, <<"public">>).
+-define(AUTHORIZATION_TYPE_DEFAULT, <<"oauth2">>).
 
 
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
@@ -175,7 +175,8 @@
 				 ems_datasources :: map(),
 				 tcp_listen_address			= [<<"0.0.0.0">>],
 				 tcp_allowed_address		= [],
-				 authorization,
+				 authorization :: binary(),
+				 oauth2_with_check_constraint :: boolean(),
 				 config_file
 		 }). 	
 

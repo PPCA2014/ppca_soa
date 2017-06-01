@@ -207,6 +207,7 @@ parse_config(Json, NomeArqConfig) ->
 			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
 			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
 			 authorization			    = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
+			 oauth2_with_check_constraint = parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
 			 config_file			    = NomeArqConfig
 		}.
 
@@ -229,7 +230,8 @@ get_default_config() ->
 			 ems_datasources			= #{},
 			 tcp_allowed_address		= all,
 			 tcp_listen_address			= [<<"0.0.0.0">>],
-			 authorization				= http_basic,
+			 authorization				= <<"oauth2">>,
+			 oauth2_with_check_constraint = false,
 			 config_file			    = undefined
 		}.
 

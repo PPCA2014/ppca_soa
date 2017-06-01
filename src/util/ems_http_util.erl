@@ -326,7 +326,7 @@ match_ip_address({O1, O2, O3, O4}, {X1, X2, X3, X4}) ->
    (O4 == '_' orelse O4 == X4).
 	
 	
--spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
+-spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, eaccess_denied}.
 parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) ->
 	case Basic =:= <<"Basic">> of
 		true ->
@@ -334,18 +334,17 @@ parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) 
 			[Login|[Password|_]] = string:tokens(Secret2, ":"),
 			{ok, Login, Password};
 		false -> 
-			{error, einvalid_authorization_header}
+			{error, eaccess_denied}
 	end;
-parse_basic_authorization_header(_) -> {error, einvalid_authorization_header}.
+parse_basic_authorization_header(_) -> {error, eaccess_denied}.
 	
--spec parse_barer_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, einvalid_authorization}.
-parse_barer_authorization_header(Header) ->
-	<<Barer:5/binary, _:1/binary, Secret/binary>> = Header,
-	case Barer =:= <<"Barer">> of
-		true ->
-			base64:decode(Secret);
+-spec parse_bearer_authorization_header(Header :: binary()) -> {ok, binary()} | {error, eaccess_denied}.
+parse_bearer_authorization_header(Header) ->
+	<<Bearer:6/binary, _:1/binary, Secret/binary>> = Header,
+	case Bearer =:= <<"Bearer">> of
+		true ->	{ok, Secret};
 		false -> 
-			{error, einvalid_authorization_header}
+			{error, eaccess_denied}
 	end.
 
 
@@ -356,7 +355,9 @@ parse_authorization_type(<<"oauth2">>) -> oauth2;
 parse_authorization_type(<<"Public">>) -> public;
 parse_authorization_type(<<"public">>) -> public;
 parse_authorization_type(<<>>) -> public;
-parse_authorization_type(_) -> erlang:error(einvalid_authorization_type).
+parse_authorization_type(oauth2) -> oauth2;
+parse_authorization_type(basic) -> basic;
+parse_authorization_type(_) -> erlang:error(einvalid_authorization_mode).
 
 	
 %% @doc Retorna o mime-type do arquivo
