@@ -75,6 +75,7 @@ code_request(Request = #request{authorization = Authorization}) ->
 					Code = element(2,lists:nth(1,Response)),
 					LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=",State/binary>>,
 					{ok, Request#request{code = 200, 
+						%response_data = <<"code=", Code/binary>>,
 						response_data = <<"{}">>,
 						response_header = #{
 											<<"location">> => LocationPath

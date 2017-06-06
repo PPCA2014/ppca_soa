@@ -195,20 +195,19 @@ Login.LoginSistemas = (function() {
 					// data.redirect contains the string URL to redirect to
 					window.location.href = data.redirect;
 				}
-				
-
 			},
 			complete: function(data, textStatus) {
 				if(textStatus == 'success'){
-					//alert("referer is "+ document.referrer);
-					urlBase = document.referrer;
-					urlBase = urlBase.split('/');
-					url=urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
-					//window.location.href=url;
-					window.location.href = data.getResponseHeader("Location");
+					if (document.referrer != undefined && document.referrer != ""){
+						urlBase=document.referrer;
+						urlBase=urlBase.split('/');
+						url=urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
+					}else{
+						url=data.getResponseHeader("Location");
+					}
+					window.location.href=url;
 				}
 			}
-
 		});
 	}
 	
