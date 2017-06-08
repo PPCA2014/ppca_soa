@@ -357,6 +357,7 @@ parse_authorization_type(<<"public">>) -> public;
 parse_authorization_type(<<>>) -> public;
 parse_authorization_type(oauth2) -> oauth2;
 parse_authorization_type(basic) -> basic;
+parse_authorization_type(public) -> public;
 parse_authorization_type(_) -> erlang:error(einvalid_authorization_mode).
 
 	
