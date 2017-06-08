@@ -55,7 +55,7 @@ init({_IpAddress,
 	
 	case IsSsl of
 		true -> 
-			{ok, _} = cowboy:start_tls(ListenerName, 100, [
+			{ok, _} = cowboy:start_tls(ListenerName, [
 				{port, Port},
 				{max_connections, MaxConnections},
 				{cacertfile, SslCaCertFile},
@@ -64,7 +64,7 @@ init({_IpAddress,
 			], #{compress => true,
 				 env => #{dispatch => Dispatch}});
 		false ->
-			{ok, _} = cowboy:start_clear(ListenerName, 100, [{port, Port}, {max_connections, MaxConnections}], 
+			{ok, _} = cowboy:start_clear(ListenerName, [{port, Port}, {max_connections, MaxConnections}], 
 				#{compress => true,
 				  env => #{dispatch => Dispatch}
 			})

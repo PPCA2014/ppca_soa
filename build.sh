@@ -24,6 +24,14 @@
 #
 ########################################################################################################
 
+# limpa a pasta de logs e o banco de dados
 rm -Rf priv/log
 rm -Rf priv/db
+
+# algumas libs devem ser limpas para garantir a última versão master
+rm -Rf deps/cowboy
+rm -Rf deps/cowlib
+rm -Rf deps/ranch
+rm -Rf deps/oauth2
+
 tools/rebar/rebar clean get-deps compile
