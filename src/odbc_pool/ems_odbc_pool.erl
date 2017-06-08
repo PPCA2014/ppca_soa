@@ -179,7 +179,6 @@ do_release_connection(Datasource = #service_datasource{id = Id,
 			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 														   pid_module_ref = undefined}, Pool),
 			erlang:put(Id, Pool2),
-			?DEBUG("ems_odbc_pool release odbc connection ~p.", [Id]),
 			?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Id]);
 		false -> 
 			?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Id]),

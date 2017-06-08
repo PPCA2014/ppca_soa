@@ -108,7 +108,7 @@ handle_info(check_force_load_clients, State = #state{update_checkpoint = UpdateC
 					erlang:send_after(86400 * 1000, self(), check_force_load_clients),
 					{noreply, State3, UpdateCheckpoint};
 				{error, State3} -> 
-					erlang:send_after(60000 * 5, self(), check_force_load_clients),
+					erlang:send_after(86400 * 1000, self(), check_force_load_clients),
 					{noreply, State3, UpdateCheckpoint}
 			end;
 		_ -> 
@@ -299,6 +299,7 @@ sql_load_clients() ->
        s.SisDescricao as Description,
        s.SisSituacao as Active
 	from BDAcesso.dbo.TB_Sistemas s
-	where s.SisUrl is not null
+	where s.SisUrl is not null 
+	order by s.SisSistema
 	".
 

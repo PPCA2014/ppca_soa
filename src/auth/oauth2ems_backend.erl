@@ -131,7 +131,7 @@ get_redirection_uri(ClientId, _) ->
     case get_client_identity(ClientId,[])  of
         {ok, #client{redirect_uri = RedirectUri}} ->
             {ok, RedirectUri};
-        _ -> {error, eredirection_uri} 
+        _ -> {error, einvalid_uri} 
     end.
 
 verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
@@ -139,7 +139,7 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
 				true ->	{ok,[]};
-				_ -> {error, everify_redirection_uri}
+				_ -> {error, unauthorized_client}
 			end;
         Error -> Error
     end;
@@ -147,7 +147,7 @@ verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     case ClientUri =:= RedirUri of
 		true -> {ok,[]};
-		_Error -> {error, everify_redirection_uri}
+		_Error -> {error, unauthorized_client}
     end.
     
 
