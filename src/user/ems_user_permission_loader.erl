@@ -87,6 +87,9 @@ handle_info(State) ->
 
 handle_info({_Pid, {error, Reason}}, State) ->
 	ems_logger:warn("ems_user_permission_loader is unable to load or update permissions. Reason: ~p.", [Reason]),
+	{noreply, State};
+			
+handle_info(_, State) ->
 	{noreply, State}.
 			
 terminate(_Reason, _State) ->

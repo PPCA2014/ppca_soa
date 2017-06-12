@@ -122,6 +122,9 @@ handle_info(timeout, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	
 handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	ems_logger:warn("ems_client_loader is unable to load or update clients. Reason: ~p.", [Reason]),
+	{noreply, State, UpdateCheckpoint};
+			
+handle_info(_, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	{noreply, State, UpdateCheckpoint}.
 			
 terminate(_Reason, _State) ->

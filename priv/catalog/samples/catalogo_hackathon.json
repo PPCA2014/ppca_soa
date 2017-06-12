@@ -15,7 +15,7 @@
 			"primary_key" : "PesCodigoPessoa"
 		},
 		"lang" : "erlang",
-		"debug" : false,
+		"authorization" : "public",
 		"querystring": [
 				{
 					"name": "filter",
@@ -93,7 +93,7 @@
 			"table_name" : "Tbl_Cursos"
 		},
 		"lang" : "erlang",
-		"debug" : false,
+		"authorization" : "public",
 		"querystring": [
 				{
 					"name": "filter",
@@ -173,7 +173,7 @@
 			"table_name" : "Tbl_Ofertas"
 		},
 		"lang" : "erlang",
-		"debug" : false,
+		"authorization" : "public",
 		"querystring": [
 				{
 					"name": "filter",
@@ -225,7 +225,7 @@
 			"primary_key" : "CamCodigo"
 		},
 		"lang" : "erlang",
-		"debug" : false,
+		"authorization" : "public",
 		"querystring": [
 				{
 					"name": "filter",

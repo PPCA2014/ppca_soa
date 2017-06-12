@@ -126,12 +126,15 @@ handle_info(timeout, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
 		{error, eunavailable_odbc_connection} -> 
 			ems_logger:warn("ems_user_loader wait 5 minutes for next checkpoint while has no connection to load users."),
-			{noreply, State, 60000 * 5};
+			{noreply, State};
 		_Error -> {noreply, State, UpdateCheckpoint}
 	end;
 			
 handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	ems_logger:warn("ems_user_loader is unable to load or update users. Reason: ~p.", [Reason]),
+	{noreply, State, UpdateCheckpoint};
+			
+handle_info(_, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	{noreply, State, UpdateCheckpoint}.
 			
 terminate(Reason, _State) ->

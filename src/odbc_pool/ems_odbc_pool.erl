@@ -74,7 +74,7 @@ param_query(Datasource = #service_datasource{owner = Owner,
 	catch
 		_ : _ ->
 			ems_logger:error("ems_odbc_pool catch param query timeout to datasource ~p.", [Datasource]),
-			{error, timeout}
+			{error, eunavailable_odbc_connection}
 	end.
 
 param_query(Datasource = #service_datasource{owner = Owner}, Sql, Params, Timeout) ->
@@ -83,16 +83,16 @@ param_query(Datasource = #service_datasource{owner = Owner}, Sql, Params, Timeou
 	catch
 		_ : _ ->
 			ems_logger:error("ems_odbc_pool catch param query timeout to datasource ~p.", [Datasource]),
-			{error, timeout}
+			{error, eunavailable_odbc_connection}
 	end.
 
- 
- 
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
  
 init(_Args) ->
+	process_flag(trap_exit, true),
     {ok, #state{}}. 
     
 handle_cast(shutdown, State) ->
@@ -108,19 +108,37 @@ handle_call({create_connection, Datasource}, {Pid, _Tag}, State) ->
 
 handle_call({get_size, Datasource}, _From, State) ->
 	Reply = get_connection_pool_size(Datasource),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 	
+handle_call({remove_pool, Datasource}, _From, State) ->
+	do_remove_pool(Datasource),
+	{reply, ok, State}.
+
 handle_info(State) ->
    {noreply, State}.
 
-handle_info({'DOWN', Ref, process, _Pid2, _Reason}, State) ->
+% recebe mensagem quando o processo que solicitou a conexão morre
+handle_info({_Signal, Ref, process, _Pid2, _Reason}, State) ->
+	erlang:demonitor(Ref),
    case erlang:erase(Ref) of
 		undefined -> 
 			{noreply, State};
 		Datasource ->
 			do_release_connection(Datasource),
 			{noreply, State}
+	end;
+
+% recebe mensagem quando o worker do pool morre
+handle_info({'EXIT', PidWorker, _}, State) ->
+   case erlang:erase(PidWorker) of
+		undefined -> 
+			{noreply, State};
+		Datasource ->
+			do_remove_pool(Datasource),
+			{noreply, State}
 	end.
+
+
 
 terminate(_Reason, _State) ->
     ok.
@@ -133,6 +151,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+do_remove_pool(#service_datasource{id = Id, owner = WorkerPid}) ->
+	Pool = find_pool(Id),
+	Pool2 = queue:filter(fun(Item) -> Item#service_datasource.owner /=  WorkerPid end, Pool),
+	erlang:put(Id, Pool2).
     
 						
 do_create_connection(Datasource = #service_datasource{id = Id,
@@ -146,11 +169,14 @@ do_create_connection(Datasource = #service_datasource{id = Id,
 				{ok, WorkerPid} ->
 					?DEBUG("ems_odbc_pool start new worker for odbc connection ~p.", [Id]),
 					PidModuleRef = erlang:monitor(process, PidModule),
-					Datasource2 = Datasource#service_datasource{owner = WorkerPid, 
-																pid_module = PidModule,
-																pid_module_ref = PidModuleRef},
-					erlang:put(PidModuleRef, Datasource2),
-					{ok, Datasource2};
+					Datasource2 = ems_odbc_pool_worker:get_datasource(WorkerPid),
+					Datasource3 = Datasource2#service_datasource{owner = WorkerPid, 
+																 pid_module = PidModule,
+																 pid_module_ref = PidModuleRef},
+					ems_odbc_pool_worker:notify_use(WorkerPid, Datasource3),
+					erlang:put(PidModuleRef, Datasource3),
+					erlang:put(WorkerPid, Datasource3),
+					{ok, Datasource3};
 				_ -> 
 					{error, eunavailable_odbc_connection}
 			end;
@@ -162,7 +188,10 @@ do_create_connection(Datasource = #service_datasource{id = Id,
 														 table_name = TableName,
 														 sql = Sql,
 														 primary_key = PrimaryKey},
+			WorkerPid = Datasource3#service_datasource.owner,
+			ems_odbc_pool_worker:notify_use(WorkerPid, Datasource3),
 			erlang:put(PidModuleRef, Datasource3),
+			erlang:put(WorkerPid, Datasource3),
 			erlang:put(Id, Pool2),
 			{ok, Datasource3}
 	end.
@@ -172,23 +201,36 @@ do_release_connection(Datasource = #service_datasource{id = Id,
 													   pid_module_ref = PidModuleRef,
 													   max_pool_size = MaxPoolSize}) ->
 	erlang:demonitor(PidModuleRef),
+	erlang:erase(PidModuleRef),
 	Pool = find_pool(Id),
 	PoolSize = queue:len(Pool),
-	case PoolSize < MaxPoolSize of
+	case erlang:is_process_alive(Owner) of
 		true ->
-			Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
-														   pid_module_ref = undefined}, Pool),
-			erlang:put(Id, Pool2),
-			?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Id]);
-		false -> 
-			?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Id]),
-			gen_server:call(Owner, shutdown)
+			% Only back to the pool if it did not exceed the connection limit or the connection did not give error
+			case (PoolSize < MaxPoolSize) of
+				true ->
+					case ems_odbc_pool_worker:notify_return_pool(Owner) of
+						ok -> 
+							Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
+																		   pid_module_ref = undefined}, Pool),
+							erlang:put(Id, Pool2),
+							?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Id]);
+						_ ->
+							gen_server:stop(Owner)
+					end;
+				false -> 
+					?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Id]),
+					gen_server:stop(Owner)
+			end;
+		false -> ok
 	end.
 
 find_pool(Id) ->
 	case erlang:get(Id) of
-		undefined -> queue:new();
-		Pool -> Pool
+		undefined -> 
+			queue:new();
+		Pool -> 
+			Pool
 	end.
 
 get_connection_pool_size(#service_datasource{id = Id}) ->
