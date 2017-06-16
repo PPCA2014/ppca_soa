@@ -449,10 +449,15 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
 						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
 						UseRE = maps:get(<<"use_re">>, H, false),
-						SchemaIn = parse_schema(maps:get(<<"schema_in">>, H, null)),
-						SchemaOut = parse_schema(maps:get(<<"schema_out">>, H, null)),
-						PoolSize = parse_schema(maps:get(<<"pool_size">>, H, 1)),
-						PoolMax = parse_schema(maps:get(<<"pool_max">>, H, 1)),
+						SchemaIn = maps:get(<<"schema_in">>, H, null),
+						SchemaOut = maps:get(<<"schema_out">>, H, null),
+						PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, H, 1)),
+ 						PoolMax0 = ems_config:getConfig(<<"pool_max">>, Name, maps:get(<<"pool_max">>, H, 1)),
+						% Ajusta o pool_max para o valor de pool_size se for menor
+						case PoolMax0 < PoolSize of
+							true -> PoolMax = PoolSize;
+							false -> PoolMax = PoolMax0
+						end,
 						Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
 						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
 						CacheControl = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
@@ -480,7 +485,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
 						AllowedAddress_t = parse_allowed_address_t(AllowedAddress),
 						MaxConnections = maps:get(<<"tcp_max_connections">>, H, [?HTTP_MAX_CONNECTIONS]),
-						Port = parse_tcp_port(maps:get(<<"tcp_port">>, H, undefined)),
+						Port = parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, H, undefined))),
 						Ssl = maps:get(<<"tcp_ssl">>, H, undefined),
 						case Ssl of
 							undefined ->
@@ -591,9 +596,6 @@ compile_page_module(Page, Rowid, Conf) ->
 	end.
 
 	
-parse_schema(null) -> null;
-parse_schema(Name) -> Name.
-
 parse_datasource(undefined, _, _) -> undefined;
 parse_datasource(M, Rowid, _) when erlang:is_map(M) -> ems_db:create_datasource_from_map(M, Rowid);
 parse_datasource(DsName, _Rowid, Conf) -> 

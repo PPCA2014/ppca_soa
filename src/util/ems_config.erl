@@ -19,7 +19,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([getConfig/0, usePortOffset/2]).
+-export([getConfig/0, getConfig/3, usePortOffset/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -40,8 +40,11 @@ stop() ->
  
 getConfig() -> gen_server:call(?SERVER, get_config).
 
+-spec getConfig(binary(), binary(), any()) -> any().
+getConfig(ParamName, ServiceName, Default) -> gen_server:call(?SERVER, {get_config, ParamName, ServiceName, Default}).
+
 -spec usePortOffset(binary(), non_neg_integer()) -> non_neg_integer() | undefined.
-usePortOffset(Protocol, DefaultPort) -> gen_server:call(?SERVER, {use_port_offset, Protocol, DefaultPort}).
+usePortOffset(ServiceName, DefaultPort) -> gen_server:call(?SERVER, {use_port_offset, ServiceName, DefaultPort}).
 
 
 
@@ -69,10 +72,15 @@ handle_cast(_Msg, State) ->
 handle_call(get_config, _From, State) ->
 	{reply, State, State};
 
+handle_call({get_config, ParamName, ServiceName, Default}, _From, State = #config{params = Params}) ->
+	ParamName2 = iolist_to_binary([ServiceName, <<".">>, ParamName]),
+	Result = maps:get(ParamName2, Params, Default),
+	{reply, Result, State};
+
 handle_call({use_port_offset, <<>>}, _From, State) ->
 	{reply, undefined, State};
-handle_call({use_port_offset, Protocol, DefaultPort}, _From, State = #config{params = Params}) ->
-	ParamName = iolist_to_binary([Protocol, <<"_port_offset">>]),
+handle_call({use_port_offset, ServiceName, DefaultPort}, _From, State = #config{params = Params}) ->
+	ParamName = iolist_to_binary([ServiceName, <<"_port_offset">>]),
 	Port = maps:get(ParamName, Params, DefaultPort) ,
 	Params2 = maps:put(ParamName, Port + 1, Params),
 	State2 = State#config{params = Params2},

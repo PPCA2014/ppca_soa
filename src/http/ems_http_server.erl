@@ -51,18 +51,14 @@ stop() ->
 %%====================================================================
  
 init(S = #service{name = Name, 
-				  tcp_listen_address_t = ListenAddress_t,
-				  pool_size = PoolSize}) ->
- 	S2 = configure_port_offset(S),
+				  tcp_listen_address_t = ListenAddress_t}) ->
+ 	S2 = get_port_offset(S),
  	ServerName = binary_to_list(iolist_to_binary([Name, <<"_port_">>, integer_to_binary(S2#service.tcp_port)])),
  	State = #state{service = S, name = ServerName},
 	case start_listeners(ListenAddress_t, S2, ServerName, 1, State) of
 		{ok, State2} ->
-			case PoolSize == 1 of
-				true -> ok;
-				false -> ems_logger:info("Start worker ~s.", [ServerName])
-			end,
-			{ok, State2};
+			ems_logger:info("Worker ~s listener in port ~p.", [ServerName, S2#service.tcp_port]),
+			{ok, State2, 1000};
 		{error, _Reason, State2} -> 
 			{stop, State2}
 	end.
@@ -110,15 +106,8 @@ do_start_listener(IpAddress, Service = #service{tcp_port = Port}, ListenerName, 
 			{{error, Reason}, State}
 	end.
 
-configure_port_offset(S = #service{tcp_port = Port, protocol = Protocol}) ->
- 	% Quando um offset para porta está definido no arquivo de configuração, 
- 	% a porta será uma offset desta configuração, senão será a porta definida no catálogo
-	case Protocol of
-		undefined -> 
-			Port2 = Port;
-		_ ->
-			Port2 = ems_config:usePortOffset(Protocol, Port)
-	end,
+get_port_offset(S = #service{tcp_port = Port, name = ServiceName}) ->
+	Port2 = ems_config:usePortOffset(ServiceName, Port),
  	S#service{tcp_port = Port2}.
 	
 
