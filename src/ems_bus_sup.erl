@@ -43,7 +43,7 @@ init([]) ->
 																 {name, {local, WorkerNameAtom}},
 																 {worker_module, Worker},
 																 {size, PoolSize},
-																 {max_overflow, PoolMax - PoolSize}], S]
+																 {max_overflow, PoolMax}], S]
 															   ]]},
 								 permanent, 10000, worker, [poolboy]
 							}
@@ -63,7 +63,7 @@ start_process_sup([Module, Function, Args = [[_,
 											  {size, PoolSize}, 
 											  {max_overflow, PoolMax}], 
 											_]]) ->
-	ems_logger:info("Start ~p with ~p workers (Max ~p).", [WorkerNameAtom, PoolSize, PoolMax]),
+	ems_logger:info("Start ~p with ~p workers (Max ~p workers).", [WorkerNameAtom, PoolSize, PoolMax]),
 	Reply = apply(Module, Function, Args),
 	Reply.
 

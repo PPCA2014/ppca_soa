@@ -461,6 +461,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
 						Path = parse_path_catalog(maps:get(<<"path">>, H, <<>>), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
+						Protocol = maps:get(<<"protocol">>, H, <<>>),
 						valida_lang(Lang),
 						valida_name_service(Name),
 						valida_type_service(Type),
@@ -516,7 +517,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														 ListenAddress, AllowedAddress, 
 														 Port, MaxConnections,
 														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														 OAuth2WithCheckConstraint, OAuth2TokenEncrypt),
+														 OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
 						case UseRE of
 							true -> 
 								Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -536,7 +537,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														   ListenAddress, ListenAddress_t, AllowedAddress, 
 														   AllowedAddress_t, Port, MaxConnections,
 														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt),
+														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -560,7 +561,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														ListenAddress, ListenAddress_t, AllowedAddress, 
 														AllowedAddress_t, Port, MaxConnections,
 														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														OAuth2WithCheckConstraint, OAuth2TokenEncrypt),
+														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
 									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
@@ -652,7 +653,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   ListenAddress, ListenAddress_t, AllowedAddress, 
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt) ->
+			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -709,7 +710,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				tcp_ssl_certfile = SslCertFile,
 				tcp_ssl_keyfile = SslKeyFile,
 				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
-				oauth2_token_encrypt = OAuth2TokenEncrypt
+				oauth2_token_encrypt = OAuth2TokenEncrypt,
+				protocol = Protocol
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
@@ -721,7 +723,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
 			Port, MaxConnections,
 			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			OAuth2WithCheckConstraint, OAuth2TokenEncrypt) ->
+			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -775,7 +777,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				tcp_ssl_certfile = SslCertFile,
 				tcp_ssl_keyfile = SslKeyFile,
 				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
-				oauth2_token_encrypt = OAuth2TokenEncrypt
+				oauth2_token_encrypt = OAuth2TokenEncrypt,
+				protocol = Protocol
 			}.
 
 new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
@@ -787,7 +790,7 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				  ListenAddress, AllowedAddress, 
 				  Port, MaxConnections,
 				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-				  OAuth2WithCheckConstraint, OAuth2TokenEncrypt) ->
+				  OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol) ->
 	Service = #{<<"id">> => Id,
 				<<"name">> => Name,
 				<<"url">> => Url,
@@ -825,7 +828,8 @@ new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
 				<<"tcp_ssl_certfile">> => SslCertFile,
 				<<"tcp_ssl_keyfile">> => SslKeyFile,
 				<<"oauth2_with_check_constraint">> => OAuth2WithCheckConstraint,
-				<<"oauth2_token_encrypt">> => OAuth2TokenEncrypt
+				<<"oauth2_token_encrypt">> => OAuth2TokenEncrypt,
+				<<"protocol">> => Protocol
 				
 },
 	Service.

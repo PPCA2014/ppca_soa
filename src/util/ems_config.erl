@@ -19,7 +19,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([getConfig/0]).
+-export([getConfig/0, usePortOffset/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -39,6 +39,11 @@ stop() ->
 %%====================================================================
  
 getConfig() -> gen_server:call(?SERVER, get_config).
+
+-spec usePortOffset(binary()) -> non_neg_integer() | undefined.
+usePortOffset(Protocol) -> gen_server:call(?SERVER, {use_port_offset, Protocol}).
+
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -62,7 +67,20 @@ handle_cast(_Msg, State) ->
 	{noreply, State}.
     
 handle_call(get_config, _From, State) ->
-	{reply, State, State}.
+	{reply, State, State};
+
+handle_call({use_port_offset, <<>>}, _From, State) ->
+	{reply, undefined, State};
+handle_call({use_port_offset, Protocol}, _From, State = #config{params = Params}) ->
+	ParamName = iolist_to_binary([Protocol, <<"_port_offset">>]),
+	Port = maps:get(ParamName, Params, undefined) ,
+	case Port of
+		undefined -> {reply, undefined, State};
+		_ -> 
+			Params2 = maps:update(ParamName, Port + 1, Params),
+			State2 = State#config{params = Params2},
+			{reply, Port, State2}
+	end.
 
 handle_info(_Msg, State) ->
    {noreply, State}.
@@ -208,7 +226,8 @@ parse_config(Json, NomeArqConfig) ->
 			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
 			 authorization			    = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
 			 oauth2_with_check_constraint = parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
-			 config_file			    = NomeArqConfig
+			 config_file			    = NomeArqConfig,
+			 params						= Json
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -232,7 +251,8 @@ get_default_config() ->
 			 tcp_listen_address			= [<<"0.0.0.0">>],
 			 authorization				= <<"oauth2">>,
 			 oauth2_with_check_constraint = false,
-			 config_file			    = undefined
+			 config_file			    = undefined,
+			 params						= #{}
 		}.
 
 parse_bool(<<"true">>) -> true;

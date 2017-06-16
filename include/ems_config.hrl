@@ -177,7 +177,12 @@
 				 tcp_allowed_address		= [],
 				 authorization :: binary(),
 				 oauth2_with_check_constraint :: boolean(),
-				 config_file
+				 config_file,
+				 http_port_offset :: non_neg_integer(),
+				 https_port_offset :: non_neg_integer(),
+				 http_enable :: boolean(),
+				 https_enable :: boolean(),
+				 params :: map()
 		 }). 	
 
 

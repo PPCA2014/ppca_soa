@@ -209,6 +209,7 @@
 					tcp_ssl_cacertfile,
 					tcp_ssl_certfile,
 					tcp_ssl_keyfile,
+					protocol :: binary(),
 					oauth2_with_check_constraint = false :: boolean(),
 					oauth2_token_encrypt = false :: boolean()
 				}).

@@ -151,7 +151,6 @@ build(){
 	# Renomeia a pasta gerada e o nome do script ems_bus para ems-bus
 	mv ems_bus ems-bus || die 'Não foi possível renomear a pasta ems_bus para ems-bus!'
 	mv ems-bus/bin/ems_bus ems-bus/bin/ems-bus
-	rm -rf ems-bus/priv/www/
 
 
 	# Cria o link simbólico da pasta priv para a lib do projeto ems_bus-$VERSION/priv
@@ -160,7 +159,6 @@ build(){
 	# Faz algumas limpezas para não ir lixo no pacote
 	rm -Rf log || die 'Não foi possível remover a pasta log na limpeza!'
 	rm -rf priv/db || die 'Não foi possível remover a pasta db na limpeza!'
-	rm -rf priv/www
 	cd ..
 
 

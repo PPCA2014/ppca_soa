@@ -70,7 +70,7 @@ init(#service{datasource = Datasource,
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update = LastUpdate},
-	{ok, State, 2000}.
+	{ok, State, 5000}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};

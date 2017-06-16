@@ -63,7 +63,8 @@
 		 encrypt_public_key/2,
 		 decrypt_private_key/2,
 		 open_file/1,
-		 is_cpf_valid/1, is_cnpj_valid/1]).
+		 is_cpf_valid/1, is_cnpj_valid/1, 
+		 replacenth/3]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -765,3 +766,12 @@ load_erlang_module(FileName) ->
 			end;
 		false -> {error, enoent}
 	end.
+
+
+replacenth(Index,Value,List) ->
+ replacenth(Index-1,Value,List,[],0).
+
+replacenth(ReplaceIndex,Value,[_|List],Acc,ReplaceIndex) ->
+ lists:reverse(Acc)++[Value|List];
+replacenth(ReplaceIndex,Value,[V|List],Acc,Index) ->
+ replacenth(ReplaceIndex,Value,List,[V|Acc],Index+1).
