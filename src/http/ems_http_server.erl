@@ -59,7 +59,7 @@ init(S = #service{name = Name,
 	case start_listeners(ListenAddress_t, S2, ServerName, 1, State) of
 		{ok, State2} ->
 			case PoolSize == 1 of
-				true -> ems_logger:info("Start ~s.", [ServerName]);
+				true -> ok;
 				false -> ems_logger:info("Start worker ~s.", [ServerName])
 			end,
 			{ok, State2};
@@ -114,12 +114,10 @@ configure_port_offset(S = #service{tcp_port = Port, protocol = Protocol}) ->
  	% Quando um offset para porta está definido no arquivo de configuração, 
  	% a porta será uma offset desta configuração, senão será a porta definida no catálogo
 	case Protocol of
-		undefined -> Port2 = Port;
+		undefined -> 
+			Port2 = Port;
 		_ ->
-			case ems_config:usePortOffset(Protocol) of
-				undefined -> Port2 = Port;
-				OffsetPort -> Port2 = OffsetPort
-			end
+			Port2 = ems_config:usePortOffset(Protocol, Port)
 	end,
  	S#service{tcp_port = Port2}.
 	
