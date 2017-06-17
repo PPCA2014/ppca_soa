@@ -19,7 +19,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([getConfig/0, getConfig/3, usePortOffset/2]).
+-export([getConfig/0, getConfig/3, get_port_offset/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -43,8 +43,10 @@ getConfig() -> gen_server:call(?SERVER, get_config).
 -spec getConfig(binary(), binary(), any()) -> any().
 getConfig(ParamName, ServiceName, Default) -> gen_server:call(?SERVER, {get_config, ParamName, ServiceName, Default}).
 
--spec usePortOffset(binary(), non_neg_integer()) -> non_neg_integer() | undefined.
-usePortOffset(ServiceName, DefaultPort) -> gen_server:call(?SERVER, {use_port_offset, ServiceName, DefaultPort}).
+-spec get_port_offset(#service{}) -> non_neg_integer() | undefined.
+get_port_offset(S = #service{tcp_port = Port, name = ServiceName}) ->
+	Port2 = gen_server:call(?SERVER, {use_port_offset, ServiceName, Port}),
+ 	S#service{tcp_port = Port2}.
 
 
 

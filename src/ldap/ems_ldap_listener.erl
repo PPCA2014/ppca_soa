@@ -41,11 +41,20 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({_IpAddress, Service = #service{tcp_port = Port, 
+init({IpAddress, Service = #service{protocol = Protocol,
+									 tcp_port = Port, 
 									 tcp_max_connections = MaxConnections}, ListenerName}) ->
-	{ok, _} = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, 
-																  {max_connections, MaxConnections}], 
-								   ems_ldap_handler, [Service]),
+	ProtocolStr = binary_to_list(Protocol),
+	IpAddressStr = inet_parse:ntoa(IpAddress),
+	Ret = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, 
+															  {max_connections, MaxConnections}], 
+							   ems_ldap_handler, [Service]),
+	case Ret of
+		{ok, _PidCowboy} -> 
+			ems_logger:info("ems_ldap_listener listener ~s in port ~p on IP ~s.", [ProtocolStr, Port, IpAddressStr]);
+		{error,eaddrinuse} -> 
+			ems_logger:error("ems_ldap_listener can not listen ~s on port ~p because it is already in use on IP ~s by other process.", [ProtocolStr, Port, IpAddressStr])
+	end,
 	{ok, #state{listener_name = ListenerName, service = Service}}.
 		
 handle_cast(shutdown, State) ->

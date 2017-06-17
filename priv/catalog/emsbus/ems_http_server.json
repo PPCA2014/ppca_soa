@@ -2,7 +2,7 @@
 	{
 		"name": "ems_http_server",
 		"comment": "Catalog for ems_http_server",
-		"owner": "ems_bus",
+		"owner": "emsbus",
 		"version": "1.0.0",
 		"service" : "ems_http_server:start",
 		"url": "/emsbus/ems_http_server",
@@ -26,7 +26,7 @@
 	{
 		"name": "ems_https_server",
 		"comment": "Catalog for ems_https_server",
-		"owner": "ems_bus",
+		"owner": "emsbus",
 		"version": "1.0.0",
 		"service" : "ems_http_server:start",
 		"url": "/emsbus/ems_https_server",

@@ -52,12 +52,11 @@ stop() ->
  
 init(S = #service{name = Name, 
 				  tcp_listen_address_t = ListenAddress_t}) ->
- 	S2 = get_port_offset(S),
+ 	S2 = ems_config:get_port_offset(S),
  	ServerName = binary_to_list(iolist_to_binary([Name, <<"_port_">>, integer_to_binary(S2#service.tcp_port)])),
- 	State = #state{service = S, name = ServerName},
+ 	State = #state{service = S2, name = ServerName},
 	case start_listeners(ListenAddress_t, S2, ServerName, 1, State) of
 		{ok, State2} ->
-			ems_logger:info("Worker ~s listener in port ~p.", [ServerName, S2#service.tcp_port]),
 			{ok, State2, 1000};
 		{error, _Reason, State2} -> 
 			{stop, State2}
@@ -106,9 +105,6 @@ do_start_listener(IpAddress, Service = #service{tcp_port = Port}, ListenerName, 
 			{{error, Reason}, State}
 	end.
 
-get_port_offset(S = #service{tcp_port = Port, name = ServiceName}) ->
-	Port2 = ems_config:usePortOffset(ServiceName, Port),
- 	S#service{tcp_port = Port2}.
 	
 
 	

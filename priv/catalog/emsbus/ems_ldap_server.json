@@ -9,13 +9,7 @@
 	"lang" : "erlang",
 	"tcp_port": 2389,
 	"tcp_max_connections" : 100000,
-	"datasource" : {
-		"type" : "sqlserver",
-		"connection" : "DSN=pessoa;UID=usupessoa;PWD=usupessoa",
-		"primary_key" : "PesCodigoPessoa",
-		"timeout" : 3000,
-		"max_pool_size" : 10
-	},	
+	"protocol" : "ldap",
 	"ldap_admin" : "cn=admin,dc=unb,dc=br",
 	"ldap_password_admin" : "123456",
 	"pool_size" : 1,

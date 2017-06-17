@@ -22,6 +22,10 @@
 
 -define(SERVER, ?MODULE).
 
+% estado do servidor
+-record(state, {}).
+
+
 %%====================================================================
 %% Server API
 %%====================================================================
@@ -38,8 +42,9 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init({_IpAddress, 
-	  _Service = #service{tcp_port = Port,
+init({IpAddress, 
+	  _Service = #service{protocol = Protocol,
+						  tcp_port = Port,
 						  tcp_is_ssl = IsSsl,
 						  tcp_max_connections = MaxConnections,
 						  tcp_ssl_cacertfile = SslCaCertFile,
@@ -52,23 +57,32 @@ init({_IpAddress,
 			{'_', ems_http_handler, []}
 		]}
 	]),
-	
+	ProtocolStr = binary_to_list(Protocol),
+	IpAddressStr = inet_parse:ntoa(IpAddress),
 	case IsSsl of
 		true -> 
-			{ok, _} = cowboy:start_tls(ListenerName, [
-				{port, Port},
-				{max_connections, MaxConnections},
-				{cacertfile, SslCaCertFile},
-				{certfile, SslCertFile},
-				{keyfile, SslKeyFile}
-			], #{compress => true,
-				 env => #{dispatch => Dispatch}});
+			Ret = cowboy:start_tls(ListenerName, [
+													{port, Port},
+													{max_connections, MaxConnections},
+													{cacertfile, SslCaCertFile},
+													{certfile, SslCertFile},
+													{keyfile, SslKeyFile}
+												  ], #{compress => true, 
+													   env => #{dispatch => Dispatch}});
 		false ->
-			{ok, _} = cowboy:start_clear(ListenerName, [{port, Port}, {max_connections, MaxConnections}], 
-				#{compress => true,
-				  env => #{dispatch => Dispatch}
-			})
-	end.
+			Ret = cowboy:start_clear(ListenerName, [{port, Port}, {max_connections, MaxConnections}], 
+										#{compress => true,
+										  env => #{dispatch => Dispatch}
+									})
+	end,
+	case Ret of
+		{ok, _PidCowboy} -> 
+			ems_logger:info("ems_http_listener listener ~s in port ~p on IP ~s.", [ProtocolStr, Port, IpAddressStr]);
+		{error,eaddrinuse} -> 
+			ems_logger:error("ems_http_listener can not listen ~s on port ~p because it is already in use on IP ~s by other process.", [ProtocolStr, Port, IpAddressStr])
+	end,
+	{ok, #state{}}.
+	
 	
 		
 		

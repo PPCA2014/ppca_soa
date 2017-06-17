@@ -242,7 +242,7 @@ checkpoint_arquive_log(State = #state{log_file_handle = IODevice}, Immediate) ->
 	close_filename_device(IODevice),
 	case open_filename_device() of
 		{ok, LogFileName, IODevice2} ->
-			ems_logger:info("ems_logger open the log file ~p for append.", [LogFileName]),
+			ems_logger:info("ems_logger open ~p for append.", [LogFileName]),
 			State2 = State#state{log_file_name = LogFileName, 
 								 log_file_handle = IODevice2,
 								 sync_buffer_error_count = 0};

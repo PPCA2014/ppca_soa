@@ -9,12 +9,13 @@
 -module(ems_ldap_server).
 
 -behavior(gen_server). 
+-behaviour(poolboy_worker).
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
 %% Server API
--export([start/1, stop/0]).
+-export([start/1, start_link/1, stop/0]).
 
 
 %% gen_server callbacks
@@ -32,6 +33,9 @@
 %% Server API
 %%====================================================================
 
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+
 start(Service = #service{name = Name}) -> 
  	ServerName = list_to_atom(binary_to_list(Name)),
     gen_server:start_link({local, ServerName}, ?MODULE, Service, []).
@@ -46,11 +50,12 @@ stop() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(Service = #service{name = Name, 
-						tcp_listen_address_t = ListenAddress_t}) ->
- 	ServerName = binary_to_list(Name),
- 	State = #state{tcp_config = Service, name = ServerName},
-	case start_listeners(ListenAddress_t, Service, ServerName, Service, 1, State) of
+init(S = #service{name = Name, 
+				  tcp_listen_address_t = ListenAddress_t}) ->
+ 	S2 = ems_config:get_port_offset(S),
+ 	ServerName = binary_to_list(iolist_to_binary([Name, <<"_port_">>, integer_to_binary(S2#service.tcp_port)])),
+ 	State = #state{tcp_config = S2, name = ServerName},
+	case start_listeners(ListenAddress_t, S2, ServerName, S2, 1, State) of
 		{ok, State2} ->
 			{ok, State2};
 		{error, _Reason, State2} -> 
