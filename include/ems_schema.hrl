@@ -124,7 +124,8 @@
 					  req_hash,
 					  host :: binary(),							%% Ip do barramento
 					  filename :: string(),
-					  referer :: binary()
+					  referer :: binary(),
+					  token :: binary()
 				  }).
 
 

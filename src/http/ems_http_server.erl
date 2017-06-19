@@ -57,7 +57,7 @@ init(S = #service{name = Name,
  	State = #state{service = S2, name = ServerName},
 	case start_listeners(ListenAddress_t, S2, ServerName, 1, State) of
 		{ok, State2} ->
-			{ok, State2, 1000};
+			{ok, State2};
 		{error, _Reason, State2} -> 
 			{stop, State2}
 	end.

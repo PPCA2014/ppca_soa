@@ -64,7 +64,8 @@
 		 decrypt_private_key/2,
 		 open_file/1,
 		 is_cpf_valid/1, is_cnpj_valid/1, 
-		 replacenth/3]).
+		 replacenth/3,
+		 ip_list/0]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -775,3 +776,19 @@ replacenth(ReplaceIndex,Value,[_|List],Acc,ReplaceIndex) ->
  lists:reverse(Acc)++[Value|List];
 replacenth(ReplaceIndex,Value,[V|List],Acc,Index) ->
  replacenth(ReplaceIndex,Value,List,[V|Acc],Index+1).
+
+
+ip_list()->
+	 case inet:getifaddrs() of
+		{ok, List} ->
+			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List ],
+			List2;
+		Error -> Error
+	end.
+	 
+	 
+	 
+	 
+	 
+	 
+

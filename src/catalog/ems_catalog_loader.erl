@@ -346,11 +346,23 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 	make_ets_catalog(T). 	
 
 
-parse_tcp_listen_address(ListenAddress) ->
-	lists:map(fun(IP) -> 
-					{ok, L2} = inet:parse_address(IP),
-					L2 
-			  end, ListenAddress).
+parse_tcp_listen_address(ListenAddress, CatName) ->
+	parse_tcp_listen_address_t(ListenAddress, CatName, []).
+parse_tcp_listen_address_t([], _, Result) -> Result;
+parse_tcp_listen_address_t([H|T], CatName, Result) ->
+	case inet:parse_address(H) of
+		{ok, {0, 0, 0, 0}} ->
+			ok;
+		{ok, L2} -> 
+			case lists:member(L2, Result) of
+				true -> parse_tcp_listen_address_t(T, CatName, Result);
+				false -> parse_tcp_listen_address_t(T, CatName, [L2|Result])
+			end;
+		{error, einval} -> 
+			ems_logger:format_warn("ems_catalog_loader parse invalid IP ~s on property tcp_listen_address of catalog ~p.\n", [H, CatName]),
+			parse_tcp_listen_address_t(T, CatName, Result)
+	end.
+	
 
 parse_allowed_address_t(all) -> all;
 parse_allowed_address_t(undefined) -> undefined;
@@ -481,7 +493,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						valida_bool(OAuth2WithCheckConstraint),
 						valida_bool(OAuth2TokenEncrypt),
 						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
-						ListenAddress_t = parse_tcp_listen_address(ListenAddress),
+						ListenAddress_t = parse_tcp_listen_address(ListenAddress, Name),
 						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
 						AllowedAddress_t = parse_allowed_address_t(AllowedAddress),
 						MaxConnections = maps:get(<<"tcp_max_connections">>, H, [?HTTP_MAX_CONNECTIONS]),
