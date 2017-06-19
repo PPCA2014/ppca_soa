@@ -53,7 +53,7 @@ lookup_request(Request = #request{url = Url,
 			case ems_tcp_util:allow_ip_address(Ip, AllowedAddress) of
 				true ->
 					case ems_auth_user:authenticate(Service, Request) of
-						{ok, User, Token} -> 
+						{ok, User, AccessToken} -> 
 							ContentType = case ContentTypeReq of
 											  undefined -> ContentTypeService;
 											  _ -> ContentTypeReq
@@ -62,7 +62,7 @@ lookup_request(Request = #request{url = Url,
 														params_url = ParamsMap,
 														querystring_map = QuerystringMap,
 														user = User,
-														token = Token,
+														access_token = AccessToken,
 														content_type = ContentType},
 							dispatch_service_work(Request2, Service);
 						Error -> Error

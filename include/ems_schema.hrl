@@ -125,7 +125,7 @@
 					  host :: binary(),							%% Ip do barramento
 					  filename :: string(),
 					  referer :: binary(),
-					  token :: binary()
+					  access_token :: binary()
 				  }).
 
 
