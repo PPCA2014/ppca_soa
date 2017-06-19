@@ -787,7 +787,8 @@ ip_list()->
 			end,
 			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List, CheckIfUpFunc(P) ],
 			List3 = [ element(2, X) || X <- List2, is_tuple(X) ],
-			{ok, List3};
+			List4 = [ {127, 0, 0, 1}|List3 ],
+			{ok, List4};
 		Error -> Error
 	end.
 	 
