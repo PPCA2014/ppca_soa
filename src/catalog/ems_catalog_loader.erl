@@ -347,13 +347,21 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 
 
 parse_tcp_listen_address(ListenAddress, CatName) ->
+	io:format("aqui0  ~p\n", [ListenAddress]),
 	parse_tcp_listen_address_t(ListenAddress, CatName, []).
 parse_tcp_listen_address_t([], _, Result) -> Result;
 parse_tcp_listen_address_t([H|T], CatName, Result) ->
 	case inet:parse_address(H) of
 		{ok, {0, 0, 0, 0}} ->
-			ok;
+			io:format("aqui1\n"),
+			case ems_util:ip_list() of
+				{ok, IpList} -> IpList;
+				{error, Reason} ->
+					ems_logger:format_warn("ems_catalog_loader was unable to get the list of available device ips. Reason: ~p.\n", [Reason]),
+					[]
+			end;
 		{ok, L2} -> 
+			io:format("aqui3 ~p\n", [L2]),
 			case lists:member(L2, Result) of
 				true -> parse_tcp_listen_address_t(T, CatName, Result);
 				false -> parse_tcp_listen_address_t(T, CatName, [L2|Result])

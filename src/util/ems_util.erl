@@ -782,7 +782,8 @@ ip_list()->
 	 case inet:getifaddrs() of
 		{ok, List} ->
 			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List ],
-			List2;
+			List3 = [ element(2, X) || X <- List2, is_tuple(X) ],
+			{ok, List3};
 		Error -> Error
 	end.
 	 
