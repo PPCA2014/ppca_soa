@@ -781,12 +781,17 @@ replacenth(ReplaceIndex,Value,[V|List],Acc,Index) ->
 ip_list()->
 	 case inet:getifaddrs() of
 		{ok, List} ->
-			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List ],
+			CheckIfUpFunc = fun(P) ->
+				{flags, Flags} = lists:keyfind(flags, 1, P),
+				lists:member(running, Flags) andalso lists:member(up, Flags) andalso not lists:member(loopback, Flags)
+			end,
+			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List, CheckIfUpFunc(P) ],
 			List3 = [ element(2, X) || X <- List2, is_tuple(X) ],
 			{ok, List3};
 		Error -> Error
 	end.
 	 
+
 	 
 	 
 	 
