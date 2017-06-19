@@ -46,7 +46,8 @@ init({IpAddress, Service = #service{protocol = Protocol,
 									 tcp_max_connections = MaxConnections}, ListenerName}) ->
 	ProtocolStr = binary_to_list(Protocol),
 	IpAddressStr = inet_parse:ntoa(IpAddress),
-	Ret = ranch:start_listener(ListenerName, 100, ranch_tcp, [{port, Port}, 
+	Ret = ranch:start_listener(ListenerName, 100, ranch_tcp, [{ip, IpAddress},
+															  {port, Port}, 
 															  {max_connections, MaxConnections}], 
 							   ems_ldap_handler, [Service]),
 	case Ret of
