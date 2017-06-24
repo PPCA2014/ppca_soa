@@ -33,7 +33,7 @@
 		"owner": "ems_bus",
 		"version": "1.0.0",
 		"service" : "ems_logger_service:log_file_tail",
-		"url": "/logger/last",
+		"url": "/logger/tail",
 		"content_type" : "text/file",
 		"result_cache" : 0,
 		"type": "GET",
