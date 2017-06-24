@@ -36,6 +36,8 @@
 		 get_rowid_and_params_from_url/2,
 		 string_is_integer/1,
 		 read_file_as_map/1,
+		 read_file_as_list/1,
+		 tail_file/2,
 		 node_is_live/1,
 		 get_node_name/0,
 		 get_priv_dir/0,
@@ -622,6 +624,25 @@ read_file_as_map(FileName) ->
 		{ok, Arq} -> json_decode_as_map(Arq);
 		Error -> Error
 	end.
+
+-spec read_file_as_list(string()) -> list().
+read_file_as_list(FileName) ->
+  {ok, IO} = file:open( FileName, [read] ),
+  read_file_as_list( io:get_line(IO, ''), IO, [] ).
+
+read_file_as_list( eof, _IO, Acc ) -> lists:reverse( Acc );
+read_file_as_list( {error, _Error}, _IO, Acc ) -> lists:reverse( Acc );
+read_file_as_list( Line, IO, Acc ) -> read_file_as_list( io:get_line(IO, ''), IO, [Line | Acc] ).
+
+-spec tail_file(string(), non_neg_integer()) -> list().
+tail_file(FileName, N) ->
+	L = read_file_as_list(FileName),
+	Len = length(L),
+	case Len > N of 	
+		true ->	{ok, lists:nthtail(Len-N, L)};
+		false -> {ok, L}
+	end.
+
 
 -spec replace(string(), string(), string()) -> string().
 replace(Subject, Var, VarToReplace) -> 

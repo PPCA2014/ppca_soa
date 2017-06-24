@@ -1,17 +1,44 @@
-{
-    "name": "ems_logger",
-	"comment": "Catalog for ems_logger",
-	"owner": "ems_bus",
-	"version": "1",
-	"service" : "ems_logger:start",
-	"url": "/emsbus/ems_logger",
-	"type": "KERNEL",
-	"APIkey":"false",
-	"log_file_checkpoint" : 6000,
-	"log_file_max_size" : 51200000,
-	"debug" : false,
-	"lang" : "erlang",
-	"pool_size" : 1,
-	"pool_max" : 1
-}
+[
+	{
+		"name": "ems_logger",
+		"comment": "Catalog for ems_logger",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger:start",
+		"url": "/emsbus/ems_logger",
+		"type": "KERNEL",
+		"log_file_checkpoint" : 6000,
+		"log_file_max_size" : 51200000,
+		"debug" : false,
+		"lang" : "erlang",
+		"pool_size" : 1,
+		"pool_max" : 1
+	},
+
+	{
+		"name": "ems_logger_filename",
+		"comment": "Get current filename logger",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:log_file_name",
+		"url": "/logger/filename",
+		"result_cache" : 0,
+		"type": "GET",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "ems_logger_file_tail",
+		"comment": "Return last lines of logfile",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:log_file_tail",
+		"url": "/logger/last",
+		"content_type" : "text/file",
+		"result_cache" : 0,
+		"type": "GET",
+		"lang" : "erlang"
+	}
+]
+
 
