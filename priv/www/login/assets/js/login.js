@@ -166,12 +166,17 @@ Login.LoginSistemas = (function() {
 		var urlBase = '';
 		
 		var protocol=window.location.protocol;
-		if (protocol == 'http:'){
-			var port=':2301';
-		}else{
-			var port=':2302';
-		}
-		var baseUrl=protocol + '//' + window.location.hostname + port; 
+		
+		/*var port = ":";
+		
+		if(document.referrer!= undefined && document.referrer != ""){
+			
+			var hostName =document.referrer.split('/')[2];
+			
+			port += hostName.split(':')[1];
+		}*/
+		
+		var baseUrl=protocol + '//' + window.location.hostname +':' + window.location.port; 
 		//alert("baseUrl=" + protocol + '//' + window.location.hostname + port);
 		var url=baseUrl + '/code_request?'+
 				 'client_id='+getRdirectUri()['client_id']+
