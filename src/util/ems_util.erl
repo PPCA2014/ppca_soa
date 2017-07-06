@@ -634,6 +634,12 @@ read_file_as_list( eof, _IO, Acc ) -> lists:reverse( Acc );
 read_file_as_list( {error, _Error}, _IO, Acc ) -> lists:reverse( Acc );
 read_file_as_list( Line, IO, Acc ) -> read_file_as_list( io:get_line(IO, ''), IO, [Line | Acc] ).
 
+
+-spec head_file(string(), non_neg_integer()) -> list().
+head_file(FileName, N) ->
+	L = read_file_as_list(FileName),
+	{ok, lists:sublist(L, N)}.
+
 -spec tail_file(string(), non_neg_integer()) -> list().
 tail_file(FileName, N) ->
 	L = read_file_as_list(FileName),
@@ -807,7 +813,7 @@ ip_list()->
 				lists:member(running, Flags) andalso lists:member(up, Flags) andalso not lists:member(loopback, Flags)
 			end,
 			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List, CheckIfUpFunc(P) ],
-			List3 = [ element(2, X) || X <- List2, is_tuple(X) ],
+			List3 = [ element(2, X) || X <- List2, is_tuple(X) andalso tuple_size(X) == 4 ],
 			List4 = [ {127, 0, 0, 1}|List3 ],
 			{ok, List4};
 		Error -> Error

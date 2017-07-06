@@ -28,6 +28,8 @@
 		 show_response/1,
 		 log_file_tail/0,
 		 log_file_tail/1,
+		 log_file_head/0,
+		 log_file_head/1,
 		 log_file_name/0,
 		 format_warn/1, 
 		 format_warn/2,
@@ -140,6 +142,12 @@ set_level(Level) ->
 show_response(Value) -> 
 	gen_server:cast(?SERVER, {show_response, Value}). 
 
+log_file_head() ->
+	gen_server:call(?SERVER, {log_file_head, 80}). 		
+
+log_file_head(N) ->
+	gen_server:call(?SERVER, {log_file_head, N}). 		
+
 log_file_tail() ->
 	gen_server:call(?SERVER, {log_file_tail, 80}). 		
 
@@ -222,6 +230,10 @@ handle_call(sync_buffer, _From, State) ->
 handle_call(log_file_name, _From, State = #state{log_file_name = FileNameLog}) ->
 	{reply, FileNameLog, State};
 
+handle_call({log_file_head, N}, _From, State) ->
+	Result = log_file_head(State, N),
+	{reply, Result, State};
+
 handle_call({log_file_tail, N}, _From, State) ->
 	Result = log_file_tail(State, N),
 	{reply, Result, State}.
@@ -296,6 +308,14 @@ open_filename_device(LogFileName) ->
 			end;
 		{error, Reason} = Error -> 
 			ems_logger:error("ems_logger failed to create log file dir. Reason: ~p.", [Reason]),
+			Error
+	end.
+
+log_file_head(#state{log_file_name = LogFileName}, N) ->
+	case ems_util:head_file(LogFileName, N) of
+		{ok, List} -> {ok, List};
+		{error, Reason} = Error -> 
+			ems_logger:error("ems_logger failed to open log file for read. Reason: ~p.", [Reason]),
 			Error
 	end.
 

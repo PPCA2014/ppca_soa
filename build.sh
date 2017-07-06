@@ -33,5 +33,9 @@ rm -Rf deps/cowboy
 rm -Rf deps/cowlib
 rm -Rf deps/ranch
 rm -Rf deps/oauth2
+rm -Rf deps/erlydtl
+
+rm -f *.dump
+
 
 tools/rebar/rebar clean get-deps compile

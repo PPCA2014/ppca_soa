@@ -28,6 +28,19 @@
 	},
 
 	{
+		"name": "ems_logger_file_head",
+		"comment": "Return first lines of logfile",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:log_file_head",
+		"url": "/logger/head",
+		"content_type" : "text/file",
+		"result_cache" : 0,
+		"type": "GET",
+		"lang" : "erlang"
+	},
+
+	{
 		"name": "ems_logger_file_tail",
 		"comment": "Return last lines of logfile",
 		"owner": "ems_bus",
