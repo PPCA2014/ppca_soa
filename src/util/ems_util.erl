@@ -810,11 +810,11 @@ ip_list()->
 		{ok, List} ->
 			CheckIfUpFunc = fun(P) ->
 				{flags, Flags} = lists:keyfind(flags, 1, P),
-				lists:member(running, Flags) andalso lists:member(up, Flags) andalso not lists:member(loopback, Flags)
+				lists:member(running, Flags) andalso lists:member(up, Flags)
 			end,
 			List2 = [ lists:keyfind(addr, 1, P) || {_, P} <- List, CheckIfUpFunc(P) ],
-			List3 = [ element(2, X) || X <- List2, is_tuple(X) andalso tuple_size(X) == 4 ],
-			List4 = [ {127, 0, 0, 1}|List3 ],
+			List3 = [ element(2, X) || X <- List2, is_tuple(X) ],
+			List4 = [ X || X <- List3, tuple_size(X) == 4 ],
 			{ok, List4};
 		Error -> Error
 	end.
