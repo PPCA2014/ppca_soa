@@ -1,0 +1,122 @@
+[
+
+	{
+		"name": "/auth/control/access/:id",
+		"comment": "Returns a user through your Id",
+		"owner": "auth_user",
+		"version": "1",
+		"service" : "ems_api_query_service:find_by_id",
+		"url": "/auth/control/access/:id",
+		"type": "GET",
+		"authorization": "public",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_control_access"
+		},
+		"schema_in" : "user_control_access",
+		"schema_out" : "user_control_access",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/auth/control/access/:id",
+		"comment": "Delete a user by their Id",
+		"owner": "auth_user",
+		"version": "1",
+		"service" : "ems_api_query_service:delete",
+		"service" : "ems_user_service:delete",
+		"middleware" : "user_middleware",
+		"url": "/auth/control/access/:id",
+		"type": "DELETE",
+		"authorization": "public",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_control_access"
+		},
+		"schema_in" : "user_control_access",
+		"schema_out" : "user_control_access",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/auth/control/access",
+		"comment": "Enter a new user",
+		"owner": "auth_user",
+		"version": "1",
+		"service" : "ems_api_query_service:insert",
+		"middleware" : "user_middleware",
+		"url": "/auth/control/access",
+		"type": "POST",
+		"authorization": "public",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_control_access"
+		},
+		"schema_in" : "user_control_access",
+		"schema_out" : "user_control_access",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/auth/control/access/:id",
+		"comment": "Update an existing user",
+		"owner": "auth_user",
+		"service" : "ems_api_query_service:update",
+		"middleware" : "user_middleware",
+		"url": "/auth/control/access/:id",
+		"type": "PUT",
+		"authorization": "public",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_control_access"
+		},
+		"lang" : "erlang"
+	},
+
+	{	
+		"name": "/auth/control/access",
+		"comment": "List all registered users",
+		"owner": "auth_user",
+		"service" : "ems_api_query_service:find",
+		"url": "/auth/control/access",
+		"type": "GET",
+		"lang" : "erlang",
+		"authorization": "public",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_control_access"
+		},
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
+	}
+]

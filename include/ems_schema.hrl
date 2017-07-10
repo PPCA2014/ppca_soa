@@ -57,6 +57,13 @@
 						  ctrl_insert,
 						  ctrl_update
           }).
+          
+-record(user_control_access, {id :: non_neg_integer(),				%% identifica o registro de acesso a página
+							  name :: string(),
+							  uri :: string(),
+							  ctrl_insert,
+							  ctrl_update
+}).
 
 
 -record(client, {id :: non_neg_integer(), 					%% identifica o client internamente
