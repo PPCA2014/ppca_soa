@@ -253,9 +253,10 @@ update_control_access_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 
 insert_control_access([], Count, _CtrlInsert) -> Count;
-insert_control_access([{Codigo, Name, Uri }|T], Count, CtrlInsert) ->
+insert_control_access([{Codigo, Name, Uri, UserId }|T], Count, CtrlInsert) ->
 	UserControl = #user_control_access{id = ems_db:sequence(user_control_access),
 					 codigo = Codigo,
+					 user_id = UserId,
 				     name = ?UTF8_STRING(Name),
 				     uri = ?UTF8_STRING(Uri),
 				     ctrl_insert = CtrlInsert},
@@ -264,15 +265,17 @@ insert_control_access([{Codigo, Name, Uri }|T], Count, CtrlInsert) ->
 
 
 update_control_access([], Count, _CtrlUpdate) -> Count;
-update_control_access([{Codigo, Name, Uri}|T], Count, CtrlUpdate) ->
+update_control_access([{Codigo, Name, Uri, UserId}|T], Count, CtrlUpdate) ->
 	case ems_control_access:find_by_codigo(Codigo) of
 		{ok, Client} ->
 			Client2 = Client#user_control_access{name = ?UTF8_STRING(Name),
 									uri = ?UTF8_STRING(Uri),
+									user_id = UserId,
 									ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
 			Client2 = #user_control_access{id = ems_db:sequence(user_control_access),
 						     codigo = Codigo,
+						     user_id = UserId,
 							 name = ?UTF8_STRING(Name),
 							 uri = ?UTF8_STRING(Uri),
 							 ctrl_insert = CtrlUpdate}
@@ -283,7 +286,7 @@ update_control_access([{Codigo, Name, Uri}|T], Count, CtrlUpdate) ->
 
 
 sql_load_control_access() ->	 
-  "select distinct  t.TraId as codigo ,t.TraNomeMenu as name ,t.TraNomeFrm as uri 
+  "select distinct  t.TraId as codigo, t.TraNomeMenu as name ,t.TraNomeFrm as uri,  u.UsuId as user_id
 	    from BDAcesso.dbo.TB_Usuario u 
 		inner join BDAcesso.dbo.TB_Acessos a 
 				on u.UsuId = a.AceUsuId
@@ -298,7 +301,6 @@ sql_load_control_access() ->
 	    inner join BDAcesso.dbo.TB_Transacao t 
 				on pt.PTrTraId = t.TraId 
 		inner join BDAcesso.dbo.TB_Sistemas s 
-				on s.SisId = t.TraSisId;
-  ".
+				on s.SisId = t.TraSisId;".
 
 

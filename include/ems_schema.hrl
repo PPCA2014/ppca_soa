@@ -62,6 +62,7 @@
 							  codigo :: integer(),
 							  name :: string(),
 							  uri :: string(),
+							  user_id :: integer(),
 							  ctrl_insert,
 							  ctrl_update
 }).

@@ -16,7 +16,7 @@
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
 -export_records([user, user_permission, catalog_schema, schema_type, 
-				 produto, service, service_owner, client]).
+				 produto, service, service_owner, client, user_control_access]).
 
 
 % to_record
