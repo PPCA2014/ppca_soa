@@ -104,10 +104,8 @@ LINUX_VERSION_ID=$(awk -F"=" '{ if ($1 == "VERSION_ID"){
 CONFIG_ARQ="/etc/default/erlangms-docker"
 
 
-# O nome do projeto é o nome do próprio projeto docker mas sem o sufíxo .docker (Ex.: questionario_frontend.docker -> questionario_frontend)
-APP_NAME=$(basename $CURRENT_DIR | sed 's/.docker//')
-# Nome do app sem o sufixo .frontend
-APP_NAME=$(echo "questionario_frontend" | sed 's/_frontend//')
+# O nome do projeto é o nome do próprio projeto docker mas sem o sufíxo .docker
+APP_NAME=
 
 # Github repository ERLANGMS release: onde está o setup do barramento
 ERLANGMS_RELEASE_URL="https://github.com/erlangms/releases/raw/master"
@@ -131,9 +129,6 @@ GIT_USER="erlangms"
 GIT_PASSWD=""
 
 
-# O log é gerado na pasta do projeto docker
-LOG_FILE="$CURRENT_DIR/build_""$APP_NAME""_$(date '+%d%m%Y_%H%M%S').log"
-
 
 # SMTP parameter
 SMTP_SERVER="mail.unb.br"
@@ -150,22 +145,7 @@ CACHE_NODE_MODULES="false"
 # Se este flag for true, após o build a stage área não será removida. Obs.: Para finalidades de debug
 KEEP_STAGE="false"
 
-
-
-# IMPORTANTE
-# Stage área é onde o build é realizado, um local temporário onde arquivos são criados e modificados. 
-# Depois do processo de build, esta área é por default eliminada.
-# Criar a área stage: Envia todos os arquivos do build necessários para lá.
-# O build não altera nenhum arquivo do projeto pois tudo é realizado na stage.
-STAGE_AREA=/tmp/erlangms/docker/build_$$/
-mkdir -p $STAGE_AREA
-cd $STAGE_AREA
-echo "Download erlangms docker template to state area $STAGE_AREA..."
-if ! git clone "$ERLANGMS_DOCKER_GIT_URL" docker ; then
-	die "Could not access erlangms docker template $ERLANGMS_DOCKER_GIT_URL. Check your network or internet connection!"
-fi
-cd docker
-
+LOG_FILE="build.log"
 
 
 # Lê uma configuração específica do arquivo de configuração. Aceita default se não estiver definido
@@ -367,7 +347,7 @@ build_image(){
 	echo "Build image $APP_DOCKER_LATEST"
 	docker swarm leave --force
 
-	echo "Para as imagens de $APP_DOCKER_FILENAME..."
+	echo "Stop image $APP_DOCKER_FILENAME..."
 	docker stop $(docker images 2> /dev/null | grep "$APP_DOCKER_FILENAME" | tr -s ' ' '|' | cut -d'|' -f3)
 	docker stop $(docker images 2> /dev/null | grep "$APP_DOCKER_LATEST" | tr -s ' ' '|' | cut -d'|' -f3)
 
@@ -519,6 +499,23 @@ push_registry(){
 	fi
 }
 
+
+# IMPORTANTE
+# Stage área é onde o build é realizado, um local temporário onde arquivos são criados e modificados. 
+# Depois do processo de build, esta área é por default eliminada.
+# Criar a área stage: Envia todos os arquivos do build necessários para lá.
+# O build não altera nenhum arquivo do projeto pois tudo é realizado na stage.
+make_stage_area(){
+	STAGE_AREA=/tmp/erlangms/docker/build_$$/
+	mkdir -p $STAGE_AREA
+	cd $STAGE_AREA
+	echo "Download erlangms docker template to state area $STAGE_AREA..."
+	if ! git clone "$ERLANGMS_DOCKER_GIT_URL" docker ; then
+		die "Could not access erlangms docker template $ERLANGMS_DOCKER_GIT_URL. Check your network or internet connection!"
+	fi
+	cd docker
+}
+
 ######################################## main ########################################
 
 install_required_libs
@@ -565,7 +562,7 @@ for P in $*; do
 done
 
 
-[ -z "$APP_NAME" ] && die "Nome do projeto não informado, build cancelado. Informe o parâmetro --app!"
+[ -z "$APP_NAME" ] && die "Name of project not informed, build canceled. Enter the parameter --app!"
 
 
 # APP_URL_GIT setting
@@ -575,7 +572,7 @@ else
 	GIT_BASE_URL_PROJECTS=$(dirname "$APP_URL_GIT")
 fi
 
-[ -z "$APP_URL_GIT" ] && die "Url do projeto não informado, build cancelado. Informe o parâmetro --app_url_git!"
+[ -z "$APP_URL_GIT" ] && die "Project url not informed, build canceled. Enter the parameter --app_url_git!"
 
 
 
@@ -596,6 +593,9 @@ fi
 
 echo "Start build of erlangms frontend images ( Date: $(date '+%d/%m/%Y %H:%M:%S') )"
 
+
+make_stage_area
+
 # Enables installation logging
 exec > >(tee -a ${LOG_FILE} )
 exec 2> >(tee -a ${LOG_FILE} >&2)
@@ -608,7 +608,7 @@ else
 	echo "Skip check requirements enabled..."	
 fi
 
-if [ -z $GIT_CHECKOUT_TAG ]; then
+if [ -z "$GIT_CHECKOUT_TAG" ]; then
 	echo "Frontend version: latest"
 else
 	echo "Frontend version: $GIT_CHECKOUT_TAG"
