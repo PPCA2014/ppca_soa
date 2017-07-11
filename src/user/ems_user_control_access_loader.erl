@@ -254,8 +254,8 @@ update_control_access_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 insert_control_access([], Count, _CtrlInsert) -> Count;
 insert_control_access([{Codigo, Name, Uri }|T], Count, CtrlInsert) ->
-	io:format("Erro codigo name uri count CtrlInsert  ~p ~p ~p ~p ~p  ~n~n",[Codigo, Name, Uri, Count, CtrlInsert]),
-	UserControl = #user_control_access{id = erlang:integer_to_binary(Codigo),
+	UserControl = #user_control_access{id = ems_db:sequence(user_control_access),
+					 codigo = Codigo,
 				     name = ?UTF8_STRING(Name),
 				     uri = ?UTF8_STRING(Uri),
 				     ctrl_insert = CtrlInsert},
@@ -265,13 +265,14 @@ insert_control_access([{Codigo, Name, Uri }|T], Count, CtrlInsert) ->
 
 update_control_access([], Count, _CtrlUpdate) -> Count;
 update_control_access([{Codigo, Name, Uri}|T], Count, CtrlUpdate) ->
-	case ems_control_access:find_by_id(Codigo) of
+	case ems_control_access:find_by_codigo(Codigo) of
 		{ok, Client} ->
 			Client2 = Client#user_control_access{name = ?UTF8_STRING(Name),
 									uri = ?UTF8_STRING(Uri),
 									ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
-			Client2 = #user_control_access{id = ems_db:sequence(user_control_access),	
+			Client2 = #user_control_access{id = ems_db:sequence(user_control_access),
+						     codigo = Codigo,
 							 name = ?UTF8_STRING(Name),
 							 uri = ?UTF8_STRING(Uri),
 							 ctrl_insert = CtrlUpdate}
@@ -282,7 +283,7 @@ update_control_access([{Codigo, Name, Uri}|T], Count, CtrlUpdate) ->
 
 
 sql_load_control_access() ->	 
-  "select distinct  t.TraNomeMenu as name ,t.TraNomeFrm as url 
+  "select distinct  t.TraId as codigo ,t.TraNomeMenu as name ,t.TraNomeFrm as uri 
 	    from BDAcesso.dbo.TB_Usuario u 
 		inner join BDAcesso.dbo.TB_Acessos a 
 				on u.UsuId = a.AceUsuId
@@ -299,25 +300,5 @@ sql_load_control_access() ->
 		inner join BDAcesso.dbo.TB_Sistemas s 
 				on s.SisId = t.TraSisId;
   ".
-
-sql_update_control_access() ->	 
-  "select distinct  t.TraNomeMenu as nome ,t.TraNomeFrm as url 
-	    from BDAcesso.dbo.TB_Usuario u 
-		inner join BDAcesso.dbo.TB_Acessos a 
-				on u.UsuId = a.AceUsuId
-		inner join BDAcesso.dbo.TB_Sistemas si
-		on a.AceSisId = si.SisId
-		inner join BDAcesso.dbo.TB_Acessos_Perfil up  
-				on u.UsuId = up.APeUsuId 
-		inner join BDAcesso.dbo.TB_Perfil p 
-				on up.APePerId = p.PerId 
-		inner join BDAcesso.dbo.TB_Perfil_Transacao pt 
-				on p.PerId = pt.PTrPerId 
-	    inner join BDAcesso.dbo.TB_Transacao t 
-				on pt.PTrTraId = t.TraId 
-		inner join BDAcesso.dbo.TB_Sistemas s 
-				on s.SisId = t.TraSisId
-	where u.UsuId = ? and s.SisId = ?;
-	".
 
 

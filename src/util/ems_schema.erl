@@ -205,6 +205,7 @@ new(user_permission) -> #user_permission{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
 new(client) -> #client{};
+new(user_control_access) -> #user_control_access{};
 new(_) -> erlang:error(einvalid_type).
 
 new_(service) -> #service{_ = '_'};
@@ -214,6 +215,7 @@ new_(catalog_schema) -> #catalog_schema{_ = '_'};
 new_(user) -> #user{_ = '_'};
 new_(user_permission) -> #user_permission{_ = '_'};
 new_(client) -> #client{_ = '_'};
+new_(user_control_access) -> #user_control_access{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).
   
 	

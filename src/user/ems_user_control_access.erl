@@ -24,4 +24,15 @@ all() -> ems_db:all(control_access).
 
 delete(Id) -> ems_db:delete(control_access, Id).
 
+-spec find_by_codigo(binary() | list() | integer()) -> #user_control_access{} | {error, enoent}.
+find_by_codigo(Codigo) when is_integer(Codigo) ->
+	find_by_codigo(erlang:integer_to_binary(Codigo));
+find_by_codigo(Codigo) when is_list(Codigo) ->
+	find_by_codigo(list_to_binary(Codigo));
+find_by_codigo(Codigo) ->
+	case mnesia:dirty_index_read(user_control_access, Codigo, #user_control_access.codigo) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
+	end.
+
 
