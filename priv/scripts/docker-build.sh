@@ -145,7 +145,7 @@ CACHE_NODE_MODULES="false"
 # Se este flag for true, após o build a stage área não será removida. Obs.: Para finalidades de debug
 KEEP_STAGE="false"
 
-LOG_FILE="build.log"
+LOG_FILE="$CURRENT_DIR/docker-build.log"
 
 
 # Lê uma configuração específica do arquivo de configuração. Aceita default se não estiver definido
@@ -156,7 +156,7 @@ le_setting () {
 	KEY=$1
 	DEFAULT=$2
 	# Lê o valor configuração, remove espaços a esquerda e faz o unquoted das aspas duplas
-	RESULT=$(egrep "^$KEY" $CONFIG_ARQ | cut -d"=" -f2 | sed -r 's/^ *//' | sed -r 's/^\"?(\<.*\>\$?)\"?$/\1/')
+	RESULT=$(egrep -i "^$KEY" $CONFIG_ARQ | cut -d"=" -f2 | sed -r 's/^ *//' | sed -r 's/^\"?(\<.*\>\$?)\"?$/\1/')
 	if [ -z "$RESULT" ] ; then
 		echo $DEFAULT
 	else
@@ -251,16 +251,9 @@ install_required_libs(){
 	fi
 }
 
-# Performs the installation of the ems-bus
-build_image(){
 
-	# **** make dirs ****
-	rm -rf app && mkdir -p app
-	rm -rf build && mkdir -p build
-
-
-	# ***** Clone project *****
-
+# setup project
+prepare_project_to_build(){
 	echo "Clone project $APP_URL_GIT..."
 
 	cd build
@@ -279,8 +272,26 @@ build_image(){
 	echo "Git checkout -b $GIT_CHECKOUT_TAG"
 	git checkout -b $GIT_CHECKOUT_TAG
 	echo "Return git checkout -b $GIT_CHECKOUT_TAG: $?"
-
 	
+	# Get expose http and https ports from Dockerfile
+	HTTP_PORT=$(grep ems_http_server.tcp_port emsbus.conf  | sed -r 's/[^0-9]//g')
+	HTTPS_PORT=$(grep ems_https_server.tcp_port emsbus.conf | sed -r 's/[^0-9]//g')
+
+	# Atualiza o arquivo Dockerfile com as portas expostas
+	sed -i "s/{{ HTTP_PORT }}/$HTTP_PORT/"  ../../Dockerfile
+	sed -i "s/{{ HTTPS_PORT }}/$HTTPS_PORT/"  ../../Dockerfile
+	
+	# Atualiza o arquivo docker-compose.yml
+	sed -i "s/{{ HTTP_PORT }}/$HTTP_PORT/g"  ../../docker-compose.yml
+	sed -i "s/{{ HTTPS_PORT }}/$HTTPS_PORT/g"  ../../docker-compose.yml
+	sed -i "s/{{ APP_NAME }}/$APP_NAME/g"  ../../docker-compose.yml
+	sed -i "s/{{ APP_NAME }}/$APP_NAME/g"  ../../docker-compose.yml
+	
+}
+
+
+# Performs the installation of the ems-bus
+build_image(){
 	
 	# ***** npm install *****
 
@@ -302,6 +313,8 @@ build_image(){
 		else
 			echo "Let go make coffee, this will take time!!!"
 		fi
+		
+		echo "Node project detected..."
 		echo "npm install..."
 		npm install
 		echo "Return npm install: $?"
@@ -344,6 +357,9 @@ build_image(){
 	# Nome da imagem no docker com sufixo latest
 	APP_DOCKER_LATEST=$APP_NAME:latest
 
+
+	
+
 	echo "Build image $APP_DOCKER_LATEST"
 	docker swarm leave --force
 
@@ -383,6 +399,8 @@ build_image(){
 	# save image
 	echo "docker save $APP_DOCKER_LATEST -o $APP_DOCKER_LATEST.tar"
 	docker save $APP_DOCKER_LATEST -o $APP_DOCKER_LATEST.tar
+	
+	cp $APP_DOCKER_LATEST.tar $CURRENT_DIR/$APP_DOCKER_LATEST.tar
 }
 
 
@@ -509,14 +527,17 @@ make_stage_area(){
 	STAGE_AREA=/tmp/erlangms/docker/build_$$/
 	mkdir -p $STAGE_AREA
 	cd $STAGE_AREA
-	echo "Download erlangms docker template to state area $STAGE_AREA..."
+	echo "Stage area $STAGE_AREA..."
 	if ! git clone "$ERLANGMS_DOCKER_GIT_URL" docker ; then
 		die "Could not access erlangms docker template $ERLANGMS_DOCKER_GIT_URL. Check your network or internet connection!"
 	fi
 	cd docker
+	mkdir -p app
+	mkdir -p build
 }
 
 ######################################## main ########################################
+
 
 install_required_libs
 le_all_settings
@@ -556,6 +577,10 @@ for P in $*; do
 		CACHE_NODE_MODULES="true"
 	elif [ "$P" = "--keep_stage" ]; then
 		KEEP_STAGE="true"
+	elif [[ "$P" =~ ^--http_port=.+$ ]]; then
+		HTTP_PORT="$(echo $P | cut -d= -f2)"
+	elif [[ "$P" =~ ^--https_port=.+$ ]]; then
+		HTTPS_PORT="$(echo $P | cut -d= -f2)"
 	elif [[ "$P" =~ ^--help$ ]]; then
 		help
 	fi
@@ -591,14 +616,30 @@ else
 	die "Parameter --registry is required. Example: 127.0.0.1:5000"
 fi
 
-echo "Start build of erlangms frontend images ( Date: $(date '+%d/%m/%Y %H:%M:%S') )"
+
+if [ -z "$HTTP_PORT" ]; then
+	HTTP_PORT=$(le_setting "$APP_NAME.HTTP_PORT" "")
+fi
+
+if [ -z "$HTTPS_PORT" ]; then
+	HTTPS_PORT=$(le_setting "$APP_NAME.HTTPS_PORT" "")
+fi
+
+
+[ -z "$HTTP_PORT" ] && die "HTTP port of project not informed, build canceled. Enter the parameter --http_port!"
+[ -z "$HTTPS_PORT" ] && die "HTTPS port of project not informed, build canceled. Enter the parameter --https_port!"
 
 
 make_stage_area
 
+
 # Enables installation logging
 exec > >(tee -a ${LOG_FILE} )
 exec 2> >(tee -a ${LOG_FILE} >&2)
+
+
+echo "Start build of erlangms frontend images ( Date: $(date '+%d/%m/%Y %H:%M:%S') )"
+
 
 if [ "$SKIP_CHECK" = "false" ]; then
 	check_npm_version
@@ -615,13 +656,7 @@ else
 fi
 
 
-# Get expose http and https ports from Dockerfile
-EXPOSE_HTTP_PORT=$(grep -i HTTP_PORT Dockerfile  | sed -r 's/[^0-9]//g')
-EXPOSE_HTTPS_PORT=$(grep -i HTTPS_PORT Dockerfile  | sed -r 's/[^0-9]//g')
-
-# Atualiza o arquivo conf/emsbus.conf com as portas expostas
-sed -i "s/DOCKERFILE.EXPOSE_HTTP_PORT/$EXPOSE_HTTP_PORT/"  conf/emsbus.conf 
-sed -i "s/DOCKERFILE.EXPOSE_HTTPS_PORT/$EXPOSE_HTTPS_PORT/"  conf/emsbus.conf 
+prepare_project_to_build
 
 
 echo "npm version: $(npm --version)"
@@ -630,11 +665,13 @@ echo "Registry server: $REGISTRY"
 echo "Git base url projects: $GIT_BASE_URL_PROJECTS"
 echo "Git project: $APP_URL_GIT"
 echo "Git user: $GIT_USER"
-echo "Docker expose http port: $EXPOSE_HTTP_PORT"
-echo "Docker expose https port: $EXPOSE_HTTPS_PORT"
+echo "Docker expose http port: $HTTP_PORT"
+echo "Docker expose https port: $HTTPS_PORT"
 echo "Working dir: $STAGE_AREA"
 echo "Log file: $LOG_FILE" 
 echo "============================================================================================"
+
+
 
 if [ "$SKIP_BUILD" = "false" ]; then
 	build_image
