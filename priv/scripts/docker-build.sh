@@ -295,6 +295,10 @@ prepare_project_to_build(){
 	sed -i "s/{{ APP_NAME }}/$APP_NAME/g"  ../../docker-compose.yml
 	sed -i "s/{{ APP_NAME }}/$APP_NAME/g"  ../../docker-compose.yml
 	
+	# Cria o arquivo emsbus.conf para a pasta conf do docker template
+	mkdir -p ../../conf/
+	cp emsbus.conf ../../conf/
+	
 }
 
 
@@ -338,14 +342,13 @@ build_image(){
 			die "An error occurred in the npm run build command. Build canceled."
 		fi
 
-		echo "move dist to ../../app/$APP_NAME..."
+		echo "Copy sources files to ../../app/$APP_NAME..."
 		mv dist/ ../../app/$APP_NAME/
 		cd ../../
 	else
-
 		echo "Copy sources files to ../../app/$APP_NAME..."
 		cd ..
-		cp -R $APP_NAME ../../app/
+		mv $APP_NAME/ ../app/$APP_NAME/
 		cd ..
 	fi
 
