@@ -259,7 +259,7 @@ prepare_project_to_build(){
 	cd build
 	echo "Git clone $APP_URL_GIT $APP_NAME"
 	if ! git clone $APP_URL_GIT $APP_NAME 2> /dev/null ; then
-		die "Could not access project repository $APP_URL_GIT. Check your network or internet connection!"
+		die "Could not access project repository $APP_URL_GIT. Check your network connection or password!"
 	fi
 	 
 	cd $APP_NAME
@@ -274,8 +274,16 @@ prepare_project_to_build(){
 	echo "Return git checkout -b $GIT_CHECKOUT_TAG: $?"
 	
 	# Get expose http and https ports from Dockerfile
-	HTTP_PORT=$(grep ems_http_server.tcp_port emsbus.conf  | sed -r 's/[^0-9]//g')
-	HTTPS_PORT=$(grep ems_https_server.tcp_port emsbus.conf | sed -r 's/[^0-9]//g')
+	if [ -z "$HTTP_PORT" ]; then
+		HTTP_PORT=$(grep ems_http_server.tcp_port emsbus.conf  | sed -r 's/[^0-9]//g')
+	fi
+	
+	if [ -z "$HTTPS_PORT" ]; then
+		HTTPS_PORT=$(grep ems_https_server.tcp_port emsbus.conf | sed -r 's/[^0-9]//g')
+	fi
+
+	[ -z "$HTTP_PORT" ] && die "HTTP port of project not informed, build canceled. Enter the parameter --http_port!"
+	[ -z "$HTTPS_PORT" ] && die "HTTPS port of project not informed, build canceled. Enter the parameter --https_port!"
 
 	# Atualiza o arquivo Dockerfile com as portas expostas
 	sed -i "s/{{ HTTP_PORT }}/$HTTP_PORT/"  ../../Dockerfile
@@ -330,17 +338,15 @@ build_image(){
 			die "An error occurred in the npm run build command. Build canceled."
 		fi
 
-		echo "mv dist ../../app/$APP_NAME"
+		echo "move dist to ../../app/$APP_NAME..."
 		mv dist/ ../../app/$APP_NAME/
 		cd ../../
-		rm -rf build
 	else
 
-		echo "mv dist ../../app/$APP_NAME"
-		mv dist/ ../../app/$APP_NAME/
-		cd ../../
-		rm -rf build
-	
+		echo "Copy sources files to ../../app/$APP_NAME..."
+		cd ..
+		cp -R $APP_NAME ../../app/
+		cd ..
 	fi
 
 
@@ -624,10 +630,6 @@ fi
 if [ -z "$HTTPS_PORT" ]; then
 	HTTPS_PORT=$(le_setting "$APP_NAME.HTTPS_PORT" "")
 fi
-
-
-[ -z "$HTTP_PORT" ] && die "HTTP port of project not informed, build canceled. Enter the parameter --http_port!"
-[ -z "$HTTPS_PORT" ] && die "HTTPS port of project not informed, build canceled. Enter the parameter --https_port!"
 
 
 make_stage_area

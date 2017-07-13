@@ -280,11 +280,6 @@ fi
 
 # Valida o parâmetro --tarfile se informado
 if [ ! -z "$TAR_FILE" ]; then
-	# Deve terminar ao menos com .tar
-	if [[ ! "$TAR_FILE" =~ ^[[:alpha:]]+(:latest)?\.tar ]]; then
-		die "Invalid tarfile $TAR_FILE. Expect format sample: questionario:latest.tar"
-	fi
-	
 	# O arquivo existe?
 	if [ ! -f "$TAR_FILE" ]; then
 		die "tarfile $TAR_FILE does not exist!"
