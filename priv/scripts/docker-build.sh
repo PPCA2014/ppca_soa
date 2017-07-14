@@ -29,6 +29,7 @@ help() {
 	echo "how to use: sudo ./build.sh"
 	echo ""
 	echo "Additional parameters:"
+	echo "  --app              -> name of docker app"
 	echo "  --tag                        -> Build specific gitlab tag version of project. The default is the lastest tag"
 	echo "  --base_url_git_project    -> base url of gitlab. The default is http://servicosssi.unb.br/ssi"
 	echo "  --app_url_git             -> project url to build. The default is http://servicosssi.unb.br/ssi/[project_name]_frontend.git"
