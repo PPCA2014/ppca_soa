@@ -104,7 +104,7 @@
 				{
 					"name": "fields",
 					"type": "string",
-					"default" : "",
+					"default" : "nome_curso",
 					"comment": "Campos que devem ser retornados na pesquisa"
 				},
 				{
@@ -122,11 +122,12 @@
 				{
 					"name": "sort",
 					"type": "string",
-					"default" : "",
+					"default" : "cod_curso",
 					"comment": "Campos que devem ser ordenados"
 				}
 			]	
 	},
+	
 
 	{
 		"name": "/hackathon/cursos/:id",
