@@ -71,7 +71,11 @@ stop() ->
 
 authenticate_user({Login, Password}, _) ->
     case ems_user:authenticate_login_password(Login, Password) of
-		ok ->	{ok, {<<>>,Login}};
+		ok ->	
+		Tuple = ems_user:find_by_login(Login),
+		User = erlang:element(2,Tuple),
+		Codigo = erlang:element(3,User),
+		{ok, {<<>>,{Login}}};
 		%% Padronizar o erro conforme o RFC 6749
 		_ -> {error, unauthorized_user}
 	end.
