@@ -253,10 +253,12 @@ update_control_access_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 
 insert_control_access([], Count, _CtrlInsert) -> Count;
-insert_control_access([{Codigo, Name, Uri, UserId }|T], Count, CtrlInsert) ->
+insert_control_access([{Codigo, Name, Uri, UserId, SisId, Visualize }|T], Count, CtrlInsert) ->
 	UserControl = #user_control_access{id = ems_db:sequence(user_control_access),
 					 codigo = Codigo,
 					 user_id = UserId,
+					 sis_id = SisId,
+					 visualize = Visualize,
 				     name = ?UTF8_STRING(Name),
 				     uri = ?UTF8_STRING(Uri),
 				     ctrl_insert = CtrlInsert},
@@ -265,17 +267,19 @@ insert_control_access([{Codigo, Name, Uri, UserId }|T], Count, CtrlInsert) ->
 
 
 update_control_access([], Count, _CtrlUpdate) -> Count;
-update_control_access([{Codigo, Name, Uri, UserId}|T], Count, CtrlUpdate) ->
-	case ems_control_access:find_by_codigo(Codigo) of
+update_control_access([{Codigo, Name, Uri, UserId, SisId, Visualize}|T], Count, CtrlUpdate) ->
+	case ems_user_control_access:find_by_codigo(Codigo) of
 		{ok, Client} ->
 			Client2 = Client#user_control_access{name = ?UTF8_STRING(Name),
 									uri = ?UTF8_STRING(Uri),
 									user_id = UserId,
+									visualize = Visualize,
 									ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
 			Client2 = #user_control_access{id = ems_db:sequence(user_control_access),
 						     codigo = Codigo,
 						     user_id = UserId,
+						     sis_id = SisId,
 							 name = ?UTF8_STRING(Name),
 							 uri = ?UTF8_STRING(Uri),
 							 ctrl_insert = CtrlUpdate}
@@ -286,7 +290,8 @@ update_control_access([{Codigo, Name, Uri, UserId}|T], Count, CtrlUpdate) ->
 
 
 sql_load_control_access() ->	 
-  "select distinct  t.TraId as codigo, t.TraNomeMenu as name ,t.TraNomeFrm as uri,  u.UsuId as user_id
+  "select distinct  t.TraId as codigo, t.TraNomeMenu as name ,t.TraNomeFrm as uri, 
+		u.UsuPesIdPessoa as user_id,  s.SisId as sis_id, t.TraVisualizar as visualize
 	    from BDAcesso.dbo.TB_Usuario u 
 		inner join BDAcesso.dbo.TB_Acessos a 
 				on u.UsuId = a.AceUsuId

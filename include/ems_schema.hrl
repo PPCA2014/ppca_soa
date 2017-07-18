@@ -63,6 +63,8 @@
 							  name :: string(),
 							  uri :: string(),
 							  user_id :: integer(),
+							  sis_id :: integer(),
+							  visualize :: binary(),
 							  ctrl_insert,
 							  ctrl_update
 }).

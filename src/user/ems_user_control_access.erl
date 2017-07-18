@@ -11,18 +11,18 @@
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
--export([find_by_id/1, update/1, delete/1, all/0]).
+-export([find_by_id/1, update/1, delete/1, all/0, find_by_codigo/1]).
 
 
-find_by_id(Id) -> ems_db:get(control_access, Id).
+find_by_id(Id) -> ems_db:get(user_control_access, Id).
 
 insert(Access) -> ems_db:insert(Access).
 
 update(Access) -> ems_db:update(Access).
 	
-all() -> ems_db:all(control_access).
+all() -> ems_db:all(user_control_access).
 
-delete(Id) -> ems_db:delete(control_access, Id).
+delete(Id) -> ems_db:delete(user_control_access, Id).
 
 -spec find_by_codigo(binary() | list() | integer()) -> #user_control_access{} | {error, enoent}.
 find_by_codigo(Codigo) when is_integer(Codigo) ->

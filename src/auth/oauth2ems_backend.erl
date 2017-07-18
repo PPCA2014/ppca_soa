@@ -72,6 +72,7 @@ stop() ->
 authenticate_user({Login, Password}, _) ->
     case ems_user:find_by_login_and_password(Login, Password) of
 		User ->	
+		io:format("User >>>>>>>>>>>>>>>>>>>>>>>>> ~p~n,",[User]),
 		Tuple = erlang:element(2,User),
 		Codigo = erlang:element(3,Tuple),
 		LoginCodigo = Login ++","++erlang:integer_to_list(Codigo),

@@ -9,7 +9,7 @@
 	"type": "KERNEL",
 	"lang" : "erlang",
 	"update_checkpoint" : 650000,
-	"datasource" : "ems_user_loader_ds",
+	"datasource" : "ds_ems_user_loader",
 	"pool_size" : 1,
 	"pool_max" : 1,
 	"enable" : false
