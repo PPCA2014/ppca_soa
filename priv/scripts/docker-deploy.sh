@@ -358,7 +358,7 @@ if [ -z "$TAR_FILE" -a -z "$IMAGE" -a "$CURRENT_DIR_IS_DOCKER_PROJECT_GITLAB"="1
 
 elif [ ! -z "$IMAGE" ]; then
 	if [ -z "$APP_NAME" ]; then
-		APP_NAME=$(echo $IMAGE | awk -F: '{ print $1 }')
+		APP_NAME=$(echo $IMAGE | awk -F/ '{ print $2 }')
 	fi
 	APP_VERSION=$(docker inspect $APP_NAME | sed -n '/"RepoTags/ , /],/p' | sed '$d' | sed '$d' | tail -1 | sed -r 's/[^0-9\.]//g')
 	
