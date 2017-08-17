@@ -208,7 +208,8 @@
 				"comment": "Token de acesso"
 			}
 		],
-		"lang" : "erlang"
+		"lang" : "erlang",
+		"authorization": "oauth2"
 	},
 	{
 		"name": "redirect_url_login",
