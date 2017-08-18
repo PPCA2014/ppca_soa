@@ -184,19 +184,17 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_loader load users from database..."),
-				Result = case ems_odbc_pool:param_query(Datasource2, 
-														sql_load_users_tipo_pessoa(), 
-														[]) of
+				Result = case ems_odbc_pool:param_query(Datasource2, sql_load_users_tipo_pessoa(), []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_loader did not load any users tipo pessoa."),
 						ok;
-					{_, _, Records} ->
+					{_, _, RecordsPessoa} ->
 						case mnesia:clear_table(user) of
 							{atomic, ok} ->
 								ems_db:init_sequence(user, 0),
 								InsertUserPessoaFunc = fun() ->
-									Count = insert_users(Records, 0, CtrlInsert),
-									ems_logger:info("ems_user_loader load ~p users tipo pessoa.", [Count])
+									CountPessoa = insert_users(RecordsPessoa, 0, CtrlInsert),
+									ems_logger:info("ems_user_loader load ~p users tipo pessoa.", [CountPessoa])
 								end,
 								mnesia:activity(transaction, InsertUserPessoaFunc),
 								case AllowLoadAluno of
@@ -207,10 +205,10 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 											{_,_,[]} -> 
 												?DEBUG("ems_user_loader did not load any users tipo aluno."),
 												ok;
-											{_, _, Records} ->
+											{_, _, RecordsAluno} ->
 												InsertUserAlunoFunc = fun() ->
-													Count = insert_users(Records, 0, CtrlInsert),
-													ems_logger:info("ems_user_loader load ~p users tipo aluno.", [Count])
+													CountAluno = insert_users(RecordsAluno, 0, CtrlInsert),
+													ems_logger:info("ems_user_loader load ~p users tipo aluno.", [CountAluno])
 												end,
 												mnesia:activity(transaction, InsertUserAlunoFunc),
 												ok;
@@ -220,14 +218,13 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 										end;
 									false -> ok
 								end,
-								erlang:garbage_collect(),
 								ok;
 							_ ->
 								ems_logger:error("ems_user_loader could not clear user table before load users. Load users cancelled!"),
 								{error, efail_load_users}
 						end;
-					{error, Reason} = Error -> 
-						ems_logger:error("ems_user_loader load users tipo pessoa query error: ~p.", [Reason]),
+					{error, Reason2} = Error -> 
+						ems_logger:error("ems_user_loader load users tipo pessoa query error: ~p.", [Reason2]),
 						Error
 				end,
 				ems_db:release_connection(Datasource2),
@@ -257,11 +254,11 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 					{_,_,[]} -> 
 						?DEBUG("ems_user_loader did not update any users tipo pessoa."),
 						ok;
-					{_, _, Records} ->
+					{_, _, RecordsPessoa} ->
 						%?DEBUG("Update users ~p.", [Records]),
 						UpdatePessoaFunc = fun() ->
-							Count = update_users(Records, 0, CtrlUpdate),
-							ems_logger:info("ems_user_loader update ~p users tipo pessoa since ~s.", [Count, ems_util:timestamp_str(LastUpdate)])
+							CountPessoa = update_users(RecordsPessoa, 0, CtrlUpdate),
+							ems_logger:info("ems_user_loader update ~p users tipo pessoa since ~s.", [CountPessoa, ems_util:timestamp_str(LastUpdate)])
 						end,
 						mnesia:activity(transaction, UpdatePessoaFunc),
 						case AllowLoadAluno of
@@ -270,11 +267,11 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 									{_,_,[]} -> 
 										?DEBUG("ems_user_loader did not update any users tipo aluno."),
 										ok;
-									{_, _, Records} ->
+									{_, _, RecordsAluno} ->
 										%?DEBUG("Update users ~p.", [Records]),
 										UpdateAlunoFunc = fun() ->
-											Count = update_users(Records, 0, CtrlUpdate),
-											ems_logger:info("ems_user_loader update ~p users tipo aluno since ~s.", [Count, ems_util:timestamp_str(LastUpdate)])
+											CountAluno = update_users(RecordsAluno, 0, CtrlUpdate),
+											ems_logger:info("ems_user_loader update ~p users tipo aluno since ~s.", [CountAluno, ems_util:timestamp_str(LastUpdate)])
 										end,
 										mnesia:activity(transaction, UpdateAlunoFunc);
 									{error, Reason} = Error -> 
@@ -514,7 +511,8 @@ sql_load_users_tipo_pessoa() ->
 
 
 sql_load_users_tipo_aluno() ->	 
-	"select  		CodigoPessoa, 
+	"select 
+					CodigoPessoa, 
 					lower(rtrim(LoginPessoa)) as LoginPessoa, 
 					rtrim(NomePessoa) as NomePessoa, 
 					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 

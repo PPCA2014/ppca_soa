@@ -129,17 +129,5 @@
 	{
 		"catalog": "/emsbus/ems_auth_login", 
 		"file": "ems_auth_login.json"
-	},
-	
-	{
-		"catalog": "/emsbus/ems_user_control_access_loader", 
-		"file": "ems_user_control_access_loader.json"
-	},
-	{
-		"catalog": "/emsbus/ems_auth_user_control_access", 
-		"file": "ems_auth_user_control_access.json"
-	}
-
-
-	
+	}	
 ]

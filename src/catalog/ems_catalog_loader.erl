@@ -203,11 +203,6 @@ valida_url_service(Url) ->
 		false -> erlang:error(invalid_url_service)
 	end.
 	
-valida_bool(<<"true">>) -> ok;
-valida_bool(<<"false">>) -> ok;
-valida_bool(true) -> ok;
-valida_bool(false) -> ok;
-valida_bool(_) -> erlang:error(invalid_bool).
 
 valida_lang(<<"java">>) -> ok;
 valida_lang(<<"erlang">>) -> ok;
@@ -285,15 +280,14 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 	Type = maps:get(<<"type">>, H, <<"string">>),
 	Default = maps:get(<<"default">>, H, <<>>),
 	Comment = maps:get(<<"comment">>, H, <<>>),
-	Required = maps:get(<<"required">>, H, <<"false">>),
+	Required = ems_util:parse_bool(maps:get(<<"required">>, H, false)),
 	valida_name_querystring(Name),
 	valida_type_querystring(Type),
 	valida_length(Default, 150),
-	valida_length(Comment, 1000),
-	valida_bool(Required),
+	valida_length(Comment, 4000),
 	case Required of
-		<<"true">>  -> QtdRequired2 = QtdRequired + 1;
-		<<"false">> -> QtdRequired2 = QtdRequired;
+		true  -> QtdRequired2 = QtdRequired + 1;
+		false -> QtdRequired2 = QtdRequired;
 		_ -> QtdRequired2 = QtdRequired,
 			 erlang:error(invalid_required_querystring)
 	end,
@@ -432,7 +426,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 	try
 		?DEBUG("Parse catalog ~p.", [H]),
 		Name = maps:get(<<"name">>, H),
-		Enable0 = maps:get(<<"enable">>, H, true),
+		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, H, true)),
 		case Enable0 =:= false andalso lists:member(Name, Conf#config.cat_enable_services) of
 			true -> Enable1 = true;
 			false -> Enable1 = Enable0
@@ -451,7 +445,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				Comment = maps:get(<<"comment">>, H, <<>>),
 				Version = maps:get(<<"version">>, H, <<"1.0.0">>),
 				Owner = maps:get(<<"owner">>, H, <<>>),
-				Async = maps:get(<<"async">>, H, false),
+				Async = ems_util:parse_bool(maps:get(<<"async">>, H, false)),
 				Rowid = ems_util:make_rowid(Url2),
 				Lang = maps:get(<<"lang">>, H, <<>>),
 				Ds = maps:get(<<"datasource">>, H, undefined),
@@ -462,10 +456,10 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 					Datasource ->
 						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
 						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
-						OAuth2WithCheckConstraint = maps:get(<<"oauth2_with_check_constraint">>, H, Conf#config.oauth2_with_check_constraint),
-						OAuth2TokenEncrypt = maps:get(<<"oauth2_token_encrypt">>, H, false),
-						Debug = ems_util:binary_to_bool(maps:get(<<"debug">>, H, false)),
-						UseRE = maps:get(<<"use_re">>, H, false),
+						OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, H, Conf#config.oauth2_with_check_constraint)),
+						OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, H, false)),
+						Debug = ems_util:parse_bool(maps:get(<<"debug">>, H, false)),
+						UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, H, false)),
 						SchemaIn = maps:get(<<"schema_in">>, H, null),
 						SchemaOut = maps:get(<<"schema_out">>, H, null),
 						PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, H, 1)),
@@ -479,7 +473,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
 						CacheControl = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
 						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
-						Public = maps:get(<<"public">>, H, true),
+						Public = ems_util:parse_bool(maps:get(<<"public">>, H, true)),
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
 						Path = parse_path_catalog(maps:get(<<"path">>, H, <<>>), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
@@ -487,16 +481,9 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						valida_lang(Lang),
 						valida_name_service(Name),
 						valida_type_service(Type),
-						valida_bool(Enable),
-						valida_bool(Async),
 						valida_length(Comment, 1000),
 						valida_length(Version, 10),
 						valida_length(Owner, 30),
-						valida_bool(Public),
-						valida_bool(Debug),
-						valida_bool(UseRE),
-						valida_bool(OAuth2WithCheckConstraint),
-						valida_bool(OAuth2TokenEncrypt),
 						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
 						ListenAddress_t = parse_tcp_listen_address(ListenAddress, Name),
 						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
@@ -692,7 +679,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    comment = Comment,
 			    version = Version,
 			    owner = Owner,
-				async = ems_util:binary_to_bool(Async),
+				async = ems_util:parse_bool(Async),
 			    querystring = Querystring,
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,

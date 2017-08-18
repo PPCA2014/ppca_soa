@@ -23,27 +23,44 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			 _ -> {error, einvalid_oauth2_typeauth}
 	end,  
 	case Result of
-		{ok, ResponseData} ->
-			ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
+		{ok, ResponseData = [{<<"access_token">>,AccessToken},
+							   {<<"expires_in">>, ExpireIn},
+							   {<<"resource_owner">>, ResourceOwner},
+							   {<<"scope">>, Scope},
+							   {<<"token_type">>, TokenType}]
+							} ->
+			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
+												   <<"\"access_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\""/utf8>>, <<","/utf8>>,
+												   <<"\"expires_in\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,
+												   <<"\"resource_owner\""/utf8>>, <<":"/utf8>>, ResourceOwner, <<","/utf8>>,
+												   <<"\"scope\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Scope, <<"\""/utf8>>, <<","/utf8>>,
+												   <<"\"token_type\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, TokenType, <<"\""/utf8>>,
+											   <<"}"/utf8>>]),
 			{ok, Request#request{code = 200, 
 								 response_data = ResponseData2,
 								 content_type = <<"application/json;charset=UTF-8">>}
 			};		
-		
-			% comentado temporariamente
-			%ResponseData2 = ems_schema:prop_list_to_json(ResponseData),
-			
-			%UserResponseData = lists:keyfind(<<"resource_owner">>, 1, ResponseData),
-			
-			%PublicKey = ems_util:open_file(?SSL_PATH ++  "/" ++ binary_to_list(<<"public_key.pem">>)),
-			
-			%CryptoText = ems_util:encrypt_public_key(ResponseData2,PublicKey),
-			
-			%CryptoBase64 = base64:encode(CryptoText),
-		
-			%{ok, Request#request{code = 200, 
-			%					 response_data = ems_schema:prop_list_to_json([UserResponseData,{<<"authorization">>,CryptoBase64}])}
-			%};
+		{ok, ResponseData = [{<<"access_token">>,AccessToken},
+							   {<<"expires_in">>, ExpireIn},
+							   {<<"resource_owner">>, ResourceOwner},
+							   {<<"scope">>, Scope},
+							   {<<"refresh_token">>, RefreshToken},
+							   {<<"refresh_token_expires_in">>, RefreshTokenExpireIn},
+							   {<<"token_type">>, TokenType}]
+							} ->
+			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
+												   <<"\"access_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\""/utf8>>, <<","/utf8>>,
+												   <<"\"expires_in\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,
+												   <<"\"resource_owner\""/utf8>>, <<":"/utf8>>, ResourceOwner, <<","/utf8>>,
+												   <<"\"scope\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Scope, <<"\""/utf8>>, <<","/utf8>>,
+												   <<"\"refresh_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, RefreshToken, <<"\""/utf8>>, <<","/utf8>>,
+												   <<"\"refresh_token_in\""/utf8>>, <<":"/utf8>>, integer_to_binary(RefreshTokenExpireIn), <<","/utf8>>,
+												   <<"\"token_type\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, TokenType, <<"\""/utf8>>,
+											   <<"}"/utf8>>]),
+			{ok, Request#request{code = 200, 
+								 response_data = ResponseData2,
+								 content_type = <<"application/json;charset=UTF-8">>}
+			};		
 		{redirect, ClientId, RedirectUri} ->
 			LocationPath = iolist_to_binary([Protocol,<<"://"/utf8>>, Host, <<":"/utf8>>,list_to_binary(integer_to_list(Port)),<<"/login/index.html?response_type=code&client_id=">>, ClientId, <<"&redirect_uri=">>, RedirectUri]),
 			{ok, Request#request{code = 302, 

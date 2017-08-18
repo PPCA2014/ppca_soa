@@ -68,13 +68,13 @@ handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast(update_or_load_permissions, State) ->
-	update_or_load_permissions(State),
-	{noreply, State};
+	{_Reason, State2} = update_or_load_permissions(State),
+	{noreply, State2};
 
 handle_cast(force_load_permissions, State) ->
 	State2 = State#state{last_update = undefined},
-	update_or_load_permissions(State2),
-	{noreply, State};
+	{_Reason, State3} = update_or_load_permissions(State2),
+	{noreply, State3};
 
 handle_cast(_Msg, State) ->
 	{noreply, State}.
@@ -154,7 +154,6 @@ load_permissions_from_datasource(Datasource, CtrlInsert) ->
 									ems_logger:info("ems_user_permission_loader load ~p user permissions.", [Count])
 								end,
 								mnesia:activity(transaction, F),
-								erlang:garbage_collect(),
 								ok;
 							_ ->
 								ems_logger:error("ems_user_permission_loader could not clear user_permission table before load user permissions. Load permissions cancelled!"),
@@ -217,16 +216,20 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 
 insert([], Count, _CtrlInsert) -> Count;
-insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, CtrlInsert) ->
+insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, SisId, PerfilId}|T], Count, CtrlInsert) ->
 	Rowid = ems_util:make_rowid(Url),
 	Id = ems_db:sequence(user_permission),
 	Hash = ems_user_permission:make_hash(Rowid, Codigo),
 	Permission = #user_permission {
 					id = Id,
 					hash = Hash,
+					name = Name,
 					grant_get = GrantGet,
 					grant_post = GrantPost,
 					grant_put = GrantPut,
+					user_id = UserId,
+					sis_id = SisId,
+					perfil_id = PerfilId,
 					grant_delete = GrantDelete,
 				    ctrl_insert = CtrlInsert
 				  },
@@ -235,26 +238,34 @@ insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, Ctr
 
 
 update([], Count, _CtrlUpdate) -> Count;
-update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, CtrlUpdate) ->
+update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, SisId, PerfilId}|T], Count, CtrlUpdate) ->
 	Rowid = ems_util:make_rowid(Url),
 	Hash = ems_user_permission:make_hash(Rowid, Codigo),
 	case ems_user_permission:find_by_bash(Hash) of
 		{ok, Permission} ->
 			Permission2 = Permission#user_permission {
+							name = Name,
 							grant_get = GrantGet,
 							grant_post = GrantPost,
 							grant_put = GrantPut,
 							grant_delete = GrantDelete,
+							user_id = UserId,
+							sis_id = SisId,
+							perfil_id = PerfilId,
 							ctrl_update = CtrlUpdate
 						};
 		{error, enoent} -> 
 			Permission2 = #user_permission {
 							id = ems_db:sequence(user_permission),
 							hash = Hash,
+							name = Name,
 							grant_get = GrantGet,
 							grant_post = GrantPost,
 							grant_put = GrantPut,
 							grant_delete = GrantDelete,
+							user_id = UserId,
+							sis_id = SisId,
+							perfil_id = PerfilId,
 							ctrl_insert = CtrlUpdate
 						  }
 	end,
@@ -262,13 +273,18 @@ update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url}|T], Count, Ctr
 	?DEBUG("ems_user_permission_loader update user permission: ~p.\n", [Permission2]),
 	update(T, Count+1, CtrlUpdate).
 
+
 sql_load_permissions() ->	 
   "select distinct  u.UsuPesIdPessoa as Codigo,
 					pt.PTrVisualizar as GrantGet,
 					pt.PTrIncluir as GrantPost, 
 					pt.PTrAlterar as UpdateGrant, 
 					pt.PTrExcluir as GrantDelete,
-					t.TraNomeFrm as Url 
+					t.TraNomeFrm as Url,
+					t.TraNomeMenu as name,
+					u.UsuPesIdPessoa as user_id,  
+					s.SisId as sis_id,
+					pt.PTrId perfil_id
 	    from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
 		inner join BDAcesso.dbo.TB_Perfil p 
@@ -279,7 +295,6 @@ sql_load_permissions() ->
 				on pt.PTrTraId = t.TraId 
 		inner join BDAcesso.dbo.TB_Sistemas s 
 				on s.SisId = t.TraSisId
-	where s.SisSistema = 'erlangms' and t.TraNomeFrm is not null
   ".
 
 sql_update_permissions() ->	 
@@ -288,7 +303,11 @@ sql_update_permissions() ->
 					pt.PTrIncluir as GrantPost, 
 					pt.PTrAlterar as UpdateGrant, 
 					pt.PTrExcluir as GrantDelete,
-					t.TraNomeFrm as Url 
+					t.TraNomeFrm as Url,
+					t.TraNomeMenu as name,
+					u.UsuPesIdPessoa as user_id,  
+					s.SisId as sis_id,
+					pt.PTrId perfil_id
 	    from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 				on u.UsuId = up.APeUsuId 
 		inner join BDAcesso.dbo.TB_Perfil p 
@@ -299,5 +318,5 @@ sql_update_permissions() ->
 				on pt.PTrTraId = t.TraId
 		inner join BDAcesso.dbo.TB_Sistemas s 
 				on s.SisId = t.TraSisId
-	 where s.SisSistema = 'erlangms' and t.TraNomeFrm is not null and (t.TraDataAlteracao >= ? or pt.PTrDataAlteracao >= ?)
+	 where t.TraDataAlteracao >= ? or pt.PTrDataAlteracao >= ?
 	".

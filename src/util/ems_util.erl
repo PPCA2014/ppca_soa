@@ -24,7 +24,7 @@
 		 json_decode_as_map/1,
 		 tuple_to_binlist/1, 
 		 list_to_binlist/1,
-		 binary_to_bool/1,
+		 parse_bool/1,
 		 binary_to_integer/1,
 		 mes_extenso/1,
 		 binlist_to_list/1,
@@ -67,7 +67,8 @@
 		 open_file/1,
 		 is_cpf_valid/1, is_cnpj_valid/1, 
 		 replacenth/3,
-		 ip_list/0]).
+		 ip_list/0,
+		 parse_bool/1]).
 
 
 %% Retorna o hash da url e os parâmetros do request
@@ -112,6 +113,8 @@ hashsym(S) ->
 
 
 %% Retorna o hash da url (uso no carregamento dos catálogos)	
+make_rowid(null) -> 0;
+make_rowid(undefined) -> 0;
 make_rowid(S) when is_binary(S) -> make_rowid(binary_to_list(S), 0);
 make_rowid(S) -> make_rowid(S, 0).
 
@@ -308,17 +311,6 @@ modernize([H|T]) ->
 	Tokens = string:tokens([H|T], " "),
 	Lista = [name_case(S) || S <- Tokens],
 	string:join(Lista, " ").
-
-%% @doc Converte boolean binário para o atom true|false
-binary_to_bool(true) -> true;
-binary_to_bool(false) -> false;
-binary_to_bool(<<"true">>) -> true;
-binary_to_bool(<<"false">>) -> false;
-binary_to_bool(<<"1">>) -> true;
-binary_to_bool(<<"0">>) -> false;
-binary_to_bool(<<1>>) -> true;
-binary_to_bool(<<0>>) -> false;
-binary_to_bool(_) -> false.
 
 binary_to_integer(Bin) -> list_to_integer(binary_to_list(Bin)).
 
@@ -820,9 +812,15 @@ ip_list()->
 	end.
 	 
 
+parse_bool(<<"true">>) -> true;
+parse_bool("true") -> true;
+parse_bool(true) -> true;
+parse_bool(1) -> true;
+parse_bool(<<"1">>) -> true;
+parse_bool(_) -> false.
+
 	 
 	 
 	 
-	 
-	 
+
 

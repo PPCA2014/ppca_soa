@@ -55,12 +55,6 @@ create_database(Nodes) ->
 							     {index, [#client.codigo]},
 							     {attributes, record_info(fields, client)}]),
 							     
-	mnesia:create_table(user_control_access, [{type, set},
-							     {disc_copies, Nodes},
-							     {index, [#user_control_access.codigo]},
-							     {attributes, record_info(fields, user_control_access)}]),
-
-
     mnesia:create_table(sequence, [{type, set},
 								   {disc_copies, Nodes},
 								   {attributes, record_info(fields, sequence)}]),

@@ -16,7 +16,7 @@
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
 -export_records([user, user_permission, catalog_schema, schema_type, 
-				 produto, service, service_owner, client, user_control_access]).
+				 produto, service, service_owner, client]).
 
 
 % to_record
@@ -154,16 +154,16 @@ to_value(<<>>) -> <<"null"/utf8>>;
 to_value([]) -> <<"null"/utf8>>;
 to_value(null) -> <<"null"/utf8>>;
 to_value("0.0") -> <<"0.0"/utf8>>;
+to_value(true) -> <<"true"/utf8>>;
+to_value(false) -> <<"false"/utf8>>;
+to_value(Data = {{_,_,_},{_,_,_}}) -> 
+	ems_util:date_to_string(Data);
 to_value(Value) when is_float(Value) -> list_to_binary(mochinum:digits(Value));
 to_value(Value) when is_integer(Value) -> integer_to_binary(Value);
 to_value(Value) when is_atom(Value) -> 
 	[<<"\""/utf8>>, atom_to_list(Value), <<"\""/utf8>>];
 to_value(Value) when is_binary(Value) -> 
 	[<<"\""/utf8>>, Value, <<"\""/utf8>>];
-to_value(true) -> <<"true"/utf8>>;
-to_value(false) -> <<"false"/utf8>>;
-to_value(Data = {{_,_,_},{_,_,_}}) -> 
-	ems_util:date_to_string(Data);
 to_value([<<Key/binary>>, <<Value/binary>>]) -> 
 	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
@@ -205,7 +205,6 @@ new(user_permission) -> #user_permission{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
 new(client) -> #client{};
-new(user_control_access) -> #user_control_access{};
 new(_) -> erlang:error(einvalid_type).
 
 new_(service) -> #service{_ = '_'};
@@ -215,7 +214,6 @@ new_(catalog_schema) -> #catalog_schema{_ = '_'};
 new_(user) -> #user{_ = '_'};
 new_(user_permission) -> #user_permission{_ = '_'};
 new_(client) -> #client{_ = '_'};
-new_(user_control_access) -> #user_control_access{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).
   
 	
