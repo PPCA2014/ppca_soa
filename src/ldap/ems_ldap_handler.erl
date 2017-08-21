@@ -93,14 +93,14 @@ encode_response(MessageID, Msg) ->
 	Response = #'LDAPMessage'{messageID = MessageID,
 							  protocolOp = Msg,
 							  controls = asn1_NOVALUE},
-    case asn1rt:encode('LDAP', 'LDAPMessage', Response) of
+    case 'LDAP':encode('LDAPMessage', Response) of
         {ok, Result} -> Result;
         {error, Reason} -> {error, Reason}
     end.
 
 
 decode_ldap_message(RequestBin) ->
-	case asn1rt:decode('LDAP', 'LDAPMessage', RequestBin) of
+	case 'LDAP':decode('LDAPMessage', RequestBin) of
         {ok, {'LDAPMessage', _MessageID, _ProtocolOp, _} = LdapMsg} -> {ok, LdapMsg};
 		Error -> Error
     end.
