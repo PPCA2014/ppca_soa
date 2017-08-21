@@ -305,7 +305,7 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 			   LotacaoCentro, LotacaoCodigoFuncao, LotacaoFuncao,
 			   LotacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T], Count, CtrlInsert) ->
 	User = #user{id = ems_db:sequence(user),
-				 codigo = Codigo,
+				 user_id = Codigo,
 				 login = ?UTF8_STRING(Login),
 				 name = ?UTF8_STRING(Name),
 				 cpf = ?UTF8_STRING(Cpf),
@@ -354,7 +354,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 			   LotacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T], Count, CtrlUpdate) ->
 	case ems_user:find_by_codigo(Codigo) of
 		{ok, User} ->
-			User2 = User#user{codigo = Codigo,
+			User2 = User#user{user_id = Codigo,
 							  login = ?UTF8_STRING(Login),
 							  name = ?UTF8_STRING(Name),
 							  cpf = ?UTF8_STRING(Cpf),
@@ -391,7 +391,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 							  ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
 			User2 = #user{id = ems_db:sequence(user),
-						  codigo = Codigo,
+						  user_id = Codigo,
 						  login = ?UTF8_STRING(Login),
 						  name = ?UTF8_STRING(Name),
 						  cpf = ?UTF8_STRING(Cpf),

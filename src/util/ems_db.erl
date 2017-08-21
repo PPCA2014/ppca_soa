@@ -1,4 +1,4 @@
-%%********************************************************************
+	%%********************************************************************
 %% @title Module ems_db
 %% @version 1.0.0
 %% @doc Module that provides interface with the database.
@@ -41,7 +41,7 @@ create_database(Nodes) ->
 
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
-							   {index, [#user.login, #user.cpf, #user.email, #user.codigo]},
+							   {index, [#user.login, #user.cpf, #user.email, #user.user_id]},
 							   {attributes, record_info(fields, user)}]),
 
 	mnesia:create_table(user_permission, [{type, set},

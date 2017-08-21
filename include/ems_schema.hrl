@@ -13,7 +13,7 @@
      			  index :: non_neg_integer()}).
 
 -record(user, {id :: non_neg_integer(), 					%% identifica o registro
-			   codigo :: integer(),							%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
+			   user_id :: integer(),							%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
 			   login :: binary(),
 			   name :: binary(), 
 			   cpf :: binary(),

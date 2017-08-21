@@ -71,10 +71,10 @@ stop() ->
 
 authenticate_user({Login, Password}, _) ->
     case ems_user:find_by_login_and_password(Login, Password) of
-		{ok, #user{id = Id, codigo = Codigo, matricula = Matricula, name = Name, email = Email, type = Type, lotacao = Lotacao}} ->	
+		{ok, #user{id = Id, user_id = UserId, matricula = Matricula, name = Name, email = Email, type = Type, lotacao = Lotacao}} ->	
 			ResourceOwner = ems_schema:to_json({<<"id">>, Id,
 												<<"login">>, Login, 
-												<<"codigo">>, Codigo,
+												<<"user_id">>, UserId,
 												<<"name">>, Name,
 												<<"matricula">>, Matricula,
 												<<"email">>, Email,
@@ -84,7 +84,7 @@ authenticate_user({Login, Password}, _) ->
 		_ -> {error, unauthorized_user}
 	end.
 authenticate_client({ClientId, Secret},_) ->
-    case ems_client:find_by_codigo_and_secret(ClientId,Secret) of
+    case ems_client:find_by_codigo_and_secret(ClientId, Secret) of
 			{ok, Client} ->	{ok, {<<>>,Client}};
 			_ -> {error, unauthorized_client}		
     end.

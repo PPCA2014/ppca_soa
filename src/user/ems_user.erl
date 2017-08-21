@@ -57,7 +57,7 @@ authenticate_login_password(Login, Password) ->
 
 -spec find_by_codigo(integer()) -> #user{} | {error, enoent}.
 find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(user, Codigo, #user.codigo) of
+	case mnesia:dirty_index_read(user, Codigo, #user.user_id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.
