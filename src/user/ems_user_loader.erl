@@ -67,7 +67,7 @@ init(#service{datasource = Datasource,
 			  properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_user_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
-	AllowLoadAluno = maps:get(<<"allow_load_aluno">>, Props, false),
+	AllowLoadAluno = ems_config:getConfig(<<"allow_load_aluno">>, <<"ems_user_loader">>, maps:get(<<"allow_load_aluno">>, Props, false)),
 	erlang:send_after(60000 * 60, self(), check_force_load_users),
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,

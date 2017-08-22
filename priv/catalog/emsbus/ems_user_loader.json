@@ -9,7 +9,7 @@
 	"type": "KERNEL",
 	"lang" : "erlang",
 	"update_checkpoint" : 65000,
-	"allow_load_aluno" : true,
+	"allow_load_aluno" : false,
 	"datasource" : "ds_ems_user_loader",
 	"pool_size" : 1,
 	"pool_max" : 1,

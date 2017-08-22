@@ -8,7 +8,7 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/auth/client/:id",
 		"type": "GET",
-		"authorization" : "public",
+		"authorization" : "oauth2",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -28,6 +28,7 @@
 		"middleware" : "client_middleware",
 		"url": "/auth/client/:id",
 		"type": "DELETE",
+		"authorization" : "oauth2",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -46,6 +47,7 @@
 		"middleware" : "client_middleware",
 		"url": "/auth/client",
 		"type": "POST",
+		"authorization" : "oauth2",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -63,6 +65,7 @@
 		"middleware" : "client_middleware",
 		"url": "/auth/client/:id",
 		"type": "PUT",
+		"authorization" : "oauth2",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -79,7 +82,7 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/client",
 		"type": "GET",
-		"authorization" : "public",
+		"authorization" : "oauth2",
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",

@@ -12,14 +12,20 @@ execute(Request) ->
 	% valida o token recebido
 	Result = oauth2:verify_access_token(AccessToken, []),
 	case Result of
-		{ok,{_, [{<<"client">>, Client = #client{ id = Id, codigo = Codigo, description = Description }},
+		{ok,{_, [{<<"client">>, #client{ id = Id, codigo = Codigo, description = Description }},
 				 {<<"resource_owner">>, ResourceOwner},
 				 {<<"expiry_time">>,ExpireTime},
 				 {<<"scope">>, Scope}] 
 			}} -> 	
 		
 			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
-															   <<"\"client\""/utf8>>, <<":"/utf8>>, integer_to_binary(Codigo), <<","/utf8>>,
+															   <<"\"client\""/utf8>>, <<":"/utf8>>, 
+																	<<"{"/utf8>>,
+																		<<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Id), <<","/utf8>>,
+																		<<"\"codigo\""/utf8>>, <<":"/utf8>>, integer_to_binary(Codigo), <<","/utf8>>,
+																		<<"\"description\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Description, <<"\""/utf8>>, 
+																	<<"}"/utf8>>,
+															   <<","/utf8>>,
 															   <<"\"expiry_time\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireTime), <<","/utf8>>,
 															   <<"\"resource_owner\""/utf8>>, <<":"/utf8>>, ResourceOwner, <<","/utf8>>,
 															   <<"\"scope\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Scope, <<"\""/utf8>>, 

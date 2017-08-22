@@ -67,8 +67,7 @@
 		 open_file/1,
 		 is_cpf_valid/1, is_cnpj_valid/1, 
 		 replacenth/3,
-		 ip_list/0,
-		 parse_bool/1]).
+		 ip_list/0]).
 
 
 %% Retorna o hash da url e os parâmetros do request
