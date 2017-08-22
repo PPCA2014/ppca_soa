@@ -8,7 +8,7 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/auth/client/:id",
 		"type": "GET",
-		"authorization" : "oauth2",
+		"authorization" : "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -82,7 +82,7 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/client",
 		"type": "GET",
-		"authorization" : "oauth2",
+		"authorization" : "basic",
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
