@@ -145,24 +145,29 @@ Login.LoginSistemas = (function() {
 	}
 	
 	function LoginSistemas() {
-		this.botaoLogin = $('#logar');
+		this.form = $('#sign_in');
+		this.botaoLogin = $('#enter');
 		this.username = $('#username');
 		this.pass = $('#pass');
 		this.error = $("#error");
 	}
 	
 	LoginSistemas.prototype.iniciar = function() {
-		this.botaoLogin.on('click', onBotaoLoginClick.bind(this));
+		this.botaoLogin.on('click', onSubmitLogin.bind(this));
+		this.form.on('submit', onSubmitLogin.bind(this));
 		this.username.on('focus', onRemoveDiv.bind(this));
 		this.pass.on('focus', onRemoveDiv.bind(this));
 	}
 	
-	function onBotaoLoginClick(e) {
+	function onSubmitLogin(e) {
 		if($('#username').val() == "" || $('#pass').val() == ""){
 			onRemoveDiv();
 			this.error.append('<div id="validate" class="alert alert-danger" role="alert">O login e a senha devem ser preenchidos.</div>');
 			return;
 		}
+
+		e.preventDefault();
+
 		var urlBase = '';
 		
 		var protocol=window.location.protocol;
@@ -176,12 +181,12 @@ Login.LoginSistemas = (function() {
 			port += hostName.split(':')[1];
 		}*/
 		
-		var baseUrl=protocol + '//' + window.location.hostname +':' + window.location.port; 
-		//alert("baseUrl=" + protocol + '//' + window.location.hostname + port);
-		var url=baseUrl + '/code_request?'+
-				 'client_id='+getRdirectUri()['client_id']+
-				 '&state='+getRdirectUri()['state']+
-				 '&redirect_uri='+getRdirectUri()['redirect_uri'];
+		var baseUrl = protocol + '//' + window.location.hostname +':' + window.location.port; 
+		
+		var url = baseUrl + '/code_request?'+
+				 'client_id='+getRedirectUri()['client_id']+
+				 '&state='+getRedirectUri()['state']+
+				 '&redirect_uri='+getRedirectUri()['redirect_uri'];
 		$.ajax({
 			url: url,
 			crossDomain: true,
@@ -219,7 +224,7 @@ Login.LoginSistemas = (function() {
 	//erro na autenticação
 	function onErroSalvandoEstilo(obj) {
 		onRemoveDiv();
-		this.error.append('<div id="validate" class="alert alert-danger" role="alert">Usuário ou senha invalido(s).</div>');
+		this.error.append('<div id="validate" class="alert alert-danger" role="alert">Usuário ou senha inválido(s).</div>');
 	}
 	
 	//sucesso na autenticado
@@ -235,7 +240,7 @@ Login.LoginSistemas = (function() {
 		}
 	}
 	
-	function getRdirectUri(){
+	function getRedirectUri(){
 		var vars = [], hash;
 		var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
 		for(var i = 0; i < hashes.length; i++)
