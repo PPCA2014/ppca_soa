@@ -255,7 +255,7 @@ update_clients_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 insert_clients([], Count, _CtrlInsert) -> Count;
 insert_clients([{Codigo, Name, Secret, RedirectUri, Description, Active}|T], Count, CtrlInsert) ->
 	Client = #client{id = ems_db:sequence(client),
-				     codigo = erlang:integer_to_binary(Codigo),
+				     codigo = Codigo,
 				     name = ?UTF8_STRING(Name),
 				     secret = ?UTF8_STRING(Secret),
 				     redirect_uri = ?UTF8_STRING(RedirectUri),
@@ -280,7 +280,7 @@ update_clients([{Codigo, Name, Secret, RedirectUri, Description, Active}|T], Cou
 									ctrl_update = CtrlUpdate};
 		{error, enoent} -> 
 			Client2 = #client{id = ems_db:sequence(client),
-							 codigo = ?UTF8_STRING(Codigo),
+							 codigo = Codigo,
 							 name = ?UTF8_STRING(Name),
 							 secret = ?UTF8_STRING(Secret),
 							 redirect_uri = ?UTF8_STRING(RedirectUri),

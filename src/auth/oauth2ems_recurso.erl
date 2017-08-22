@@ -19,7 +19,7 @@ execute(Request) ->
 			}} -> 	
 		
 			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
-															   <<"\"client\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Codigo, <<"\""/utf8>>, <<","/utf8>>,
+															   <<"\"client\""/utf8>>, <<":"/utf8>>, integer_to_binary(Codigo), <<","/utf8>>,
 															   <<"\"expiry_time\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireTime), <<","/utf8>>,
 															   <<"\"resource_owner\""/utf8>>, <<":"/utf8>>, ResourceOwner, <<","/utf8>>,
 															   <<"\"scope\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Scope, <<"\""/utf8>>, 
