@@ -46,7 +46,7 @@ create_database(Nodes) ->
 
 	mnesia:create_table(user_permission, [{type, set},
 										   {disc_copies, Nodes},
-										   {index, [#user_permission.hash]},
+										   {index, [#user_permission.hash, #user_permission.hash2]},
 										   {attributes, record_info(fields, user_permission)}]),
 
 

@@ -49,7 +49,8 @@
 		}).
 		
 -record(user_permission, {id :: non_neg_integer(),				%% identifica o registro da permissão
-						  hash,
+						  hash :: non_neg_integer(),
+						  hash2 :: non_neg_integer(),
 						  name :: binary(),
 						  url :: binary(),
 						  grant_get :: boolean(),

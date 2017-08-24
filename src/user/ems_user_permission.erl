@@ -11,7 +11,7 @@
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
--export([find_by_id/1, find_by_hash/1, make_hash/2, has_grant_permission/3]).
+-export([find_by_id/1, find_by_hash/1, find_by_hash2/1, make_hash/2, has_grant_permission/3]).
 
 
 find_by_id(Id) -> ems_db:get(user_permission, Id).
@@ -22,7 +22,14 @@ find_by_hash(Hash) ->
 		[Record] -> {ok, Record}
 	end.
 
-make_hash(Rowid, CodigoPessoa) -> erlang:phash2([Rowid, CodigoPessoa]).
+
+find_by_hash2(Hash) ->
+	case mnesia:dirty_index_read(user_permission, Hash, #user_permission.hash2) of
+		[] -> {error, enoent};
+		[Record] -> {ok, Record}
+	end.
+
+make_hash(Rowid, PesId) -> erlang:phash2([Rowid, PesId]).
 
 has_grant_permission(#service{oauth2_with_check_constraint = false}, _, _) -> true;
 has_grant_permission(#service{oauth2_with_check_constraint = true},

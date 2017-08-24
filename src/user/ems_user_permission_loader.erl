@@ -216,15 +216,17 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate) ->
 
 
 insert([], Count, _CtrlInsert) -> Count;
-insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, SisId, PerfilId}|T], Count, CtrlInsert) ->
+insert([{UserId, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, SisId, PerfilId}|T], Count, CtrlInsert) ->
 	Rowid = ems_util:make_rowid(Url),
 	Id = ems_db:sequence(user_permission),
-	Hash = ems_user_permission:make_hash(Rowid, Codigo),
+	Hash = ems_user_permission:make_hash(Rowid, UserId),
+	Hash2 = ems_user_permission:make_hash(Rowid, UserId + PerfilId),
 	Permission = #user_permission {
 					id = Id,
 					hash = Hash,
-					name = Name,
-					url = Url,
+					hash2 = Hash2,
+					name = ?UTF8_STRING(Name),
+					url = ?UTF8_STRING(Url),
 					grant_get = GrantGet,
 					grant_post = GrantPost,
 					grant_put = GrantPut,
@@ -239,14 +241,17 @@ insert([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, 
 
 
 update([], Count, _CtrlUpdate) -> Count;
-update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, SisId, PerfilId}|T], Count, CtrlUpdate) ->
+update([{UserId, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, SisId, PerfilId}|T], Count, CtrlUpdate) ->
 	Rowid = ems_util:make_rowid(Url),
-	Hash = ems_user_permission:make_hash(Rowid, Codigo),
-	case ems_user_permission:find_by_bash(Hash) of
+	Hash = ems_user_permission:make_hash(Rowid, UserId),
+	Hash2 = ems_user_permission:make_hash(Rowid, UserId + PerfilId),
+	case ems_user_permission:find_by_hash2(Hash) of
 		{ok, Permission} ->
 			Permission2 = Permission#user_permission {
-							name = Name,
-							url = Url,
+							hash = Hash,
+							hash2 = Hash2,
+							name = ?UTF8_STRING(Name),
+							url = ?UTF8_STRING(Url),
 							grant_get = GrantGet,
 							grant_post = GrantPost,
 							grant_put = GrantPut,
@@ -260,8 +265,9 @@ update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, 
 			Permission2 = #user_permission {
 							id = ems_db:sequence(user_permission),
 							hash = Hash,
-							name = Name,
-							url = Url,
+							hash2 = Hash2,
+							name = ?UTF8_STRING(Name),
+							url = ?UTF8_STRING(Url),
 							grant_get = GrantGet,
 							grant_post = GrantPost,
 							grant_put = GrantPut,
@@ -278,7 +284,7 @@ update([{Codigo, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, 
 
 
 sql_load_permissions() ->	 
-  "select distinct  u.UsuPesIdPessoa as Codigo,
+  "select distinct  u.UsuPesIdPessoa as UserId,
 					pt.PTrVisualizar as GrantGet,
 					pt.PTrIncluir as GrantPost, 
 					pt.PTrAlterar as UpdateGrant, 
@@ -301,7 +307,7 @@ sql_load_permissions() ->
   ".
 
 sql_update_permissions() ->	 
-  "select distinct  u.UsuPesIdPessoa as Codigo,
+  "select distinct  u.UsuPesIdPessoa as UserId,
 					pt.PTrVisualizar as GrantGet,
 					pt.PTrIncluir as GrantPost, 
 					pt.PTrAlterar as UpdateGrant, 
