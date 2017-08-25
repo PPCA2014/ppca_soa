@@ -48,7 +48,8 @@
 			   ctrl_update 
 		}).
 		
--record(user_permission, {id :: non_neg_integer(),			
+-record(user_permission, {id :: non_neg_integer(),	
+					      user_id_pk :: non_neg_integer(), 		
 						  hash :: non_neg_integer(),
 						  hash2 :: non_neg_integer(),
 						  name :: binary(),
@@ -66,6 +67,7 @@
 
 
 -record(user_perfil, {id :: non_neg_integer(), 					
+					  user_id_pk :: non_neg_integer(), 		
 					  perfil_id :: non_neg_integer(),					
 					  user_id :: non_neg_integer(),					
 					  name :: binary(), 
