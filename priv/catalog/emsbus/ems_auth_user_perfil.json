@@ -1,0 +1,66 @@
+[
+	{
+		"name": "/auth/user/perfil/:id",
+		"comment": "Returns a user perfil through your Id",
+		"owner": "auth",
+		"version": "1",
+		"service" : "ems_api_query_service:find_by_id",
+		"url": "/auth/user/perfil/:id",
+		"type": "GET",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_perfil"
+		},
+		"schema_in" : "user_perfil",
+		"schema_out" : "user_perfil",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/user/perfil",
+		"comment": "List all registered user perfils",
+		"owner": "auth",
+		"service" : "ems_api_query_service:find",
+		"url": "/auth/user/perfil",
+		"type": "GET",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "user_perfil"
+		},
+		"schema_in" : "user_perfil",
+		"schema_out" : "user_perfil",
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
+	}
+]

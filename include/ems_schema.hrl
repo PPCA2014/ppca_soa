@@ -48,7 +48,7 @@
 			   ctrl_update 
 		}).
 		
--record(user_permission, {id :: non_neg_integer(),				%% identifica o registro da permissão
+-record(user_permission, {id :: non_neg_integer(),			
 						  hash :: non_neg_integer(),
 						  hash2 :: non_neg_integer(),
 						  name :: binary(),
@@ -57,16 +57,26 @@
 						  grant_post :: boolean(),
 						  grant_put :: boolean(),
 						  grant_delete :: boolean(),
-						  user_id :: integer(),
-						  sis_id :: integer(),
-						  perfil_id :: integer(),
+						  user_id :: non_neg_integer(),
+						  sis_id :: non_neg_integer(),
+						  perfil_id :: non_neg_integer(),
 						  ctrl_insert,
 						  ctrl_update
           }).
+
+
+-record(user_perfil, {id :: non_neg_integer(), 					
+					  perfil_id :: non_neg_integer(),					
+					  user_id :: non_neg_integer(),					
+					  name :: binary(), 
+					  description :: binary(),
+					  ctrl_insert,
+					  ctrl_update 
+		}).
           
 
--record(client, {id :: non_neg_integer(), 					%% identifica o client internamente
-				 codigo :: binary(),						%% identifica o client externamente
+-record(client, {id :: non_neg_integer(), 					
+				 codigo :: non_neg_integer(),				
 				 name :: binary(), 
 			     description :: binary(),
 			     secret :: binary(),
@@ -76,6 +86,10 @@
 				 ctrl_insert,
 				 ctrl_update 
 		}).
+
+
+
+
 
 
 -record(ctrl_params, {name :: string(),

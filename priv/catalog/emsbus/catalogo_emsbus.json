@@ -87,6 +87,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/auth_user_perfil", 
+		"file": "ems_auth_user_perfil.json"
+	},
+
+	{
 		"catalog": "/emsbus/auth_client", 
 		"file": "ems_auth_client.json"
 	},
@@ -114,6 +119,11 @@
 	{
 		"catalog": "/emsbus/ems_user_permission_loader", 
 		"file": "ems_user_permission_loader.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_user_perfil_loader", 
+		"file": "ems_user_perfil_loader.json"
 	},
 	
 	{

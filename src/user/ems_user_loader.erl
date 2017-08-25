@@ -154,25 +154,27 @@ code_change(_OldVsn, State, _Extra) ->
 update_or_load_users(State = #state{datasource = Datasource,
 									last_update = LastUpdate}) ->
 	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
-	TimestampStr = ems_util:timestamp_str(),
+	LastUpdateStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
 			?DEBUG("ems_user_loader checkpoint. operation: load_users."),
-			case load_users_from_datasource(Datasource, TimestampStr, State) of
+			case load_users_from_datasource(Datasource, LastUpdateStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
 					ems_user_permission_loader:force_load_permissions(),
+					ems_user_perfil_loader:force_load_perfil(),
 					{ok, State2};
 				Error -> Error
 			end;
 		false ->
 			?DEBUG("ems_user_loader checkpoint. operation: update_users   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
-			case update_users_from_datasource(Datasource, LastUpdate, TimestampStr, State) of
+			case update_users_from_datasource(Datasource, LastUpdate, LastUpdateStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
 					ems_user_permission_loader:update_or_load_permissions(),
+					ems_user_perfil_loader:update_or_load_perfil(),
 					{ok, State2};
 				Error -> Error
 			end
@@ -256,9 +258,10 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 						ok;
 					{_, _, RecordsPessoa} ->
 						%?DEBUG("Update users ~p.", [Records]),
+						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
 						UpdatePessoaFunc = fun() ->
 							CountPessoa = update_users(RecordsPessoa, 0, CtrlUpdate),
-							ems_logger:info("ems_user_loader update ~p users tipo pessoa since ~s.", [CountPessoa, ems_util:timestamp_str(LastUpdate)])
+							ems_logger:info("ems_user_loader update ~p users tipo pessoa since ~s.", [CountPessoa, LastUpdateStr])
 						end,
 						mnesia:activity(transaction, UpdatePessoaFunc),
 						case AllowLoadAluno of
@@ -271,7 +274,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 										%?DEBUG("Update users ~p.", [Records]),
 										UpdateAlunoFunc = fun() ->
 											CountAluno = update_users(RecordsAluno, 0, CtrlUpdate),
-											ems_logger:info("ems_user_loader update ~p users tipo aluno since ~s.", [CountAluno, ems_util:timestamp_str(LastUpdate)])
+											ems_logger:info("ems_user_loader update ~p users tipo aluno since ~s.", [CountAluno, LastUpdateStr])
 										end,
 										mnesia:activity(transaction, UpdateAlunoFunc);
 									{error, Reason} = Error -> 

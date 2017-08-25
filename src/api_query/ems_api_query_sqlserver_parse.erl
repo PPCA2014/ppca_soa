@@ -1,14 +1,14 @@
 %%********************************************************************
 %% @title Module ems_api_query_sqlserver_parse
 %% @version 1.0.0
-%% @doc It provides parse api query mnesia
+%% @doc It provides parse api query sql server
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_api_query_sqlserver_parse).
 
--compile(export_all).
+-export([generate_dynamic_query/3, generate_dynamic_delete/2]).
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").

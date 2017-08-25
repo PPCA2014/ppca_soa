@@ -23,12 +23,12 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			 _ -> {error, einvalid_oauth2_typeauth}
 	end,  
 	case Result of
-		{ok, ResponseData = [{<<"access_token">>,AccessToken},
-							   {<<"expires_in">>, ExpireIn},
-							   {<<"resource_owner">>, ResourceOwner},
-							   {<<"scope">>, Scope},
-							   {<<"token_type">>, TokenType}]
-							} ->
+		{ok, [{<<"access_token">>,AccessToken},
+			   {<<"expires_in">>, ExpireIn},
+			   {<<"resource_owner">>, ResourceOwner},
+			   {<<"scope">>, Scope},
+			   {<<"token_type">>, TokenType}]
+			} ->
 			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
 												   <<"\"access_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\""/utf8>>, <<","/utf8>>,
 												   <<"\"expires_in\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,
@@ -40,14 +40,14 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 								 response_data = ResponseData2,
 								 content_type = <<"application/json;charset=UTF-8">>}
 			};		
-		{ok, ResponseData = [{<<"access_token">>,AccessToken},
-							   {<<"expires_in">>, ExpireIn},
-							   {<<"resource_owner">>, ResourceOwner},
-							   {<<"scope">>, Scope},
-							   {<<"refresh_token">>, RefreshToken},
-							   {<<"refresh_token_expires_in">>, RefreshTokenExpireIn},
-							   {<<"token_type">>, TokenType}]
-							} ->
+		{ok, [{<<"access_token">>,AccessToken},
+				   {<<"expires_in">>, ExpireIn},
+				   {<<"resource_owner">>, ResourceOwner},
+				   {<<"scope">>, Scope},
+				   {<<"refresh_token">>, RefreshToken},
+				   {<<"refresh_token_expires_in">>, RefreshTokenExpireIn},
+				   {<<"token_type">>, TokenType}]
+				} ->
 			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
 												   <<"\"access_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\""/utf8>>, <<","/utf8>>,
 												   <<"\"expires_in\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,

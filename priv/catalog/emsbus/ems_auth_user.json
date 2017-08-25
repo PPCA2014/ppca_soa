@@ -1,5 +1,4 @@
 [
-
 	{
 		"name": "/auth/user/:id",
 		"comment": "Returns a user through your Id",
@@ -23,7 +22,6 @@
 		"owner": "auth_user",
 		"version": "1",
 		"service" : "ems_api_query_service:delete",
-		"service" : "ems_user_service:delete",
 		"middleware" : "user_middleware",
 		"url": "/auth/user/:id",
 		"type": "DELETE",
@@ -117,5 +115,48 @@
 					"comment": "Campos que devem ser ordenados"
 				}
 			]	
+	},
+	
+	{	
+		"name": "/auth/user/:id/perfil",
+		"comment": "List all user perfil",
+		"owner": "auth_user",
+		"service" : "user_middleware:perfil_by_user",
+		"url": "/auth/user/:id/perfil",
+		"type": "GET",
+		"lang" : "erlang",
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
 	}
+	
 ]
