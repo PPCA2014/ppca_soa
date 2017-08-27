@@ -137,6 +137,39 @@ dispatch_service_work(Request = #request{rid = Rid,
 			NodeBin = erlang:atom_to_binary(Node, utf8),
 			ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
 			receive 
+				{Code, RidRemote, {Reason, <<_:27/binary, ResponseData/binary>> }} when RidRemote == Rid -> 
+					?DEBUG("ems_dispatcher received msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {Reason, ResponseData}}]),
+					AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+					Request2 = Request#request{service = Service,
+											   params_url = ParamsMap,
+											   querystring_map = QuerystringMap,
+											   user = User,
+											   content_type = ContentType,
+											   code = Code,
+											   reason = Reason,
+											   response_header = #{<<"ems-node">> => NodeBin,
+																   <<"ems-catalog">> => ServiceName,
+																   <<"ems-owner">> => ServiceOwner,
+																   <<"content-type">> => ContentType,
+																   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+											   response_data = ResponseData,
+											   latency = ems_util:get_milliseconds() - T1},
+					case dispatch_middleware_function(Request2, onrequest) of
+						{ok, Request3} ->
+							case AllowResultCache of
+								true -> ems_dispatcher_cache:add(ReqHash, T1, Request3, ResultCache);
+								false -> ems_dispatcher_cache:invalidate()
+							end,
+							{Reason, request, Request3};
+						{error, Reason} = Error ->
+							{error, request, Request#request{code = 500,
+															 reason = Reason,
+															 response_header = #{<<"ems-node">> => NodeBin,
+																				 <<"ems-catalog">> => ServiceName,
+																				 <<"ems-owner">> => ServiceOwner},
+															 response_data = ems_schema:to_json(Error),
+															 latency = ems_util:get_milliseconds() - T1}}
+					end;
 				{Code, RidRemote, {Reason, ResponseData}} when RidRemote == Rid -> 
 					?DEBUG("ems_dispatcher received msg from ~p: ~p.", [{Module, Node}, {Code, RidRemote, {Reason, ResponseData}}]),
 					AllowResultCache = Reason =:= ok andalso Type =:= "GET",
