@@ -137,8 +137,8 @@ dispatch_service_work(Request = #request{rid = Rid,
 			NodeBin = erlang:atom_to_binary(Node, utf8),
 			ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
 			receive 
-				{Code, RidRemote, {Reason, ResponseData = <<H:27/binary, ResponseDataBin/binary>> }} when RidRemote == Rid  -> 
-					case H =:= <<172,237,0,5,117,114,0,2,91,66,172,243,23,248,6,8,84,224,2,0,0,120,112,0,0,27,64>> of
+				{Code, RidRemote, {Reason, ResponseData = <<H1:25/binary, _H2:2/binary, ResponseDataBin/binary>> }} when RidRemote == Rid  -> 
+					case H1 =:= <<172,237,0,5,117,114,0,2,91,66,172,243,23,248,6,8,84,224,2,0,0,120,112,0,0>> of
 						true ->
 							AllowResultCache = Reason =:= ok andalso Type =:= "GET",
 							Request2 = Request#request{service = Service,
