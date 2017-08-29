@@ -7,8 +7,6 @@
 
 
 onvalidate(Operation, ServiceOwner) ->
-	io:format("aqui1 ~p\n\n", [ServiceOwner]),
-	
 	case unique(Operation, ServiceOwner) of
 		true -> ok;
 		false -> {error, ealready_exist}

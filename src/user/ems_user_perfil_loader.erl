@@ -133,7 +133,6 @@ update_or_load_perfil(State = #state{datasource = Datasource,
 
 
 load_perfil_from_datasource(Datasource, CtrlInsert) -> 
-	io:format("aqui\n"),
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 

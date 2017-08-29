@@ -113,29 +113,23 @@ insert_or_update(CatalogSchemaMap) when is_map(CatalogSchemaMap) ->
 	mnesia:activity(transaction, F).
 
 insert(CatalogSchemaMap) when is_map(CatalogSchemaMap) -> 
-	io:format("aqui1\n"),
 	Name = maps:get(<<"name">>, CatalogSchemaMap),
 	Description = maps:get(<<"description">>, CatalogSchemaMap),
 	JsonSchema = maps:get(<<"json_schema">>, CatalogSchemaMap),
-	io:format("aqui2\n"),
 	F = fun() -> 
 		Match = ets:fun2ms(fun(Schema = #catalog_schema{name = Name2}) when Name2 =:= Name -> Schema end),
-		io:format("aqui2.2 ~p\n", [Match]),
 		case mnesia:select(catalog_schema, Match) of
 			[] -> 
-				 io:format("aqui3.0\n"),
 				 Id = ems_db:sequence(catalog_schema),
 				 CatalogSchemaMap2 = #catalog_schema{id = Id,
 													 name = Name,
 													 description = Description,
 													 json_schema = JsonSchema},
 				 mnesia:write(CatalogSchemaMap2),
-				 io:format("aqui3\n"),
 				 CatalogSchemaMap2;
             _ -> {error, ealready_exist}
 		end
 	end,
-	io:format("aqui2.1\n"),
 	mnesia:activity(transaction, F).
 
 update(Id, CatalogSchemaMap) when is_map(CatalogSchemaMap) -> 

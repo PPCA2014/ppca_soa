@@ -26,7 +26,6 @@ find_by_id(Request) ->
 	ems_schema:to_json(Record).
 	
 insert(#request{payload_map = CatalogSchemaMap}) ->
-	io:format("aqui0\n"),
 	ems_catalog_schema:insert(CatalogSchemaMap).
 
 update(Request = #request{payload_map = CatalogSchemaMap}) ->
@@ -34,7 +33,6 @@ update(Request = #request{payload_map = CatalogSchemaMap}) ->
 	ems_catalog_schema:update(Id, CatalogSchemaMap).
 
 all(_Request) -> 
-	io:format("all1\n"),
 	{ok, Records} = ems_catalog_schema:all(),
 	ems_schema:to_json(Records).
 	

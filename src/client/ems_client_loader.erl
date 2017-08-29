@@ -302,7 +302,6 @@ sql_load_clients() ->
        s.SisDescricao as Description,
        s.SisSituacao as Active
 	from BDAcesso.dbo.TB_Sistemas s
-	where s.SisUrl is not null 
 	order by s.SisSistema
 	".
 
