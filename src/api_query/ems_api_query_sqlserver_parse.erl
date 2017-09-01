@@ -8,7 +8,7 @@
 
 -module(ems_api_query_sqlserver_parse).
 
--export([generate_dynamic_query/3, generate_dynamic_delete/2]).
+-export([generate_dynamic_query/3, generate_dynamic_query/6, generate_dynamic_delete/2]).
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
@@ -221,7 +221,8 @@ generate_dynamic_query(FilterJson, Fields,
 										io_lib:format("select top ~p ~s from (~s) _t ~s ~s", 
 											[Limit, FieldsSmnt, Sql, FilterSmnt, SortSmnt]);
 
-								 _ ->   %% bastante lento se não existir índice na chave
+								 _ ->   
+										%% bastante lento se não existir índice na chave
 										io_lib:format("select * from (select ~s, row_number() over (order by current_timestamp) AS _RowNumber from (~s) _t_sql ~s ~s) _t where _t._RowNumber between ~p and ~p", 
 											[FieldsSmnt, Sql, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
 							end),
