@@ -20,7 +20,8 @@
 		 find_by_name/1, 
 		 find_by_email/1, 
 		 find_by_cpf/1, 
-		 find_by_login_and_password/2]).
+		 find_by_login_and_password/2,
+		 to_resource_owner/1]).
 
 find_by_id(Id) -> ems_db:get(user, Id).
 
@@ -57,7 +58,7 @@ authenticate_login_password(Login, Password) ->
 
 -spec find_by_codigo(integer()) -> #user{} | {error, enoent}.
 find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(user, Codigo, #user.user_id) of
+	case mnesia:dirty_index_read(user, Codigo, #user.codigo) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.
@@ -155,4 +156,18 @@ find_by_login_and_password(Login, Password) ->
 		_ -> {error, enoent}
 	end.
 
+
+-spec to_resource_owner(#user{} | undefined) -> binary().
+to_resource_owner(User) ->
+	case User of
+		undefined -> <<"{}">>;
+		_ -> ems_schema:to_json({<<"id">>, User#user.id,
+								 <<"codigo">>, User#user.codigo,
+								 <<"login">>, User#user.login, 
+								 <<"name">>, User#user.name,
+								 <<"matricula">>, User#user.matricula,
+								 <<"email">>, User#user.email,
+								 <<"type">>, User#user.type,
+								 <<"lotacao">>, User#user.lotacao})
+	end.
 

@@ -13,7 +13,7 @@
      			  index :: non_neg_integer()}).
 
 -record(user, {id :: non_neg_integer(), 					%% identifica o registro
-			   user_id :: integer(),							%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
+			   codigo :: non_neg_integer(),					%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
 			   login :: binary(),
 			   name :: binary(), 
 			   cpf :: binary(),
@@ -49,7 +49,6 @@
 		}).
 		
 -record(user_permission, {id :: non_neg_integer(),	
-					      user_id_pk :: non_neg_integer(), 		
 						  hash :: non_neg_integer(),
 						  hash2 :: non_neg_integer(),
 						  name :: binary(),
@@ -67,7 +66,6 @@
 
 
 -record(user_perfil, {id :: non_neg_integer(), 					
-					  user_id_pk :: non_neg_integer(), 		
 					  perfil_id :: non_neg_integer(),					
 					  user_id :: non_neg_integer(),					
 					  name :: binary(), 
@@ -132,7 +130,9 @@
 					  worker :: pid(),							%% Processo worker http que vai atender a requisição
 					  status_send,								%% Registra que a mensagem foi entregue ou o erro ocorrido na entrega
 					  authorization :: binary(),				%% Dados da autenticação da requisição
-					  user = public :: #user{},					%% Usuário da requisição ou anonimo
+					  client :: #client{},
+					  user :: #user{},							%% Usuário da requisição ou public
+					  perfil,
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
@@ -147,7 +147,12 @@
 					  host :: binary(),							%% Ip do barramento
 					  filename :: string(),
 					  referer :: binary(),
-					  access_token :: binary()
+					  access_token :: binary(),
+					  scope :: binary(),
+					  oauth2_grant_type :: binary(),
+					  oauth2_access_token :: binary(),
+					  oauth2_refresh_token :: binary()
+					  
 				  }).
 
 

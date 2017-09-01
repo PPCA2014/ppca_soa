@@ -6,24 +6,22 @@
 
 % teste de token de acesso
 execute(Request) -> 
-
 	AccessToken = Request#request.access_token,
-	
-	% valida o token recebido
 	Result = oauth2:verify_access_token(AccessToken, []),
 	case Result of
-		{ok,{_, [{<<"client">>, #client{ id = Id, codigo = Codigo, description = Description }},
-				 {<<"resource_owner">>, ResourceOwner},
-				 {<<"expiry_time">>,ExpireTime},
+		{ok,{_, [{<<"client">>, Client},
+				 {<<"resource_owner">>, User},
+				 {<<"expiry_time">>, ExpireTime},
 				 {<<"scope">>, Scope}] 
 			}} -> 	
-		
+			
+			ResourceOwner = ems_user:to_resource_owner(User),
 			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
 															   <<"\"client\""/utf8>>, <<":"/utf8>>, 
 																	<<"{"/utf8>>,
-																		<<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Id), <<","/utf8>>,
-																		<<"\"codigo\""/utf8>>, <<":"/utf8>>, integer_to_binary(Codigo), <<","/utf8>>,
-																		<<"\"description\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Description, <<"\""/utf8>>, 
+																		<<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.id), <<","/utf8>>,
+																		<<"\"codigo\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.codigo), <<","/utf8>>,
+																		<<"\"description\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Client#client.description, <<"\""/utf8>>, 
 																	<<"}"/utf8>>,
 															   <<","/utf8>>,
 															   <<"\"expiry_time\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireTime), <<","/utf8>>,

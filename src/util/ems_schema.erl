@@ -8,7 +8,6 @@
 
 -module(ems_schema).
 
--compile(export_all).
 -compile({parse_transform, exprecs}).
 
 -include("../include/ems_schema.hrl").

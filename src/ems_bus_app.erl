@@ -31,9 +31,14 @@ start(_StartType, StartArgs) ->
 																											{error, enoent} -> net_adm:localhost(); 
 																											Hosts -> Hosts 
 																									  end]),
+														AuthorizationMode = case Conf#config.authorization of
+																				http_basic -> <<"basic, oauth2">>;
+																				oauth2 -> <<"oauth2">>;
+																				public -> <<"public">>
+																			end,
 														case Conf#config.oauth2_with_check_constraint of
-															true -> ems_logger:info("Authorization mode: ~p <<with check constraint>>.", [Conf#config.authorization]);
-															false -> ems_logger:info("Authorization mode: ~p.", [Conf#config.authorization])
+															true -> ems_logger:info("Authorization mode: ~p <<with check constraint>>.", [AuthorizationMode]);
+															false -> ems_logger:info("Authorization mode: ~p.", [AuthorizationMode])
 														end,
 														ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
 														ems_logger:sync(),

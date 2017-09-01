@@ -477,9 +477,17 @@ do_log_request(#request{rid = RID,
 						node_exec = Node,
 						referer = Referer,
 						user_agent = UserAgent,
-						filename = FileName}, 
+						filename = FileName,
+						client = Client,
+						user = User,
+						scope = Scope,
+						oauth2_grant_type = GrantType,
+						oauth2_access_token = AccessToken,
+						oauth2_refresh_token = RefreshToken
+			  }, 
 			  #state{show_response = ShowResponse}) ->
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type: ~p\n\tAccept: ~p\n\tPeer: ~p\n\tReferer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~s\n\tETag: ~p\n\tIf-Modified-Since: ~p\n\tIf-None-Match: ~p\n\tAuthorization: ~p\n\tNode: ~s\n\tFileName: ~s\n\tStatus: ~p <<~p>> (~pms)\n}",
+			  
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type: ~p\n\tAccept: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Uri, 
 								   Version, 
@@ -488,7 +496,10 @@ do_log_request(#request{rid = RID,
 								   ContentType, 
 								   Accept,
 								   IpBin, 
-								   Referer,
+								   case Referer of
+										undefined -> <<>>;
+										_ -> Referer
+								   end,
 								   UserAgent,
 								   case Service of 
 										undefined -> <<>>; 
@@ -506,13 +517,65 @@ do_log_request(#request{rid = RID,
 											end;
 										false -> "0ms"
 								   end,
-								   CacheControl,
-								   Etag,
-								   IfModifiedSince,
-								   IfNoneMatch,
+								   case CacheControl of
+										undefined -> <<>>;
+										_ -> CacheControl
+								   end,
+								   case Etag of
+										undefined -> <<>>;
+										_ -> Etag
+								   end,
+								   case IfModifiedSince of
+										undefined -> <<>>;
+										_ -> IfModifiedSince
+								   end,
+								   case IfNoneMatch of
+										undefined -> <<>>;
+										_ -> IfNoneMatch
+								   end,
+								   case Service of 
+										undefined -> <<>>; 
+										_ -> 
+											case Service#service.authorization of
+												http_basic -> <<"basic, oauth2">>;
+												_ -> Service#service.authorization
+											end
+								   end,
 								   Authorization,
-								   Node, 
-								   FileName,
+								   case GrantType of
+										undefined -> "";
+										_ ->  lists:flatten(io_lib:format("OAuth2 grant type: ~p\n\t", [GrantType]))
+								   end,
+								   case AccessToken of
+										undefined -> "";
+										_ ->  lists:flatten(io_lib:format("OAuth2 access token: ~p\n\t", [AccessToken]))
+								   end,
+								   case RefreshToken of
+										undefined -> "";
+										_ ->  lists:flatten(io_lib:format("OAuth2 refresh token: ~p\n\t", [RefreshToken]))
+								   end,
+								   case Scope of
+										undefined -> "";
+										_ -> lists:flatten(io_lib:format("OAuth2 scope: ~p\n\t", [Scope]))
+								   end,
+								   case Client of
+										public -> <<"public">>;
+										undefined -> <<>>;
+										_ -> iolist_to_binary([integer_to_binary(Client#client.codigo), <<" ">>, Client#client.name])
+								   end,
+								   case User of
+										public -> <<"public">>;
+																						undefined -> <<>>;
+										_ ->  iolist_to_binary([integer_to_binary(User#user.codigo), <<" ">>,  User#user.name])
+								   end,
+								   case Node of
+										undefined -> <<>>;
+										_ -> Node
+								   end,
+								   case FileName of
+										undefined -> <<>>;
+										_ -> FileName
+								   end,
 								   Code, 
 								   Reason, 
 								   Latency]),

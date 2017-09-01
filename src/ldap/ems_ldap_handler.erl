@@ -226,7 +226,7 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 												  serverSaslCreds = asn1_NOVALUE}
 	}.
 
-make_result_entry(#user{user_id = UsuId, 
+make_result_entry(#user{codigo = UsuId, 
 					    login = UsuLogin,	
 					    name = UsuName, 
 					    cpf = UsuCpf, 

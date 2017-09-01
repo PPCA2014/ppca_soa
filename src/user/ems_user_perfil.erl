@@ -16,9 +16,10 @@
 
 find_by_id(Id) -> ems_db:get(user_perfil, Id).
 
-find_by_user(UserId) ->
+find_by_user(#user{codigo = UserId}) ->
 	case mnesia:dirty_index_read(user_perfil, UserId, #user_perfil.user_id) of
-		[] -> {error, enoent};
+		[] -> {ok, []};
 		Records -> {ok, Records}
-	end.
+	end;
+find_by_user(_) -> {ok, []}.
 
