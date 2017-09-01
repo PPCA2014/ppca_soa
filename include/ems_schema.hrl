@@ -132,7 +132,6 @@
 					  authorization :: binary(),				%% Dados da autenticação da requisição
 					  client :: #client{},
 					  user :: #user{},							%% Usuário da requisição ou public
-					  perfil,
 					  node_exec = undefined,					%% Node que foi enviado a solicitação
 					  status = latency,							%% status: latency, req_done, req_send
 					  worker_send,
