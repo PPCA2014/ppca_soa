@@ -57,12 +57,12 @@ lookup_request(Request0 = #request{url = Url,
 		 QuerystringMap} -> 
 			case ems_tcp_util:allow_ip_address(Ip, AllowedAddress) of
 				true ->
+					ContentType = case ContentTypeReq of
+									  undefined -> ContentTypeService;
+									  _ -> ContentTypeReq
+								  end,
 					case ems_auth_user:authenticate(Service, Request) of
 						{ok, Client, User, AccessToken, Scope} -> 
-							ContentType = case ContentTypeReq of
-											  undefined -> ContentTypeService;
-											  _ -> ContentTypeReq
-										  end,
 							Request2 = Request#request{service = Service,
 														params_url = ParamsMap,
 														querystring_map = QuerystringMap,
@@ -84,7 +84,23 @@ lookup_request(Request0 = #request{url = Url,
 								_ ->
 									dispatch_service_work(Request2, Service)
 							end;
-						Error -> Error
+						Error -> 
+							Request2 = Request#request{service = Service,
+														params_url = ParamsMap,
+														querystring_map = QuerystringMap,
+														content_type = ContentType},
+							case Method of
+								"OPTIONS" -> 
+										{ok, request, Request2#request{code = 200, 
+																	   response_data = ems_catalog:get_metadata_json(Service),
+																	   latency = ems_util:get_milliseconds() - T1}
+										};
+								"HEAD" -> 
+										{ok, request, Request2#request{code = 200, 
+																	   latency = ems_util:get_milliseconds() - T1}
+										};
+								_ -> Error
+							end
 					end;
 				false -> 
 					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),
