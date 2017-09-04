@@ -15,7 +15,7 @@
 
 authenticate(Service = #service{authorization = AuthorizationMode}, Request) ->
 	case AuthorizationMode of
-		http_basic -> do_basic_authorization(Service, Request);
+		basic -> do_basic_authorization(Service, Request);
 		oauth2 -> do_bearer_authorization(Service, Request);
 		_ -> {ok, public, public, <<>>, <<>>}
 	end.
@@ -56,7 +56,7 @@ do_oauth2_check_access_token(AccessToken, Service, Req) ->
 	case oauth2:verify_access_token(AccessToken, undefined) of
 		{ok, {[], [{<<"client">>, Client}, 
 				   {<<"resource_owner">>, User}, 
-				   {<<"expiry_time">>, ExpityTime}, 
+				   {<<"expiry_time">>, _ExpityTime}, 
 				   {<<"scope">>, Scope}]}} -> 
 			do_check_grant_permission(Service, Req, Client, User, AccessToken, Scope);
 		Error -> Error

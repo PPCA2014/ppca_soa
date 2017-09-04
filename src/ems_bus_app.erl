@@ -32,7 +32,7 @@ start(_StartType, StartArgs) ->
 																											Hosts -> Hosts 
 																									  end]),
 														AuthorizationMode = case Conf#config.authorization of
-																				http_basic -> <<"basic, oauth2">>;
+																				basic -> <<"basic, oauth2">>;
 																				oauth2 -> <<"oauth2">>;
 																				public -> <<"public">>
 																			end,

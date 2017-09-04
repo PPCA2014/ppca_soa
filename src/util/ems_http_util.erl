@@ -12,7 +12,6 @@
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
--include("../../include/ems_http_messages.hrl").
 
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
@@ -348,8 +347,8 @@ parse_bearer_authorization_header(Header) ->
 	end.
 
 
-parse_authorization_type(<<"Basic">>) -> http_basic;
-parse_authorization_type(<<"basic">>) -> http_basic;
+parse_authorization_type(<<"Basic">>) -> basic;
+parse_authorization_type(<<"basic">>) -> basic;
 parse_authorization_type(<<"OAuth2">>) -> oauth2;
 parse_authorization_type(<<"oauth2">>) -> oauth2;
 parse_authorization_type(<<"Public">>) -> public;
@@ -358,7 +357,6 @@ parse_authorization_type(<<>>) -> public;
 parse_authorization_type(oauth2) -> oauth2;
 parse_authorization_type(basic) -> basic;
 parse_authorization_type(public) -> public;
-parse_authorization_type(http_basic) -> http_basic;
 parse_authorization_type(_) -> erlang:error(einvalid_authorization_mode).
 
 	

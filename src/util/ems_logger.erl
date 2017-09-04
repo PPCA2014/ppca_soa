@@ -537,7 +537,7 @@ do_log_request(#request{rid = RID,
 										undefined -> <<>>; 
 										_ -> 
 											case Service#service.authorization of
-												http_basic -> <<"basic, oauth2">>;
+												basic -> <<"basic, oauth2">>;
 												_ -> Service#service.authorization
 											end
 								   end,

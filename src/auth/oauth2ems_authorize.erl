@@ -159,9 +159,9 @@ password_grant(Request) ->
 
     
 authorization_request(Request) ->
-    Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),
+    %Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),
     ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-    State = ems_request:get_querystring(<<"state">>, <<>>, Request),
+    %State = ems_request:get_querystring(<<"state">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		{ok,_} -> 	{redirect, ClientId, RedirectUri};

@@ -14,7 +14,7 @@
 -include("../include/ems_schema.hrl").
 
 %% Server API
--export([start/1, start_link/1, stop/0]).
+-export([start/1, start_link/1, stop/0, get_metadata_json/1]).
 
 %% Client
 -export([list_catalog/0, 
@@ -70,7 +70,9 @@ lookup(Request = #request{type = Type, rowid = Rowid, params_url = Params}) ->
 		"POST" -> EtsLookup = ets_post;
 		"PUT" -> EtsLookup = ets_put;
 		"DELETE" -> EtsLookup = ets_delete;
-		"OPTIONS" -> EtsLookup = ets_options
+		"OPTIONS" -> EtsLookup = ets_options;
+		"HEAD" -> EtsLookup = ets_get;
+		"INFO" -> EtsLookup = ets_get
 	end,
 	case ets:lookup(EtsLookup, Rowid) of
 		[] -> 
@@ -231,3 +233,39 @@ do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 		_Exception:_Reason -> {error, enoent}
 	end.
 
+
+get_metadata_json(#service{id = Id,
+						  name = Name,
+						  content_type = ContentType,
+						  type = Method,
+						  url = Url,
+						  service = Service,
+						  comment = Comment,
+						  version = Version,
+						  owner = Owner,
+						  result_cache = ResultCache,
+						  authorization = Authorization,
+						  timeout = Timeout,
+						  path = Path,
+						  lang = Lang,
+						  querystring = Querystring}) ->
+	iolist_to_binary([<<"{"/utf8>>,
+					   <<"\"id\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Id, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"name\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Name, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"content_type\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, ContentType, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"method\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Method, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"service\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Service, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"url\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Url, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"comment\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Comment, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"version\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Version, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"owner\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Owner, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"result_cache\""/utf8>>, <<":"/utf8>>, integer_to_binary(ResultCache), <<","/utf8>>,
+					   <<"\"timeout\""/utf8>>, <<":"/utf8>>, integer_to_binary(Timeout), <<","/utf8>>,
+					   <<"\"path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case Path of
+																			undefined -> <<>>;
+																			_ -> Path
+																		 end, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"lang\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Lang, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"authorization\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, erlang:atom_to_binary(Authorization, utf8), <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"querystring\""/utf8>>, <<":"/utf8>>, ems_util:json_encode(Querystring),
+				   <<"}"/utf8>>]).

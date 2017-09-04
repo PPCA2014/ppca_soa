@@ -207,7 +207,7 @@ item_to_binary(I) -> iolist_to_binary(I).
 
 
 %% @doc Converte dados Erlang para JSON
-json_encode([]) -> <<>>;
+json_encode([]) -> <<"null">>;
 json_encode(T) when is_tuple(T) ->
 	L = tuple_to_binlist(T),
 	?JSON_LIB:encode(L);

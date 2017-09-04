@@ -72,14 +72,13 @@ stop() ->
 authenticate_user({Login, Password}, _) ->
     case ems_user:find_by_login_and_password(Login, Password) of
 		{ok, User} -> {ok, {<<>>, User}};
-		Error -> {error, unauthorized_user}
+		_ -> {error, unauthorized_user}
 	end.
 authenticate_client({ClientId, Secret},_) ->
     case ems_client:find_by_codigo_and_secret(ClientId, Secret) of
-			{ok, Client} ->	 {ok, {<<>>, Client}};
-			_ -> {error, unauthorized_client}		
+		{ok, Client} ->	 {ok, {<<>>, Client}};
+		_ -> {error, unauthorized_client}		
     end.
-
     
 get_client_identity(ClientId, _) ->
     case ems_client:find_by_codigo(ClientId) of
