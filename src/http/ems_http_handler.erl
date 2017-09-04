@@ -25,7 +25,6 @@ init(CowboyReq, Opts) ->
 												  response_data = ResponseData,
 												  service = #service{content_type = ContentTypeService,
 																	 cache_control = CacheControl}}} ->
-					
 					Response = cowboy_req:reply(Code, 
 												ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,

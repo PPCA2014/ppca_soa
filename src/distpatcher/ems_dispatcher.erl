@@ -39,11 +39,17 @@ dispatch_request(Request = #request{type = "GET",
 	end;
 dispatch_request(Request) -> lookup_request(Request).
 	
-lookup_request(Request = #request{url = Url,
+lookup_request(Request0 = #request{url = Url,
 								  ip = Ip,
 								  ip_bin = IpBin,
-								  content_type = ContentTypeReq}) -> 
-	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
+								  content_type = ContentTypeReq,
+								  type = Method,
+								  t1 = T1}) -> 
+	?DEBUG("ems_dispatcher lookup request ~p.", [Request0]),
+	Request = case Method of
+					"OPTIONS" -> Request0#request{type = "GET"};
+					_ -> Request0
+			  end,
 	case ems_catalog:lookup(Request) of
 		{Service = #service{content_type = ContentTypeService,
 							tcp_allowed_address_t = AllowedAddress}, 
@@ -58,13 +64,37 @@ lookup_request(Request = #request{url = Url,
 											  undefined -> ContentTypeService;
 											  _ -> ContentTypeReq
 										  end,
-							Request2 = Request#request{service = Service,
-														params_url = ParamsMap,
-														querystring_map = QuerystringMap,
-														user = User,
-														access_token = AccessToken,
-														content_type = ContentType},
-							dispatch_service_work(Request2, Service);
+							case Method of
+								"OPTIONS" -> 
+										{ok, request, Request#request{code = 200, 
+																	  service = Service,
+																	  params_url = ParamsMap,
+																      querystring_map = QuerystringMap,
+																	  user = User,
+																	  access_token = AccessToken,
+																	  content_type = ContentType,
+																	  response_data = ems_catalog:get_metadata_json(Service),
+																	  latency = ems_util:get_milliseconds() - T1}
+										};
+								"HEAD" -> 
+										{ok, request, Request#request{code = 200, 
+																	  service = Service,
+																	  params_url = ParamsMap,
+																      querystring_map = QuerystringMap,
+																	  user = User,
+																	  access_token = AccessToken,
+																	  content_type = ContentType,
+																	  latency = ems_util:get_milliseconds() - T1}
+										};
+								_ ->
+									Request2 = Request#request{service = Service,
+																params_url = ParamsMap,
+																querystring_map = QuerystringMap,
+																user = User,
+																access_token = AccessToken,
+																content_type = ContentType},
+									dispatch_service_work(Request2, Service)
+							end;
 						Error -> Error
 					end;
 				false -> 

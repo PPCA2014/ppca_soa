@@ -184,7 +184,7 @@
 					name :: string(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço
 					type = <<"GET">> :: string(),				%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
-					service :: string(),						%% Serviço que será executado no contrato
+					service :: binary(),						%% Serviço que será executado no contrato
 					middleware,
 					module_name :: string(), 					%% Nome do módulo do serviço que vai atender a requisição. Ex.: br.erlangms.HelloWorldService  
 					module_name_canonical :: string(), 			%% Nome do módulo canonico do serviço que vai atender a requisição. Ex.: HelloWorldService  
@@ -197,17 +197,17 @@
 					version = "1.0.0" :: string(), 				%% Versão do contrato do serviço
 					owner :: string(),  						%% Quem é o proprietário pelo serviço
 					async = false :: boolean(),					%% Indica se o serviço será processado em segundo plano (chamada assíncrona)
-					querystring :: string(),  					%% Definição da querystring para o contrato do serviço
+					querystring :: list(map()),					%% Definição da querystring para o contrato do serviço
 					qtd_querystring_req :: non_neg_integer(), 	%% Indica quantas querystrings são obrigatórias
 					host :: atom(),  							%% Atom do host onde está o módulo do serviço que vai processar a requisição
 					host_name,				  					%% Nome do host onde está o módulo do serviço que vai processar a requisição
 					result_cache :: non_neg_integer(), 			%% Indica quanto tempo em milisegundos o resultado vai ficar armazenado em cache (somente para o módulo msbus_static_file_service)
-					authorization :: binary(),					%% Forma de autenticação (Por enquanto somente Basic)
+					authorization :: atom(),					%% Forma de autenticação (public, basic, oauth2)
 					page,										%% Page django file
 					page_module,								%% Page module django file compiled
 					page_mime_type = <<"text/html">>,			%% Page mime type
 					node,										%% Node ou lista de node onde os serviços estão publicados
-					lang = "erlang" :: string(),				%% Linguagem que foi utilizada para implementar o serviço
+					lang = "erlang" :: binary(),				%% Linguagem que foi utilizada para implementar o serviço
 					datasource,									%% Datasource para a fonte de dados
 					debug = false :: boolean(),					%% Permite habilitar um modo debug (depende da implementação do serviço)
 					schema_in :: non_neg_integer(),

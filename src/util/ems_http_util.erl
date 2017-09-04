@@ -12,7 +12,6 @@
 
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
--include("../../include/ems_http_messages.hrl").
 
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
