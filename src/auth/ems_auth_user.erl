@@ -13,11 +13,17 @@
     
 -export([authenticate/2]).
 
-authenticate(Service = #service{authorization = AuthorizationMode}, Request) ->
-	case AuthorizationMode of
-		basic -> do_basic_authorization(Service, Request);
-		oauth2 -> do_bearer_authorization(Service, Request);
-		_ -> {ok, public, public, <<>>, <<>>}
+authenticate(Service = #service{authorization = AuthorizationMode}, 
+			 Request = #request{type = Method}) ->
+	case Method of
+		"OPTIONS" -> {ok, public, public, <<>>, <<>>};
+		"HEAD" -> {ok, public, public, <<>>, <<>>};
+		_ -> 
+			case AuthorizationMode of
+				basic -> do_basic_authorization(Service, Request);
+				oauth2 -> do_bearer_authorization(Service, Request);
+				_ -> {ok, public, public, <<>>, <<>>}
+			end
 	end.
 
 

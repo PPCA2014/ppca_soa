@@ -72,11 +72,6 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_options_service", 
-		"file": "ems_options_service.json"
-	},
-
-	{
 		"catalog": "/emsbus/auth_user", 
 		"file": "ems_auth_user.json"
 	},

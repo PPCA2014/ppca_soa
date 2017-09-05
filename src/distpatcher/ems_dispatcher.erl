@@ -39,18 +39,19 @@ dispatch_request(Request = #request{type = "GET",
 	end;
 dispatch_request(Request) -> lookup_request(Request).
 	
-lookup_request(Request0 = #request{url = Url,
+lookup_request(Request = #request{url = Url,
 								  ip = Ip,
 								  ip_bin = IpBin,
 								  content_type = ContentTypeReq,
 								  type = Method,
 								  t1 = T1}) -> 
-	?DEBUG("ems_dispatcher lookup request ~p.", [Request0]),
-	Request = case Method of
-					"OPTIONS" -> Request0#request{type = "GET"};
-					_ -> Request0
-			  end,
-	case ems_catalog:lookup(Request) of
+	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
+	RequestLookup = case Method of
+						"OPTIONS" -> Request#request{type = "GET"};
+						"HEAD" -> Request#request{type = "GET"};
+						_ -> Request
+				  end,
+	case ems_catalog:lookup(RequestLookup) of
 		{Service = #service{content_type = ContentTypeService,
 							tcp_allowed_address_t = AllowedAddress}, 
 		 ParamsMap, 
@@ -84,23 +85,7 @@ lookup_request(Request0 = #request{url = Url,
 								_ ->
 									dispatch_service_work(Request2, Service)
 							end;
-						Error -> 
-							Request2 = Request#request{service = Service,
-														params_url = ParamsMap,
-														querystring_map = QuerystringMap,
-														content_type = ContentType},
-							case Method of
-								"OPTIONS" -> 
-										{ok, request, Request2#request{code = 200, 
-																	   response_data = ems_catalog:get_metadata_json(Service),
-																	   latency = ems_util:get_milliseconds() - T1}
-										};
-								"HEAD" -> 
-										{ok, request, Request2#request{code = 200, 
-																	   latency = ems_util:get_milliseconds() - T1}
-										};
-								_ -> Error
-							end
+						Error -> Error
 					end;
 				false -> 
 					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),
@@ -175,7 +160,12 @@ dispatch_service_work(Request = #request{rid = Rid,
 				_ -> 
 					ClientJson = ems_schema:to_json(Client)
 			end,
-			UserJson = ems_schema:to_json(User),
+			case erlang:is_tuple(User) of
+				false -> 
+					UserJson = <<"{id=0, codigo=0, name=\"public\", login=null, password=null, cpf=null, active=1.0, ctrl_insert=null, ctrl_update=null}">>;
+				_ -> 
+					UserJson = ems_schema:to_json(User)
+			end,
 			Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, ClientJson, UserJson, undefined, Scope, undefined, undefined}, self()},
 			{Module, Node} ! Msg,
 			NodeBin = erlang:atom_to_binary(Node, utf8),
