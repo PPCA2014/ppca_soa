@@ -508,7 +508,11 @@ do_log_request(#request{rid = RID,
 								   Params,
 								   Query, 
 								   Payload, 
-								   case ShowResponse of true -> io_lib:format("Header Response: ~p\n\tResponse: ~p\n\t", [ResponseHeader, ResponseData]); false -> <<>> end,
+								   case ShowResponse of 
+										true -> 
+											io_lib:format("Header Response: ~p\n\tResponse: ~p\n\t", [ResponseHeader, ResponseData]); 
+										false -> <<>> 
+								   end,
 								   case Service =/= undefined of
 										true ->
 										   case ResultCache of 

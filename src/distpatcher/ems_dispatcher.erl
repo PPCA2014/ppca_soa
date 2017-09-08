@@ -85,18 +85,27 @@ lookup_request(Request = #request{url = Url,
 								_ ->
 									dispatch_service_work(Request2, Service)
 							end;
-						Error -> 
+						{error, Reason} = Error -> 
+							Request2 = Request#request{service = Service,
+													   params_url = ParamsMap,
+													   querystring_map = QuerystringMap,
+													   content_type = ContentType},
 							case Method of
 								"OPTIONS" -> 
-										{ok, request, Request#request{code = 200, 
+										{ok, request, Request2#request{code = 200, 
 																	  response_data = ems_catalog:get_metadata_json(Service),
 																	  latency = ems_util:get_milliseconds() - T1}
 										};
 								"HEAD" -> 
-										{ok, request, Request#request{code = 200, 
+										{ok, request, Request2#request{code = 200, 
 																	  latency = ems_util:get_milliseconds() - T1}
 										};
-								_ -> Error
+								 _ -> 
+									{error, request, Request2#request{code = 400, 
+					 											      reason = Reason, 
+																	  response_data = ems_schema:to_json(Error), 
+																	  latency = ems_util:get_milliseconds() - T1}
+									}
 							end
 					end;
 				false -> 

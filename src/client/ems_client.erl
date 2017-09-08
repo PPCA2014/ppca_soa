@@ -16,7 +16,8 @@
 		 find_by_id/1,		 
 		 find_by_codigo/1,
 		 find_by_name/1,
-		 find_by_codigo_and_secret/2]).
+		 find_by_codigo_and_secret/2,
+		 to_json/1]).
 
 find_by_id(Id) -> ems_db:get(client, Id).
 
@@ -65,4 +66,15 @@ find_by_codigo_and_secret(Codigo, Secret) ->
 
 
 find_by_name(Name) -> ems_db:find_first(client, [{"name", "==", Name}]).
+
+to_json(undefined) -> <<"{}"/utf8>>;
+to_json(Client) ->
+	iolist_to_binary([
+		<<"{"/utf8>>,
+			<<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.id), <<","/utf8>>,
+			<<"\"codigo\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.codigo), <<","/utf8>>,
+			<<"\"description\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Client#client.description, <<"\""/utf8>>, 
+		<<"}"/utf8>>
+		]).
+
 	

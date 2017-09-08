@@ -160,7 +160,7 @@ find_by_login_and_password(Login, Password) ->
 -spec to_resource_owner(#user{} | undefined) -> binary().
 to_resource_owner(User) ->
 	case User of
-		undefined -> <<"{}">>;
+		undefined -> <<"{}"/utf8>>;
 		_ -> ems_schema:to_json({<<"id">>, User#user.id,
 								 <<"codigo">>, User#user.codigo,
 								 <<"login">>, User#user.login, 
