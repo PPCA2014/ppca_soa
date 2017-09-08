@@ -4,7 +4,6 @@
 
 -include("../include/ems_schema.hrl").
 
-% teste de token de acesso
 execute(Request) -> 
 	AccessToken = Request#request.access_token,
 	Result = oauth2:verify_access_token(AccessToken, []),

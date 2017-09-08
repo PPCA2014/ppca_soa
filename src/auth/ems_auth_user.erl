@@ -18,11 +18,18 @@ authenticate(Service = #service{authorization = AuthorizationMode},
 	case Method of
 		"OPTIONS" -> {ok, public, public, <<>>, <<>>};
 		"HEAD" -> {ok, public, public, <<>>, <<>>};
-		_ -> 
+		_ -> % public
+			% mesmo sendo público, faz o parser dos cabeçalhos e tenta autenticação com as credenciais informadas
+			% se for acesso negado, deixa passar pois o serviço é público
 			case AuthorizationMode of
 				basic -> do_basic_authorization(Service, Request);
 				oauth2 -> do_bearer_authorization(Service, Request);
-				_ -> {ok, public, public, <<>>, <<>>}
+				_ -> 
+					case do_basic_authorization(Service, Request) of
+						{ok, Client, User, AccessToken, Scope} -> 
+							{ok, Client, User, AccessToken, Scope};
+						_ -> {ok, public, public, <<>>, <<>>}
+					end
 			end
 	end.
 
@@ -33,16 +40,17 @@ authenticate(Service = #service{authorization = AuthorizationMode},
 %%====================================================================
 
 
-do_basic_authorization(_, #request{authorization = undefined}) -> {error, access_denied};
-do_basic_authorization(_, #request{authorization = <<>>}) -> {error, access_denied};
+do_basic_authorization(Service, Request = #request{authorization = undefined}) -> do_bearer_authorization(Service, Request);
+do_basic_authorization(Service, Request = #request{authorization = <<>>}) -> do_bearer_authorization(Service, Request);
+do_basic_authorization(Service, Request = #request{authorization = <<>>}) -> do_bearer_authorization(Service, Request);
 do_basic_authorization(Service, Request = #request{authorization = Authorization}) ->
 	case ems_http_util:parse_basic_authorization_header(Authorization) of
 		{ok, Login, Password} ->
 			case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
 				{ok, User} -> do_check_grant_permission(Service, Request, public, User, <<>>, <<>>);
-				Error -> Error
+				_Error -> {error, access_denied}
 			end;
-		_ -> do_bearer_authorization(Service, Request) 			% Quando ocorrer erro, tenta fazer via oauth2
+		_ -> do_bearer_authorization(Service, Request) % Quando ocorrer erro, tenta fazer via oauth2
 	end.
 
 	

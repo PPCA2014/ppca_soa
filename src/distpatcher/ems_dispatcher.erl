@@ -85,15 +85,27 @@ lookup_request(Request = #request{url = Url,
 								_ ->
 									dispatch_service_work(Request2, Service)
 							end;
-						Error -> Error
+						Error -> 
+							case Method of
+								"OPTIONS" -> 
+										{ok, request, Request#request{code = 200, 
+																	  response_data = ems_catalog:get_metadata_json(Service),
+																	  latency = ems_util:get_milliseconds() - T1}
+										};
+								"HEAD" -> 
+										{ok, request, Request#request{code = 200, 
+																	  latency = ems_util:get_milliseconds() - T1}
+										};
+								_ -> Error
+							end
 					end;
 				false -> 
 					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),
 					{error, host_denied}
 			end;
-		{error, Reason} = Error -> 
+		{error, Reason} = Error2 -> 
 			ems_logger:warn("ems_dispatcher service request ~p not found. Reason: ~p.", [Url, Reason]),
-			Error
+			Error2
 	end.
 
 

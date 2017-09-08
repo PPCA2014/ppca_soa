@@ -326,14 +326,17 @@ match_ip_address({O1, O2, O3, O4}, {X1, X2, X3, X4}) ->
 	
 	
 -spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, access_denied}.
-parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) ->
+parse_basic_authorization_header(Header = <<Basic:5/binary, _:1/binary, Secret/binary>>) ->
 	case Basic =:= <<"Basic">> of
 		true ->
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
-			[Login|[Password|_]] = string:tokens(Secret2, ":"),
-			{ok, Login, Password};
-		false -> 
-			{error, access_denied}
+			case string:tokens(Secret2, ":") of
+				[Login|[Password|_]] -> {ok, Login, Password};
+				_ -> 
+					ems_logger:warn("ems_http_util parse invalid basic authorization header: ~p", [Header]),
+					{error, access_denied}
+			end;
+		false -> {error, access_denied}
 	end;
 parse_basic_authorization_header(_) -> {error, access_denied}.
 	
@@ -342,8 +345,7 @@ parse_bearer_authorization_header(Header) ->
 	<<Bearer:6/binary, _:1/binary, Secret/binary>> = Header,
 	case Bearer =:= <<"Bearer">> of
 		true ->	{ok, Secret};
-		false -> 
-			{error, access_denied}
+		false -> {error, access_denied}
 	end.
 
 

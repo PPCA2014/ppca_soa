@@ -24,6 +24,7 @@
 		"url": "/logger/filename",
 		"result_cache" : 0,
 		"type": "GET",
+		"authorization": "basic",
 		"lang" : "erlang"
 	},
 
@@ -37,6 +38,7 @@
 		"content_type" : "text/file",
 		"result_cache" : 0,
 		"type": "GET",
+		"authorization": "basic",
 		"lang" : "erlang"
 	},
 
@@ -50,6 +52,7 @@
 		"content_type" : "text/file",
 		"result_cache" : 0,
 		"type": "GET",
+		"authorization": "basic",
 		"lang" : "erlang"
 	}
 ]
