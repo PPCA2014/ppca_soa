@@ -506,6 +506,8 @@ sql_load_users_tipo_pessoa() ->
 						 on pfe.PFmEmaCodigo = em.EmaCodigo
 				 left join Sipes.dbo.DadosFuncionais df
 						 on p.PesCodigoPessoa = df.PesCodigoPessoa
+			     join Sipes.dbo.Contratos c
+                        on df.MatSipes = c.MatSipes and c.DtDesliga >= GETDATE() 
 				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
 						 on df.MatSipes = lf.Sipes
 	) as t_users

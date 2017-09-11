@@ -18,7 +18,7 @@ authenticate(Service = #service{authorization = AuthorizationMode},
 	case Method of
 		"OPTIONS" -> {ok, public, public, <<>>, <<>>};
 		"HEAD" -> {ok, public, public, <<>>, <<>>};
-		_ -> % public
+		_ -> 
 			% mesmo sendo público, faz o parser dos cabeçalhos e tenta autenticação com as credenciais informadas
 			% se for acesso negado, deixa passar pois o serviço é público
 			case AuthorizationMode of

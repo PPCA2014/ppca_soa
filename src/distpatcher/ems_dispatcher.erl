@@ -108,8 +108,15 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 					{error, host_denied}
 			end;
 		{error, Reason} = Error2 -> 
-			ems_logger:warn("ems_dispatcher service request ~p not found. Reason: ~p.", [Url, Reason]),
-			Error2
+			if 
+				Method =:= "OPTIONS" orelse Method =:= "HEAD" ->
+						{ok, request, Request#request{code = 200, 
+													  latency = ems_util:get_milliseconds() - T1}
+						};
+				true ->
+					ems_logger:warn("ems_dispatcher service request ~p not found. Reason: ~p.", [Url, Reason]),
+					Error2
+			end
 	end.
 
 
