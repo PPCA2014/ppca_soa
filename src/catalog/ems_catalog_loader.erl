@@ -11,49 +11,17 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
-%% Client
--export([init_catalog/0,
-		 list_kernel_catalog/0]).
+-export([start/0]).
 
- 
-%%====================================================================
-%% Client API
-%%====================================================================
- 
-
-init_catalog() ->
-	ets:new(ets_ems_catalog, [set, named_table, public]),
-	case get_catalog() of
-		{ok, Cat1, Cat2, Cat3, CatK} -> 
-			ets:insert(ets_ems_catalog, {cat, {Cat1, Cat2, Cat3, CatK}}),
-			ok;
-		{error, Reason} ->
-			{stop, Reason}
-	end.
-	
-list_kernel_catalog() ->
-	case ets:lookup(ets_ems_catalog, cat) of
-		[] -> {stop, nocatalog};
-		[{cat, {_, _, _, CatK}}] -> CatK
-	end.
-
-
-%% @doc Get catalog of services
-get_catalog() -> 
+start() ->
 	Conf = ems_config:getConfig(),
 	?DEBUG("ems_catalog_loader scan catalogs."),
 	ListCatalog = scan_catalogs(Conf#config.cat_path_search, Conf, []),
 	?DEBUG("ems_catalog_loader scan catalogs ok."),
-	case parse_catalog(ListCatalog, [], [], [], [], 1, Conf) of
-		{Cat2, Cat3, Cat4, CatK} ->
-			?DEBUG("ems_catalog_loader parse catalogs ok."),
-			{ok, Cat4, Cat2, Cat3, CatK};
-		Error -> 
-			?DEBUG("ems_catalog_loader parse catalog error: ~p.", [Error]),
-			Error
-	end.
+	parse_catalog(ListCatalog, [], [], [],  1, Conf),
+	ok.
 	
-	
+
 -spec scan_catalogs(list(tuple()), #config{}, list()) -> list().
 scan_catalogs([], _, Result) -> Result;
 scan_catalogs([{CatName, FileName}|Rest], Conf, Result) ->
@@ -135,12 +103,6 @@ is_name_querystring_valido(Name) ->
 		_ -> true
 	end.
 
-%% @doc Indica se o name do pseudo param é valido
-%is_pseudo_name_param_valido(Name) ->
-%	case re:run(Name, "^[a-z0-9]{0,29}$") of
-%		nomatch -> false;
-%		_ -> true
-%	end.
 
 %% @doc Indica se o name da querystring é valido
 is_name_service_valido(Name) ->
@@ -175,13 +137,6 @@ valida_name_querystring(Name) ->
 		false -> erlang:error(invalid_name_querystring)
 	end.
 
-%% @doc Valida o name do pseudo param
-%valida_pseudo_name_param(Name) ->
-%	case is_pseudo_name_param_valido(Name) of
-%		true -> ok;
-%		false -> erlang:error(invalid_pseudo_name_param)
-%	end.
-
 %% @doc Valida o tipo de dado da querystring
 valida_type_querystring(Type) ->
 	case is_type_valido(Type) of
@@ -214,16 +169,6 @@ valida_length(Value, MaxLength) ->
 		true -> ok;
 		false -> erlang:error(invalid_length)
 	end.
-
-%valida_web_service(_, _, _, _, false) -> ok;
-%valida_web_service(Cat, ServiceImpl, ModuleName, FunctionName, true) ->
-%	Module = list_to_atom(ModuleName),
-%	Function = list_to_atom(FunctionName),
-%	case proplists:lookup(Function, apply(Module, module_info, [exports])) of
-%		{Function, 1} -> ok;
-%		{Function, 2} -> ok;
-%		_ -> throw({enoent, ServiceImpl, Cat})
-%	end.
 
 
 % Process the path "~" and "." wildcards and variable path. Return path
@@ -299,37 +244,8 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 	parse_querystring_def(T, [Q | Querystring], QtdRequired2).
 
 
-%% @doc Converte um pseudo parâmetro para sua expressão regular
-%pseudoparam_to_re(":id")   -> "(?<id>[0-9]{1,9})";
-%pseudoparam_to_re(":top")  -> "(?<top>[0-9]{1,4})";
-%pseudoparam_to_re(_)  -> erlang:error(invalid_pseudo_param).
-%pseudoparam_to_re(":id", Nome)  -> io_lib:format("(?<id_~s>[0-9]{1,9})", [Nome]);
-%pseudoparam_to_re(":top", Nome) -> io_lib:format("(?<top_~s>[0-9]{1,4})", [Nome]);
-%pseudoparam_to_re(_, _)  -> erlang:error(invalid_pseudo_param).
-
-%% @doc Faz o parser da URL convertendo os pseudo parâmetros em expressão regular
-%parse_url_service(<<Url/binary>>) ->
-%	Url1 = string:tokens(binary_to_list(Url), "/"),
-%	parse_url_service(Url1, []).
-
-%parse_url_service([], []) -> <<"/">>;
-%parse_url_service([], Url) -> list_to_binary(["/" | string:join(lists:reverse(Url), "/")]);
-%parse_url_service([H|T], Url) when hd(H) /= $: -> parse_url_service(T, [H | Url]);
-%parse_url_service([H|T], Url) ->
-%	case string:chr(H, $_) > 0 of
-%		true ->
-%			[Pseudo, Nome] = string:tokens(H, "_"),
-%			valida_pseudo_name_param(Nome),
-%			P = pseudoparam_to_re(Pseudo, Nome),
-%			parse_url_service(T, [P | Url]);
-%		false ->
-%			Pseudo = H,
-%			P = pseudoparam_to_re(Pseudo),
-%			parse_url_service(T, [P | Url])
-%	end.
-
-make_ets_catalog([]) -> ok;
-make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) -> 
+make_ets_rest_catalog([]) -> ok;
+make_ets_rest_catalog([H = {_Rowid, #service{type = Type}}|T]) -> 
 	case Type of
 		<<"GET">> -> ets:insert(ets_get, H);
 		<<"POST">> -> ets:insert(ets_post, H);
@@ -337,7 +253,7 @@ make_ets_catalog([H = {_Rowid, #service{type = Type}}|T]) ->
 		<<"DELETE">> -> ets:insert(ets_delete, H);
 		<<"OPTIONS">> -> ets:insert(ets_options, H)
 	end,
-	make_ets_catalog(T). 	
+	make_ets_rest_catalog(T). 	
 
 
 parse_tcp_listen_address(ListenAddress, CatName) ->
@@ -410,19 +326,18 @@ compile_modulo_erlang(Path, ModuleNameCanonical) ->
 
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços
-parse_catalog([], Cat2, Cat3, Cat4, CatK, _Id, _Conf) ->
+parse_catalog([], CatREST, CatRE, CatKernel, _Id, _Conf) ->
+	ets:new(ets_ems_catalog, [set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_get, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_post, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_put, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_delete, [ordered_set, named_table, public, {read_concurrency, true}]),
 	ets:new(ets_options, [ordered_set, named_table, public, {read_concurrency, true}]),
-	make_ets_catalog(Cat2),
-	EtsCat2 = ems_util:list_to_ets(Cat2, ets_cat2, [ordered_set, 
-													  public, 
-													  {read_concurrency, true}]),
-	{EtsCat2, lists:reverse(Cat3), Cat4, CatK};
+	make_ets_rest_catalog(CatREST),
+	ems_util:list_to_ets(CatREST, ets_rest, [ordered_set, public, {read_concurrency, true}]),
+	ets:insert(ets_ems_catalog, {cat, {CatREST, CatRE, CatKernel}});
 	
-parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
+parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 	try
 		?DEBUG("Parse catalog ~p.", [H]),
 		Name = maps:get(<<"name">>, H),
@@ -452,7 +367,7 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 				case parse_datasource(Ds, Rowid, Conf) of
 					{error, enoent} ->
 						ems_logger:format_warn("Service ~p will be disabled because the datasource ~p was not found in the configuration file.\n", [Name, Ds]),
-						parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf);	
+						parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf);	
 					Datasource ->
 						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
 						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
@@ -517,16 +432,6 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 						IdBin = list_to_binary(integer_to_list(Id)),
 						Page = maps:get(<<"page">>, H, undefined),
 						PageModule = compile_page_module(Page, Rowid, Conf),
-						ServiceView = new_service_view(IdBin, Name, Url2, ModuleName, FunctionName, 
-														 Type, Enable, Comment, Version, Owner, 
-														 Async, Host, ResultCache, Authorization, Node, Lang,
-														 Datasource, Debug, SchemaIn, SchemaOut, 
-														 Page, Timeout, Middleware, CacheControl, 
-														 ExpiresMinute, Public, ContentType, Path, RedirectUrl,
-														 ListenAddress, AllowedAddress, 
-														 Port, MaxConnections,
-														 IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														 OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
 						case UseRE of
 							true -> 
 								Service = new_service_re(Rowid, IdBin, Name, Url2, 
@@ -548,8 +453,8 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
 								case Type of
-									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-									_ -> parse_catalog(T, Cat2, [Service|Cat3], [ServiceView|Cat4], CatK, Id+1, Conf)
+									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
+									_ -> parse_catalog(T, CatREST, [Service|CatRE], CatKernel, Id+1, Conf)
 								end;
 							false -> 
 								Service = new_service(Rowid, IdBin, Name, Url2, 
@@ -572,18 +477,18 @@ parse_catalog([H|T], Cat2, Cat3, Cat4, CatK, Id, Conf) ->
 														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
 								case Type of
-									<<"KERNEL">> -> parse_catalog(T, Cat2, Cat3, Cat4, [Service|CatK], Id+1, Conf);
-									_ -> parse_catalog(T, [{Rowid, Service}|Cat2], Cat3, [ServiceView|Cat4], CatK, Id+1, Conf)
+									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
+									_ -> parse_catalog(T, [{Rowid, Service}|CatREST], CatRE, CatKernel, Id+1, Conf)
 								end
 						end
 				end;
 			false -> 
-				parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
+				parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf)
 		end
 	catch
 		_Exception:Reason -> 
 			ems_logger:format_warn("ems_catalog_loader parse invalid catalog specification: ~p\n\t~p.\n", [Reason, H]),
-			parse_catalog(T, Cat2, Cat3, Cat4, CatK, Id, Conf)
+			parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf)
 	end.
 
 parse_middleware(undefined) -> undefined;
@@ -787,58 +692,6 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				protocol = Protocol
 			}.
 
-new_service_view(Id, Name, Url, ModuleName, FunctionName, Type, Enable,
-				  Comment, Version, Owner, Async, Host, ResultCache,
-				  Authorization, Node, Lang, _Datasource, 
-				  Debug, SchemaIn, SchemaOut, Page, Timeout, 
-				  Middleware, CacheControl, ExpiresMinute, 
-				  Public, ContentType, Path, RedirectUrl,
-				  ListenAddress, AllowedAddress, 
-				  Port, MaxConnections,
-				  IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-				  OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol) ->
-	Service = #{<<"id">> => Id,
-				<<"name">> => Name,
-				<<"url">> => Url,
-				<<"type">> => Type,
-			    <<"module">> => list_to_binary(ModuleName),
-			    <<"function">> => list_to_binary(FunctionName),
-			    <<"public">> => Public,
-			    <<"comment">> => Comment,
-			    <<"version">> => Version,
-			    <<"owner">> => Owner,
-			    <<"async">> => Async,
-			    <<"host">> => Host,
-			    <<"result_cache">> => ResultCache,
-			    <<"authorization">> => Authorization,
-			    <<"node">> => Node,
-			    <<"page">> => Page,
-			    <<"debug">> => Debug,
-			    <<"schema_in">> => SchemaIn,
-			    <<"schema_out">> => SchemaOut,
-			    <<"timeout">> => Timeout,
-			    <<"middleware">> => Middleware,
-   			    <<"cache_control">> => CacheControl,
-			    <<"expires">> => ExpiresMinute,
-				<<"lang">> => Lang,
-				<<"content_type">> => ContentType,
-				<<"path">> => Path,
-				<<"redirect_url">> => RedirectUrl,
-				<<"enable">> => Enable,
-				<<"tcp_listen_address">> => ListenAddress,
-				<<"tcp_allowed_address">> => AllowedAddress,
-				<<"tcp_max_connections">> => MaxConnections,
-				<<"tcp_port">> => Port,
-				<<"tcp_is_ssl">> => IsSsl,
-				<<"tcp_ssl_cacertfile">> => SslCaCertFile,
-				<<"tcp_ssl_certfile">> => SslCertFile,
-				<<"tcp_ssl_keyfile">> => SslKeyFile,
-				<<"oauth2_with_check_constraint">> => OAuth2WithCheckConstraint,
-				<<"oauth2_token_encrypt">> => OAuth2TokenEncrypt,
-				<<"protocol">> => Protocol
-				
-},
-	Service.
 
 
 

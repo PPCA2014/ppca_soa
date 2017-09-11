@@ -8,63 +8,13 @@
 
 -module(ems_catalog).
 
--behavior(gen_server). 
-
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
-%% Server API
--export([start/1, start_link/1, stop/0, get_metadata_json/1]).
-
-%% Client
--export([list_catalog/0, 
-		 lookup/1,
-		 lookup/2,
-		 get_querystring/2, 
-		 get_ult_lookup/0,
-		 list_cat2/0, 
-		 list_cat3/0]).
+-export([lookup/1, lookup/2, get_querystring/2, get_metadata_json/1, list_kernel_catalog/0, list_re_catalog/0]).
 
 
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
-
--define(SERVER, ?MODULE).
-
-%  Armazena o estado do catálogo. 
--record(state, {cat1, 			%% Catalog JSON
-				cat2, 			%% Parsed catalog 
-				cat3, 			%% Regular expression parsed catalog
-				catk, 			%% Kernel catalog
-				ult_lookup, 	%% Last lookup performed
-				ult_rowid,		%% Rowid of the last request
-				tbl_cache_lookup = [],
-				tbl_cache_index = 0
-		}). 
-
-
-%%====================================================================
-%% Server API
-%%====================================================================
-
-start(_) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
- 
-stop() ->
-    gen_server:cast(?SERVER, shutdown).
- 
- 
-%%====================================================================
-%% Client API
-%%====================================================================
-
-list_catalog() ->
-	gen_server:call(?SERVER, list_catalog).
-
-lookup(Request = #request{type = Type, rowid = Rowid, params_url = Params}) ->	
+lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) ->	
 	case Type of
 		"GET" -> EtsLookup = ets_get;
 		"POST" -> EtsLookup = ets_post;
@@ -75,90 +25,45 @@ lookup(Request = #request{type = Type, rowid = Rowid, params_url = Params}) ->
 		"INFO" -> EtsLookup = ets_get
 	end,
 	case ets:lookup(EtsLookup, Rowid) of
-		[] -> 
-			gen_server:call(?SERVER, {lookup, Request});
+		[] -> % is regular expression??
+			case lookup_re(Request, list_re_catalog()) of
+				{error, enoent} = Error -> Error;
+				{Service, ParamsMapRE} -> 
+					Querystring = processa_querystring(Service, Request),
+					{Service, ParamsMapRE, Querystring}
+			end;
 		[{_Rowid, Service}] -> 
-			case processa_querystring(Service, Request) of
-			   enoent -> {error, enoent};
-			   Querystring -> {Service, Params, Querystring}
-			end
+			Querystring = processa_querystring(Service, Request),
+			{Service, ParamsMap, Querystring}
 	end.
 
 lookup(Method, Uri) ->
-	gen_server:call(?SERVER, {lookup, Method, Uri}).
-
-list_cat2() ->
-	gen_server:call(?SERVER, list_cat2).
-
-list_cat3() ->
-	gen_server:call(?SERVER, list_cat3).
-
-get_ult_lookup() ->
-	gen_server:call(?SERVER, get_ult_lookup).
-
-
-	
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
- 
-init(_Args) ->
-	case ets:lookup(ets_ems_catalog, cat) of
-		[] -> 
-			{stop, nocatalog};
-		[{cat, {Cat1, Cat2, Cat3, CatK}}] ->
-			{ok, #state{cat1 = Cat1, cat2 = Cat2, cat3 = Cat3, catk = CatK}}
+	case ems_http_util:encode_request(Method, Uri) of
+		{ok, Request} -> lookup(Request);
+		Error -> Error
 	end.
-    
-handle_cast(shutdown, State) ->
-    {stop, normal, State}.
 
-handle_call(list_catalog, _From, State) ->
-	Reply = do_list_catalog(State),
-	{reply, Reply, State};
+list_kernel_catalog() ->
+	case ets:lookup(ets_ems_catalog, cat) of
+		[] -> {error, enoent};
+		[{cat, {_, _, CatKernel}}] -> CatKernel
+	end.
 
-handle_call({lookup, Request}, _From, State) ->
-	Ult_lookup = do_lookup(Request, State),
-	%NewState = add_lookup_cache(Request#request.rowid, Ult_lookup, State),
-	{reply, Ult_lookup, State, 60000};
-
-handle_call({lookup, Method, Uri}, _From, State) ->
-	Ult_lookup = do_lookup(Method, Uri, State),
-	{reply, Ult_lookup, State, 60000};
-
-handle_call(list_cat2, _From, State) ->
-	{reply, State#state.cat2, State};
-
-handle_call(list_cat3, _From, State) ->
-	{reply, State#state.cat3, State};
-
-handle_call(get_ult_lookup, _From, State) ->
-	{reply, State#state.ult_lookup, State}.
-
-handle_info(State) ->
-   {noreply, State}.
-
-handle_info(_Msg, State) ->
-   {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
- 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+list_re_catalog() ->
+	case ets:lookup(ets_ems_catalog, cat) of
+		[] -> {error, enoent};
+		[{cat, {_, CatRE, _}}] -> CatRE
+	end.
     
     
 %%====================================================================
 %% Funções internas
 %%====================================================================
 
-%% @doc Serviço que lista o catálogo
-do_list_catalog(State) -> State#state.cat1.
 
 get_querystring(<<QueryName/binary>>, Servico) ->	
 	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#service.comment == QueryName],
 	Query.
-
 
 processa_querystring(Service, Request) ->
 	%% Querystrings do módulo ems_static_file_service e ems_options_service não são processados.
@@ -197,26 +102,8 @@ valida_querystring([H|T], QuerystringUser, QuerystringList) ->
 			end
 	end.
 
-
-do_lookup(Method, Uri, State) ->
-	case ems_http_util:encode_request(Method, Uri) of
-		{ok, Request} -> do_lookup(Request, State);
-		{error, Reason} -> {error, Reason}
-	end.
-
-
-do_lookup(Request, #state{cat3 = Cat}) ->
-	case do_lookup_re(Request, Cat) of
-		{error, enoent} = Error -> Error;
-		{Service, ParamsMap} -> 
-			Querystring = processa_querystring(Service, Request),
-			{Service, ParamsMap, Querystring}
-	end.
-
-
-do_lookup_re(_Request, []) ->
-	{error, enoent};
-do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
+lookup_re(_, []) -> {error, enoent};
+lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 	try
 		RE = H#service.id_re_compiled,
 		PatternKey = ems_util:make_rowid_from_url(Url, Type),
@@ -226,7 +113,7 @@ do_lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 				{namelist, ParamNames} = re:inspect(RE, namelist),
 				ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
 				{H, ParamsMap};
-			nomatch -> do_lookup_re(Request, T);
+			nomatch -> lookup_re(Request, T);
 			{error, _ErrType} -> {error, enoent}
 		end
 	catch 

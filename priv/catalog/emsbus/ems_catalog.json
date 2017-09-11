@@ -1,19 +1,5 @@
 [
 	{
-		"name": "ems_catalog",
-		"comment": "Catalog for ems_catalog",
-		"owner": "ems-bus",
-		"version": "1",
-		"service" : "ems_catalog:start",
-		"url": "/emsbus/catalog",
-		"type": "KERNEL",
-		"APIkey":"false",
-		"lang" : "erlang",
-		"pool_size" : 1,
-		"pool_max" : 1
-	},
-
-	{
 		"name": "/catalog",
 		"comment": "List catalogs.",
 		"owner": "ems-bus",

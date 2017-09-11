@@ -41,12 +41,6 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_health", 
-		"file": "ems_health.json"
-	},
-	
-
-	{
 		"catalog": "/emsbus/ems_catalog", 
 		"file": "ems_catalog.json"
 	},

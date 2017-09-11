@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_dispatcher_cache_get
 %% @version 1.0.0
-%% @doc Responsible for forwarding the requests to services.
+%% @doc Dispatcher cache
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************

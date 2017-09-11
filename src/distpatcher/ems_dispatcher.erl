@@ -19,27 +19,8 @@ start() ->
 	ets:new(ctrl_node_dispatch, [set, named_table, public]),
 	ems_dispatcher_cache:start().
 
-
-dispatch_request(Request = #request{type = "GET", 
-									req_hash = ReqHash, 
-									t1 = Timestamp}) -> 
-	case ems_dispatcher_cache:lookup(ReqHash, Timestamp) of
-		{true, RequestCache} -> 
-			?DEBUG("ems_dispatcher lookup request in cache. ReqHash: ~p.", [ReqHash]),
-			{ok, request, Request#request{result_cache = true,
-										  code = RequestCache#request.code,
-										  reason = RequestCache#request.reason,
-										  response_data = RequestCache#request.response_data,
-										  response_header = RequestCache#request.response_header,
-										  result_cache_rid = RequestCache#request.rid,
-										  latency = RequestCache#request.latency,
-										  service = RequestCache#request.service,
-										  querystring_map = RequestCache#request.querystring_map}};
-		false -> lookup_request(Request)
-	end;
-dispatch_request(Request) -> lookup_request(Request).
-	
-lookup_request(Request = #request{url = Url,
+dispatch_request(Request = #request{req_hash = ReqHash, 
+								  url = Url,
 								  ip = Ip,
 								  ip_bin = IpBin,
 								  content_type = ContentTypeReq,
@@ -82,6 +63,20 @@ lookup_request(Request = #request{url = Url,
 										{ok, request, Request2#request{code = 200, 
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
+								"GET" ->
+									case ems_dispatcher_cache:lookup(ReqHash, T1) of
+										{true, RequestCache} -> 
+											?DEBUG("ems_dispatcher lookup request in cache. ReqHash: ~p.", [ReqHash]),
+											{ok, request, Request2#request{result_cache = true,
+																		   code = RequestCache#request.code,
+																		   reason = RequestCache#request.reason,
+																		   response_data = RequestCache#request.response_data,
+																		   response_header = RequestCache#request.response_header,
+																		   result_cache_rid = RequestCache#request.rid,
+																		   latency = RequestCache#request.latency,
+																		   filename = RequestCache#request.filename}};
+										false -> dispatch_service_work(Request2, Service)
+									end;
 								_ ->
 									dispatch_service_work(Request2, Service)
 							end;
