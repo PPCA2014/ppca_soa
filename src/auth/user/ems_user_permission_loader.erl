@@ -24,7 +24,9 @@
 
 % estado do servidor
 -record(state, {datasource,
-				last_update}).
+				last_update,
+				sql_load_permissions,
+				sql_update_permissions}).
 
 -define(SERVER, ?MODULE).
 
@@ -58,10 +60,14 @@ update_or_load_permissions() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(#service{datasource = Datasource}) ->
+init(#service{datasource = Datasource, properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_user_permission_loader_lastupdate">>),
+	SqlLoadPermissions = maps:get(<<"sql_load_permissions">>, Props, <<>>),
+	SqlUpdatePermissions = maps:get(<<"sql_update_permissions">>, Props, <<>>),
 	State = #state{datasource = Datasource, 
-				   last_update = LastUpdate},
+				   last_update = LastUpdate,
+				   sql_load_permissions = SqlLoadPermissions,
+				   sql_update_permissions = SqlUpdatePermissions},
 	{ok, State}.
     
 handle_cast(shutdown, State) ->
@@ -105,14 +111,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 
-update_or_load_permissions(State = #state{datasource = Datasource,
-										  last_update = LastUpdate}) ->
+update_or_load_permissions(State = #state{datasource = Datasource, last_update = LastUpdate}) ->
 	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
 			?DEBUG("ems_user_permission_loader checkpoint. operation: load_permissions."),
-			case load_permissions_from_datasource(Datasource, TimestampStr) of
+			case load_permissions_from_datasource(Datasource, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_permission_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -122,7 +127,7 @@ update_or_load_permissions(State = #state{datasource = Datasource,
 			end;
 		false ->
 			?DEBUG("ems_user_permission_loader checkpoint. operation: update   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
-			case update_from_datasource(Datasource, LastUpdate, TimestampStr) of
+			case update_from_datasource(Datasource, LastUpdate, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_permission_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -133,15 +138,12 @@ update_or_load_permissions(State = #state{datasource = Datasource,
 	end.
 
 
-load_permissions_from_datasource(Datasource, CtrlInsert) -> 
+load_permissions_from_datasource(Datasource, CtrlInsert, #state{sql_load_permissions = SqlLoadPermissions}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_permission_loader load user permissions from database..."),
-				Result = case ems_odbc_pool:param_query(Datasource2, 
-														sql_load_permissions(), 
-														[], 
-														?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPermissions(), []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_permission_loader did not load any user permissions."),
 						ok;
@@ -175,18 +177,17 @@ load_permissions_from_datasource(Datasource, CtrlInsert) ->
 			{error, Reason3}
 	end.
 
-update_from_datasource(Datasource, LastUpdate, CtrlUpdate) -> 
+update_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update_permissions = SqlUpdatePermissions}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_permission_loader got a connection ~p to update user permissions.", [Datasource#service_datasource.id]),
-				Sql = sql_update_permissions(),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 				Params = [{sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]}],
-				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdatePermissions, Params) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_permission_loader did not update any user permissions."),
 						ok;
@@ -282,50 +283,3 @@ update([{UserId, GrantGet, GrantPost, GrantPut, GrantDelete, Url, Name, UserId, 
 	?DEBUG("ems_user_permission_loader update user permission: ~p.\n", [Permission2]),
 	update(T, Count+1, CtrlUpdate).
 
-
-sql_load_permissions() ->	 
-  "select distinct  u.UsuPesIdPessoa as UserId,
-					pt.PTrVisualizar as GrantGet,
-					pt.PTrIncluir as GrantPost, 
-					pt.PTrAlterar as UpdateGrant, 
-					pt.PTrExcluir as GrantDelete,
-					t.TraNomeFrm as Url,
-					t.TraNomeMenu as name,
-					u.UsuPesIdPessoa as user_id,  
-					s.SisId as sis_id,
-					pt.PTrId perfil_id
-	    from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
-				on u.UsuId = up.APeUsuId 
-		inner join BDAcesso.dbo.TB_Perfil p 
-				on up.APePerId = p.PerId 
-		inner join BDAcesso.dbo.TB_Perfil_Transacao pt 
-				on p.PerId = pt.PTrPerId 
-	    inner join BDAcesso.dbo.TB_Transacao t 
-				on pt.PTrTraId = t.TraId 
-		inner join BDAcesso.dbo.TB_Sistemas s 
-				on s.SisId = t.TraSisId
-  ".
-
-sql_update_permissions() ->	 
-  "select distinct  u.UsuPesIdPessoa as UserId,
-					pt.PTrVisualizar as GrantGet,
-					pt.PTrIncluir as GrantPost, 
-					pt.PTrAlterar as UpdateGrant, 
-					pt.PTrExcluir as GrantDelete,
-					t.TraNomeFrm as Url,
-					t.TraNomeMenu as name,
-					u.UsuPesIdPessoa as user_id,  
-					s.SisId as sis_id,
-					pt.PTrId perfil_id
-	    from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
-				on u.UsuId = up.APeUsuId 
-		inner join BDAcesso.dbo.TB_Perfil p 
-				on up.APePerId = p.PerId 
-		inner join BDAcesso.dbo.TB_Perfil_Transacao pt 
-				on p.PerId = pt.PTrPerId 
-	    inner join BDAcesso.dbo.TB_Transacao t 
-				on pt.PTrTraId = t.TraId
-		inner join BDAcesso.dbo.TB_Sistemas s 
-				on s.SisId = t.TraSisId
-	 where t.TraDataAlteracao >= ? or pt.PTrDataAlteracao >= ?
-	".
