@@ -23,7 +23,10 @@
 
 % estado do servidor
 -record(state, {datasource,
-				last_update}).
+				last_update,
+				sql_load_perfil,
+				sql_update_perfil
+			}).
 
 -define(SERVER, ?MODULE).
 
@@ -57,10 +60,14 @@ update_or_load_perfil() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(#service{datasource = Datasource}) ->
+init(#service{datasource = Datasource, properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_user_perfil_loader_lastupdate">>),
+	SqlLoadPerfil = maps:get(<<"sql_load_perfil">>, Props, <<>>),
+	SqlUpdatePerfil = maps:get(<<"sql_update_perfil">>, Props, <<>>),
 	State = #state{datasource = Datasource, 
-				   last_update = LastUpdate},
+				   last_update = LastUpdate,
+				   sql_load_perfil = SqlLoadPerfil,
+				   sql_update_perfil = SqlUpdatePerfil},
 	{ok, State}.
     
 handle_cast(shutdown, State) ->
@@ -105,13 +112,13 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 update_or_load_perfil(State = #state{datasource = Datasource,
-										  last_update = LastUpdate}) ->
+									 last_update = LastUpdate}) ->
 	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
 			?DEBUG("ems_user_perfil_loader checkpoint. operation: load_perfil."),
-			case load_perfil_from_datasource(Datasource, TimestampStr) of
+			case load_perfil_from_datasource(Datasource, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_perfil_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -121,7 +128,7 @@ update_or_load_perfil(State = #state{datasource = Datasource,
 			end;
 		false ->
 			?DEBUG("ems_user_perfil_loader checkpoint. operation: update   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
-			case update_from_datasource(Datasource, LastUpdate, TimestampStr) of
+			case update_from_datasource(Datasource, LastUpdate, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_user_perfil_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -132,15 +139,12 @@ update_or_load_perfil(State = #state{datasource = Datasource,
 	end.
 
 
-load_perfil_from_datasource(Datasource, CtrlInsert) -> 
+load_perfil_from_datasource(Datasource, CtrlInsert, #state{sql_load_perfil = SqlLoadPerfil}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_perfil_loader load user perfil from database..."),
-				Result = case ems_odbc_pool:param_query(Datasource2, 
-														sql_load_perfil(), 
-														[], 
-														?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPerfil, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_perfil_loader did not load any user perfil."),
 						ok;
@@ -174,18 +178,17 @@ load_perfil_from_datasource(Datasource, CtrlInsert) ->
 			{error, Reason3}
 	end.
 
-update_from_datasource(Datasource, LastUpdate, CtrlUpdate) -> 
+update_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update_perfil = SqlUpdatePerfil}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_perfil_loader got a connection ~p to update user perfil.", [Datasource#service_datasource.id]),
-				Sql = sql_update_perfil(),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 				Params = [{sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]}],
-				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdatePerfil, Params) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_perfil_loader did not update any user perfil."),
 						ok;
@@ -252,29 +255,3 @@ update([{UserId, PerfilId, Name, Description}|T], Count, CtrlUpdate) ->
 	update(T, Count+1, CtrlUpdate).
 
 
-sql_load_perfil() ->	 
-  "select u.UsuPesIdPessoa as UserId,
-        p.PerId,
-        p.PerNome,
-        p.PerDescricao
-	from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
-							on u.UsuId = up.APeUsuId 
-			inner join BDAcesso.dbo.TB_Perfil p 
-							on up.APePerId = p.PerId
-	group by u.UsuPesIdPessoa, p.PerId, p.PerNome, p.PerDescricao
-	order by u.UsuPesIdPessoa
-  ".
-
-sql_update_perfil() ->	 
-  "select u.UsuPesIdPessoa as UserId,
-        p.PerId,
-        p.PerNome,
-        p.PerDescricao
-	from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
-							on u.UsuId = up.APeUsuId 
-			inner join BDAcesso.dbo.TB_Perfil p 
-							on up.APePerId = p.PerId
-	where p.PerDataAlteracao >= ? or up.APeDataAlteracao >= ?
-	group by u.UsuPesIdPessoa, p.PerId, p.PerNome, p.PerDescricao
-	order by u.UsuPesIdPessoa
-	".
