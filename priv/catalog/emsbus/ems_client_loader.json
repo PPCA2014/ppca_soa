@@ -19,8 +19,8 @@
 			   s.SisOrgao as Secret,
 			   s.SisUrl as RedirectUri,
 			   s.SisDescricao as Description,
-			   s.SisSituacao as Active
-			from BDAcesso.dbo.TB_Sistemas s
+			   s.SisSituacao as Active 
+			from BDAcesso.dbo.TB_Sistemas s 
 			order by s.SisSistema
 			"
 }

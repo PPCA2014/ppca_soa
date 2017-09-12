@@ -66,7 +66,7 @@ resume() ->
 init(#service{datasource = Datasource, properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_client_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?CLIENT_LOADER_UPDATE_CHECKPOINT),
-	SqlLoadClients = maps:get(<<"sql_load_clients">>, Props, <<>>),
+	SqlLoadClients = binary_to_list(maps:get(<<"sql_load_clients">>, Props, <<>>)),
 	set_force_load_clients_checkpoint(),
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,

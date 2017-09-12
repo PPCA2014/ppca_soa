@@ -45,16 +45,15 @@
 							rtrim(LotacaoFuncao) as LotacaoFuncao,
 							rtrim(LotacaoOrgao) as LotacaoOrgao,
 							LotacaoCodigoCargo,
-							rtrim(LotacaoCargo) as LotacaoCargo
-			from (
-					-- Busca dados de pessoa física em BDPessoa
+							rtrim(LotacaoCargo) as LotacaoCargo 
+			from ( 
 					select p.PesCodigoPessoa as CodigoPessoa, 
 						   u.UsuLogin as LoginPessoa,
 						   p.PesNome as NomePessoa, 
 						   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
 						   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-						   0 as TipoPessoa,  -- Pessoa física,
+						   0 as TipoPessoa,  
 						   'SHA1' as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, df.Endereco) as Endereco,
@@ -77,21 +76,21 @@
 						   lf.Funcao as LotacaoFuncao,
 						   '' as LotacaoOrgao,
 						   lf.Cod as LotacaoCodigoCargo,
-						   lf.Cargo as LotacaoCargo
-					from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
-								 on u.UsuPesIdPessoa = p.PesCodigoPessoa
-						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-						 join BDPessoa.dbo.TB_Email em
-								 on pfe.PFmEmaCodigo = em.EmaCodigo
-						 left join Sipes.dbo.DadosFuncionais df
-								 on p.PesCodigoPessoa = df.PesCodigoPessoa
-						 left join Sipes.dbo.Contratos c
-								on df.MatSipes = c.MatSipes
-						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
-								 on df.MatSipes = lf.Sipes
-					where c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL
-			) as t_users
+						   lf.Cargo as LotacaoCargo 
+					from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
+								 on u.UsuPesIdPessoa = p.PesCodigoPessoa 
+						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe 
+								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
+						 join BDPessoa.dbo.TB_Email em 
+								 on pfe.PFmEmaCodigo = em.EmaCodigo 
+						 left join Sipes.dbo.DadosFuncionais df 
+								 on p.PesCodigoPessoa = df.PesCodigoPessoa 
+						 left join Sipes.dbo.Contratos c 
+								on df.MatSipes = c.MatSipes 
+						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
+								 on df.MatSipes = lf.Sipes 
+					where c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL 
+			) as t_users 
 			order by t_users.TipoEmailPessoa",
 
 	"sql_load_users_tipo_aluno" : 
@@ -126,16 +125,15 @@
 							rtrim(LotacaoFuncao) as LotacaoFuncao,
 							rtrim(LotacaoOrgao) as LotacaoOrgao,
 							LotacaoCodigoCargo,
-							rtrim(LotacaoCargo) as LotacaoCargo
-			from (
-					-- Busca dados de alunos em BDSiac com AluRA
+							rtrim(LotacaoCargo) as LotacaoCargo 
+			from ( 
 					select p.PesCodigoPessoa as CodigoPessoa, 
 						   cast(al.AluRA as varchar(100)) as LoginPessoa,
 						   p.PesNome as NomePessoa, 
 						   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
-						   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-						   2 as TipoPessoa,  -- Aluno
+						   cast(al.AluSenha as varchar(60)) as SenhaPessoa, 
+						   2 as TipoPessoa,  
 						   null as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
@@ -158,15 +156,15 @@
 						   null as LotacaoFuncao,
 						   null as LotacaoOrgao,
 						   null as LotacaoCodigoCargo,
-						   null as LotacaoCargo
-					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
-								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
-						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-						 join BDPessoa.dbo.TB_Email em
-								 on pfe.PFmEmaCodigo = em.EmaCodigo
-					where al.AluPerSaiUnB = 99999
-			) as t_users
+						   null as LotacaoCargo 
+					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p 
+								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa 
+						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe 
+								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa  
+						 join BDPessoa.dbo.TB_Email em 
+								 on pfe.PFmEmaCodigo = em.EmaCodigo 
+					where al.AluPerSaiUnB = 99999 
+			) as t_users 
 			order by t_users.TipoEmailPessoa
 			",
 			
@@ -201,16 +199,15 @@
 							rtrim(LotacaoFuncao) as LotacaoFuncao,
 							rtrim(LotacaoOrgao) as LotacaoOrgao,
 							LotacaoCodigoCargo,
-							rtrim(LotacaoCargo) as LotacaoCargo
-			from (
-					-- Busca dados de pessoa física em BDPessoa
+							rtrim(LotacaoCargo) as LotacaoCargo 
+			from ( 
 					select p.PesCodigoPessoa as CodigoPessoa, 
 						   u.UsuLogin as LoginPessoa,
 						   p.PesNome as NomePessoa, 
 						   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
 						   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-						   0 as TipoPessoa,  -- Pessoa física,
+						   0 as TipoPessoa,  
 						   'SHA1' as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, df.Endereco) as Endereco,
@@ -233,21 +230,21 @@
 						   lf.Funcao as LotacaoFuncao,
 						   '' as LotacaoOrgao,
 						   lf.Cod as LotacaoCodigoCargo,
-						   lf.Cargo as LotacaoCargo
-					from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
-								 on u.UsuPesIdPessoa = p.PesCodigoPessoa
-						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-						 join BDPessoa.dbo.TB_Email em
-								 on pfe.PFmEmaCodigo = em.EmaCodigo
-						 left join Sipes.dbo.DadosFuncionais df
-								 on p.PesCodigoPessoa = df.PesCodigoPessoa
-						 left join Sipes.dbo.Contratos c
-								on df.MatSipes = c.MatSipes 
-						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
-								 on df.MatSipes = lf.Sipes
-					where (c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL) and (u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?)
-			) as t_users
+						   lf.Cargo as LotacaoCargo 
+					from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
+								 on u.UsuPesIdPessoa = p.PesCodigoPessoa 
+						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe 
+								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
+						 join BDPessoa.dbo.TB_Email em 
+								 on pfe.PFmEmaCodigo = em.EmaCodigo 
+						 left join Sipes.dbo.DadosFuncionais df 
+								 on p.PesCodigoPessoa = df.PesCodigoPessoa 
+						 left join Sipes.dbo.Contratos c 
+								on df.MatSipes = c.MatSipes  
+						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
+								 on df.MatSipes = lf.Sipes 
+					where (c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL) and (u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?) 
+			) as t_users 
 			order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 			",
 			
@@ -282,16 +279,15 @@
 							rtrim(LotacaoFuncao) as LotacaoFuncao,
 							rtrim(LotacaoOrgao) as LotacaoOrgao,
 							LotacaoCodigoCargo,
-							rtrim(LotacaoCargo) as LotacaoCargo
-			from (
-					-- Busca dados de alunos em BDSiac com AluRA
-					select p.PesCodigoPessoa as CodigoPessoa, 
+							rtrim(LotacaoCargo) as LotacaoCargo 
+			from ( 
+					select p.PesCodigoPessoa as CodigoPessoa,  
 						   cast(al.AluRA as varchar(100)) as LoginPessoa,
 						   p.PesNome as NomePessoa, 
 						   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
 						   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-						   2 as TipoPessoa,  -- Aluno
+						   2 as TipoPessoa, 
 						   null as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
@@ -314,15 +310,15 @@
 						   null as LotacaoFuncao,
 						   null as LotacaoOrgao,
 						   null as LotacaoCodigoCargo,
-						   null as LotacaoCargo
-					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
-								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
-						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-						 join BDPessoa.dbo.TB_Email em
-								 on pfe.PFmEmaCodigo = em.EmaCodigo 
-					where al.AluPerSaiUnB = 99999 and (al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?)
-			) as t_users
+						   null as LotacaoCargo 
+					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p 
+								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa 
+						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe 
+								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
+						 join BDPessoa.dbo.TB_Email em 
+								 on pfe.PFmEmaCodigo = em.EmaCodigo  
+					where al.AluPerSaiUnB = 99999 and (al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?) 
+			) as t_users 
 			order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 			"
 	

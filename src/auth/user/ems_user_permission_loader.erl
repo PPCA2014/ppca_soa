@@ -62,8 +62,8 @@ update_or_load_permissions() ->
  
 init(#service{datasource = Datasource, properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_user_permission_loader_lastupdate">>),
-	SqlLoadPermissions = maps:get(<<"sql_load_permissions">>, Props, <<>>),
-	SqlUpdatePermissions = maps:get(<<"sql_update_permissions">>, Props, <<>>),
+	SqlLoadPermissions = binary_to_list(maps:get(<<"sql_load_permissions">>, Props, <<>>)),
+	SqlUpdatePermissions = binary_to_list(maps:get(<<"sql_update_permissions">>, Props, <<>>)),
 	State = #state{datasource = Datasource, 
 				   last_update = LastUpdate,
 				   sql_load_permissions = SqlLoadPermissions,

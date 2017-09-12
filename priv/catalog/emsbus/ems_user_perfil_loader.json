@@ -17,12 +17,12 @@
 			 "select u.UsuPesIdPessoa as UserId,
 				p.PerId,
 				p.PerNome,
-				p.PerDescricao
-			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
+				p.PerDescricao 
+			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up 
 									on u.UsuId = up.APeUsuId 
 					inner join BDAcesso.dbo.TB_Perfil p 
-									on up.APePerId = p.PerId
-			group by u.UsuPesIdPessoa, p.PerId, p.PerNome, p.PerDescricao
+									on up.APePerId = p.PerId 
+			group by u.UsuPesIdPessoa, p.PerId, p.PerNome, p.PerDescricao 
 			order by u.UsuPesIdPessoa
 		  ",
 		  
@@ -30,13 +30,13 @@
 			"select u.UsuPesIdPessoa as UserId,
 				p.PerId,
 				p.PerNome,
-				p.PerDescricao
+				p.PerDescricao 
 			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 									on u.UsuId = up.APeUsuId 
 					inner join BDAcesso.dbo.TB_Perfil p 
-									on up.APePerId = p.PerId
-			where p.PerDataAlteracao >= ? or up.APeDataAlteracao >= ?
-			group by u.UsuPesIdPessoa, p.PerId, p.PerNome, p.PerDescricao
+									on up.APePerId = p.PerId 
+			where p.PerDataAlteracao >= ? or up.APeDataAlteracao >= ? 
+			group by u.UsuPesIdPessoa, p.PerId, p.PerNome, p.PerDescricao 
 			order by u.UsuPesIdPessoa
 			"
 }

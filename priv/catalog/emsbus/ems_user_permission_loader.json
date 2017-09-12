@@ -23,7 +23,7 @@
 								t.TraNomeMenu as name,
 								u.UsuPesIdPessoa as user_id,  
 								s.SisId as sis_id,
-								pt.PTrId perfil_id
+								pt.PTrId perfil_id 
 					from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 							on u.UsuId = up.APeUsuId 
 					inner join BDAcesso.dbo.TB_Perfil p 
@@ -46,17 +46,17 @@
 								t.TraNomeMenu as name,
 								u.UsuPesIdPessoa as user_id,  
 								s.SisId as sis_id,
-								pt.PTrId perfil_id
-					from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
+								pt.PTrId perfil_id 
+					from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up 
 							on u.UsuId = up.APeUsuId 
 					inner join BDAcesso.dbo.TB_Perfil p 
 							on up.APePerId = p.PerId 
 					inner join BDAcesso.dbo.TB_Perfil_Transacao pt 
 							on p.PerId = pt.PTrPerId 
 					inner join BDAcesso.dbo.TB_Transacao t 
-							on pt.PTrTraId = t.TraId
+							on pt.PTrTraId = t.TraId 
 					inner join BDAcesso.dbo.TB_Sistemas s 
-							on s.SisId = t.TraSisId
+							on s.SisId = t.TraSisId 
 				 where t.TraDataAlteracao >= ? or pt.PTrDataAlteracao >= ?
 				"	
 }

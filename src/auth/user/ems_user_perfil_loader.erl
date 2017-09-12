@@ -62,8 +62,8 @@ update_or_load_perfil() ->
  
 init(#service{datasource = Datasource, properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_user_perfil_loader_lastupdate">>),
-	SqlLoadPerfil = maps:get(<<"sql_load_perfil">>, Props, <<>>),
-	SqlUpdatePerfil = maps:get(<<"sql_update_perfil">>, Props, <<>>),
+	SqlLoadPerfil = binary_to_list(maps:get(<<"sql_load_perfil">>, Props, <<>>)),
+	SqlUpdatePerfil = binary_to_list(maps:get(<<"sql_update_perfil">>, Props, <<>>)),
 	State = #state{datasource = Datasource, 
 				   last_update = LastUpdate,
 				   sql_load_perfil = SqlLoadPerfil,
