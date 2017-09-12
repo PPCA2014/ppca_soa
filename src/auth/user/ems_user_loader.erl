@@ -25,7 +25,12 @@
 -record(state, {datasource,
 				update_checkpoint,
 				last_update,
-				allow_load_aluno}).
+				allow_load_aluno,
+				sql_load_users_tipo_pessoa,
+				sql_load_users_tipo_aluno,
+				sql_update_users_tipo_pessoa,
+				sql_update_users_tipo_aluno
+			}).
 
 -define(SERVER, ?MODULE).
 
@@ -68,11 +73,19 @@ init(#service{datasource = Datasource,
 	LastUpdate = ems_db:get_param(<<"ems_user_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
 	AllowLoadAluno = ems_config:getConfig(<<"allow_load_aluno">>, <<"ems_user_loader">>, maps:get(<<"allow_load_aluno">>, Props, false)),
+	SqlLoadUsersTipoPessoa = maps:get(<<"sql_load_users_tipo_pessoa">>, Props, <<>>),
+	SqlLoadUsersTipoAluno = maps:get(<<"sql_load_users_tipo_aluno">>, Props, <<>>),
+	SqlUpdateUsersTipoPessoa = maps:get(<<"sql_update_users_tipo_pessoa">>, Props, <<>>),
+	SqlUpdateUsersTipoAluno = maps:get(<<"sql_update_users_tipo_aluno">>, Props, <<>>),
 	erlang:send_after(60000 * 60, self(), check_force_load_users),
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update = LastUpdate,
-				   allow_load_aluno = AllowLoadAluno},
+				   allow_load_aluno = AllowLoadAluno,
+				   sql_load_users_tipo_pessoa = SqlLoadUsersTipoPessoa,
+				   sql_load_users_tipo_aluno = SqlLoadUsersTipoAluno,
+				   sql_update_users_tipo_pessoa = SqlUpdateUsersTipoPessoa,
+				   sql_update_users_tipo_aluno = SqlUpdateUsersTipoAluno},
 	{ok, State, 7000}.
     
 handle_cast(shutdown, State) ->
@@ -181,12 +194,14 @@ update_or_load_users(State = #state{datasource = Datasource,
 	end.
 
 
-load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = AllowLoadAluno}) -> 
+load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = AllowLoadAluno,
+														  sql_load_users_tipo_pessoa = SqlLoadUsersTipoPessoa,
+														  sql_load_users_tipo_aluno = SqlLoadUsersTipoAluno}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_loader load users from database..."),
-				Result = case ems_odbc_pool:param_query(Datasource2, sql_load_users_tipo_pessoa(), []) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadUsersTipoPessoa, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_loader did not load any users tipo pessoa."),
 						ok;
@@ -201,9 +216,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 								mnesia:activity(transaction, InsertUserPessoaFunc),
 								case AllowLoadAluno of
 									true ->
-										case ems_odbc_pool:param_query(Datasource2, 
-																		sql_load_users_tipo_aluno(), 
-																		[]) of
+										case ems_odbc_pool:param_query(Datasource2, SqlLoadUsersTipoAluno, []) of
 											{_,_,[]} -> 
 												?DEBUG("ems_user_loader did not load any users tipo aluno."),
 												ok;
@@ -241,7 +254,9 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 			{error, Reason3}
 	end.
 
-update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_load_aluno = AllowLoadAluno}) -> 
+update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_load_aluno = AllowLoadAluno,
+																		sql_update_users_tipo_pessoa = SqlUpdateUsersTipoPessoa,
+																		sql_update_users_tipo_aluno = SqlUpdateUsersTipoAluno}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -252,7 +267,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 				Params = [{sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]}],
-				Result = case ems_odbc_pool:param_query(Datasource2, sql_update_users_tipo_pessoa(), Params) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdateUsersTipoPessoa, Params) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_loader did not update any users tipo pessoa."),
 						ok;
@@ -266,7 +281,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 						mnesia:activity(transaction, UpdatePessoaFunc),
 						case AllowLoadAluno of
 							true ->
-								case ems_odbc_pool:param_query(Datasource2, sql_update_users_tipo_aluno(), Params) of
+								case ems_odbc_pool:param_query(Datasource2, SqlUpdateUsersTipoAluno, Params) of
 									{_,_,[]} -> 
 										?DEBUG("ems_user_loader did not update any users tipo aluno."),
 										ok;
@@ -434,316 +449,4 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 	?DEBUG("ems_user_loader update user: ~p.\n", [User2]),
 	update_users(T, Count+1, CtrlUpdate).
 
-sql_load_users_tipo_pessoa() ->	 
-	"select  		CodigoPessoa, 
-					lower(rtrim(LoginPessoa)) as LoginPessoa, 
-					rtrim(NomePessoa) as NomePessoa, 
-					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
-					lower(rtrim(EmailPessoa)) as EmailPessoa, 
-					rtrim(SenhaPessoa) as SenhaPessoa,
-					TipoPessoa,
-					PasswdCryptoPessoa,
-					TipoEmailPessoa,
-					1 as ActivePessoa,
-					rtrim(Endereco) as Endereco,
-					rtrim(ComplementoEndereco) as ComplementoEndereco,
-					rtrim(Bairro) as Bairro,
-					rtrim(Cidade) as Cidade,
-					Uf,
-					Cep,
-					Rg,
-					DataNascimento,
-					Sexo,
-					Telefone,
-					Celular,
-					DDD,
-				    Matricula,
-				    rtrim(Lotacao) as Lotacao,
-				    LotacaoSigla,
-				    rtrim(LotacaoCentro) as LotacaoCentro,
-				    LotacaoCodigoFuncao,
-				    rtrim(LotacaoFuncao) as LotacaoFuncao,
-				    rtrim(LotacaoOrgao) as LotacaoOrgao,
-				    LotacaoCodigoCargo,
-				    rtrim(LotacaoCargo) as LotacaoCargo
-	from (
-			-- Busca dados de pessoa física em BDPessoa
-			select p.PesCodigoPessoa as CodigoPessoa, 
-				   u.UsuLogin as LoginPessoa,
-				   p.PesNome as NomePessoa, 
-				   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
-				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
-				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-				   0 as TipoPessoa,  -- Pessoa física,
-				   'SHA1' as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa,
-				   coalesce(p.PesEndereco, df.Endereco) as Endereco,
-				   p.PesComplementoEndereco as ComplementoEndereco,
-				   coalesce(p.PesBairro, df.Bairro) as Bairro,
-				   coalesce(p.PesCidade, df.CidadeEndereco) as Cidade,
-				   coalesce(p.PesUf, df.UFEndereco) as Uf,
-				   coalesce(p.PesCep, df.CEP) as Cep,
-				   coalesce(p.PesRg, df.rgnro) as Rg,
-				   coalesce(p.PesDataNascimento, df.dtnascimento) as DataNascimento,
-				   coalesce(p.PesSexo, df.sexo) as Sexo,
-				   coalesce(p.PesTelefone, df.Telefone) as Telefone,
-				   p.PesCelular as Celular,
-				   coalesce(p.PesDDD, df.DDD) as DDD,
-				   df.MatSipes as Matricula,
-				   lf.CC as Lotacao,
-				   lf.Sigla as LotacaoSigla,
-				   lf.Centro as LotacaoCentro,
-				   lf.Codigo as LotacaoCodigoFuncao,
-				   lf.Funcao as LotacaoFuncao,
-				   '' as LotacaoOrgao,
-				   lf.Cod as LotacaoCodigoCargo,
-				   lf.Cargo as LotacaoCargo
-			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
-						 on u.UsuPesIdPessoa = p.PesCodigoPessoa
-				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-				 join BDPessoa.dbo.TB_Email em
-						 on pfe.PFmEmaCodigo = em.EmaCodigo
-				 left join Sipes.dbo.DadosFuncionais df
-						 on p.PesCodigoPessoa = df.PesCodigoPessoa
-			     left join Sipes.dbo.Contratos c
-                        on df.MatSipes = c.MatSipes and c.DtDesliga >= GETDATE() 
-				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
-						 on df.MatSipes = lf.Sipes
-	) as t_users
-	order by t_users.TipoEmailPessoa
-	".
 
-
-sql_load_users_tipo_aluno() ->	 
-	"select 
-					CodigoPessoa, 
-					lower(rtrim(LoginPessoa)) as LoginPessoa, 
-					rtrim(NomePessoa) as NomePessoa, 
-					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
-					lower(rtrim(EmailPessoa)) as EmailPessoa, 
-					rtrim(SenhaPessoa) as SenhaPessoa,
-					TipoPessoa,
-					PasswdCryptoPessoa,
-					TipoEmailPessoa,
-					1 as ActivePessoa,
-					rtrim(Endereco) as Endereco,
-					rtrim(ComplementoEndereco) as ComplementoEndereco,
-					rtrim(Bairro) as Bairro,
-					rtrim(Cidade) as Cidade,
-					Uf,
-					Cep,
-					Rg,
-					DataNascimento,
-					Sexo,
-					Telefone,
-					Celular,
-					DDD,
-				    Matricula,
-				    rtrim(Lotacao) as Lotacao,
-				    LotacaoSigla,
-				    rtrim(LotacaoCentro) as LotacaoCentro,
-				    LotacaoCodigoFuncao,
-				    rtrim(LotacaoFuncao) as LotacaoFuncao,
-				    rtrim(LotacaoOrgao) as LotacaoOrgao,
-				    LotacaoCodigoCargo,
-				    rtrim(LotacaoCargo) as LotacaoCargo
-	from (
-			-- Busca dados de alunos em BDSiac com AluRA
-			select p.PesCodigoPessoa as CodigoPessoa, 
-				   cast(al.AluRA as varchar(100)) as LoginPessoa,
-				   p.PesNome as NomePessoa, 
-				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
-				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
-				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-				   2 as TipoPessoa,  -- Aluno
-				   null as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa,
-				   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
-				   p.PesComplementoEndereco as ComplementoEndereco,
-				   p.PesBairro as Bairro,
-				   coalesce(p.PesCidade, al.AluEndCidade) as Cidade,
-				   coalesce(p.PesUf, al.AluEndUf) as Uf,
-				   p.PesCep as Cep,
-				   p.PesRg as Rg,
-				   coalesce(p.PesDataNascimento, al.AluDtNasc) as DataNascimento,
-				   p.PesSexo as Sexo,
-				   coalesce(p.PesTelefone, al.AluTelefone) as Telefone,
-				   coalesce(p.PesCelular, al.AluCelular) as Celular,
-				   p.PesDDD as DDD,
-				   al.AluMatricula as Matricula,
-				   null as Lotacao,
-				   null as LotacaoSigla,
-				   null as LotacaoCentro,
-				   null as LotacaoCodigoFuncao,
-				   null as LotacaoFuncao,
-				   null as LotacaoOrgao,
-				   null as LotacaoCodigoCargo,
-				   null as LotacaoCargo
-			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
-						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
-				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-				 join BDPessoa.dbo.TB_Email em
-						 on pfe.PFmEmaCodigo = em.EmaCodigo
-			where al.AluPerSaiUnB = 99999
-	) as t_users
-	order by t_users.TipoEmailPessoa
-	".
-
-
-sql_update_users_tipo_pessoa() ->	 
-	"select 		CodigoPessoa, 
-					lower(rtrim(LoginPessoa)) as LoginPessoa, 
-					rtrim(NomePessoa) as NomePessoa, 
-					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
-					lower(rtrim(EmailPessoa)) as EmailPessoa, 
-					rtrim(SenhaPessoa) as SenhaPessoa,
-					TipoPessoa,
-					PasswdCryptoPessoa,
-					TipoEmailPessoa,
-					1 as ActivePessoa,
-					rtrim(Endereco) as Endereco,
-					rtrim(ComplementoEndereco) as ComplementoEndereco,
-					rtrim(Bairro) as Bairro,
-					rtrim(Cidade) as Cidade,
-					Uf,
-					Cep,
-					Rg,
-					DataNascimento,
-					Sexo,
-					Telefone,
-					Celular,
-					DDD,
-				    Matricula,
-				    rtrim(Lotacao) as Lotacao,
-				    LotacaoSigla,
-				    rtrim(LotacaoCentro) as LotacaoCentro,
-				    LotacaoCodigoFuncao,
-				    rtrim(LotacaoFuncao) as LotacaoFuncao,
-				    rtrim(LotacaoOrgao) as LotacaoOrgao,
-				    LotacaoCodigoCargo,
-				    rtrim(LotacaoCargo) as LotacaoCargo
-	from (
-			-- Busca dados de pessoa física em BDPessoa
-			select p.PesCodigoPessoa as CodigoPessoa, 
-				   u.UsuLogin as LoginPessoa,
-				   p.PesNome as NomePessoa, 
-				   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
-				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
-				   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-				   0 as TipoPessoa,  -- Pessoa física,
-				   'SHA1' as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa,
-				   coalesce(p.PesEndereco, df.Endereco) as Endereco,
-				   p.PesComplementoEndereco as ComplementoEndereco,
-				   coalesce(p.PesBairro, df.Bairro) as Bairro,
-				   coalesce(p.PesCidade, df.CidadeEndereco) as Cidade,
-				   coalesce(p.PesUf, df.UFEndereco) as Uf,
-				   coalesce(p.PesCep, df.CEP) as Cep,
-				   coalesce(p.PesRg, df.rgnro) as Rg,
-				   coalesce(p.PesDataNascimento, df.dtnascimento) as DataNascimento,
-				   coalesce(p.PesSexo, df.sexo) as Sexo,
-				   coalesce(p.PesTelefone, df.Telefone) as Telefone,
-				   p.PesCelular as Celular,
-				   coalesce(p.PesDDD, df.DDD) as DDD,
-				   df.MatSipes as Matricula,
-				   lf.CC as Lotacao,
-				   lf.Sigla as LotacaoSigla,
-				   lf.Centro as LotacaoCentro,
-				   lf.Codigo as LotacaoCodigoFuncao,
-				   lf.Funcao as LotacaoFuncao,
-				   '' as LotacaoOrgao,
-				   lf.Cod as LotacaoCodigoCargo,
-				   lf.Cargo as LotacaoCargo
-			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p
-						 on u.UsuPesIdPessoa = p.PesCodigoPessoa
-				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-				 join BDPessoa.dbo.TB_Email em
-						 on pfe.PFmEmaCodigo = em.EmaCodigo
-				 left join Sipes.dbo.DadosFuncionais df
-						 on p.PesCodigoPessoa = df.PesCodigoPessoa
-			     left join Sipes.dbo.Contratos c
-                        on df.MatSipes = c.MatSipes and c.DtDesliga >= GETDATE() 
-				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
-						 on df.MatSipes = lf.Sipes
-			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
-	) as t_users
-	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
-	".
-	
-sql_update_users_tipo_aluno() ->	 
-	"select 		CodigoPessoa, 
-					lower(rtrim(LoginPessoa)) as LoginPessoa, 
-					rtrim(NomePessoa) as NomePessoa, 
-					rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
-					lower(rtrim(EmailPessoa)) as EmailPessoa, 
-					rtrim(SenhaPessoa) as SenhaPessoa,
-					TipoPessoa,
-					PasswdCryptoPessoa,
-					TipoEmailPessoa,
-					1 as ActivePessoa,
-					rtrim(Endereco) as Endereco,
-					rtrim(ComplementoEndereco) as ComplementoEndereco,
-					rtrim(Bairro) as Bairro,
-					rtrim(Cidade) as Cidade,
-					Uf,
-					Cep,
-					Rg,
-					DataNascimento,
-					Sexo,
-					Telefone,
-					Celular,
-					DDD,
-				    Matricula,
-				    rtrim(Lotacao) as Lotacao,
-				    LotacaoSigla,
-				    rtrim(LotacaoCentro) as LotacaoCentro,
-				    LotacaoCodigoFuncao,
-				    rtrim(LotacaoFuncao) as LotacaoFuncao,
-				    rtrim(LotacaoOrgao) as LotacaoOrgao,
-				    LotacaoCodigoCargo,
-				    rtrim(LotacaoCargo) as LotacaoCargo
-	from (
-			-- Busca dados de alunos em BDSiac com AluRA
-			select p.PesCodigoPessoa as CodigoPessoa, 
-				   cast(al.AluRA as varchar(100)) as LoginPessoa,
-				   p.PesNome as NomePessoa, 
-				   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
-				   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
-				   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-				   2 as TipoPessoa,  -- Aluno
-				   null as PasswdCryptoPessoa,
-				   em.EmaTipo as TipoEmailPessoa,
-				   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
-				   p.PesComplementoEndereco as ComplementoEndereco,
-				   p.PesBairro as Bairro,
-				   coalesce(p.PesCidade, al.AluEndCidade) as Cidade,
-				   coalesce(p.PesUf, al.AluEndUf) as Uf,
-				   p.PesCep as Cep,
-				   p.PesRg as Rg,
-				   coalesce(p.PesDataNascimento, al.AluDtNasc) as DataNascimento,
-				   p.PesSexo as Sexo,
-				   coalesce(p.PesTelefone, al.AluTelefone) as Telefone,
-				   coalesce(p.PesCelular, al.AluCelular) as Celular,
-				   p.PesDDD as DDD,
-				   al.AluMatricula as Matricula,
-				   null as Lotacao,
-				   null as LotacaoSigla,
-				   null as LotacaoCentro,
-				   null as LotacaoCodigoFuncao,
-				   null as LotacaoFuncao,
-				   null as LotacaoOrgao,
-				   null as LotacaoCodigoCargo,
-				   null as LotacaoCargo
-			from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p
-						 on al.AluPesCodigoPessoa = p.PesCodigoPessoa
-				 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe
-						 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa             
-				 join BDPessoa.dbo.TB_Email em
-						 on pfe.PFmEmaCodigo = em.EmaCodigo 
-			where al.AluPerSaiUnB = 99999 and (al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?)
-	) as t_users
-	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
-	".
