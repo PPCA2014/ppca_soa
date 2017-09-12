@@ -47,15 +47,19 @@ find_by_codigo(Codigo) when is_binary(Codigo) ->
 find_by_codigo(Codigo) when is_list(Codigo) ->
 	find_by_codigo(list_to_integer(Codigo));
 find_by_codigo(Codigo) ->
+	io:format("aqui3 ~p\n", [Codigo]),
 	case mnesia:dirty_index_read(client, Codigo, #client.codigo) of
 		[] -> {error, enoent};
-		[Record|_] -> {ok, Record}
+		[Record|_] -> 
+			io:format("aqui4 ~p\n", [Record]),
+			{ok, Record}
 	end.
 	
 
 find_by_codigo_and_secret(Codigo, Secret) ->
 	case find_by_codigo(Codigo) of
 		{ok, Client = #client{secret = CliSecret}} -> 
+			io:format("aqui5 secret ~p  secret2 ~p\n", [CliSecret, Secret]),
 			case CliSecret =:= Secret orelse CliSecret =:= ems_util:criptografia_sha1(Secret)  of
 				true -> {ok, Client};
 				false -> {error, enoent}

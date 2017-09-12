@@ -145,8 +145,21 @@ find_by_cpf(Cpf) ->
 
 
 find_by_name(Name) -> ems_db:find_first(user, [{"name", "==", Name}]).
-	
-find_by_login_and_password(Login, Password) ->
+
+-spec find_by_login_and_password(binary() | list(), binary() | list()) -> {ok, #user{}} | {error, atom()}.	
+find_by_login_and_password(Login, Password)  ->
+	LoginBin = case is_list(Login) of
+					true -> list_to_binary(Login);
+					_ -> Login
+				end,
+	PasswordBin = case is_list(Password) of
+					true -> list_to_binary(Password);
+					_ -> Password
+				end,
+	find_by_login_and_password_(LoginBin, PasswordBin).				
+				
+find_by_login_and_password_(Login, Password) ->
+	io:format("aqui2\n"),
 	case find_by_login(Login) of
 		{ok, User = #user{password = PasswordUser}} -> 
 			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of

@@ -1495,6 +1495,7 @@ parse_basic_authorization_header(_) -> {error, access_denied}.
 	
 -spec parse_bearer_authorization_header(Header :: binary()) -> {ok, binary()} | {error, access_denied}.
 parse_bearer_authorization_header(Header) ->
+	io:format("aqui1\n"),
 	case Header of 
 		<<Bearer:6/binary, _:1/binary, Secret/binary>> ->
 			case Bearer =:= <<"Bearer">> of

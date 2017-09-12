@@ -45,7 +45,7 @@ do_basic_authorization(Service, Request = #request{authorization = <<>>}) -> do_
 do_basic_authorization(Service, Request = #request{authorization = Authorization}) ->
 	case ems_util:parse_basic_authorization_header(Authorization) of
 		{ok, Login, Password} ->
-			case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
+			case ems_user:find_by_login_and_password(Login, Password) of
 				{ok, User} -> do_check_grant_permission(Service, Request, public, User, <<>>, <<>>);
 				_Error -> {error, access_denied}
 			end;
