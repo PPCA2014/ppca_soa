@@ -143,7 +143,7 @@ load_permissions_from_datasource(Datasource, CtrlInsert, #state{sql_load_permiss
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_user_permission_loader load user permissions from database..."),
-				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPermissions(), []) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPermissions, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_permission_loader did not load any user permissions."),
 						ok;
