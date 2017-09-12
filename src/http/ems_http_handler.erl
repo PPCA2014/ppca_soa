@@ -16,7 +16,7 @@
 
 init(CowboyReq, Opts) ->
 	?DEBUG("ems_http_handler new request: ~p.", [CowboyReq]),
-	case ems_http_util:encode_request_cowboy(CowboyReq, self()) of
+	case ems_util:encode_request_cowboy(CowboyReq, self()) of
 		{ok, Request = #request{t1 = T1}} -> 
 			?DEBUG("ems_http_handler delivers the request to the dispatcher."),
 			case ems_dispatcher:dispatch_request(Request) of

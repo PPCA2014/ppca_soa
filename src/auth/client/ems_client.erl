@@ -8,8 +8,8 @@
 
 -module(ems_client).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 -export([insert/1, update/1, all/0, delete/1, 

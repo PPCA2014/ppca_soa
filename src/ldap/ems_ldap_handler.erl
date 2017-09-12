@@ -48,7 +48,7 @@ loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress}) 
 		{ok, Data} ->
 			case inet:peername(Socket) of
 				{ok, {Ip,_Port}} ->
-					case ems_tcp_util:allow_ip_address(Ip, AllowedAddress) of				
+					case ems_util:allow_ip_address(Ip, AllowedAddress) of				
 						true ->
 							case decode_ldap_message(Data) of
 								{ok, LdapMessage} ->

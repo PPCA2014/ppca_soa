@@ -1,4 +1,4 @@
--module(oauth2ems_authorize).
+-module(ems_oauth2_authorize).
 
 -export([execute/1]).
 -export([code_request/1]).
@@ -87,7 +87,7 @@ code_request(Request = #request{authorization = Authorization}) ->
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
     State      = ems_request:get_querystring(<<"state">>, <<>>, Request),
     Scope       = ems_request:get_querystring(<<"scope">>, <<>>,Request),
-    case ems_http_util:parse_basic_authorization_header(Authorization) of
+    case ems_util:parse_basic_authorization_header(Authorization) of
 		{ok, Username, Password} ->
 		    Authz = oauth2:authorize_code_request({Username,list_to_binary(Password)}, ClientId, RedirectUri, Scope, []),
 			case issue_code(Authz) of
@@ -129,7 +129,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 		true -> 
 			case Authorization =/= undefined of
 				true ->
-					case ems_http_util:parse_basic_authorization_header(Authorization) of
+					case ems_util:parse_basic_authorization_header(Authorization) of
 						{ok, Login, Password} ->
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),
@@ -163,7 +163,7 @@ authorization_request(Request) ->
     ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
     %State = ems_request:get_querystring(<<"state">>, <<>>, Request),
     RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
-    Resposta = case oauth2ems_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
+    Resposta = case ems_oauth2_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		{ok,_} -> 	{redirect, ClientId, RedirectUri};
 		Error -> 	Error
 	end,
@@ -178,7 +178,7 @@ refresh_token_request(Request) ->
     ClientSecret = ems_request:get_querystring(<<"client_secret">>, <<>>, Request),
 	Reflesh_token = ems_request:get_querystring(<<"refresh_token">>, <<>>, Request),
 	Scope    = ems_request:get_querystring(<<"scope">>, <<>>, Request),
-	Authorization = oauth2ems_backend:authorize_refresh_token({ClientId, ClientSecret}, Reflesh_token, Scope),
+	Authorization = ems_oauth2_backend:authorize_refresh_token({ClientId, ClientSecret}, Reflesh_token, Scope),
     issue_token(Authorization).  
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
@@ -192,7 +192,7 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 		true -> 
 			case Authorization =/= undefined of
 				true ->
-					case ems_http_util:parse_basic_authorization_header(Authorization) of
+					case ems_util:parse_basic_authorization_header(Authorization) of
 						{ok, Login, Password} ->
 							ClientId2 = list_to_binary(Login),
 							Secret = list_to_binary(Password),

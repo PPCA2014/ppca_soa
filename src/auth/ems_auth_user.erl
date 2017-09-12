@@ -43,7 +43,7 @@ authenticate(Service = #service{authorization = AuthorizationMode},
 do_basic_authorization(Service, Request = #request{authorization = undefined}) -> do_bearer_authorization(Service, Request);
 do_basic_authorization(Service, Request = #request{authorization = <<>>}) -> do_bearer_authorization(Service, Request);
 do_basic_authorization(Service, Request = #request{authorization = Authorization}) ->
-	case ems_http_util:parse_basic_authorization_header(Authorization) of
+	case ems_util:parse_basic_authorization_header(Authorization) of
 		{ok, Login, Password} ->
 			case ems_user:find_by_login_and_password(list_to_binary(Login), list_to_binary(Password)) of
 				{ok, User} -> do_check_grant_permission(Service, Request, public, User, <<>>, <<>>);
@@ -58,7 +58,7 @@ do_bearer_authorization(Service, Request = #request{authorization = undefined}) 
 	AccessToken = ems_request:get_querystring(<<"token">>, <<"access_token">>, <<>>, Request), % a querystring pode ser token ou access_token
 	do_oauth2_check_access_token(AccessToken, Service, Request);
 do_bearer_authorization(Service, Request = #request{authorization = Authorization}) ->	
-	case ems_http_util:parse_bearer_authorization_header(Authorization) of
+	case ems_util:parse_bearer_authorization_header(Authorization) of
 		{ok, AccessToken} -> do_oauth2_check_access_token(AccessToken, Service, Request);
 		Error -> Error
 	end.

@@ -1,4 +1,4 @@
--module(oauth2ems_recurso).
+-module(ems_oauth2_recurso).
 
 -export([execute/1]).
 

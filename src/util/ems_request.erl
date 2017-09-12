@@ -245,7 +245,7 @@ load_from_file_req(Request = #request{url = Url,
 			 };
 		{FSize, MTime} -> 
 			?DEBUG("ems_static_file_service loading file ~p.", [FileName]),
-			MimeType = ems_http_util:mime_type(filename:extension(FileName)),
+			MimeType = ems_util:mime_type(filename:extension(FileName)),
 			ETag = integer_to_binary(erlang:phash2({FSize, MTime}, 16#ffffffff)),
 			LastModified = cowboy_clock:rfc1123(MTime),
 			ExpireDate = ems_util:date_add_minute(Timestamp, ExpiresMinute + 120), % add +120min (2h) para ser horário GMT

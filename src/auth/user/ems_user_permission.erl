@@ -8,8 +8,8 @@
 
 -module(ems_user_permission).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([find_by_id/1, find_by_hash/1, find_by_hash2/1, make_hash/2, has_grant_permission/3]).
 

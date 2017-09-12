@@ -8,8 +8,8 @@
 
 -module(ems_user_perfil).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([find_by_id/1, find_by_user/1]).
 

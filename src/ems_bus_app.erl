@@ -22,7 +22,7 @@ start(_StartType, StartArgs) ->
 			case ems_catalog_loader:start() of
 				ok ->
 					ems_dispatcher:start(),
-					oauth2ems_backend:start(),
+					ems_oauth2_backend:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
 					erlang:send_after(4500, spawn(fun() -> 
 							Conf = ems_config:getConfig(),

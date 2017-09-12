@@ -146,14 +146,14 @@ valida_type_querystring(Type) ->
 
 %% @doc Valida o método do serviço 
 valida_type_service(Type) ->
-	case ems_http_util:is_metodo_suportado(Type) orelse Type =:= <<"KERNEL">> of
+	case ems_util:is_metodo_suportado(Type) orelse Type =:= <<"KERNEL">> of
 		true -> ok;
 		false -> erlang:error(invalid_type_service)
 	end.
 
 valida_url_service(<<"/">>) -> ok;
 valida_url_service(Url) ->
-	case ems_http_util:is_url_valido(Url) andalso is_valid_length(Url, 300) of
+	case ems_util:is_url_valido(Url) andalso is_valid_length(Url, 300) of
 		true -> ok;
 		false -> erlang:error(invalid_url_service)
 	end.
@@ -283,7 +283,7 @@ parse_allowed_address_t(all) -> all;
 parse_allowed_address_t(undefined) -> undefined;
 parse_allowed_address_t(AllowedAddress) ->
 	lists:map(fun(IP) -> 
-					ems_http_util:mask_ipaddress_to_tuple(IP)
+					ems_util:mask_ipaddress_to_tuple(IP)
 			  end, AllowedAddress).
 
 parse_allowed_address(all) -> all;
@@ -298,7 +298,7 @@ parse_tcp_port(<<Port/binary>>) ->
 parse_tcp_port(Port) when is_list(Port) -> 
 	parse_tcp_port(list_to_integer(Port));
 parse_tcp_port(Port) when is_integer(Port) -> 
-	case ems_consist:is_range_valido(Port, ?TCP_PORT_MIN, ?TCP_PORT_MAX) of
+	case ems_util:is_range_valido(Port, ?TCP_PORT_MIN, ?TCP_PORT_MAX) of
 		true -> Port;
 		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
 	end.
@@ -370,7 +370,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 						parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf);	
 					Datasource ->
 						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
-						Authorization = ems_http_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
+						Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
 						OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, H, Conf#config.oauth2_with_check_constraint)),
 						OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, H, false)),
 						Debug = ems_util:parse_bool(maps:get(<<"debug">>, H, false)),

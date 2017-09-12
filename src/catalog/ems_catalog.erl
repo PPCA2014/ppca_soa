@@ -38,7 +38,7 @@ lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) -
 	end.
 
 lookup(Method, Uri) ->
-	case ems_http_util:encode_request(Method, Uri) of
+	case ems_util:encode_request(Method, Uri) of
 		{ok, Request} -> lookup(Request);
 		Error -> Error
 	end.

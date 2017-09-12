@@ -10,8 +10,8 @@
 
 -behavior(gen_server). 
 
--include("../..//include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 %% Server API
 -export([start/1, start_link/1, stop/0, get_datasource/1, last_error/1, notify_use/2, notify_return_pool/1]).
@@ -183,7 +183,7 @@ do_connect(Datasource = #service_datasource{connection = Connection}) ->
 															conn_ref = ConnRef},
 				{ok, Datasource2};
 			{error, {PosixError, _}} -> 
-				ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError)]),
+				ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_util:posix_error_description(PosixError)]),
 				{error, PosixError};
 			{error, Reason} -> 
 				ems_logger:error("ems_odbc_pool_worker invalid odbc connection: ~s. Reason: ~p.", [Connection, Reason]),
@@ -191,7 +191,7 @@ do_connect(Datasource = #service_datasource{connection = Connection}) ->
 		end
 	catch 
 		_Exception:{PosixError2, _} -> 
-			ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_tcp_util:posix_error_description(PosixError2)]),
+			ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_util:posix_error_description(PosixError2)]),
 			{error, PosixError2}
 	end.
 

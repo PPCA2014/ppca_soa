@@ -37,7 +37,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 							tcp_allowed_address_t = AllowedAddress}, 
 		 ParamsMap, 
 		 QuerystringMap} -> 
-			case ems_tcp_util:allow_ip_address(Ip, AllowedAddress) of
+			case ems_util:allow_ip_address(Ip, AllowedAddress) of
 				true ->
 					ContentType = case ContentTypeReq of
 									  undefined -> ContentTypeService;

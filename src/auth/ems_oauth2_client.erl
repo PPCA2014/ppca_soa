@@ -1,4 +1,4 @@
--module(oauth2ems_client).
+-module(ems_oauth2_client).
 
 -export([callback/1]).
 -include("../include/ems_schema.hrl").

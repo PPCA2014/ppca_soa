@@ -507,10 +507,9 @@ sql_load_users_tipo_pessoa() ->
 				 left join Sipes.dbo.DadosFuncionais df
 						 on p.PesCodigoPessoa = df.PesCodigoPessoa
 			     left join Sipes.dbo.Contratos c
-                        on df.MatSipes = c.MatSipes
+                        on df.MatSipes = c.MatSipes and c.DtDesliga >= GETDATE() 
 				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
 						 on df.MatSipes = lf.Sipes
-			where c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL
 	) as t_users
 	order by t_users.TipoEmailPessoa
 	".
@@ -666,10 +665,10 @@ sql_update_users_tipo_pessoa() ->
 				 left join Sipes.dbo.DadosFuncionais df
 						 on p.PesCodigoPessoa = df.PesCodigoPessoa
 			     left join Sipes.dbo.Contratos c
-                        on df.MatSipes = c.MatSipes 
+                        on df.MatSipes = c.MatSipes and c.DtDesliga >= GETDATE() 
 				 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf
 						 on df.MatSipes = lf.Sipes
-			where (c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL) and (u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?)
+			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 	) as t_users
 	order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 	".

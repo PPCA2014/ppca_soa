@@ -2,7 +2,7 @@
 
 -export([onvalidate/2, perfil_by_user/1]).
 
--include("../../include/ems_schema.hrl").
+-include("include/ems_schema.hrl").
 
 onvalidate(Operation, User) ->
 	case unique(Operation, User) of
