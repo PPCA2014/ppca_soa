@@ -24,7 +24,8 @@
 % estado do servidor
 -record(state, {datasource,
 				update_checkpoint,
-				last_update}).
+				last_update,
+				sql_load_clients}).
 
 -define(SERVER, ?MODULE).
 
@@ -62,14 +63,15 @@ resume() ->
 %% gen_server callbacks
 %%====================================================================
  
-init(#service{datasource = Datasource, 
-			  properties = Props}) ->
+init(#service{datasource = Datasource, properties = Props}) ->
 	LastUpdate = ems_db:get_param(<<"ems_client_loader_lastupdate">>),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?CLIENT_LOADER_UPDATE_CHECKPOINT),
+	SqlLoadClients = maps:get(<<"sql_load_clients">>, Props, <<>>),
 	set_force_load_clients_checkpoint(),
 	State = #state{datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,
-				   last_update = LastUpdate},
+				   last_update = LastUpdate,
+				   sql_load_clients = SqlLoadClients},
 	{ok, State, 5000}.
     
 handle_cast(shutdown, State) ->
@@ -142,14 +144,13 @@ code_change(_OldVsn, State, _Extra) ->
 set_force_load_clients_checkpoint() ->
 	erlang:send_after(60000 * 60, self(), check_force_load_clients).
 
-update_or_load_clients(State = #state{datasource = Datasource,
-									  last_update = LastUpdate}) ->
+update_or_load_clients(State = #state{datasource = Datasource, last_update = LastUpdate}) ->
 	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	TimestampStr = ems_util:timestamp_str(),
 	case is_empty() orelse LastUpdate == undefined of
 		true -> 
 			?DEBUG("ems_client_loader checkpoint. operation: load_clients."),
-			case load_clients_from_datasource(Datasource, TimestampStr) of
+			case load_clients_from_datasource(Datasource, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_client_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -159,7 +160,7 @@ update_or_load_clients(State = #state{datasource = Datasource,
 			end;
 		false ->
 			?DEBUG("ems_client_loader checkpoint. operation: update_clients   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
-			case update_clients_from_datasource(Datasource, LastUpdate, TimestampStr) of
+			case update_clients_from_datasource(Datasource, LastUpdate, TimestampStr, State) of
 				ok -> 
 					ems_db:set_param(<<"ems_client_loader_lastupdate">>, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -170,15 +171,12 @@ update_or_load_clients(State = #state{datasource = Datasource,
 	end.
 
 
-load_clients_from_datasource(Datasource, CtrlInsert) -> 
+load_clients_from_datasource(Datasource, CtrlInsert, #state{sql_load_clients = SqlLoadClients}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_client_loader load clients from database..."),
-				Result = case ems_odbc_pool:param_query(Datasource2, 
-														sql_load_clients(), 
-														[], 
-														?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadClients, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_client_loader did not load any clients."),
 						ok;
@@ -213,17 +211,16 @@ load_clients_from_datasource(Datasource, CtrlInsert) ->
 			{error, Reason3}
 	end.
 
-update_clients_from_datasource(Datasource, LastUpdate, CtrlUpdate) -> 
+update_clients_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_load_clients = SqlLoadClients}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				?DEBUG("ems_client_loader got a connection ~p to update clients.", [Datasource#service_datasource.id]),
-				Sql = sql_load_clients(),
 				%{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				%DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 				Params = [],
-				Result = case ems_odbc_pool:param_query(Datasource2, Sql, Params, ?MAX_TIME_ODBC_QUERY) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadClients, Params) of
 					{_,_,[]} -> 
 						?DEBUG("ems_client_loader did not update any clients."),
 						ok;
@@ -292,16 +289,4 @@ update_clients([{Codigo, Name, Secret, RedirectUri, Description, Active}|T], Cou
 	mnesia:write(Client2),
 	?DEBUG("ems_client_loader update client: ~p.\n", [Client2]),
 	update_clients(T, Count+1, CtrlUpdate).
-
-
-sql_load_clients() ->	 
-	"select s.SisId as Codigo,
-       s.SisSistema as Name,
-       s.SisOrgao as Secret,
-       s.SisUrl as RedirectUri,
-       s.SisDescricao as Description,
-       s.SisSituacao as Active
-	from BDAcesso.dbo.TB_Sistemas s
-	order by s.SisSistema
-	".
 
