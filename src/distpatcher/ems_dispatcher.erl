@@ -199,74 +199,53 @@ dispatch_service_work(Request = #request{rid = Rid,
 			NodeBin = erlang:atom_to_binary(Node, utf8),
 			ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
 			receive 
-				{Code, RidRemote, {Reason, ResponseData = <<H1:25/binary, _H2:2/binary, ResponseDataBin/binary>> }} when RidRemote == Rid  -> 
-					case H1 =:= <<172,237,0,5,117,114,0,2,91,66,172,243,23,248,6,8,84,224,2,0,0,120,112,0,0>> of
+				{Code, RidRemote, {Reason, ResponseDataReceived}} when RidRemote == Rid  -> 
+					AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+					case byte_size(ResponseDataReceived) >= 27 of
 						true ->
-							AllowResultCache = Reason =:= ok andalso Type =:= "GET",
-							Request2 = Request#request{service = Service,
-													   params_url = ParamsMap,
-													   querystring_map = QuerystringMap,
-													   content_type = ContentType,
-													   code = Code,
-													   reason = Reason,
-													   response_header = #{<<"ems-node">> => NodeBin,
-																		   <<"ems-catalog">> => ServiceName,
-																		   <<"ems-owner">> => ServiceOwner,
-																		   <<"content-type">> => ContentType,
-																		   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
-													   response_data = ResponseDataBin,
-													   latency = ems_util:get_milliseconds() - T1},
-							case dispatch_middleware_function(Request2, onrequest) of
-								{ok, Request3} ->
-									case AllowResultCache of
-										true -> ems_dispatcher_cache:add(ReqHash, T1, Request3, ResultCache);
-										false -> ems_dispatcher_cache:invalidate()
-									end,
-									{Reason, request, Request3};
-								{error, Reason} = Error ->
-									{error, request, Request#request{code = 500,
-																	 reason = Reason,
-																	 response_header = #{<<"ems-node">> => NodeBin,
-																						 <<"ems-catalog">> => ServiceName,
-																						 <<"ems-owner">> => ServiceOwner},
-																	 response_data = ems_schema:to_json(Error),
-																	 latency = ems_util:get_milliseconds() - T1}}
+							case ResponseDataReceived of
+								% Os dados recebidos do Java pode ser um array de bytes que possui um "header especial" que precisa ser removido do verdadeiro conteúdo
+								<<HeaderJavaSerializable:25/binary, _H2:2/binary, DataBin/binary>> -> 
+									case HeaderJavaSerializable =:= <<172,237,0,5,117,114,0,2,91,66,172,243,23,248,6,8,84,224,2,0,0,120,112,0,0>> of
+										true -> ResponseData = DataBin;
+										false ->ResponseData = ResponseDataReceived
+									end;
+								_ -> ResponseData = ResponseDataReceived
 							end;
-						_ ->
-							AllowResultCache = Reason =:= ok andalso Type =:= "GET",
-							Request2 = Request#request{service = Service,
-													   params_url = ParamsMap,
-													   querystring_map = QuerystringMap,
-													   content_type = ContentType,
-													   code = Code,
-													   reason = Reason,
-													   response_header = #{<<"ems-node">> => NodeBin,
-																		   <<"ems-catalog">> => ServiceName,
-																		   <<"ems-owner">> => ServiceOwner,
-																		   <<"content-type">> => ContentType,
-																		   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
-													   response_data = ResponseData,
-													   latency = ems_util:get_milliseconds() - T1},
-							case dispatch_middleware_function(Request2, onrequest) of
-								{ok, Request3} ->
-									case AllowResultCache of
-										true -> ems_dispatcher_cache:add(ReqHash, T1, Request3, ResultCache);
-										false -> ems_dispatcher_cache:invalidate()
-									end,
-									{Reason, request, Request3};
-								{error, Reason} = Error ->
-									{error, request, Request#request{code = 500,
-																	 reason = Reason,
-																	 response_header = #{<<"ems-node">> => NodeBin,
-																						 <<"ems-catalog">> => ServiceName,
-																						 <<"ems-owner">> => ServiceOwner},
-																	 response_data = ems_schema:to_json(Error),
-																	 latency = ems_util:get_milliseconds() - T1}}
-							end
-						end;
+						false -> ResponseData = ResponseDataReceived
+					end,
+					Request2 = Request#request{service = Service,
+											   params_url = ParamsMap,
+											   querystring_map = QuerystringMap,
+											   content_type = ContentType,
+											   code = Code,
+											   reason = Reason,
+											   response_header = #{<<"ems-node">> => NodeBin,
+																   <<"ems-catalog">> => ServiceName,
+																   <<"ems-owner">> => ServiceOwner,
+																   <<"content-type">> => ContentType,
+																   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+											   response_data = ResponseData,
+											   latency = ems_util:get_milliseconds() - T1},
+					case dispatch_middleware_function(Request2, onrequest) of
+						{ok, Request3} ->
+							case AllowResultCache of
+								true -> ems_dispatcher_cache:add(ReqHash, T1, Request3, ResultCache);
+								false -> ems_dispatcher_cache:invalidate()
+							end,
+							{Reason, request, Request3};
+						{error, Reason} = Error ->
+							{error, request, Request2#request{code = 500,
+															 reason = Reason,
+															 response_data = ems_schema:to_json(Error)}}
+					end;
 				Msg -> 
 					ems_logger:error("ems_dispatcher received invalid message ~p.", [Msg]), 
 					{error, request, Request#request{code = 500,
+													 service = Service,
+													 params_url = ParamsMap,
+													 querystring_map = QuerystringMap,
+													 content_type = ContentType,
 													 reason = einvalid_rec_message,
 													 response_header = #{<<"ems-node">> => NodeBin,
 																		 <<"ems-catalog">> => ServiceName,
@@ -276,6 +255,10 @@ dispatch_service_work(Request = #request{rid = Rid,
 				after Timeout ->
 					?DEBUG("ems_dispatcher received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
 					{error, request, Request#request{code = 503,
+													 service = Service,
+													 params_url = ParamsMap,
+													 querystring_map = QuerystringMap,
+													 content_type = ContentType,
 													 reason = etimeout_service,
 													 response_header = #{<<"ems-node">> => NodeBin,
 																		 <<"ems-catalog">> => ServiceName,
@@ -283,9 +266,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 													 response_data = ems_schema:to_json({error, etimeout_service}),
 													 latency = ems_util:get_milliseconds() - T1}}
 			end;
-		Error ->  
-			ems_logger:warn("ems_dispatcher could not get a node for request ~p.", [Url]),
-			Error
+		Error ->  Error
 	end.
 
 
