@@ -627,7 +627,7 @@ utf8_string_win(Text) when is_list(Text) ->
 utf8_string_win(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_win(Text) ->
 	try
-		case ems_util:check_encoding_bin(Text) of
+		case check_encoding_bin(Text) of
 			utf8 -> normalize_field_utf8(Text);
 			latin1 -> normalize_field_utf8(Text);
 			Other -> Other
@@ -647,7 +647,7 @@ utf8_string_linux(Text) when is_list(Text) ->
 utf8_string_linux(Text) when erlang:is_number(Text) -> integer_to_binary(Text);
 utf8_string_linux(Text) ->
 	try
-		case ems_util:check_encoding_bin(Text) of
+		case check_encoding_bin(Text) of
 			utf8 -> normalize_field_utf8(Text);
 			latin1 -> normalize_field_utf8(Text);
 			Other -> Other
@@ -970,7 +970,7 @@ posix_error_description(Code) -> atom_to_list(Code).
 -spec allow_ip_address(tuple(), atom() | tuple()) -> boolean().
 allow_ip_address(_, all) -> true;
 allow_ip_address({127, 0, _,_}, _) -> true;
-allow_ip_address(Ip, AllowedAddress) -> ems_util:match_ip_address(AllowedAddress, Ip).
+allow_ip_address(Ip, AllowedAddress) -> match_ip_address(AllowedAddress, Ip).
 
 
 %% @doc Retorna o mime-type do arquivo
@@ -1160,11 +1160,11 @@ mime_type(_) -> <<"application/octet-stream">>.
 encode_request_cowboy(CowboyReq, WorkerSend) ->
 	try
 		Url = cowboy_req:path(CowboyReq),
-		Url2 = ems_util:remove_ult_backslash_url(binary_to_list(Url)),
+		Url2 = remove_ult_backslash_url(binary_to_list(Url)),
 		Uri = iolist_to_binary(cowboy_req:uri(CowboyReq)),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
-		T1 = ems_util:get_milliseconds(),
+		T1 = get_milliseconds(),
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
 		{Ip, _} = cowboy_req:peer(CowboyReq),
 		IpBin = list_to_binary(inet_parse:ntoa(Ip)),
@@ -1224,7 +1224,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
 		Referer = cowboy_req:header(<<"referer">>, CowboyReq),
-		{Rowid, Params_url} = ems_util:hashsym_and_params(Url2),
+		{Rowid, Params_url} = hashsym_and_params(Url2),
 		Request = #request{
 			rid = RID,
 			rowid = Rowid,
@@ -1334,8 +1334,8 @@ parse_querystring(Q) ->
 	Q1 = httpd:parse_query(Q),
 	Q2 = [{iolist_to_binary(P), 
 		   list_to_binary(case V of
-										[34|_] -> ems_util:remove_quoted_str(ems_util:utf8_list_to_string(V));
-										_  -> ems_util:utf8_list_to_string(V)
+										[34|_] -> remove_quoted_str(utf8_list_to_string(V));
+										_  -> utf8_list_to_string(V)
 						    end)}  || {P,V} <- Q1],
 	maps:from_list(Q2).
 
@@ -1381,7 +1381,7 @@ decode_http_request(RequestBin) ->
 decode_payload_as_json(undefined) -> #{};
 decode_payload_as_json(<<>>) -> #{};
 decode_payload_as_json(PayloadBin) ->
-	case ems_util:json_decode_as_map(PayloadBin) of
+	case json_decode_as_map(PayloadBin) of
 		{ok, PayloadMap} -> PayloadMap;
 		{error, _Reason} -> erlang:error(invalid_payload)
 	end.
@@ -1495,7 +1495,6 @@ parse_basic_authorization_header(_) -> {error, access_denied}.
 	
 -spec parse_bearer_authorization_header(Header :: binary()) -> {ok, binary()} | {error, access_denied}.
 parse_bearer_authorization_header(Header) ->
-	io:format("aqui1\n"),
 	case Header of 
 		<<Bearer:6/binary, _:1/binary, Secret/binary>> ->
 			case Bearer =:= <<"Bearer">> of

@@ -135,7 +135,6 @@ get_redirection_uri(ClientId, _) ->
 verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
     case get_client_identity(ClientId,[]) of
         {ok,{_, #client{redirect_uri = RedirUri}}} -> 
-			io:format("aqui6 ~p ~p\n", [RedirUri, ClientUri]),
 			case ClientUri =:= RedirUri of
 				true ->	{ok,[]};
 				_ -> {error, unauthorized_client}
