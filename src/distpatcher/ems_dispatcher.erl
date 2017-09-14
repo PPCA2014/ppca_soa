@@ -189,7 +189,10 @@ dispatch_service_work(Request = #request{rid = Rid,
 				_ -> 
 					UserJson = ems_schema:to_json(User)
 			end,
-			Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, ClientJson, UserJson, undefined, Scope, undefined, undefined}, self()},
+			Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, 
+					ClientJson, UserJson, ems_catalog:get_metadata_json(Service), Scope, 
+					undefined, undefined}, self()
+				  },
 			{Module, Node} ! Msg,
 			NodeBin = erlang:atom_to_binary(Node, utf8),
 			ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
