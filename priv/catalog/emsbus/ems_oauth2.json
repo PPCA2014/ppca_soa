@@ -197,6 +197,25 @@
 	},
 	
 	{
+		"name" : "/resource",
+		"comment": "Get resourge",
+		"owner": "auth_user",
+		"version": "1.0.0",
+		"service" : "ems_oauth2_recurso:execute",
+		"url": "/resource",
+		"type": "POST",
+		"authorization": "oauth2",
+		"querystring": [
+			{
+				"name": "token",
+				"type": "string",
+				"comment": "Token de acesso"
+			}
+		],
+		"lang" : "erlang"
+	},
+
+	{
 		"name" : "/recurso",
 		"comment": "Obter o recurso",
 		"owner": "auth_user",
