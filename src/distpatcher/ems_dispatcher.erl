@@ -189,7 +189,10 @@ dispatch_service_work(Request = #request{rid = Rid,
 				_ -> 
 					UserJson = ems_schema:to_json(User)
 			end,
-			Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, ClientJson, UserJson, undefined, Scope, undefined, undefined}, self()},
+			Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, 
+					ClientJson, UserJson, ems_catalog:get_metadata_json(Service), Scope, 
+					undefined, undefined}, self()
+				  },
 			{Module, Node} ! Msg,
 			NodeBin = erlang:atom_to_binary(Node, utf8),
 			ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
@@ -198,24 +201,17 @@ dispatch_service_work(Request = #request{rid = Rid,
 					AllowResultCache = Reason =:= ok andalso Type =:= "GET",
 					case byte_size(ResponseDataReceived) >= 27 of
 						true ->
-							io:format("aqui0  \n"),
 							case ResponseDataReceived of
 								% Os dados recebidos do Java pode ser um array de bytes que possui um "header especial" que precisa ser removido do verdadeiro conteúdo
 								<<HeaderJavaSerializable:25/binary, _H2:2/binary, DataBin/binary>> -> 
 									case HeaderJavaSerializable =:= <<172,237,0,5,117,114,0,2,91,66,172,243,23,248,6,8,84,224,2,0,0,120,112,0,0>> of
-										true -> io:format("aqui1  \n"),
-											ResponseData = DataBin;
-										false ->
-										io:format("aqui2  \n"),	
-										 ResponseData = ResponseDataReceived
+										true -> ResponseData = DataBin;
+										false -> ResponseData = ResponseDataReceived
 									end;
 								_ -> ResponseData = ResponseDataReceived
 							end;
-						false ->
-						io:format("aqui3  \n"),
-						 ResponseData = ResponseDataReceived
+						false -> ResponseData = ResponseDataReceived
 					end,
-					io:format("--->\n"),
 					Request2 = Request#request{service = Service,
 											   params_url = ParamsMap,
 											   querystring_map = QuerystringMap,
