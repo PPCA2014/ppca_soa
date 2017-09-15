@@ -24,6 +24,7 @@
 #
 ########################################################################################################
 
+
 VERSION_SCRIPT="1.0.0"
 SKIP_DEPS="false"
 SKIP_CLEAN="false"
@@ -32,12 +33,12 @@ KEEP_DB="false"
 # Imprime na tela a ajuda do comando
 help() {
 	echo
-	echo "How to use: sudo ./build.sh"
+	echo "How to use: ./build.sh  --skip-deps --skip_clean  "
 	echo ""
 	echo "Additional parameters:"
-	echo "  --keep_db                 -> does not delete the priv/db folder"
-	echo "  --skip_deps               -> skip rebar deps"
-	echo "  --skip_clean              -> skip rebar clean"
+	echo "  --keep-db       -> does not delete the priv/db folder"
+	echo "  --skip-dep      -> skip rebar deps"
+	echo "  --skip-clean    -> skip rebar clean"
 	echo
 	exit 1
 }
@@ -47,14 +48,19 @@ echo "|_)   o| _|   |_|_)|  /\ |\ |/__|\/|(_       "
 echo "|_)|_|||(_|   |_| \|_/--\| \|\_||  |__)  ooo "
                                              
 
+# check erlagn exists
+echo
+erl -version 2>&1 /dev/null || "Oops, you should install erlang first !!!"
+echo
+
 # Read command line parameters
 for P in $*; do
 	if [[ "$P" =~ ^--.+$ ]]; then
-		if [ "$P" = "--skip_deps" ]; then
+		if [[ "$P" =~ --skip[\_-]deps ]]; then
 			SKIP_DEPS="true"
-		elif [ "$P" = "--skip_clean" ]; then
+		elif [[ "$P" =~ --skip[\_-]clean ]]; then
 			SKIP_CLEAN="true"
-		elif [ "$P" = "--keep_db" ]; then
+		elif [[ "$P" =~ --keep[\_-]db ]]; then
 			KEEP_DB="true"
 		elif [ "$P" = "--help" ]; then
 			help
