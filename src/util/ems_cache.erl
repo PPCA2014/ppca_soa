@@ -17,7 +17,7 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3]).
 
--export([new/1, get/4, get/5, flush/1, flush/2, flush_future/3, flush_future/4]).
+-export([new/1, get/4, get/5, flush/1, flush/2, flush_future/3, flush_future/4, add/4]).
 
 %  Armazena o estado do service. 
 -record(state, {}). 
@@ -145,3 +145,8 @@ get(CacheName, LifeTime, Key, FunResult, FunAfterFlush) ->
 		  V;
 		[{Key, R}] -> R
 	end.
+
+add(CacheName, LifeTime, Key, Value) ->
+  ets:insert(CacheName, {Key, Value}),
+  flush_future(CacheName, LifeTime, Key).
+  

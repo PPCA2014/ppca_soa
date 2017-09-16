@@ -1166,100 +1166,104 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Timestamp = calendar:local_time(),
 		T1 = get_milliseconds(),
 		Method = binary_to_list(cowboy_req:method(CowboyReq)),
-		{Ip, _} = cowboy_req:peer(CowboyReq),
-		IpBin = list_to_binary(inet_parse:ntoa(Ip)),
-		Host = cowboy_req:host(CowboyReq),
-		Version = cowboy_req:version(CowboyReq),
-		ContentType = cowboy_req:header(<<"content-type">>, CowboyReq),
-		ContentLength = cowboy_req:body_length(CowboyReq),
-		QuerystringBin = cowboy_req:qs(CowboyReq),
-		ProtocolBin = cowboy_req:scheme(CowboyReq),
-		Protocol = parse_protocol(ProtocolBin),
-		Port = cowboy_req:port(CowboyReq),
-		case QuerystringBin of
-			<<>> -> QuerystringMap = #{};
-			_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
-		end,
-		case ContentLength > 0 of
+		case is_metodo_suportado(Method) of
 			true ->
-				case ContentType of
-					<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
-						ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
-						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
-						PayloadMap = maps:from_list(Payload),
-						QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
-					<<"application/x-www-form-urlencoded">> ->
-						ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
-						{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
-						PayloadMap = maps:from_list(Payload),
-						QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
-					<<"application/json">> ->
-						ContentType2 = <<"application/json">>,
-						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-						PayloadMap = decode_payload_as_json(Payload),
-						QuerystringMap2 = QuerystringMap;
-					<<"application/xml">> ->
-						ContentType2 = <<"application/xml">>,
-						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-						PayloadMap = decode_payload_as_xml(Payload),
-						QuerystringMap2 = QuerystringMap;
-					_ -> 
+				{Ip, _} = cowboy_req:peer(CowboyReq),
+				IpBin = list_to_binary(inet_parse:ntoa(Ip)),
+				Host = cowboy_req:host(CowboyReq),
+				Version = cowboy_req:version(CowboyReq),
+				ContentType = cowboy_req:header(<<"content-type">>, CowboyReq),
+				ContentLength = cowboy_req:body_length(CowboyReq),
+				QuerystringBin = cowboy_req:qs(CowboyReq),
+				ProtocolBin = cowboy_req:scheme(CowboyReq),
+				Protocol = parse_protocol(ProtocolBin),
+				Port = cowboy_req:port(CowboyReq),
+				case QuerystringBin of
+					<<>> -> QuerystringMap = #{};
+					_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
+				end,
+				case ContentLength > 0 of
+					true ->
+						case ContentType of
+							<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
+								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+								PayloadMap = maps:from_list(Payload),
+								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
+							<<"application/x-www-form-urlencoded">> ->
+								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+								PayloadMap = maps:from_list(Payload),
+								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
+							<<"application/json">> ->
+								ContentType2 = <<"application/json">>,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = decode_payload_as_json(Payload),
+								QuerystringMap2 = QuerystringMap;
+							<<"application/xml">> ->
+								ContentType2 = <<"application/xml">>,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = decode_payload_as_xml(Payload),
+								QuerystringMap2 = QuerystringMap;
+							_ -> 
+								ContentType2 = ContentType,						
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = #{},
+								QuerystringMap2 = QuerystringMap
+						end;
+					false ->
 						ContentType2 = ContentType,						
-						{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+						Payload = <<>>,
 						PayloadMap = #{},
 						QuerystringMap2 = QuerystringMap
-				end;
-			false ->
-				ContentType2 = ContentType,						
-				Payload = <<>>,
-				PayloadMap = #{},
-				QuerystringMap2 = QuerystringMap
-		end,
-		Accept = cowboy_req:header(<<"accept">>, CowboyReq),
-		Accept_Encoding = cowboy_req:header(<<"accept-encoding">>, CowboyReq),
-		User_Agent = cowboy_req:header(<<"user-agent">>, CowboyReq),
-		Cache_Control = cowboy_req:header(<<"cache-control">>, CowboyReq),
-		Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
-		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
-		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
-		ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
-		Referer = cowboy_req:header(<<"referer">>, CowboyReq),
-		{Rowid, Params_url} = hashsym_and_params(Url2),
-		Request = #request{
-			rid = RID,
-			rowid = Rowid,
-			type = Method,
-			uri = Uri,
-			url = Url2,
-			version = Version,
-			querystring = QuerystringBin,
-			querystring_map = QuerystringMap2,
-			params_url = Params_url,
-			content_length = ContentLength,
-			content_type = ContentType2,
-			accept = Accept,
-			user_agent = User_Agent,
-			accept_encoding = Accept_Encoding,
-			cache_control = Cache_Control,
-			ip = Ip,
-			ip_bin = IpBin,
-			host = Host,
-			payload = Payload, 
-			payload_map = PayloadMap,
-			timestamp = Timestamp,
-			authorization = Authorization,
-			worker_send = WorkerSend,
-			if_modified_since = IfModifiedSince,
-			if_none_match = IfNoneMatch,
-			protocol = Protocol,
-			protocol_bin = ProtocolBin,
-			port = Port,
-			result_cache = false,
-			t1 = T1,
-			req_hash = ReqHash,
-			referer = Referer
-		},	
-		{ok, Request}
+				end,
+				Accept = cowboy_req:header(<<"accept">>, CowboyReq),
+				Accept_Encoding = cowboy_req:header(<<"accept-encoding">>, CowboyReq),
+				User_Agent = cowboy_req:header(<<"user-agent">>, CowboyReq),
+				Cache_Control = cowboy_req:header(<<"cache-control">>, CowboyReq),
+				Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
+				IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
+				IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
+				ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
+				Referer = cowboy_req:header(<<"referer">>, CowboyReq),
+				{Rowid, Params_url} = hashsym_and_params(Url2),
+				Request = #request{
+					rid = RID,
+					rowid = Rowid,
+					type = Method,
+					uri = Uri,
+					url = Url2,
+					version = Version,
+					querystring = QuerystringBin,
+					querystring_map = QuerystringMap2,
+					params_url = Params_url,
+					content_length = ContentLength,
+					content_type = ContentType2,
+					accept = Accept,
+					user_agent = User_Agent,
+					accept_encoding = Accept_Encoding,
+					cache_control = Cache_Control,
+					ip = Ip,
+					ip_bin = IpBin,
+					host = Host,
+					payload = Payload, 
+					payload_map = PayloadMap,
+					timestamp = Timestamp,
+					authorization = Authorization,
+					worker_send = WorkerSend,
+					if_modified_since = IfModifiedSince,
+					if_none_match = IfNoneMatch,
+					protocol = Protocol,
+					protocol_bin = ProtocolBin,
+					port = Port,
+					result_cache = false,
+					t1 = T1,
+					req_hash = ReqHash,
+					referer = Referer
+				},	
+				{ok, Request};
+			false -> erlang:error(ehttp_unsupported_verb)
+		end
 	catch
 		_Exception:Reason -> 
 			ems_logger:error("ems_http_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
@@ -1425,17 +1429,19 @@ is_content_length_valido(_) -> true.
 
 
 %% @doc Retorna booleano se o método é suportado pelo servidor
--spec is_metodo_suportado(binary()) -> boolean().
+-spec is_metodo_suportado(binary() | string()) -> boolean().
 is_metodo_suportado(<<"GET">>) -> true;
 is_metodo_suportado(<<"POST">>) -> true;
 is_metodo_suportado(<<"PUT">>) -> true;
 is_metodo_suportado(<<"DELETE">>) -> true;
 is_metodo_suportado(<<"OPTIONS">>) -> true;
+is_metodo_suportado(<<"HEAD">>) -> true;
 is_metodo_suportado("GET") -> true;
 is_metodo_suportado("POST") -> true;
 is_metodo_suportado("PUT") -> true;
 is_metodo_suportado("DELETE") -> true;
 is_metodo_suportado("OPTIONS") -> true;
+is_metodo_suportado("HEAD") -> true;
 is_metodo_suportado(_) -> false.
 
 %% @doc Indica se a URL é valida

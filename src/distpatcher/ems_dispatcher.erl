@@ -16,16 +16,24 @@
 
 
 start() -> 
-	ets:new(ctrl_node_dispatch, [set, named_table, public]),
-	ems_dispatcher_cache:start().
+	ems_cache:new(ets_result_cache_get),
+	ets:new(ctrl_node_dispatch, [set, named_table, public]).
+
+
+check_result_cache(ReqHash, Timestamp2) ->
+	case ets:lookup(ets_result_cache_get, ReqHash) of
+		[] -> false; 
+		[{_, {Timestamp, _, ResultCache}}] when Timestamp2 - Timestamp > ResultCache ->	false;
+		[{_, {_, Request, _}}] -> {true, Request}
+	end.
 
 dispatch_request(Request = #request{req_hash = ReqHash, 
-								  url = Url,
-								  ip = Ip,
-								  ip_bin = IpBin,
-								  content_type = ContentTypeReq,
-								  type = Method,
-								  t1 = T1}) -> 
+					 			    url = Url,
+								    ip = Ip,
+								    ip_bin = IpBin,
+								    content_type = ContentTypeReq,
+								    type = Method,
+								    t1 = T1}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	RequestLookup = case Method of
 						"OPTIONS" -> Request#request{type = "GET"};
@@ -64,7 +72,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								"GET" ->
-									case ems_dispatcher_cache:lookup(ReqHash, T1) of
+									case check_result_cache(ReqHash, T1) of
 										{true, RequestCache} -> 
 											?DEBUG("ems_dispatcher lookup request in cache. ReqHash: ~p.", [ReqHash]),
 											{ok, request, Request2#request{result_cache = true,
@@ -121,7 +129,6 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 
 
 dispatch_service_work(Request = #request{type = Type,
-										 req_hash = ReqHash,
 										 t1 = T1},
 					 _Service = #service{name = ServiceName,
 										 owner = ServiceOwner,
@@ -138,26 +145,10 @@ dispatch_service_work(Request = #request{type = Type,
 																  <<"ems-owner">> => ServiceOwner,
 																  <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
 								latency = ems_util:get_milliseconds() - T1},
-	case dispatch_middleware_function(Request4, onrequest) of
-		{ok, Request5} ->
-			case AllowResultCache of
-				true -> ems_dispatcher_cache:add(ReqHash, T1, Request5, ResultCache);
-				false -> ems_dispatcher_cache:invalidate()
-			end,
-			{Reason, request, Request5};
-		{error, Reason} = Error ->
-			{error, request, Request#request{code = 500,
-											 reason = Reason,
-											 response_header = #{<<"ems-node">> => node_binary(),
-																 <<"ems-catalog">> => ServiceName,
-																 <<"ems-owner">> => ServiceOwner},
-											 response_data = ems_schema:to_json(Error),
-											 latency = ems_util:get_milliseconds() - T1}}
-	end;
+	dispatch_middleware_function(Request4, AllowResultCache, Reason);
 dispatch_service_work(Request = #request{rid = Rid,
 										  type = Type,
 										  url = Url,
-										  req_hash = ReqHash,
 										  payload = Payload,
 										  t1 = T1,
 										  client = Client,
@@ -225,18 +216,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 																   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
 											   response_data = ResponseData,
 											   latency = ems_util:get_milliseconds() - T1},
-					case dispatch_middleware_function(Request2, onrequest) of
-						{ok, Request3} ->
-							case AllowResultCache of
-								true -> ems_dispatcher_cache:add(ReqHash, T1, Request3, ResultCache);
-								false -> ems_dispatcher_cache:invalidate()
-							end,
-							{Reason, request, Request3};
-						{error, Reason} = Error ->
-							{error, request, Request2#request{code = 500,
-															 reason = Reason,
-															 response_data = ems_schema:to_json(Error)}}
-					end;
+					dispatch_middleware_function(Request2, AllowResultCache, Reason);
 				Msg -> 
 					ems_logger:error("ems_dispatcher received invalid message ~p.", [Msg]), 
 					{error, request, Request#request{code = 500,
@@ -266,7 +246,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 			end;
 		Error ->  Error
 	end.
-
+		
 
 get_work_node('', _, _, _, _) -> {ok, node()};
 get_work_node([], _, _, _, _) -> {error, eunavailable_service};
@@ -311,23 +291,44 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 -spec node_binary() -> binary().
 node_binary() -> erlang:atom_to_binary(node(), utf8).
 
--spec dispatch_middleware_function(#request{}, atom()) -> {ok, #request{}} | {error, atom()}.
-dispatch_middleware_function(Req = #request{service = #service{middleware = undefined}}, _) -> {ok, Req};
-dispatch_middleware_function(Req = #request{service = #service{middleware = Middleware}}, Function) ->
+-spec dispatch_middleware_function(#request{}, boolean(), atom()) -> {ok, request, #request{}} | {error, request, #request{}}.
+dispatch_middleware_function(Request = #request{req_hash = ReqHash,
+												t1 = T1,
+												service = Service = #service{middleware = Middleware,
+																			 result_cache = ResultCache}}, 
+							 AllowResultCache,
+							 Reason) ->
 	try
-		case code:ensure_loaded(Middleware) of
-			{module, _} ->
-				case erlang:function_exported(Middleware, Function, 1) of
-					true -> apply(Middleware, Function, [Req]);
-					false -> {ok, Req}
-				end;
-			_Error -> 
-				ems_logger:error("ems_dispatcher does not load invalid middleware ~p.", [Middleware]),
-				{error, einvalid_middleware}
+		case Middleware of 
+			undefined -> Result = {ok, Request};
+			_ ->
+				case code:ensure_loaded(Middleware) of
+					{module, _} ->
+						Result = case erlang:function_exported(Middleware, onrequest, 1) of
+									true -> apply(Middleware, onrequest, [Request]);
+									false -> {ok, Request}
+								 end;
+					_ ->  Result = {error, einvalid_middleware}
+				end
+		end,
+		case Result of
+			{ok, Request2} ->
+				case AllowResultCache of
+					true -> ems_cache:add(ets_result_cache_get, ResultCache, ReqHash, {T1, Request2, ResultCache});
+					false -> ems_cache:flush(ets_result_cache_get)
+				end,
+				{Reason, request, Request2};
+			{error, Reason2} = Error ->
+				{error, request, Request#request{code = 500,
+												  reason = Reason2,
+												  service = Service,
+												  response_data = ems_schema:to_json(Error)}}
 		end
 	catch 
 		_Exception:Error2 -> 
-			ems_logger:error("ems_dispatcher invoque middleware ~p:~p with error. Reason: ~p.", [Middleware, Function, Error2]),
-			{error, emiddleware_exception}
+			ems_logger:error("ems_dispatcher middleware ~p:~p exception. Reason: ~p.", [Middleware, onrequest, Error2]),
+			{error, request, Request#request{code = 500,
+											  reason = emiddleware_exception,
+											  service = Service,
+											  response_data = ems_schema:to_json(Error2)}}
 	end.
-	
