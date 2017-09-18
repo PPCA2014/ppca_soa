@@ -98,6 +98,7 @@
 		 criptografia_sha1/1,
 		 head_file/2,
 		 replace_all_vars/2,
+		 parse_path/2,
 		 to_utf8/1,
 		 is_letter/1,
 		 is_letter_lower/1,
@@ -707,6 +708,46 @@ replace_all_vars(Subject, []) -> Subject;
 replace_all_vars(Subject, [{Key, Value}|VarTail]) -> 
 	NewSubject = replace(Subject, "{{ "++ binary_to_list(Key) ++ " }}", Value),
 	replace_all_vars(NewSubject, VarTail).
+
+
+% Process the path "~" and "." wildcards and variable path. Return path
+-spec parse_path(string() | binary(), list(tuple())) -> string().
+parse_path(<<>>, _) -> undefined;
+parse_path(Path, StaticFilePathList) when is_binary(Path) ->
+	parse_path(binary_to_list(Path), StaticFilePathList);
+parse_path(Path, StaticFilePathList) ->
+	Ch = string:substr(Path, 1, 1),
+	Ch2 = string:substr(Path, 2, 1),
+	case Ch =:= "/" orelse (is_letter(Ch) andalso Ch2 =:= ":")   of
+		true -> remove_ult_backslash_url(Path);  
+		false ->
+			case Ch == "~" of
+				true -> 
+					case init:get_argument(home) of
+						{ok, [[HomePath]]} -> replace(Path, "~", HomePath);
+						_Error -> throw({error, einvalid_path_catalog})
+					end;
+				_ -> 
+					case Ch == "." of
+						true -> remove_ult_backslash_url(?STATIC_FILE_PATH ++ "/" ++ string:substr(Path, 3));
+						false -> 
+							Path2 = replace_all_vars(Path, StaticFilePathList),
+							% after process variables, check ~ or . wildcards
+							case string:substr(Path2, 1, 1) == "~" of
+								true -> 
+									case init:get_argument(home) of
+										{ok, [[HomePath]]} -> replace(Path2, "~", HomePath);
+										_Error -> throw({error, einvalid_path_catalog})
+									end;
+								_ -> 
+									case Ch == "." of
+										true -> remove_ult_backslash_url(?STATIC_FILE_PATH ++ "/" ++ string:substr(Path2, 3));
+										false ->  Path2
+									end
+							end
+					end
+			end
+	end.
 
 
 read_file_as_string(FileName) -> 	

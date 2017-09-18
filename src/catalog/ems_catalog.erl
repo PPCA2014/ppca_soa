@@ -133,9 +133,11 @@ get_metadata_json(#service{id = Id,
 						  result_cache = ResultCache,
 						  authorization = Authorization,
 						  timeout = Timeout,
+						  catalog_path = CatalogPath,
 						  path = Path,
 						  lang = Lang,
-						  querystring = Querystring}) ->
+						  querystring = Querystring,
+						  cache_control = CacheControl}) ->
 	iolist_to_binary([<<"{"/utf8>>,
 					   <<"\"id\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Id, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"name\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Name, <<"\""/utf8>>, <<","/utf8>>,
@@ -148,6 +150,11 @@ get_metadata_json(#service{id = Id,
 					   <<"\"owner\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Owner, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"result_cache\""/utf8>>, <<":"/utf8>>, integer_to_binary(ResultCache), <<","/utf8>>,
 					   <<"\"timeout\""/utf8>>, <<":"/utf8>>, integer_to_binary(Timeout), <<","/utf8>>,
+					   <<"\"cache_control\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, CacheControl, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"catalog_path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CatalogPath of
+																			undefined -> <<>>;
+																			_ -> CatalogPath
+																		 end, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case Path of
 																			undefined -> <<>>;
 																			_ -> Path

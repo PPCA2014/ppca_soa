@@ -68,7 +68,8 @@ scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
 					scan_catalog_entry(CatTail, Conf, CurrentDir, Result)
 			end;
 		false -> 
-			scan_catalog_entry(CatTail, Conf, CurrentDir, [Cat | Result])
+			Cat2 = Cat#{<<"catalog_path">> => CurrentDir},
+			scan_catalog_entry(CatTail, Conf, CurrentDir, [Cat2 | Result])
 	end.
 
 -spec parse_filename_catalog(map(), string()) -> {ok, string()} | {error, string()}.
@@ -170,48 +171,6 @@ valida_length(Value, MaxLength) ->
 		false -> erlang:error(invalid_length)
 	end.
 
-
-% Process the path "~" and "." wildcards and variable path. Return path
--spec parse_path_catalog(string(), list(tuple())) -> string().
-parse_path_catalog(<<>>, _) -> undefined;
-parse_path_catalog(Path, StaticFilePathList) when is_binary(Path) ->
-	parse_path_catalog(binary_to_list(Path), StaticFilePathList);
-parse_path_catalog(Path, StaticFilePathList) ->
-	Ch = string:substr(Path, 1, 1),
-	Ch2 = string:substr(Path, 2, 1),
-	case Ch =:= "/" orelse (ems_util:is_letter(Ch) andalso Ch2 =:= ":")   of
-		true -> ems_util:remove_ult_backslash_url(Path);  
-		false ->
-			case Ch == "~" of
-				true -> 
-					case init:get_argument(home) of
-						{ok, [[HomePath]]} -> ems_util:replace(Path, "~", HomePath);
-						_Error -> throw({error, einvalid_path_catalog})
-					end;
-				_ -> 
-					case Ch == "." of
-						true -> ems_util:remove_ult_backslash_url(?STATIC_FILE_PATH ++ "/" ++ string:substr(Path, 3));
-						false -> 
-							Path2 = ems_util:replace_all_vars(Path, StaticFilePathList),
-							% after process variables, check ~ or . wildcards
-							case string:substr(Path2, 1, 1) == "~" of
-								true -> 
-									case init:get_argument(home) of
-										{ok, [[HomePath]]} -> ems_util:replace(Path2, "~", HomePath);
-										_Error -> throw({error, einvalid_path_catalog})
-									end;
-								_ -> 
-									case Ch == "." of
-										true -> ems_util:remove_ult_backslash_url(?STATIC_FILE_PATH ++ "/" ++ string:substr(Path2, 3));
-										false ->  Path2
-									end
-							end
-					end
-			end
-	end.
-			
-
-	
 
 %% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
 parse_querystring([]) -> {[], 0};
@@ -390,7 +349,8 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
 						Public = ems_util:parse_bool(maps:get(<<"public">>, H, true)),
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
-						Path = parse_path_catalog(maps:get(<<"path">>, H, <<>>), Conf#config.static_file_path),
+						CatalogPath = maps:get(<<"catalog_path">>, H, <<>>),
+						Path = ems_util:parse_path(maps:get(<<"path">>, H, CatalogPath), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
 						Protocol = maps:get(<<"protocol">>, H, <<>>),
 						valida_lang(Lang),
@@ -451,7 +411,8 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 														   ListenAddress, ListenAddress_t, AllowedAddress, 
 														   AllowedAddress_t, Port, MaxConnections,
 														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
+														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+														   CatalogPath),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
 									_ -> parse_catalog(T, CatREST, [Service|CatRE], CatKernel, Id+1, Conf)
@@ -475,7 +436,8 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 														ListenAddress, ListenAddress_t, AllowedAddress, 
 														AllowedAddress_t, Port, MaxConnections,
 														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol),
+														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+														CatalogPath),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
 									_ -> parse_catalog(T, [{Rowid, Service}|CatREST], CatRE, CatKernel, Id+1, Conf)
@@ -498,7 +460,7 @@ parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 compile_page_module(undefined, _, _) -> undefined;
 compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	PageFile = parse_path_catalog(Page, Conf#config.static_file_path),
+	PageFile = ems_util:parse_path(Page, Conf#config.static_file_path),
 	case ems_django:compile_file(binary_to_list(PageFile), ModuleNamePage) of
 		{ok, PageModule} -> PageModule;
 		_ -> throw({einvalid_page, Page})
@@ -564,7 +526,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   ListenAddress, ListenAddress_t, AllowedAddress, 
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol) ->
+			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+			   CatalogPath) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -607,6 +570,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
+			    catalog_path = CatalogPath,
 			    path = Path,
 			    redirect_url = RedirectUrl,
 			    enable = Enable,
@@ -634,7 +598,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
 			Port, MaxConnections,
 			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol) ->
+			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+			CatalogPath) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -674,6 +639,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
+			    catalog_path = CatalogPath,
 			    path = Path,
 			    redirect_url = RedirectUrl,
 			    enable = Enable,

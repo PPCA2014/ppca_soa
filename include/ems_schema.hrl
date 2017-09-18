@@ -183,13 +183,13 @@
 						}).
 
 
--record(service, {  id :: non_neg_integer(), 					%% Id sequencial gerado automaticamente e visível no portal API Management
+-record(service, {  id :: non_neg_integer(), 					%% Id do serviço
 					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
-					name :: string(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
+					name :: binary(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço
-					type = <<"GET">> :: string(),				%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
+					type = <<"GET">> :: binary(),				%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
 					service :: binary(),						%% Serviço que será executado no contrato
-					middleware,
+					middleware :: atom(),						%% Miidleware definido para pós processamento do serviço
 					module_name :: string(), 					%% Nome do módulo do serviço que vai atender a requisição. Ex.: br.erlangms.HelloWorldService  
 					module_name_canonical :: string(), 			%% Nome do módulo canonico do serviço que vai atender a requisição. Ex.: HelloWorldService  
 					module :: atom(),  							%% Atom do processo do módulo de serviço que vai atender a requisição
@@ -197,9 +197,9 @@
 					function :: atom(),  						%% Atom da mensagem ou função que vai ser invocada no processo que vai atender a requisição
 					id_re_compiled,   							%% Identificador da expressão regular que vai verificar se a URL bate com a URL da requisição
 					public = true :: boolean(), 				%% Indica se o contrato estará listado no Portal API Management
-					comment :: string(), 						%% Comentário sobre o que o contrato oferece em termos de serviço
-					version = "1.0.0" :: string(), 				%% Versão do contrato do serviço
-					owner :: string(),  						%% Quem é o proprietário pelo serviço
+					comment :: binary(), 						%% Comentário sobre o que o contrato oferece em termos de serviço
+					version = "1.0.0" :: binary(), 				%% Versão do contrato do serviço
+					owner :: binary(),  						%% Quem é o proprietário pelo serviço
 					async = false :: boolean(),					%% Indica se o serviço será processado em segundo plano (chamada assíncrona)
 					querystring :: list(map()),					%% Definição da querystring para o contrato do serviço
 					qtd_querystring_req :: non_neg_integer(), 	%% Indica quantas querystrings são obrigatórias
@@ -212,7 +212,7 @@
 					page_mime_type = <<"text/html">>,			%% Page mime type
 					node,										%% Node ou lista de node onde os serviços estão publicados
 					lang = "erlang" :: binary(),				%% Linguagem que foi utilizada para implementar o serviço
-					datasource,									%% Datasource para a fonte de dados
+					datasource :: #service_datasource{},		%% Datasource para a fonte de dados
 					debug = false :: boolean(),					%% Permite habilitar um modo debug (depende da implementação do serviço)
 					schema_in :: non_neg_integer(),
 					schema_out :: non_neg_integer(),
@@ -221,10 +221,11 @@
 					properties :: map(),
 					timeout :: non_neg_integer(),
 					expires :: non_neg_integer(),
-					cache_control :: string(),
+					cache_control :: binary(),
 					enable = false :: boolean(),
 					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
-					path :: string(),
+					catalog_path :: string(),					%% Local de onde o catálogo foi carregado
+					path :: string(),							%% Local para carregar arquivos estáticos
 					redirect_url :: binary(),					%% redirect url						
 					tcp_listen_address,
 					tcp_listen_address_t,

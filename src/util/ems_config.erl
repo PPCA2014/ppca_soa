@@ -225,13 +225,13 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_hostname 				= Hostname2,
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
-			 ems_debug					= parse_bool(maps:get(<<"debug">>, Json, false)),
+			 ems_debug					= ems_util:parse_bool(maps:get(<<"debug">>, Json, false)),
 			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
 			 ems_datasources			= parse_datasources(Json),
 			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
 			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
 			 authorization			    = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
-			 oauth2_with_check_constraint = parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
+			 oauth2_with_check_constraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
 			 config_file			    = NomeArqConfig,
 			 params						= Json
 		}.
@@ -261,9 +261,4 @@ get_default_config() ->
 			 params						= #{}
 		}.
 
-parse_bool(<<"true">>) -> true;
-parse_bool(<<"false">>) -> false;
-parse_bool(true) -> true;
-parse_bool(false) -> false;
-parse_bool(_) -> false.
 
