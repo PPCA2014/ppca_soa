@@ -11,7 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([names/1, world/1, hostfile/1, hostname/1, localhost/1, memory/1, timestamp/1, threads/1, info/1]).
+-export([names/1, world/1, hostfile/1, hostname/1, localhost/1, memory/1, timestamp/1, threads/1, info/1, config/1]).
   
 names(Request) -> 
 	ContentData = case net_adm:names() of
@@ -99,3 +99,9 @@ ranch_value_to_binary(V) when is_list(V) -> list_to_binary(V);
 ranch_value_to_binary({A,B,C,D}) -> list_to_binary(io_lib:format("{~p,~p,~p,~p}", [A,B,C,D]));
 ranch_value_to_binary(V) -> V.
 
+config(Request) -> 
+	ContentData = lists:flatten(io_lib:format("~p", [ems_config:getConfig()])),
+	{ok, Request#request{code = 200, 
+						 content_type = <<"text/plain">>,
+						 response_data = ContentData}
+	}.

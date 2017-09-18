@@ -120,6 +120,21 @@
 		"type": "GET",
 		"authorization": "basic",
 		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/netadm/config",
+		"comment": "Get config.",
+		"owner": "emsbus",
+		"version": "1.0.0",
+		"service" : "ems_netadm_service:config",
+		"url": "/netadm/config",
+		"result_cache" : 0,
+		"async": "false",
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
 	}
+	
 	
 ]
