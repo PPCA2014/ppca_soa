@@ -1279,6 +1279,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 					querystring_map = QuerystringMap2,
 					params_url = Params_url,
 					content_length = ContentLength,
+					content_type_in = ContentType2,
 					content_type = ContentType2,
 					accept = Accept,
 					user_agent = User_Agent,

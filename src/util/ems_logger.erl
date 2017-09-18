@@ -455,6 +455,7 @@ do_log_request(#request{rid = RID,
 						type = Metodo,
 						uri = Uri,
 						version = Version,
+						content_type_in = ContentTypeIn,
 						content_type = ContentType,
 						accept = Accept,
 						ip_bin = IpBin,
@@ -487,12 +488,16 @@ do_log_request(#request{rid = RID,
 			  }, 
 			  #state{show_response = ShowResponse}) ->
 			  
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type: ~p\n\tAccept: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tAccept: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Uri, 
 								   Version, 
 								   RID,
 								   ReqHash,
+								   case ContentTypeIn of
+										undefined -> <<>>;
+										_ -> ContentTypeIn
+								   end, 
 								   ContentType, 
 								   Accept,
 								   IpBin, 
@@ -545,7 +550,10 @@ do_log_request(#request{rid = RID,
 												_ -> Service#service.authorization
 											end
 								   end,
-								   Authorization,
+								   case Authorization of
+										undefined -> <<>>;
+										_ -> Authorization
+								   end,
 								   case GrantType of
 										undefined -> "";
 										_ ->  lists:flatten(io_lib:format("OAuth2 grant type: ~p\n\t", [GrantType]))

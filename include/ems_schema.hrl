@@ -114,6 +114,7 @@
 					  querystring :: binary(),					%% Querystring da requisição
 					  querystring_map,							%% Querystring convertida para map após o parser e validação
 					  params_url,								%% Map com os parâmetros da URL
+					  content_type_in :: binary(),				%% Tipo de conteúdo enviado ao barramento (Ex.: application/json, application/pdf)
 					  content_length :: non_neg_integer(), 		%% Largura da requisição
 					  content_type :: string(),					%% Tipo de conteúdo (Ex.: application/json)
 					  accept :: binary(),						%% Parâmetro ACCEPT HTTP
