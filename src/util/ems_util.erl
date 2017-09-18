@@ -1307,7 +1307,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		end
 	catch
 		_Exception:Reason -> 
-			ems_logger:error("ems_http_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
+			ems_logger:error("ems_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.
 
@@ -1403,7 +1403,7 @@ decode_http_header(Headers, Params) ->
 decode_http_request(RequestBin) ->
 	case erlang:decode_packet(http_bin, RequestBin, []) of
 		{ok, {http_error, _}, _} ->
-			ems_logger:error("ems_http_util decode http error: ~p.", [RequestBin]),
+			ems_logger:error("ems_util decode http error: ~p.", [RequestBin]),
 			{error, http_error};
 		{ok, Req, Rest} ->
 			{http_request, Method, {abs_path, Uri}, {Http_Version_Major, Http_Version_Minor}} = Req,
@@ -1417,7 +1417,7 @@ decode_http_request(RequestBin) ->
 										   Payload}
 			end;
 		{error, Reason} -> 
-			ems_logger:error("ems_http_util decode http error: ~p.", [RequestBin]),
+			ems_logger:error("ems_util decode http error: ~p.", [RequestBin]),
 			{error, Reason}
 	end.
 
@@ -1533,7 +1533,7 @@ parse_basic_authorization_header(Header = <<Basic:5/binary, _:1/binary, Secret/b
 			case string:tokens(Secret2, ":") of
 				[Login|[Password|_]] -> {ok, Login, Password};
 				_ -> 
-					ems_logger:warn("ems_http_util parse invalid basic authorization header: ~p", [Header]),
+					ems_logger:warn("ems_util parse invalid basic authorization header: ~p", [Header]),
 					{error, access_denied}
 			end;
 		false -> {error, access_denied}
