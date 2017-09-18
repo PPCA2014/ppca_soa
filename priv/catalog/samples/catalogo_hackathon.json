@@ -104,7 +104,7 @@
 				{
 					"name": "fields",
 					"type": "string",
-					"default" : "nome_curso",
+					"default" : "",
 					"comment": "Campos que devem ser retornados na pesquisa"
 				},
 				{

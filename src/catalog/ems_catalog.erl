@@ -134,6 +134,7 @@ get_metadata_json(#service{id = Id,
 						  authorization = Authorization,
 						  timeout = Timeout,
 						  catalog_path = CatalogPath,
+						  catalog_file = CatalogFile,
 						  path = Path,
 						  lang = Lang,
 						  querystring = Querystring,
@@ -154,6 +155,10 @@ get_metadata_json(#service{id = Id,
 					   <<"\"catalog_path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CatalogPath of
 																			undefined -> <<>>;
 																			_ -> CatalogPath
+																		 end, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"catalog_file\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CatalogFile of
+																			undefined -> <<>>;
+																			_ -> CatalogFile
 																		 end, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case Path of
 																			undefined -> <<>>;

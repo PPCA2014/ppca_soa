@@ -70,6 +70,7 @@ init(CowboyReq, Opts) ->
 					ems_logger:log_request(Request2);
 				{error, Reason} = Error ->
 					Request2 = Request#request{code = 400, 
+											   content_type = ?CONTENT_TYPE_JSON,
 											   reason = Reason, 
 											   response_data = ems_schema:to_json(Error), 
 											   response_header = default_http_header(),

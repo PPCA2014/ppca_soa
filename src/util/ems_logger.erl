@@ -488,18 +488,21 @@ do_log_request(#request{rid = RID,
 			  }, 
 			  #state{show_response = ShowResponse}) ->
 			  
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tAccept: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Uri, 
 								   Version, 
 								   RID,
 								   ReqHash,
+								   Accept,
 								   case ContentTypeIn of
 										undefined -> <<>>;
 										_ -> ContentTypeIn
 								   end, 
-								   ContentType, 
-								   Accept,
+								   case ContentType of
+										undefined -> <<>>;
+										_ -> ContentType 
+								   end,
 								   IpBin, 
 								   case Referer of
 										undefined -> <<>>;

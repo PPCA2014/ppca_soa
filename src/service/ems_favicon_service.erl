@@ -29,6 +29,7 @@ execute(Request = #request{timestamp = Timestamp})	->
 				{ok, FileData} -> 		
 					{ok, Request#request{code = 200,
 										 reason = ok,
+										 content_type = <<"image/x-icon">>,
 										 response_data = FileData,
 										 response_header = generate_header(ETag, LastModified, Expires)}};
 				{error, Reason} = Err -> 

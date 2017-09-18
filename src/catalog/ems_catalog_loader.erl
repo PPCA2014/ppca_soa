@@ -40,9 +40,9 @@ scan_catalog(FileName, Conf, Result) ->
 	CurrentDir = filename:dirname(FileName),
 	case ems_util:read_file_as_map(FileName) of
 		{ok, CatList} when is_list(CatList) -> 
-			scan_catalog_entry(CatList, Conf, CurrentDir, Result);
+			scan_catalog_entry(CatList, Conf, CurrentDir, FileName, Result);
 		{ok, CatMap} -> 
-			scan_catalog_entry([CatMap], Conf, CurrentDir, Result);
+			scan_catalog_entry([CatMap], Conf, CurrentDir, FileName, Result);
 		{error, enoent} ->
 			ems_logger:format_warn("ems_catalog_loader catalog ~p does not exist, ignoring this catalog.\n", [FileName]),
 			Result;
@@ -51,25 +51,26 @@ scan_catalog(FileName, Conf, Result) ->
 			Result
 	end.
 	
--spec scan_catalog_entry(list(), Conf :: #config{}, string(), list()) -> list().
-scan_catalog_entry([], _, _, Result) -> 
+-spec scan_catalog_entry(list(), Conf :: #config{}, string(), string(), list()) -> list().
+scan_catalog_entry([], _, _, _, Result) -> 
 	Result;
-scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, Result) ->
+scan_catalog_entry([Cat|CatTail], Conf, CurrentDir, CurentFileNameCat, Result) ->
 	case maps:is_key(<<"file">>, Cat) of
 		true -> 
 			case parse_filename_catalog(maps:get(<<"file">>, Cat), CurrentDir) of
 				{ok, FileName} ->
 					?DEBUG("ems_catalog_loader scan ~p.", [FileName]),
 					Result2 = scan_catalog(FileName, Conf, Result),
-					scan_catalog_entry(CatTail, Conf, CurrentDir, Result2);			
+					scan_catalog_entry(CatTail, Conf, CurrentDir, CurentFileNameCat, Result2);			
 				{error, FileName} ->
 					ems_logger:format_warn("ems_catalog_loader scan invalid catalog ~p. Ignoring this catalog.\n", [FileName]),
 					?DEBUG("~p: ~p.", [FileName, Cat]),
-					scan_catalog_entry(CatTail, Conf, CurrentDir, Result)
+					scan_catalog_entry(CatTail, Conf, CurrentDir, CurentFileNameCat, Result)
 			end;
 		false -> 
-			Cat2 = Cat#{<<"catalog_path">> => CurrentDir},
-			scan_catalog_entry(CatTail, Conf, CurrentDir, [Cat2 | Result])
+			Cat2 = Cat#{<<"catalog_path">> => CurrentDir,
+						<<"catalog_file">> => CurentFileNameCat},
+			scan_catalog_entry(CatTail, Conf, CurrentDir, CurentFileNameCat, [Cat2 | Result])
 	end.
 
 -spec parse_filename_catalog(map(), string()) -> {ok, string()} | {error, string()}.
@@ -350,6 +351,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 						Public = ems_util:parse_bool(maps:get(<<"public">>, H, true)),
 						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
 						CatalogPath = maps:get(<<"catalog_path">>, H, <<>>),
+						CatalogFile = maps:get(<<"catalog_file">>, H, <<>>),
 						Path = ems_util:parse_path(maps:get(<<"path">>, H, CatalogPath), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
 						Protocol = maps:get(<<"protocol">>, H, <<>>),
@@ -412,7 +414,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 														   AllowedAddress_t, Port, MaxConnections,
 														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														   CatalogPath),
+														   CatalogPath, CatalogFile),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
 									_ -> parse_catalog(T, CatREST, [Service|CatRE], CatKernel, Id+1, Conf)
@@ -437,7 +439,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 														AllowedAddress_t, Port, MaxConnections,
 														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														CatalogPath),
+														CatalogPath, CatalogFile),
 								case Type of
 									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
 									_ -> parse_catalog(T, [{Rowid, Service}|CatREST], CatRE, CatKernel, Id+1, Conf)
@@ -527,7 +529,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			   CatalogPath) ->
+			   CatalogPath, CatalogFile) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -571,6 +573,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
 			    catalog_path = CatalogPath,
+			    catalog_file = CatalogFile,
 			    path = Path,
 			    redirect_url = RedirectUrl,
 			    enable = Enable,
@@ -599,7 +602,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			Port, MaxConnections,
 			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			CatalogPath) ->
+			CatalogPath, CatalogFile) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -640,6 +643,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
 			    catalog_path = CatalogPath,
+			    catalog_file = CatalogFile,
 			    path = Path,
 			    redirect_url = RedirectUrl,
 			    enable = Enable,

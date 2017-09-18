@@ -226,6 +226,7 @@
 					enable = false :: boolean(),
 					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
 					catalog_path :: string(),					%% Local de onde o catálogo foi carregado
+					catalog_file :: string(),					%% Nome do arquivo onde está especificado o catálogo
 					path :: string(),							%% Local para carregar arquivos estáticos
 					redirect_url :: binary(),					%% redirect url						
 					tcp_listen_address,
