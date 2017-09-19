@@ -329,7 +329,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 						ems_logger:format_warn("Service ~p will be disabled because the datasource ~p was not found in the configuration file.\n", [Name, Ds]),
 						parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf);	
 					Datasource ->
-						ResultCache = maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache),
+						ResultCache = ems_util:parse_result_cache(maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache)),
 						Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
 						OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, H, Conf#config.oauth2_with_check_constraint)),
 						OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, H, false)),

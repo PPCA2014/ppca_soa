@@ -226,7 +226,7 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_host	 				= list_to_atom(Hostname),
 			 ems_file_dest				= NomeArqConfig,
 			 ems_debug					= ems_util:parse_bool(maps:get(<<"debug">>, Json, false)),
-			 ems_result_cache			= maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE),
+			 ems_result_cache			= ems_util:parse_result_cache(maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE)),
 			 ems_datasources			= parse_datasources(Json),
 			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
 			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),

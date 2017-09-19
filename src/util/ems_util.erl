@@ -117,7 +117,8 @@
 		 get_param_header/2,
 		 format_header_value/2,
 		 is_metodo_suportado/1,
-		 parse_basic_authorization_header/1
+		 parse_basic_authorization_header/1,
+		 parse_result_cache/1
 		]).
 
 
@@ -887,6 +888,7 @@ replacenth(ReplaceIndex,Value,[V|List],Acc,Index) ->
  replacenth(ReplaceIndex,Value,List,[V|Acc],Index+1).
 
 
+-spec ip_list() -> {ok, list(tuple())} | {error, atom()}.
 ip_list()->
 	 case inet:getifaddrs() of
 		{ok, List} ->
@@ -902,6 +904,7 @@ ip_list()->
 	end.
 	 
 
+-spec parse_bool(binary() | string() | boolean() | integer()) -> boolean().
 parse_bool(<<"true">>) -> true;
 parse_bool("true") -> true;
 parse_bool(true) -> true;
@@ -1612,3 +1615,11 @@ msg_email_invalido(_NomeCampo, Value) ->
 %% @doc Retorna somente mensagens não vazias
 mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
 
+
+-spec parse_result_cache(non_neg_integer()) -> non_neg_integer().
+parse_result_cache(ResultCache) ->
+	case is_integer(ResultCache) andalso ResultCache >= 0 of
+		true -> ResultCache;
+		_ -> erlang:error(einvalid_result_cache)
+	end.	
+	

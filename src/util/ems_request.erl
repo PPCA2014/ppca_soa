@@ -280,6 +280,7 @@ load_from_file_req(Request = #request{url = Url,
 						{error, Reason} = Error -> 
 							{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 												    reason = Reason,
+												    content_type = ?CONTENT_TYPE_JSON,
 												    response_data = ems_schema:to_json(Error)}
 							}
 					end

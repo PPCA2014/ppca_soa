@@ -42,7 +42,8 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 				  end,
 	case ems_catalog:lookup(RequestLookup) of
 		{Service = #service{content_type = ContentTypeService,
-							tcp_allowed_address_t = AllowedAddress}, 
+							tcp_allowed_address_t = AllowedAddress,
+							result_cache = ResultCache}, 
 		 ParamsMap, 
 		 QuerystringMap} -> 
 			case ems_util:allow_ip_address(Ip, AllowedAddress) of
@@ -73,17 +74,20 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								"GET" ->
-									case check_result_cache(ReqHash, T1) of
-										{true, RequestCache} -> 
-											?DEBUG("ems_dispatcher lookup request in cache. ReqHash: ~p.", [ReqHash]),
-											{ok, request, Request2#request{result_cache = true,
-																		   code = RequestCache#request.code,
-																		   reason = RequestCache#request.reason,
-																		   response_data = RequestCache#request.response_data,
-																		   response_header = RequestCache#request.response_header,
-																		   result_cache_rid = RequestCache#request.rid,
-																		   latency = RequestCache#request.latency,
-																		   filename = RequestCache#request.filename}};
+									case ResultCache > 0 of
+										true ->
+											case check_result_cache(ReqHash, T1) of
+												{true, RequestCache} -> 
+													{ok, request, Request2#request{result_cache = true,
+																				   code = RequestCache#request.code,
+																				   reason = RequestCache#request.reason,
+																				   response_data = RequestCache#request.response_data,
+																				   response_header = RequestCache#request.response_header,
+																				   result_cache_rid = RequestCache#request.rid,
+																				   latency = RequestCache#request.latency,
+																				   filename = RequestCache#request.filename}};
+												false -> dispatch_service_work(Request2, Service)
+											end;
 										false -> dispatch_service_work(Request2, Service)
 									end;
 								_ ->
@@ -125,14 +129,15 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 													  latency = ems_util:get_milliseconds() - T1}
 						};
 				true ->
-					ems_logger:warn("ems_dispatcher service request ~p not found. Reason: ~p.", [Url, Reason]),
+					ems_logger:warn("ems_dispatcher service ~p not found. Reason: ~p.", [Url, Reason]),
 					Error2
 			end
 	end.
 
 
 dispatch_service_work(Request = #request{type = Type,
-										 t1 = T1},
+										 t1 = T1,
+										 content_type = ContentType},
 					 _Service = #service{name = ServiceName,
 										 owner = ServiceOwner,
 										 host = '',
@@ -142,10 +147,11 @@ dispatch_service_work(Request = #request{type = Type,
 										 result_cache = ResultCache}) ->
 	ems_logger:info("ems_dispatcher send local msg to ~s.", [ModuleName]),
 	{Reason, Request3 = #request{response_header = ResponseHeader}} = apply(Module, Function, [Request]),
-	AllowResultCache = Reason =:= ok andalso Type =:= "GET",
+	AllowResultCache = Reason =:= ok andalso Type =:= "GET" andalso ResultCache > 0,
 	Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => node_binary(),
 																  <<"ems-catalog">> => ServiceName,
 																  <<"ems-owner">> => ServiceOwner,
+																  <<"content-type">> => ContentType,
 																  <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
 								latency = ems_util:get_milliseconds() - T1},
 	dispatch_middleware_function(Request4, AllowResultCache, Reason);
@@ -317,7 +323,7 @@ dispatch_middleware_function(Request = #request{req_hash = ReqHash,
 		case Result of
 			{ok, Request2} ->
 				case AllowResultCache of
-					true -> ems_cache:add(ets_result_cache_get, ResultCache, ReqHash, {T1, Request2, ResultCache});
+					true -> io:format("entrou\n"), ems_cache:add(ets_result_cache_get, ResultCache, ReqHash, {T1, Request2, ResultCache});
 					false -> ems_cache:flush(ets_result_cache_get)
 				end,
 				{Reason, request, Request2};
