@@ -23,13 +23,11 @@ init(CowboyReq, Opts) ->
 				{ok, request, Request2 = #request{code = Code,
 												  response_header = ResponseHeader,
 												  response_data = ResponseData,
-												  service = #service{content_type = ContentTypeService,
-																	 cache_control = CacheControl}}} ->
+												  content_type = ContentType}} ->
 					Response = cowboy_req:reply(Code, 
 												ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
-													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ContentTypeService),
-													<<"cache-control">> => maps:get(<<"cache-control">>, ResponseHeader, CacheControl),
+													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ContentType),
 													<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 													<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 													<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
@@ -38,27 +36,13 @@ init(CowboyReq, Opts) ->
 												ResponseData, 
 												CowboyReq),
 					ems_logger:log_request(Request2);
-				{ok, request, Request2 = #request{code = Code,
-												  response_header = ResponseHeader,
-												  response_data = ResponseData}} ->
-					Response = cowboy_req:reply(Code, 
-												ResponseHeader#{<<"server">> => ?SERVER_NAME,
-																<<"content-type">> => ?CONTENT_TYPE_JSON,
-																<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
-																<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
-																<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
-																<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-																<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
-																<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS},
-												ResponseData, 
-												CowboyReq),
-					ems_logger:log_request(Request2);
 				{error, request, Request2 = #request{code = Code,
 													 response_header = ResponseHeader,
-													 response_data = ResponseData}} ->
+													 response_data = ResponseData,
+													 content_type = ContentType}} ->
 					Response = cowboy_req:reply(Code, 
 												ResponseHeader#{<<"server">> => ?SERVER_NAME,
-																<<"content-type">> => ?CONTENT_TYPE_JSON,
+																<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ContentType),
 																<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 																<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 																<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,

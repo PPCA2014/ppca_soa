@@ -135,26 +135,20 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 	end.
 
 
-dispatch_service_work(Request = #request{type = Type,
-										 t1 = T1,
-										 content_type = ContentType},
+dispatch_service_work(Request = #request{t1 = T1},
 					 _Service = #service{name = ServiceName,
 										 owner = ServiceOwner,
 										 host = '',
 										 module_name = ModuleName,
 										 module = Module,
-										 function = Function,
-										 result_cache = ResultCache}) ->
+										 function = Function}) ->
 	ems_logger:info("ems_dispatcher send local msg to ~s.", [ModuleName]),
 	{Reason, Request3 = #request{response_header = ResponseHeader}} = apply(Module, Function, [Request]),
-	AllowResultCache = Reason =:= ok andalso Type =:= "GET" andalso ResultCache > 0,
 	Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => node_binary(),
 																  <<"ems-catalog">> => ServiceName,
-																  <<"ems-owner">> => ServiceOwner,
-																  <<"content-type">> => ContentType,
-																  <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+																  <<"ems-owner">> => ServiceOwner},
 								latency = ems_util:get_milliseconds() - T1},
-	dispatch_middleware_function(Request4, AllowResultCache, Reason);
+	dispatch_middleware_function(Request4, Reason);
 dispatch_service_work(Request = #request{rid = Rid,
 										  type = Type,
 										  url = Url,
@@ -173,8 +167,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 										 module_name = ModuleName,
 										 module = Module,
 										 function_name = FunctionName, 
-										 timeout = Timeout,
-										 result_cache = ResultCache}) ->
+										 timeout = Timeout}) ->
 	case get_work_node(Host, Host, HostName, ModuleName, 1) of
 		{ok, Node} ->
 			case erlang:is_tuple(Client) of
@@ -198,7 +191,6 @@ dispatch_service_work(Request = #request{rid = Rid,
 			ems_logger:info("ems_dispatcher send msg to ~p with timeout ~pms.", [{Module, Node}, Timeout]),
 			receive 
 				{Code, RidRemote, {Reason, ResponseDataReceived}} when RidRemote == Rid  -> 
-					AllowResultCache = Reason =:= ok andalso Type =:= "GET",
 					case byte_size(ResponseDataReceived) >= 27 of
 						true ->
 							case ResponseDataReceived of
@@ -215,17 +207,14 @@ dispatch_service_work(Request = #request{rid = Rid,
 					Request2 = Request#request{service = Service,
 											   params_url = ParamsMap,
 											   querystring_map = QuerystringMap,
-											   content_type = ContentType,
 											   code = Code,
 											   reason = Reason,
 											   response_header = #{<<"ems-node">> => NodeBin,
 																   <<"ems-catalog">> => ServiceName,
-																   <<"ems-owner">> => ServiceOwner,
-																   <<"content-type">> => ContentType,
-																   <<"ems-result-cache">> => case AllowResultCache of true -> integer_to_binary(ResultCache); _ -> <<"0">> end},
+																   <<"ems-owner">> => ServiceOwner},
 											   response_data = ResponseData,
 											   latency = ems_util:get_milliseconds() - T1},
-					dispatch_middleware_function(Request2, AllowResultCache, Reason);
+					dispatch_middleware_function(Request2, Reason);
 				Msg -> 
 					ems_logger:error("ems_dispatcher received invalid message ~p.", [Msg]), 
 					{error, request, Request#request{code = 500,
@@ -300,12 +289,12 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 -spec node_binary() -> binary().
 node_binary() -> erlang:atom_to_binary(node(), utf8).
 
--spec dispatch_middleware_function(#request{}, boolean(), atom()) -> {ok, request, #request{}} | {error, request, #request{}}.
+-spec dispatch_middleware_function(#request{}, atom()) -> {ok, request, #request{}} | {error, request, #request{}}.
 dispatch_middleware_function(Request = #request{req_hash = ReqHash,
 												t1 = T1,
+												type = Type,
 												service = Service = #service{middleware = Middleware,
 																			 result_cache = ResultCache}}, 
-							 AllowResultCache,
 							 Reason) ->
 	try
 		case Middleware of 
@@ -321,12 +310,20 @@ dispatch_middleware_function(Request = #request{req_hash = ReqHash,
 				end
 		end,
 		case Result of
-			{ok, Request2} ->
-				case AllowResultCache of
-					true -> io:format("entrou\n"), ems_cache:add(ets_result_cache_get, ResultCache, ReqHash, {T1, Request2, ResultCache});
-					false -> ems_cache:flush(ets_result_cache_get)
-				end,
-				{Reason, request, Request2};
+			{ok, Request2 = #request{response_header = ResponseHeader}} ->
+				case Reason =:= ok andalso Type =:= "GET" of
+					true -> 
+						case ResultCache > 0 of
+							true ->
+								ems_cache:add(ets_result_cache_get, ResultCache, ReqHash, {T1, Request2, ResultCache}),
+								{Reason, request, Request2#request{response_header = ResponseHeader#{<<"ems-result-cache">> => integer_to_binary(ResultCache)}}};
+							_ -> 
+								{Reason, request, Request2#request{response_header = ResponseHeader#{<<"ems-result-cache">> => <<"0"/utf8>>}}}
+						end;
+					false ->
+						ems_cache:flush(ets_result_cache_get),
+						{Reason, request, Request2}
+				end;
 			{error, Reason2} = Error ->
 				{error, request, Request#request{code = 500,
 												 content_type = ?CONTENT_TYPE_JSON,
