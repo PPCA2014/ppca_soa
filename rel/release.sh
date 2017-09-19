@@ -37,7 +37,7 @@ RELEASE_PATH=$(cd $WORKING_DIR/../../releases/ && pwd)
 GIT_RELEASE_REPO=https://github.com/erlangms/releases
 BUILD_RPM_FLAG="$( rpmbuild --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
 BUILD_DEB_FLAG="$( dpkg-deb --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
-SKIP_BUILD="false"
+SKIP_BUILD="true"
 
 # Identify the linux distribution: ubuntu, debian, centos
 LINUX_DISTRO=$(awk -F"=" '{ if ($1 == "ID"){ 
@@ -326,7 +326,7 @@ for P in $*; do
 	if [[ "$P" =~ ^--.+$ ]]; then
 		if [ "$P" = "--help" ]; then
 			help
-		elif [ "$P" = "--skip_build" ]; then
+		elif [[ "$P" =~ "--skip[_-]build" ]]; then
 			SKIP_BUILD="true"
 		else
 			echo "Invalid parameter: $P"

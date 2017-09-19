@@ -118,7 +118,8 @@
 		 format_header_value/2,
 		 is_metodo_suportado/1,
 		 parse_basic_authorization_header/1,
-		 parse_result_cache/1
+		 parse_result_cache/1,
+		 node_binary/0
 		]).
 
 
@@ -1216,7 +1217,10 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 				IpBin = list_to_binary(inet_parse:ntoa(Ip)),
 				Host = cowboy_req:host(CowboyReq),
 				Version = cowboy_req:version(CowboyReq),
-				ContentType = cowboy_req:header(<<"content-type">>, CowboyReq),
+				case cowboy_req:header(<<"content-type">>, CowboyReq) of
+					undefined -> ContentType = <<>>;
+					MimeType -> ContentType = MimeType
+				end,
 				ContentLength = cowboy_req:body_length(CowboyReq),
 				QuerystringBin = cowboy_req:qs(CowboyReq),
 				ProtocolBin = cowboy_req:scheme(CowboyReq),
@@ -1250,7 +1254,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 								PayloadMap = decode_payload_as_xml(Payload),
 								QuerystringMap2 = QuerystringMap;
 							_ -> 
-								ContentType2 = ContentType,						
+								ContentType2 = ContentType,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = #{},
 								QuerystringMap2 = QuerystringMap
@@ -1623,3 +1627,5 @@ parse_result_cache(ResultCache) ->
 		_ -> erlang:error(einvalid_result_cache)
 	end.	
 	
+-spec node_binary() -> binary().
+node_binary() -> erlang:atom_to_binary(node(), utf8).

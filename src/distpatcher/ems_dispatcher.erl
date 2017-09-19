@@ -67,10 +67,12 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 										{ok, request, Request2#request{code = 200, 
 																	   content_type = ?CONTENT_TYPE_JSON,
 																	   response_data = ems_catalog:get_metadata_json(Service),
+																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								"HEAD" -> 
 										{ok, request, Request2#request{code = 200, 
+																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								"GET" ->
@@ -102,10 +104,12 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 										{ok, request, Request2#request{code = 200, 
 																	   content_type = ?CONTENT_TYPE_JSON,
 																	   response_data = ems_catalog:get_metadata_json(Service),
+																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								"HEAD" -> 
 										{ok, request, Request2#request{code = 200, 
+																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								 _ -> 
@@ -113,6 +117,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 																	  content_type = ?CONTENT_TYPE_JSON,
 					 											      reason = Reason, 
 																	  response_data = ems_schema:to_json(Error), 
+																	  response_header = #{<<"ems-node">> => ems_util:node_binary()},
 																	  latency = ems_util:get_milliseconds() - T1}
 									}
 							end
@@ -124,9 +129,10 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 		{error, Reason} = Error2 -> 
 			if 
 				Type =:= "OPTIONS" orelse Type =:= "HEAD" ->
-						{ok, request, Request#request{code = 200, 
-													  reason = Reason, 
-													  latency = ems_util:get_milliseconds() - T1}
+						{error, request, Request#request{code = 200, 
+													     reason = Reason, 
+													     response_header = #{<<"ems-node">> => ems_util:node_binary()},
+													     latency = ems_util:get_milliseconds() - T1}
 						};
 				true ->
 					ems_logger:warn("ems_dispatcher service ~p not found. Reason: ~p.", [Url, Reason]),
@@ -144,7 +150,7 @@ dispatch_service_work(Request = #request{t1 = T1},
 										 function = Function}) ->
 	ems_logger:info("ems_dispatcher send local msg to ~s.", [ModuleName]),
 	{Reason, Request3 = #request{response_header = ResponseHeader}} = apply(Module, Function, [Request]),
-	Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => node_binary(),
+	Request4 = Request3#request{response_header = ResponseHeader#{<<"ems-node">> => ems_util:node_binary(),
 																  <<"ems-catalog">> => ServiceName,
 																  <<"ems-owner">> => ServiceOwner},
 								latency = ems_util:get_milliseconds() - T1},
@@ -286,8 +292,6 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 	end.
 		
 
--spec node_binary() -> binary().
-node_binary() -> erlang:atom_to_binary(node(), utf8).
 
 -spec dispatch_middleware_function(#request{}, atom()) -> {ok, request, #request{}} | {error, request, #request{}}.
 dispatch_middleware_function(Request = #request{req_hash = ReqHash,

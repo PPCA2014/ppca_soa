@@ -75,6 +75,7 @@ default_http_header() ->
 	#{
 		<<"server">> => ?SERVER_NAME,
 		<<"content-type">> => ?CONTENT_TYPE_JSON,
+		<<"ems-node">> => ems_util:node_binary(),
 		<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 		<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 		<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
