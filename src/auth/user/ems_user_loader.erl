@@ -199,7 +199,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_loader load users from database..."),
+				?DEBUG("ems_user_loader load_users_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadUsersTipoPessoa, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_loader did not load any users tipo pessoa."),
@@ -241,7 +241,7 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 						ems_logger:error("ems_user_loader load users tipo pessoa query error: ~p.", [Reason2]),
 						Error
 				end,
-				ems_db:release_connection(Datasource2),
+				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_loader has no connection to load users from database."),
@@ -259,7 +259,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_loader got a connection ~p to update users.", [Datasource#service_datasource.id]),
+				?DEBUG("ems_user_loader update_users_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
@@ -301,7 +301,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 						ems_logger:error("ems_user_loader update users tipo pessoa error: ~p.", [Reason]),
 						Error
 				end,
-				ems_db:release_connection(Datasource2),
+				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_loader has no connection to update users from database."),

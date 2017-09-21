@@ -16,7 +16,7 @@
 	},
 
 	{
-		"name": "ems_logger_filename",
+		"name": "/logger/filename",
 		"comment": "Get current filename logger",
 		"owner": "ems_bus",
 		"version": "1.0.0",
@@ -29,7 +29,7 @@
 	},
 
 	{
-		"name": "ems_logger_file_head",
+		"name": "/logger/head",
 		"comment": "Return first lines of logfile",
 		"owner": "ems_bus",
 		"version": "1.0.0",
@@ -43,7 +43,7 @@
 	},
 
 	{
-		"name": "ems_logger_file_tail",
+		"name": "/logger/tail",
 		"comment": "Return last lines of logfile",
 		"owner": "ems_bus",
 		"version": "1.0.0",
@@ -54,7 +54,118 @@
 		"type": "GET",
 		"authorization": "basic",
 		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/debug",
+		"comment": "Check debug mode",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:check_debug_mode",
+		"url": "/logger/debug",
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/logger/debug/true",
+		"comment": "Set debug mode",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:set_debug_mode",
+		"url": "/logger/debug/true",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/debug/false",
+		"comment": "Unset debug mode",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:unset_debug_mode",
+		"url": "/logger/debug/false",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/sync",
+		"comment": "sync buffer of logger",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:sync",
+		"url": "/logger/sync",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/level/info",
+		"comment": "Set debug mode",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:set_level_info",
+		"url": "/logger/level/info",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/level/error",
+		"comment": "Unset debug mode",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:set_level_error",
+		"url": "/logger/level/error",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/checkpoint",
+		"comment": "Manual checkpoint",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:checkpoint",
+		"url": "/logger/checkpoint",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/response/true",
+		"comment": "Set show responder",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:set_show_response",
+		"url": "logger/response/true",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/response/false",
+		"comment": "Unset show_response",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:unset_show_response",
+		"url": "logger/response/false",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
 	}
+	
+	
+	
 ]
 
 

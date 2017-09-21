@@ -38,7 +38,8 @@
 		 format_debug/1, 
 		 format_debug/2,
  		 format_alert/1, 
-		 format_alert/2
+		 format_alert/2,
+		 checkpoint/0
 ]).
 
 
@@ -111,7 +112,7 @@ debug(Msg, Params) ->
 debug2(Msg) -> 
 	case in_debug() of
 		true -> 
-			Msg2 = lists:concat(["\033[0;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]),
+			Msg2 = lists:concat(["\033[1;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]),
 			io:format(Msg2);
 		_ -> ok
 	end.
@@ -119,7 +120,7 @@ debug2(Msg) ->
 debug2(Msg, Params) -> 
 	case in_debug() of
 		true -> 
-			Msg2 = lists:concat(["\033[0;34mDEBUG ", ems_clock:local_time_str(), "  ", io_lib:format(Msg, Params), "\033[0m"]),
+			Msg2 = lists:concat(["\033[1;34mDEBUG ", ems_clock:local_time_str(), "  ", io_lib:format(Msg, Params), "\033[0m"]),
 			io:format(Msg2);
 		_ -> ok
 	end.
@@ -127,20 +128,30 @@ debug2(Msg, Params) ->
 
 in_debug() -> ets:lookup(debug_ets, debug) =:= [{debug, true}].
 
-mode_debug(true)  -> ets:insert(debug_ets, {debug, true});
-mode_debug(false) -> ets:insert(debug_ets, {debug, false}).
+mode_debug(true)  -> 
+	info("ems_logger debug mode enabled."),
+	ets:insert(debug_ets, {debug, true});
+mode_debug(false) -> 
+	info("ems_logger debug mode disabled."),
+	ets:insert(debug_ets, {debug, false}).
 
 sync() ->
+	info("ems_logger manual sync buffer."),
 	gen_server:call(?SERVER, sync_buffer). 		
 
 log_request(Request) -> 
 	gen_server:cast(?SERVER, {log_request, Request}). 
 
 set_level(Level) -> 
+	info("ems_logger set level ~p.", [Level]),
 	gen_server:cast(?SERVER, {set_level, Level}). 
 
-show_response(Value) -> 
-	gen_server:cast(?SERVER, {show_response, Value}). 
+show_response(Value) when Value == true -> 
+	info("ems_logger set show response."),
+	gen_server:cast(?SERVER, {show_response, Value});
+show_response(_) -> 
+	info("ems_logger unset show response."),
+	gen_server:cast(?SERVER, {show_response, false}). 
 
 log_file_head() ->
 	gen_server:call(?SERVER, {log_file_head, 80}). 		
@@ -156,6 +167,11 @@ log_file_tail(N) ->
 
 log_file_name() ->
 	gen_server:call(?SERVER, log_file_name). 		
+	
+checkpoint() -> 
+	info("ems_logger manual archive log file checkpoint."),
+	?SERVER ! checkpoint_archive_log.
+
 
 % write direct messages to console
 format_warn(Message) ->	io:format("\033[0;33m~s\033[0m", [Message]).
@@ -165,7 +181,7 @@ format_error(Message) -> io:format("\033[0;31m~s\033[0m", [Message]).
 format_error(Message, Params) -> io:format("\033[0;31m~s\033[0m", [io_lib:format(Message, Params)]).
 
 format_debug(Message) -> io:format("\033[0;34m~s\033[0m", [Message]).
-format_debug(Message, Params) -> io:format("\033[0;34m~s\033[0m", [io_lib:format(Message, Params)]).
+format_debug(Message, Params) -> io:format("\033[1;34m~s\033[0m", [io_lib:format(Message, Params)]).
 
 format_alert(Message) ->	io:format("\033[0;46m~s\033[0m", [Message]).
 format_alert(Message, Params) ->	io:format("\033[0;46m~s\033[0m", [io_lib:format(Message, Params)]).
@@ -178,7 +194,7 @@ format_alert(Message, Params) ->	io:format("\033[0;46m~s\033[0m", [io_lib:format
 %%====================================================================
  
 init(#service{properties = Props}) ->
-	ems_logger:info("Loading ERLANGMS ~s...", [?SERVER_NAME]),
+	ems_logger:info("Loading ERLANGMS ~s instance...", [?SERVER_NAME]),
 	Checkpoint = maps:get(<<"log_file_checkpoint">>, Props, ?LOG_FILE_CHECKPOINT),
 	LogFileMaxSize = maps:get(<<"log_file_max_size">>, Props, ?LOG_FILE_MAX_SIZE),
 	Conf = ems_config:getConfig(),
@@ -266,12 +282,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 -spec checkpoint_arquive_log(#state{}, boolean()) -> #state{} | {error, atom()}.
-checkpoint_arquive_log(State = #state{log_file_handle = IODevice}, Immediate) ->
+checkpoint_arquive_log(State = #state{log_file_handle = CurrentIODevice, 
+									  log_file_name = CurrentLogFileName}, Immediate) ->
 	case Immediate of
 		true -> ems_logger:info("ems_logger immediate archive log file checkpoint.");
 		false -> ems_logger:info("ems_logger archive log file checkpoint.")
 	end,
-	close_filename_device(IODevice),
+	close_filename_device(CurrentIODevice, CurrentLogFileName),
 	case open_filename_device() of
 		{ok, LogFileName, IODevice2} ->
 			ems_logger:info("ems_logger open ~p for append.", [LogFileName]),
@@ -279,7 +296,7 @@ checkpoint_arquive_log(State = #state{log_file_handle = IODevice}, Immediate) ->
 								 log_file_handle = IODevice2,
 								 sync_buffer_error_count = 0};
 		{error, Reason} ->
-			ems_logger:error("ems_logger archive log file checkpoint error: ~p.", [Reason]),
+			ems_logger:error("ems_logger archive log file checkpoint exception: ~p.", [Reason]),
 			State2 = State
 	end,
 	set_timeout_archive_log_checkpoint(),
@@ -300,14 +317,14 @@ open_filename_device(LogFileName) ->
 				{ok, IODevice} -> 
 					{ok, LogFileName, IODevice};
 				{error, enospc} = Error ->
-					ems_logger:error("ems_logger does not have disk storage space to write to the log files."),
+					ems_logger:error("ems_logger open_filename_device does not have disk storage space to write to the log files."),
 					Error;
 				{error, Reason} = Error -> 
-					ems_logger:error("ems_logger failed to open log file for append. Reason: ~p.", [Reason]),
+					ems_logger:error("ems_logger open_filename_device failed to open log file for append. Reason: ~p.", [Reason]),
 					Error
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:error("ems_logger failed to create log file dir. Reason: ~p.", [Reason]),
+			ems_logger:error("ems_logger open_filename_device failed to create log file dir. Reason: ~p.", [Reason]),
 			Error
 	end.
 
@@ -315,7 +332,7 @@ log_file_head(#state{log_file_name = LogFileName}, N) ->
 	case ems_util:head_file(LogFileName, N) of
 		{ok, List} -> {ok, List};
 		{error, Reason} = Error -> 
-			ems_logger:error("ems_logger failed to open log file for read. Reason: ~p.", [Reason]),
+			ems_logger:error("ems_logger log_file_head failed to open log file for read. Reason: ~p.", [Reason]),
 			Error
 	end.
 
@@ -323,12 +340,14 @@ log_file_tail(#state{log_file_name = LogFileName}, N) ->
 	case ems_util:tail_file(LogFileName, N) of
 		{ok, List} -> {ok, List};
 		{error, Reason} = Error -> 
-			ems_logger:error("ems_logger failed to open log file for read. Reason: ~p.", [Reason]),
+			ems_logger:error("ems_logger log_file_tail failed to open log file for read. Reason: ~p.", [Reason]),
 			Error
 	end.
 
-close_filename_device(undefined) -> ok;
-close_filename_device(IODevice) -> file:close(IODevice).
+close_filename_device(undefined, _) -> ok;
+close_filename_device(IODevice, LogFileName) -> 
+	?DEBUG("ems_logger close log file ~p.", [LogFileName]),
+	file:close(IODevice).
 
 set_timeout_for_sync_buffer(#state{flag_checkpoint_sync_buffer = false, log_file_checkpoint=Timeout}) ->    
 	%?DEBUG("ems_logger set_timeout_for_sync_buffer."),
@@ -356,13 +375,13 @@ write_msg(Tipo, Msg, State = #state{level = Level})  ->
 		info  -> Msg1 = lists:concat(["INFO ", ems_clock:local_time_str(), "  ", Msg]);
 		error -> Msg1 = lists:concat(["\033[0;31mERROR ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]);
 		warn  -> Msg1 = lists:concat(["\033[0;33mWARN ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]);
-		debug -> Msg1 = lists:concat(["\033[0;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"])
+		debug -> Msg1 = lists:concat(["\033[1;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"])
 	end,
 	UltMsg = erlang:get(ult_msg),
 	case UltMsg == undefined orelse UltMsg =/= Msg1 of
 		true ->
 			erlang:put(ult_msg, Msg1),
-			case Level == error andalso Tipo /= error of
+			case (Level == error andalso Tipo /= error) andalso (Tipo /= debug) of
 				true ->
 					set_timeout_for_sync_buffer(State),
 					State#state{buffer = [Msg1|State#state.buffer], 
@@ -375,9 +394,7 @@ write_msg(Tipo, Msg, State = #state{level = Level})  ->
 								flag_checkpoint_sync_buffer = true, 
 								flag_checkpoint_tela = true}
 			end;
-		false -> 
-			?DEBUG("ems_logger skip write_msg. Type: ~p, Level: ~p.", [Tipo, Level]),
-			State
+		false -> State
 	end.
 		
 	
@@ -398,7 +415,7 @@ sync_buffer(State = #state{sync_buffer_error_count = 10}) ->
 sync_buffer(State = #state{buffer = Buffer,
 						   log_file_name = CurrentLogFileName,
 						   log_file_max_size = LogFileMaxSize,
-						   sync_buffer_error_count = SyncBufferErrorCount}) ->
+						   log_file_handle = IODevice}) ->
 	%?DEBUG("ems_logger sync_buffer to log file ~p. Buffer count: ~p, FileSize: ~p.", [CurrentLogFileName, string:len(Buffer), filelib:file_size(CurrentLogFileName)]),
 	% check limit log file max size
 	case filelib:file_size(CurrentLogFileName) > LogFileMaxSize of
@@ -408,44 +425,27 @@ sync_buffer(State = #state{buffer = Buffer,
 			State2#state{flag_checkpoint_sync_buffer = false, 
 						 sync_buffer_error_count = 0};
 		false ->
-			% IoDevice is really the pid of the process that handles the file. 
-			% Open again to verify that the file actually exists
-			case open_filename_device(CurrentLogFileName) of
-				{ok, LogFileName, IODevice} -> 
-					Msg = [ [L | ["\n"]] || L <- lists:reverse(Buffer)],
-					case file:write(IODevice, Msg) of
-						ok -> 
-							State#state{buffer = [], 
-										flag_checkpoint_sync_buffer = false, 
-										log_file_handle = IODevice, 
-										log_file_name = LogFileName, 
-										sync_buffer_error_count = 0};
-						{error, enospc} -> 
-							ems_logger:error("ems_logger does not have disk storage space to write to the log files. Clear log buffer cache."),
-							State#state{buffer = [], 
-										flag_checkpoint_sync_buffer = false, 
-										log_file_handle = IODevice, 
-										log_file_name = LogFileName,
-										sync_buffer_error_count = 0};
-						{error, ebadf} ->
-							ems_logger:error("ems_logger does no have log file descriptor valid. Clear log buffer cache."),
-							State#state{buffer = [], 
-										flag_checkpoint_sync_buffer = false, 
-										log_file_handle = IODevice, 
-										log_file_name = LogFileName,
-										sync_buffer_error_count = 0};
-						{error, Reason} ->
-							ems_logger:error("ems_logger was unable to unload the log buffer cache. Reason: ~p. Clear log buffer cache.", [Reason]),
-							State#state{buffer = [], 
-										flag_checkpoint_sync_buffer = false, 
-										log_file_handle = IODevice, 
-										log_file_name = LogFileName,
-										sync_buffer_error_count = 0}
-					end;
-				{error, Reason} -> 
-					ems_logger:error("ems_logger was unable to open log file ~p to unload the log buffer cache. Reason: ~p.", [CurrentLogFileName, Reason]),
-					State2 = checkpoint_arquive_log(State#state{sync_buffer_error_count = SyncBufferErrorCount + 1}, true),
-					State2
+			Msg = [ [L | ["\n"]] || L <- lists:reverse(Buffer)],
+			case file:write(IODevice, Msg) of
+				ok -> 
+					State#state{buffer = [], 
+								flag_checkpoint_sync_buffer = false, 
+								sync_buffer_error_count = 0};
+				{error, enospc} -> 
+					ems_logger:error("ems_logger does not have disk storage space to write to the log files. Clear log buffer cache."),
+					State#state{buffer = [], 
+								flag_checkpoint_sync_buffer = false, 
+								sync_buffer_error_count = 0};
+				{error, ebadf} ->
+					ems_logger:error("ems_logger does no have log file descriptor valid. Clear log buffer cache."),
+					State#state{buffer = [], 
+								flag_checkpoint_sync_buffer = false, 
+								sync_buffer_error_count = 0};
+				{error, Reason} ->
+					ems_logger:error("ems_logger was unable to unload the log buffer cache. Reason: ~p. Clear log buffer cache.", [Reason]),
+					State#state{buffer = [], 
+								flag_checkpoint_sync_buffer = false, 
+								sync_buffer_error_count = 0}
 			end
 	end.
 

@@ -158,6 +158,9 @@
 -define(TCP_PORT_MIN, 1024).
 -define(TCP_PORT_MAX, 99999).
 
+% Timeout to close idle odbc connection
+-define(CLOSE_IDLE_CONNECTION_TIMEOUT, 60000 * 3).
+
 
 %  Definição para o arquivo de configuração
 -record(config, {cat_host_alias, 							%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]

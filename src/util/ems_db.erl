@@ -38,7 +38,7 @@ create_database(Nodes) ->
 
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
-
+	
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
 							   {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
@@ -73,6 +73,10 @@ create_database(Nodes) ->
 								  {attributes, record_info(fields, request)},
 								  {index, [#request.timestamp]}]),
 
+    mnesia:create_table(service_datasource, [{type, set},
+											 {ram_copies, Nodes},
+											 {attributes, record_info(fields, service_datasource)}]),
+
     mnesia:create_table(ctrl_sqlite_table, [{type, set},
 											{disc_copies, Nodes},
 											{attributes, record_info(fields, ctrl_sqlite_table)}]),
@@ -99,6 +103,8 @@ create_database(Nodes) ->
 									  {attributes, record_info(fields, ctrl_params)}]),
 									  
 
+	io:format("ems_db create_database starting ems-bus mnesia database schema..."),
+	ems_util:sleep(2500),
 
 	ok.
 
@@ -525,17 +531,30 @@ create_datasource_from_map(M, Rowid) ->
 	Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
 	Timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY),
 	MaxPoolSize = maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL),
-	Id = erlang:phash2([Rowid, Type, Driver, Connection, TableName, PrimaryKey, CsvDelimiter, Sql, Timeout, MaxPoolSize]),
-	#service_datasource{id = Id,
-						rowid = Rowid,
-						type = Type,
-						driver = Driver,
-						connection = Connection,
-						table_name = TableName,
-						primary_key = PrimaryKey,
-						csv_delimiter = CsvDelimiter,
-						sql = Sql,
-						timeout = Timeout,
-						max_pool_size = MaxPoolSize}.
+	Ds = case ems_db:find(service_datasource, [{type, "==", Type}, 
+												{driver, "==", Driver}, 
+												{connection, "==", Connection}, 
+												{table_name, "==", TableName}, 
+												{csv_delimiter, "==", CsvDelimiter}, 
+												{sql, "==", Sql}, 
+												{timeout, "==", Timeout}, 
+												{max_pool_size, "==", MaxPoolSize}]) of
+			  [] ->										
+					NewDs = #service_datasource{id = ems_db:inc_counter(service_datasource),
+												rowid = Rowid,
+												type = Type,
+												driver = Driver,
+												connection = Connection,
+												table_name = TableName,
+												primary_key = PrimaryKey,
+												csv_delimiter = CsvDelimiter,
+												sql = Sql,
+												timeout = Timeout,
+												max_pool_size = MaxPoolSize},
+					ems_db:insert(NewDs),
+					NewDs;
+			  [Record] -> Record
+		 end,										
+	Ds.
 	
 

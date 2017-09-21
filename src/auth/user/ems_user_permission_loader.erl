@@ -142,7 +142,7 @@ load_permissions_from_datasource(Datasource, CtrlInsert, #state{sql_load_permiss
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_permission_loader load user permissions from database..."),
+				?DEBUG("ems_user_permission_loader load_permissions_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPermissions, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_permission_loader did not load any user permissions."),
@@ -165,7 +165,7 @@ load_permissions_from_datasource(Datasource, CtrlInsert, #state{sql_load_permiss
 						ems_logger:error("ems_user_permission_loader load user permissions query error: ~p.", [Reason]),
 						Error
 				end,
-				ems_db:release_connection(Datasource2),
+				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_permission_loader has no connection to load user permissions from database."),
@@ -181,7 +181,7 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update_per
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_permission_loader got a connection ~p to update user permissions.", [Datasource#service_datasource.id]),
+				?DEBUG("ems_user_permission_loader update_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
@@ -203,7 +203,7 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update_per
 						ems_logger:error("ems_user_permission_loader update user permissions error: ~p.", [Reason]),
 						Error
 				end,
-				ems_db:release_connection(Datasource2),
+				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_permission_loader has no connection to user update permissions from database."),

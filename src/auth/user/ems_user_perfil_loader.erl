@@ -143,7 +143,7 @@ load_perfil_from_datasource(Datasource, CtrlInsert, #state{sql_load_perfil = Sql
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_perfil_loader load user perfil from database..."),
+				?DEBUG("ems_user_perfil_loader load_perfil_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPerfil, []) of
 					{_,_,[]} -> 
 						?DEBUG("ems_user_perfil_loader did not load any user perfil."),
@@ -166,7 +166,7 @@ load_perfil_from_datasource(Datasource, CtrlInsert, #state{sql_load_perfil = Sql
 						ems_logger:error("ems_user_perfil_loader load user perfil query error: ~p.", [Reason]),
 						Error
 				end,
-				ems_db:release_connection(Datasource2),
+				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_perfil_loader has no connection to load user perfil from database."),
@@ -182,7 +182,7 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update_per
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_user_perfil_loader got a connection ~p to update user perfil.", [Datasource#service_datasource.id]),
+				?DEBUG("ems_user_perfil_loader update_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos para trazer todos os registros alterados no intervalor de 1 min
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
@@ -204,7 +204,7 @@ update_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update_per
 						ems_logger:error("ems_user_perfil_loader update user perfil error: ~p.", [Reason]),
 						Error
 				end,
-				ems_db:release_connection(Datasource2),
+				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_perfil_loader has no connection to user update perfil from database."),

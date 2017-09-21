@@ -82,6 +82,16 @@ info(Request) ->
 						 response_data = ems_schema:to_json(ContentData)}
 	}.
 
+config(Request) -> 
+	ContentData = lists:flatten(io_lib:format("~p", [ems_config:getConfig()])),
+	{ok, Request#request{code = 200, 
+						 content_type = <<"text/plain">>,
+						 response_data = ContentData}
+	}.
+
+
+%% internal functions
+
 ranch_info() ->	ranch_info(ranch:info(), []).
 
 ranch_info([], R) -> R;
@@ -98,10 +108,3 @@ ranch_value_to_binary(V) when is_atom(V) -> erlang:atom_to_binary(V, utf8);
 ranch_value_to_binary(V) when is_list(V) -> list_to_binary(V);
 ranch_value_to_binary({A,B,C,D}) -> list_to_binary(io_lib:format("{~p,~p,~p,~p}", [A,B,C,D]));
 ranch_value_to_binary(V) -> V.
-
-config(Request) -> 
-	ContentData = lists:flatten(io_lib:format("~p", [ems_config:getConfig()])),
-	{ok, Request#request{code = 200, 
-						 content_type = <<"text/plain">>,
-						 response_data = ContentData}
-	}.

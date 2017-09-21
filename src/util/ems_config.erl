@@ -255,7 +255,7 @@ get_default_config() ->
 			 ems_datasources			= #{},
 			 tcp_allowed_address		= all,
 			 tcp_listen_address			= [<<"0.0.0.0">>],
-			 authorization				= <<"oauth2">>,
+			 authorization				= oauth2,
 			 oauth2_with_check_constraint = false,
 			 config_file			    = undefined,
 			 params						= #{}

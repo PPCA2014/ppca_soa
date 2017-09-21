@@ -47,7 +47,14 @@ get_datasource(Worker) -> gen_server:call(Worker, get_datasource).
 
 notify_use(Worker, Datasource) -> gen_server:call(Worker, {notify_use, Datasource}).
 
-notify_return_pool(Worker) -> gen_server:call(Worker, notify_return_pool).
+notify_return_pool(Worker) -> 
+	try
+		gen_server:call(Worker, notify_return_pool)
+	catch 
+		_:Reason -> 
+			ems_logger:warn("ems_odbc_pool_worker notify_return_pool exception. Reason: ~p.", [Reason]),
+			{error, eunavailable_odbc_connection}
+	end.
 
 last_error(Worker) -> gen_server:call(Worker, last_error).
 
@@ -113,18 +120,20 @@ handle_call({notify_use, #service_datasource{pid_module = PidModule,
 							check_close_idle_ref = undefined,
 							close_idle_ref = undefined}};
 
-handle_call(notify_return_pool, _From, State = #state{datasource = InternalDatasource, 
+handle_call(notify_return_pool, _From, State = #state{datasource = InternalDatasource = #service_datasource{id = Id}, 
 													  query_count = QueryCount, 
 													  last_error = LastError}) ->
 	% volta ao pool somente se nenhum erro ocorreu
 	case LastError of
 		undefined ->
-			CheckCloseIdleRef = erlang:send_after(60000 * 1, self(), {check_close_idle_connection, QueryCount}),
+			?DEBUG("ems_odbc_pool_worker notify_return_pool datasource ~p.", [Id]),
+			CheckCloseIdleRef = erlang:send_after(?CLOSE_IDLE_CONNECTION_TIMEOUT, self(), {check_close_idle_connection, QueryCount}),
 			{reply, ok, State#state{datasource = InternalDatasource#service_datasource{pid_module = undefined,
 																					   pid_module_ref = undefined},
 									last_error = undefined,
 									check_close_idle_ref = CheckCloseIdleRef}};
 		_ ->
+			?DEBUG("ems_odbc_pool_worker notify_return_pool skip datasource ~p.", [Id]),
 			{reply, LastError, State}
 	end;
 
@@ -139,25 +148,29 @@ handle_call(last_error, _From, State) ->
 handle_info(State) ->
 	{noreply, State}.
 
-handle_info({check_close_idle_connection, QueryCount}, State = #state{datasource = #service_datasource{pid_module = undefined}, query_count = QueryCountNow}) ->
+handle_info({check_close_idle_connection, QueryCount}, State = #state{datasource = #service_datasource{id = Id, 
+																									   pid_module = undefined}, 
+																	  query_count = QueryCountNow}) ->
 	case QueryCountNow > QueryCount of
 		true -> 
+			?DEBUG("ems_odbc_pool_worker check_close_idle_connection skip wait ~pms to close datasource ~p in use.", [?CLOSE_IDLE_CONNECTION_TIMEOUT, Id]),
 			{noreply, State};
 		false ->
-			CloseIdleRef = erlang:send_after(60000 * 1, self(), close_idle_connection),
+			?DEBUG("ems_odbc_pool_worker check_close_idle_connection wait ~pms to close idle datasource ~p.", [?CLOSE_IDLE_CONNECTION_TIMEOUT, Id]),
+			CloseIdleRef = erlang:send_after(?CLOSE_IDLE_CONNECTION_TIMEOUT, self(), close_idle_connection),
 			{noreply, State#state{close_idle_ref = CloseIdleRef}}
 	end;
 
-handle_info({check_close_idle_connection, _QueryCount}, State) ->
-   {noreply, State};
-
-handle_info(close_idle_connection, State) ->
+handle_info(close_idle_connection, State = #state{datasource = #service_datasource{id = Id}}) ->
+   ?DEBUG("ems_odbc_pool_worker close_idle_connection ~p normal.", [Id]),
    {stop, normal, State};
 
-handle_info(_Msg, State) ->
+handle_info(Msg, State) ->
+   ?DEBUG("ems_odbc_pool_worker handle_info unknow message ~p.", [Msg]),
    {noreply, State}.
 
-terminate(_Reason, State) ->
+terminate(Reason, State) ->
+	?DEBUG("ems_odbc_pool_worker terminate. Reason: ~p.", [Reason]),   
     do_disconnect(State),
     ok.
  
@@ -195,10 +208,18 @@ do_connect(Datasource = #service_datasource{connection = Connection}) ->
 			{error, PosixError2}
 	end.
 
-do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef, type = sqlite, driver = <<"sqlite3">>}}) -> 
-	esqlite3:close(ConnRef);
-do_disconnect(#state{datasource = #service_datasource{conn_ref = ConnRef}}) -> 
-	odbc:disconnect(ConnRef).
+do_disconnect(#state{datasource = #service_datasource{id =Id, conn_ref = ConnRef, type = sqlite, driver = <<"sqlite3">>}}) -> 
+	try
+		esqlite3:close(ConnRef)
+	catch
+		_:Reason ->	ems_logger:error("ems_odbc_pool_worker do_disconnect datasource ~p exception: Reason: ~p.", [Id, Reason])
+	end;
+do_disconnect(#state{datasource = #service_datasource{id = Id, conn_ref = ConnRef}}) -> 
+	try
+		odbc:disconnect(ConnRef)
+	catch
+		_:Reason ->	ems_logger:error("ems_odbc_pool_worker do_disconnect datasource ~p exception: Reason: ~p.", [Id, Reason])
+	end.
 
 do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																			     type = sqlite,

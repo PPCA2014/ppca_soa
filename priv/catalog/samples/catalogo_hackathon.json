@@ -7,7 +7,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/pessoa",
 		"type": "GET",
-		"APIkey":"true",
 		"datasource" : {
 			"type" : "sqlserver",
 			"connection" : "DSN=siger;UID=ususiger;PWD=ususiger;useUnicode=true;characterEncoding=UTF-8",
@@ -38,7 +37,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -58,7 +57,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/pessoa/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"datasource" : {
 			"type" : "sqlserver",
 			"connection" : "DSN=siger;UID=ususiger;PWD=ususiger",
@@ -85,7 +83,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/cursos",
 		"type": "GET",
-		"APIkey":"true",
 		"datasource" : {
 			"type" : "csvfile",
 			"driver" : "sqlite3",
@@ -116,7 +113,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -137,7 +134,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/cursos/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"datasource" : {
 			"type" : "csvfile",
 			"driver" : "sqlite3",
@@ -166,7 +162,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/ofertas",
 		"type": "GET",
-		"APIkey":"true",
 		"datasource" : {
 			"type" : "csvfile",
 			"driver" : "sqlite3",
@@ -197,7 +192,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "limite do paginador"
 				},
 				{
@@ -217,7 +212,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/campus",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -249,7 +243,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -269,7 +263,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/campus/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -296,7 +289,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/local",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -327,7 +319,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -347,7 +339,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/local/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -374,7 +365,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/area_tematica",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -405,7 +395,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -425,7 +415,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/area_tematica/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -452,7 +441,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/mencao",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -483,7 +471,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -503,7 +491,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/mencao/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -530,7 +517,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/forma_ingresso",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -561,7 +547,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{
@@ -581,7 +567,6 @@
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/forma_ingresso/:id",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -608,7 +593,6 @@
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/centro_custo",
 		"type": "GET",
-		"APIkey":"true",
 		"async": "false",
 		"datasource" : {
 			"type" : "sqlserver",
@@ -639,7 +623,7 @@
 				{
 					"name": "offset",
 					"type": "int",
-					"default" : "0",
+					"default" : "1",
 					"comment": "Offset retornado da consulta"
 				},
 				{

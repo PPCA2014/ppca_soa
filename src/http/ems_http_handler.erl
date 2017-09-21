@@ -18,7 +18,6 @@ init(CowboyReq, Opts) ->
 	?DEBUG("ems_http_handler new request: ~p.", [CowboyReq]),
 	case ems_util:encode_request_cowboy(CowboyReq, self()) of
 		{ok, Request = #request{t1 = T1}} -> 
-			?DEBUG("ems_http_handler delivers the request to the dispatcher."),
 			case ems_dispatcher:dispatch_request(Request) of
 				{ok, request, Request2 = #request{code = Code,
 												  response_header = ResponseHeader,
@@ -65,7 +64,7 @@ init(CowboyReq, Opts) ->
 					ems_logger:log_request(Request2)
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:error("ems_http_handler request error: ~p.\n", [Reason]),
+			ems_logger:error("ems_http_handler request exception: ~p.\n", [Reason]),
 			Response = cowboy_req:reply(400, default_http_header(), ems_schema:to_json(Error), CowboyReq)
 	end,
 	{ok, Response, Opts}.

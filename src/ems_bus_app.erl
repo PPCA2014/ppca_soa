@@ -15,10 +15,10 @@
 
 
 start(_StartType, StartArgs) ->
+	ems_db:start(),
 	case ems_config:start() of
 		{ok, _Pid} ->
 			T1 = ems_util:get_milliseconds(),
-			ems_db:start(),
 			case ems_catalog_loader:start() of
 				ok ->
 					ems_dispatcher:start(),

@@ -42,47 +42,55 @@ stop() ->
  
  
 -spec get_connection(#service_datasource{}) -> {ok, #service_datasource{}} | {error, eunavailable_odbc_connection}.
-get_connection(Datasource) ->
+get_connection(Datasource = #service_datasource{id = Id}) ->
 	try
 		case gen_server:call(?SERVER, {create_connection, Datasource}, 12500) of
 			{ok, _Datasource2} = Result ->
-				?DEBUG("ems_odbc_pool get connection ~p.", [_Datasource2]),
+				?DEBUG("ems_odbc_pool get_connection from datasource ~p.", [Id]),
 				Result;
 			{error, Reason} -> 
-				ems_logger:error("ems_odbc_pool get connection error ~p.", [Reason]),
+				ems_logger:error("ems_odbc_pool get_connection exception from datasource ~p. Reason: ~p.", [Id, Reason]),
 				{error, eunavailable_odbc_connection}
 		end
 	catch
-		_ : _ ->
-			ems_logger:error("ems_odbc_pool catch timeout connection to datasource ~p.", [Datasource]),
+		_ : Reason2 ->
+			ems_logger:error("ems_odbc_pool get_connection catch exception from datasource ~p. Reason: ~p.", [Id, Reason2]),
 			{error, eunavailable_odbc_connection}
 	end.
 
 
-release_connection(Datasource) ->
-	gen_server:call(?SERVER, {release_connection, Datasource}).
+release_connection(Datasource = #service_datasource{id = Id}) ->
+	try
+		gen_server:call(?SERVER, {release_connection, Datasource})
+	catch 
+		_: Reason -> 
+			% não retorna erro para o processo que liberou ou tentou liberar uma conexão
+			ems_logger:error("ems_odbc_pool release_connection catch exception from datasource ~p. Reason: ~p.", [Id, Reason]),
+			ok
+	end.
 
 connection_pool_size(Datasource) -> gen_server:call(?SERVER, {get_size, Datasource}).
 
 param_query(#service_datasource{owner = Owner}, Sql) ->
 	gen_server:call(Owner, {param_query, Sql, [], undefined}).
 
-param_query(Datasource = #service_datasource{owner = Owner, 
-											 timeout = Timeout}, Sql, Params) ->
+param_query(#service_datasource{id = Id, 
+								 owner = Owner, 
+								 timeout = Timeout}, Sql, Params) ->
 	try
 		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool catch param query timeout to datasource ~p.", [Datasource]),
+			ems_logger:error("ems_odbc_pool param_query catch timeout exception from datasource ~p.", [Id]),
 			{error, eunavailable_odbc_connection}
 	end.
 
-param_query(Datasource = #service_datasource{owner = Owner}, Sql, Params, Timeout) ->
+param_query(#service_datasource{id = Id, owner = Owner}, Sql, Params, Timeout) ->
 	try
 		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool catch param query timeout to datasource ~p.", [Datasource]),
+			ems_logger:error("ems_odbc_pool param_query catch timeout exception from datasource ~p.", [Id]),
 			{error, eunavailable_odbc_connection}
 	end.
 
@@ -167,7 +175,7 @@ do_create_connection(Datasource = #service_datasource{id = Id,
 		0 ->
 			case ems_odbc_pool_worker:start_link(Datasource) of
 				{ok, WorkerPid} ->
-					?DEBUG("ems_odbc_pool start new worker for odbc connection ~p.", [Id]),
+					?DEBUG("ems_odbc_pool start new worker from datasource ~p.", [Id]),
 					PidModuleRef = erlang:monitor(process, PidModule),
 					Datasource2 = ems_odbc_pool_worker:get_datasource(WorkerPid),
 					Datasource3 = Datasource2#service_datasource{owner = WorkerPid, 
@@ -214,12 +222,12 @@ do_release_connection(Datasource = #service_datasource{id = Id,
 							Pool2 = queue:in(Datasource#service_datasource{pid_module = undefined, 
 																		   pid_module_ref = undefined}, Pool),
 							erlang:put(Id, Pool2),
-							?DEBUG("ems_odbc_pool with ~p entry for odbc connection pool ~p.", [PoolSize+1, Id]);
+							?DEBUG("ems_odbc_pool with ~p entry datasource ~p.", [PoolSize+1, Id]);
 						_ ->
 							gen_server:stop(Owner)
 					end;
 				false -> 
-					?DEBUG("ems_odbc_pool shutdown odbc connection ~p.", [Id]),
+					?DEBUG("ems_odbc_pool shutdown worker datasource ~p.", [Id]),
 					gen_server:stop(Owner)
 			end;
 		false -> ok
