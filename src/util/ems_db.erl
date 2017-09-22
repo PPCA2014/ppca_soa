@@ -103,7 +103,7 @@ create_database(Nodes) ->
 									  {attributes, record_info(fields, ctrl_params)}]),
 									  
 
-	io:format("ems_db create_database starting ems-bus mnesia database schema..."),
+	% foi preciso aguardar um pouco a inicialização do banco
 	ems_util:sleep(2500),
 
 	ok.
