@@ -234,7 +234,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 																		 <<"ems-owner">> => ServiceOwner},
 													 response_data = ems_schema:to_json({error, einvalid_rec_message}),
 													 latency = ems_util:get_milliseconds() - T1}}
-				after Timeout ->
+				after Timeout + 1000 ->
 					?DEBUG("ems_dispatcher received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
 					{error, request, Request#request{code = 503,
 													 content_type = ?CONTENT_TYPE_JSON,

@@ -177,9 +177,7 @@ to_resource_owner(User) ->
 								 <<"codigo">>, User#user.codigo,
 								 <<"login">>, User#user.login, 
 								 <<"name">>, User#user.name,
-								 <<"matricula">>, User#user.matricula,
 								 <<"email">>, User#user.email,
-								 <<"type">>, User#user.type,
-								 <<"lotacao">>, User#user.lotacao})
+								 <<"type">>, User#user.type})
 	end.
 

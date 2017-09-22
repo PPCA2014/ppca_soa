@@ -119,7 +119,8 @@
 		 is_metodo_suportado/1,
 		 parse_basic_authorization_header/1,
 		 parse_result_cache/1,
-		 node_binary/0
+		 node_binary/0,
+		 parse_timeout/2
 		]).
 
 
@@ -1626,6 +1627,15 @@ parse_result_cache(ResultCache) ->
 		true -> ResultCache;
 		_ -> erlang:error(einvalid_result_cache)
 	end.	
+
+
+-spec parse_timeout(non_neg_integer(), non_neg_integer()) -> non_neg_integer().
+parse_timeout(Timeout, MaxTimeout) ->
+	case is_integer(Timeout) andalso Timeout > 0 andalso Timeout =< MaxTimeout of
+		true -> Timeout;
+		_ -> erlang:error(einvalid_timeout)
+	end.	
+
 	
 -spec node_binary() -> binary().
 node_binary() -> erlang:atom_to_binary(node(), utf8).

@@ -347,7 +347,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 							true -> PoolMax = PoolSize;
 							false -> PoolMax = PoolMax0
 						end,
-						Timeout = maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT),
+						Timeout = ems_util:parse_timeout(maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT), ?SERVICE_MAX_TIMEOUT),
 						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
 						CacheControl = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
 						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
