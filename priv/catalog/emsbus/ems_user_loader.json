@@ -22,9 +22,10 @@
 							lower(rtrim(EmailPessoa)) as EmailPessoa, 
 							rtrim(SenhaPessoa) as SenhaPessoa,
 							TipoPessoa,
+							SubTipoPessoa,
 							PasswdCryptoPessoa,
 							TipoEmailPessoa,
-							1 as ActivePessoa,
+							ActivePessoa,
 							rtrim(Endereco) as Endereco,
 							rtrim(ComplementoEndereco) as ComplementoEndereco,
 							rtrim(Bairro) as Bairro,
@@ -53,7 +54,9 @@
 						   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
 						   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-						   0 as TipoPessoa,  
+						   isnull(ca.CategoCargo, 4) as TipoPessoa,
+						   0 as SubTipoPessoa,
+						   case when c.DtDesliga < GETDATE() then 0 else 1 end as ActivePessoa,
 						   'SHA1' as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, df.Endereco) as Endereco,
@@ -86,10 +89,11 @@
 						 left join Sipes.dbo.DadosFuncionais df 
 								 on p.PesCodigoPessoa = df.PesCodigoPessoa 
 						 left join Sipes.dbo.Contratos c 
-								on df.MatSipes = c.MatSipes 
+								 on df.MatSipes = c.MatSipes 
 						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
-								 on df.MatSipes = lf.Sipes 
-					where c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL 
+								 on df.MatSipes = lf.Sipes
+						 left join Sipes.dbo.Cargos ca
+								 on c.CodCargo = ca.CodCargo 
 			) as t_users 
 			order by t_users.TipoEmailPessoa",
 
@@ -102,9 +106,10 @@
 							lower(rtrim(EmailPessoa)) as EmailPessoa, 
 							rtrim(SenhaPessoa) as SenhaPessoa,
 							TipoPessoa,
+							SubTipoPessoa,
+							ActivePessoa,
 							PasswdCryptoPessoa,
 							TipoEmailPessoa,
-							1 as ActivePessoa,
 							rtrim(Endereco) as Endereco,
 							rtrim(ComplementoEndereco) as ComplementoEndereco,
 							rtrim(Bairro) as Bairro,
@@ -133,7 +138,9 @@
 						   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
 						   cast(al.AluSenha as varchar(60)) as SenhaPessoa, 
-						   2 as TipoPessoa,  
+						   3 as TipoPessoa,  
+						   al.AluNivel as SubTipoPessoa,	
+						   case when al.AluPerSaiUnB = 99999 then 1 else 0 end as ActivePessoa,
 						   null as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
@@ -163,7 +170,6 @@
 								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa  
 						 join BDPessoa.dbo.TB_Email em 
 								 on pfe.PFmEmaCodigo = em.EmaCodigo 
-					where al.AluPerSaiUnB = 99999 
 			) as t_users 
 			order by t_users.TipoEmailPessoa
 			",
@@ -178,7 +184,7 @@
 							TipoPessoa,
 							PasswdCryptoPessoa,
 							TipoEmailPessoa,
-							1 as ActivePessoa,
+							ActivePessoa,
 							rtrim(Endereco) as Endereco,
 							rtrim(ComplementoEndereco) as ComplementoEndereco,
 							rtrim(Bairro) as Bairro,
@@ -207,7 +213,9 @@
 						   cast(p.PesCpf as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
 						   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
-						   0 as TipoPessoa,  
+						   isnull(ca.CategoCargo, 4) as TipoPessoa,
+						   0 as SubTipoPessoa, 
+						   case when c.DtDesliga < GETDATE() then 0 else 1 end as ActivePessoa,
 						   'SHA1' as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, df.Endereco) as Endereco,
@@ -243,7 +251,9 @@
 								on df.MatSipes = c.MatSipes  
 						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
 								 on df.MatSipes = lf.Sipes 
-					where (c.DtDesliga >= GETDATE() or c.DtDesliga IS NULL) and (u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?) 
+						 left join Sipes.dbo.Cargos ca
+						 		 on c.CodCargo = ca.CodCargo 
+					where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 			) as t_users 
 			order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 			",
@@ -256,9 +266,10 @@
 							lower(rtrim(EmailPessoa)) as EmailPessoa, 
 							rtrim(SenhaPessoa) as SenhaPessoa,
 							TipoPessoa,
+							SubTipoPessoa,
 							PasswdCryptoPessoa,
 							TipoEmailPessoa,
-							1 as ActivePessoa,
+							ActivePessoa,
 							rtrim(Endereco) as Endereco,
 							rtrim(ComplementoEndereco) as ComplementoEndereco,
 							rtrim(Bairro) as Bairro,
@@ -287,7 +298,9 @@
 						   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
 						   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
 						   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-						   2 as TipoPessoa, 
+						   3 as TipoPessoa,  
+						   al.AluNivel as SubTipoPessoa,	
+						   case when al.AluPerSaiUnB = 99999 then 1 else 0 end as ActivePessoa,
 						   null as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
 						   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
@@ -317,7 +330,7 @@
 								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
 						 join BDPessoa.dbo.TB_Email em 
 								 on pfe.PFmEmaCodigo = em.EmaCodigo  
-					where al.AluPerSaiUnB = 99999 and (al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?) 
+					where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 			) as t_users 
 			order by t_users.TipoPessoa, t_users.TipoEmailPessoa
 			"
