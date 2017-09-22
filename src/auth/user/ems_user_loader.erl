@@ -19,7 +19,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, 
-		 last_update/0, is_empty/0, size_table/0, force_load_users/0, pause/0, resume/0]).
+		 last_update/0, is_empty/0, size_table/0, sync/0, pause/0, resume/0]).
 
 % estado do servidor
 -record(state, {datasource,
@@ -44,14 +44,13 @@ start(Service) ->
 stop() ->
     gen_server:cast(?SERVER, shutdown).
  
-
 last_update() -> ems_db:get_param(<<"ems_user_loader_lastupdate">>).
 	
 is_empty() -> mnesia:table_info(user, size) == 0.
 
 size_table() -> mnesia:table_info(user, size).
 
-force_load_users() -> 
+sync() -> 
 	gen_server:cast(?SERVER, force_load_users),
 	ok.
 

@@ -22,7 +22,11 @@
 		 set_level_error/1,
 		 checkpoint/1,
 		 set_show_response/1,
-		 unset_show_response/1]).
+		 unset_show_response/1,
+		 print_info_log/1,
+		 print_warn_log/1,
+		 print_error_log/1,
+		 print_debug_log/1]).
 
 log_file_tail(Request) ->	
 	case ems_logger:log_file_tail() of
@@ -107,3 +111,28 @@ checkpoint(Request) ->
 	{ok, Request#request{code = 200, 
 						 response_data = <<"{\"ok\": \"true\"}">>}
 	}.
+
+print_info_log(Request = #request{payload = Payload}) ->	
+	ems_logger:info(Payload),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+
+print_warn_log(Request = #request{payload = Payload}) ->	
+	ems_logger:warn(Payload),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+
+print_error_log(Request = #request{payload = Payload}) ->	
+	ems_logger:error(Payload),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+
+print_debug_log(Request = #request{payload = Payload}) ->	
+	ems_logger:debug(Payload),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+

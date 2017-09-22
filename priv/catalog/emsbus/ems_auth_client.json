@@ -2,9 +2,9 @@
 
 	{
 		"name": "/auth/client/:id",
-		"comment": "Returns a client through your Id",
-		"owner": "auth",
-		"version": "1",
+		"comment": "Get client by id",
+		"owner": "auth_client",
+		"version": "1.0.0",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/auth/client/:id",
 		"type": "GET",
@@ -20,15 +20,15 @@
 
 	{
 		"name": "/auth/client/:id",
-		"comment": "Delete a client by their Id",
-		"owner": "auth",
-		"version": "1",
+		"comment": "Delete a client by id",
+		"owner": "auth_client",
+		"version": "1.0.0",
 		"service" : "ems_api_query_service:delete",
 		"service" : "ems_client_service:delete",
-		"middleware" : "client_middleware",
+		"middleware" : "client_service",
 		"url": "/auth/client/:id",
 		"type": "DELETE",
-		"authorization" : "oauth2",
+		"authorization" : "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -41,13 +41,13 @@
 	{
 		"name": "/auth/client",
 		"comment": "Enter a new client",
-		"owner": "auth",
-		"version": "1",
+		"owner": "auth_client",
+		"version": "1.0.0",
 		"service" : "ems_api_query_service:insert",
-		"middleware" : "client_middleware",
+		"middleware" : "client_service",
 		"url": "/auth/client",
 		"type": "POST",
-		"authorization" : "oauth2",
+		"authorization" : "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -60,12 +60,12 @@
 	{
 		"name": "/auth/client/:id",
 		"comment": "Update an existing client",
-		"owner": "auth",
+		"owner": "auth_client",
 		"service" : "ems_api_query_service:update",
-		"middleware" : "client_middleware",
+		"middleware" : "client_service",
 		"url": "/auth/client/:id",
 		"type": "PUT",
-		"authorization" : "oauth2",
+		"authorization" : "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "client"
@@ -77,8 +77,8 @@
 
 	{	
 		"name": "/auth/client",
-		"comment": "List all registered clients",
-		"owner": "auth",
+		"comment": "List all clients",
+		"owner": "auth_client",
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/client",
 		"type": "GET",
@@ -122,5 +122,61 @@
 					"comment": "Campos que devem ser ordenados"
 				}
 			]	
+	},
+	
+	{	
+		"name": "/auth/client/loader/sync",
+		"comment": "Syncronize client database",
+		"owner": "auth_client",
+		"service" : "client_service:loader_sync",
+		"url": "/auth/client/loader/sync",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/client/loader/last_update",
+		"comment": "Get last update of client database",
+		"owner": "auth_client",
+		"service" : "client_service:loader_last_update",
+		"url": "/auth/client/loader/last_update",
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/client/loader/pause",
+		"comment": "Stop client database synchronization",
+		"owner": "auth_client",
+		"service" : "client_service:loader_pause",
+		"url": "/auth/client/loader/pause",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/client/loader/resume",
+		"comment": "Resume client database synchronization",
+		"owner": "auth_client",
+		"service" : "client_service:loader_resume",
+		"url": "/auth/client/loader/resume",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/client/loader/size_table",
+		"comment": "Get client database size",
+		"owner": "auth_client",
+		"service" : "client_service:loader_size_table",
+		"url": "/auth/client/loader/size_table",
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
 	}
+	
 ]

@@ -19,7 +19,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, 
-		 last_update/0, is_empty/0, size_table/0, force_load_clients/0, pause/0, resume/0]).
+		 last_update/0, is_empty/0, size_table/0, sync/0, pause/0, resume/0]).
 
 % estado do servidor
 -record(state, {datasource,
@@ -46,7 +46,7 @@ is_empty() -> mnesia:table_info(client, size) == 0.
 
 size_table() -> mnesia:table_info(client, size).
 
-force_load_clients() -> 
+sync() -> 
 	gen_server:cast(?SERVER, force_load_clients),
 	ok.
 
