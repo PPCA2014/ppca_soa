@@ -348,7 +348,7 @@ make_release(){
 
 # *************** main ***************
 
-echo "Start erlangms release tool ( Date: $(date '+%d/%m/%Y %H:%M:%S') )"
+echo "Start erlangms release tool ( Date: $(date '+%d/%m/%Y %H:%M:%S')  Distro: $LINUX_DISTRO )"
 echo "Linux: $LINUX_DESCRIPTION  Version: $LINUX_VERSION_ID"
 
 [ "$BUILD_RPM_FLAG" = "true" ] && echo "Build rpm packages with rpmbuild available."
