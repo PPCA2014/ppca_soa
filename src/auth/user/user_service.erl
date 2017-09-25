@@ -1,6 +1,6 @@
--module(user_middleware).
+-module(user_service).
 
--export([onvalidate/2, perfil_by_user/1]).
+-export([onvalidate/2, perfil_by_user/1, loader_sync/1, loader_last_update/1, loader_pause/1, loader_resume/1, loader_size_table/1]).
 
 -include("include/ems_schema.hrl").
 
@@ -35,3 +35,30 @@ perfil_by_user(Request) ->
 									response_data = ems_schema:to_json(Error)}}
 	end.
 	
+loader_sync(Request) ->	
+	ems_user_loader:sync(),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+
+loader_last_update(Request) ->	
+	{ok, Request#request{code = 200, 
+						 response_data = ems_schema:to_json({ok, ems_util:timestamp_str(ems_user_loader:last_update())})}
+	}.
+
+loader_pause(Request) ->	
+	ems_user_loader:pause(),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+
+loader_resume(Request) ->	
+	ems_user_loader:resume(),
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"ok\": \"true\"}">>}
+	}.
+
+loader_size_table(Request) ->	
+	{ok, Request#request{code = 200, 
+						 response_data = ems_schema:to_json({ok, ems_user_loader:size_table()})}
+	}.

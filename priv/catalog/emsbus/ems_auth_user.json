@@ -1,12 +1,13 @@
 [
 	{
 		"name": "/auth/user/:id",
-		"comment": "Returns a user through your Id",
+		"comment": "Get user by id",
 		"owner": "auth_user",
 		"version": "1.0.0",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/auth/user/:id",
 		"type": "GET",
+		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "user"
@@ -18,13 +19,14 @@
 
 	{
 		"name": "/auth/user/:id",
-		"comment": "Delete a user by their Id",
+		"comment": "Delete a user by id",
 		"owner": "auth_user",
 		"version": "1.0.0",
 		"service" : "ems_api_query_service:delete",
-		"middleware" : "user_middleware",
+		"middleware" : "user_service",
 		"url": "/auth/user/:id",
 		"type": "DELETE",
+		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "user"
@@ -40,9 +42,10 @@
 		"owner": "auth_user",
 		"version": "1.0.0",
 		"service" : "ems_api_query_service:insert",
-		"middleware" : "user_middleware",
+		"middleware" : "user_service",
 		"url": "/auth/user",
 		"type": "POST",
+		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "user"
@@ -57,9 +60,10 @@
 		"comment": "Update an existing user",
 		"owner": "auth_user",
 		"service" : "ems_api_query_service:update",
-		"middleware" : "user_middleware",
+		"middleware" : "user_service",
 		"url": "/auth/user/:id",
 		"type": "PUT",
+		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : "user"
@@ -71,11 +75,12 @@
 
 	{	
 		"name": "/auth/user",
-		"comment": "List all registered users",
+		"comment": "List all users",
 		"owner": "auth_user",
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/user",
 		"type": "GET",
+		"authorization": "basic",
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
@@ -121,9 +126,10 @@
 		"name": "/auth/user/:id/perfil",
 		"comment": "List all user perfil",
 		"owner": "auth_user",
-		"service" : "user_middleware:perfil_by_user",
+		"service" : "user_service:perfil_by_user",
 		"url": "/auth/user/:id/perfil",
 		"type": "GET",
+		"authorization": "basic",
 		"lang" : "erlang",
 		"querystring": [
 				{
@@ -157,6 +163,61 @@
 					"comment": "Campos que devem ser ordenados"
 				}
 			]	
+	},
+	
+	{	
+		"name": "/auth/user/loader/sync",
+		"comment": "Syncronize user database",
+		"owner": "auth_user",
+		"service" : "user_service:loader_sync",
+		"url": "/auth/user/loader/sync",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/user/loader/last_update",
+		"comment": "Get last update of user database",
+		"owner": "auth_user",
+		"service" : "user_service:loader_last_update",
+		"url": "/auth/user/loader/last_update",
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/user/loader/pause",
+		"comment": "Stop user database synchronization",
+		"owner": "auth_user",
+		"service" : "user_service:loader_pause",
+		"url": "/auth/user/loader/pause",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/user/loader/resume",
+		"comment": "Resume user database synchronization",
+		"owner": "auth_user",
+		"service" : "user_service:loader_resume",
+		"url": "/auth/user/loader/resume",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{	
+		"name": "/auth/user/loader/size_table",
+		"comment": "Get user database size",
+		"owner": "auth_user",
+		"service" : "user_service:loader_size_table",
+		"url": "/auth/user/loader/size_table",
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
 	}
 	
 ]

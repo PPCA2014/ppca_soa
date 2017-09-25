@@ -153,17 +153,52 @@
 	},
 	
 	{
-		"name": "/logger/response/false",
-		"comment": "Unset show_response",
+		"name": "/logger/print/info",
+		"comment": "Print info in log",
 		"owner": "ems_bus",
 		"version": "1.0.0",
-		"service" : "ems_logger_service:unset_show_response",
-		"url": "logger/response/false",
+		"service" : "ems_logger_service:print_info_log",
+		"url": "/logger/print/info",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/print/warn",
+		"comment": "Print warn in log",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:print_warn_log",
+		"url": "/logger/print/warn",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/print/error",
+		"comment": "Print error in log",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:print_error_log",
+		"url": "/logger/print/error",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+	
+	{
+		"name": "/logger/print/debug",
+		"comment": "Print debug in log",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:print_debug_log",
+		"url": "/logger/print/debug",
 		"type": "POST",
 		"authorization": "basic",
 		"lang" : "erlang"
 	}
-	
 	
 	
 ]

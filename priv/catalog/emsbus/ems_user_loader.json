@@ -247,8 +247,6 @@
 								 on pfe.PFmEmaCodigo = em.EmaCodigo 
 						 left join Sipes.dbo.DadosFuncionais df 
 								 on p.PesCodigoPessoa = df.PesCodigoPessoa 
-						 left join Sipes.dbo.Contratos c 
-								on df.MatSipes = c.MatSipes  
 						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
 								 on df.MatSipes = lf.Sipes 
 						 left join Sipes.dbo.Cargos ca
