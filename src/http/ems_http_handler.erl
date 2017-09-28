@@ -26,7 +26,7 @@ init(CowboyReq, Opts) ->
 					Response = cowboy_req:reply(Code, 
 												ResponseHeader#{
 													<<"server">> => ?SERVER_NAME,
-													<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ContentType),
+													<<"content-type">> => ContentType,
 													<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 													<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
 													<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
@@ -41,7 +41,7 @@ init(CowboyReq, Opts) ->
 													 content_type = ContentType}} ->
 					Response = cowboy_req:reply(Code, 
 												ResponseHeader#{<<"server">> => ?SERVER_NAME,
-																<<"content-type">> => maps:get(<<"content-type">>, ResponseHeader, ContentType),
+																<<"content-type">> => ContentType,
 																<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
 																<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
 																<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,

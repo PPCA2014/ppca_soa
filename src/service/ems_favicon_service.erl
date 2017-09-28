@@ -35,6 +35,7 @@ execute(Request = #request{timestamp = Timestamp})	->
 				{error, Reason} = Err -> 
 					{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 										    reason = Reason,
+										    content_type = ?CONTENT_TYPE_JSON,
 											response_data = ems_schema:to_json(Err), 
 											response_header = error_http_header()}
 					 }
@@ -53,7 +54,6 @@ generate_etag(FSize, MTime) -> integer_to_binary(erlang:phash2({FSize, MTime}, 1
 
 generate_header(ETag, LastModified, Expires) ->
 	#{
-		<<"content-type">> => <<"image/x-icon">>,
 		<<"cache-control">> => <<"max-age=604800, public">>,
 		<<"etag">> => ETag,
 		<<"last-modified">> => LastModified,
