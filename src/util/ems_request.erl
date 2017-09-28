@@ -251,7 +251,6 @@ load_from_file_req(Request = #request{url = Url,
 			ExpireDate = ems_util:date_add_minute(Timestamp, ExpiresMinute + 120), % add +120min (2h) para ser horário GMT
 			Expires = cowboy_clock:rfc1123(ExpireDate),
 			HttpHeader =	#{
-								<<"content-type">> => MimeType,
 								<<"cache-control">> => CacheControl,
 								<<"etag">> => ETag,
 								<<"last-modified">> => LastModified,
