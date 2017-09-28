@@ -20,7 +20,8 @@
 # 28/11/2016  Everton Agilar     Release inicial do script de release
 # 05/03/2017  Everton Agilar     Improve release to deb and rpm
 # 06/07/2017  Everton Agilar     New: --skip_build
-# 23/09/2017  Everton Agilar     New: --skip_upload
+# 23/09/2017  Everton Agilar     New: --auto_upload
+# 28/09/2017  Everton Agilar     New: --clean
 #
 #
 #
@@ -35,7 +36,7 @@ GIT_RELEASE_REPO=https://github.com/erlangms/releases
 BUILD_RPM_FLAG="$( rpmbuild --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
 BUILD_DEB_FLAG="$( dpkg-deb --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
 SKIP_BUILD="true"
-SKIP_UPLOAD="false"
+AUTO_UPLOAD="false"
 
 # Identify the linux distribution: ubuntu, debian, centos
 LINUX_DISTRO=$(awk -F"=" '{ if ($1 == "ID"){ 
@@ -65,7 +66,7 @@ die () {
 }
 
 config_release_path(){
-	if [ "$SKIP_UPLOAD" = "false" ]; then
+	if [ "$AUTO_UPLOAD" = "true" ]; then
 		# Sets the RELEASE_PATH variable with the path of the releases folder
 		# If the folder does not exist, then you must first download
 		if cd $WORKING_DIR/../../releases 2> /dev/null; then
@@ -78,7 +79,7 @@ config_release_path(){
 			RELEASE_PATH=$(cd $WORKING_DIR/../../releases/ && pwd)
 		fi
 	else
-		RELEASE_PATH="/tmp/erlangms/releases"
+		RELEASE_PATH="/tmp/erlangms_releases_$$"
 		mkdir -p $RELEASE_PATH
 	fi
 	echo "Setting release path to $RELEASE_PATH."
@@ -86,8 +87,10 @@ config_release_path(){
 
 # ***** Clean ******
 clean(){
+	echo "Clean release build..."
 	cd $WORKING_DIR
 	rm -Rf ems-bus
+	rm -Rf ems_bus
 	rm -f *.tar.gz
 	
 	# Loop pelas pastas de templates dos pacotes rpm
@@ -129,8 +132,9 @@ help(){
 	echo "How to use: ./release.sh"
 	echo
 	echo "Additional parameters:"
-	echo "  --skip-build    -> skip build with rebar"
-	echo "  --skip-upload   -> skip upload release to git"
+	echo "  --skip-build    -> skip build with rebar. Default is true."
+	echo "  --auto-upload   -> auto upload release to git. Default is false."
+	echo "  --clean         -> clean build release."
 	exit 1
 }
 
@@ -151,7 +155,7 @@ send_build_repo(){
 
 # send the generated package to git
 push_release(){
-	if [ "$SKIP_UPLOAD" = "false" ]; then
+	if [ "$AUTO_UPLOAD" = "true" ]; then
 		cd $RELEASE_PATH
 		echo "$VERSION_RELEASE" > setup/current_version
 		git add $VERSION_RELEASE >> /dev/null
@@ -192,11 +196,15 @@ make_release(){
 
 
 	# ******** Gera o release na pasta rel *********
+	echo 'Generating release with rebar now...'
+	tools/rebar/rebar compile generate || die 'Failed to generate release with rebar compile generate!'
+
+	# Esta lib dá erro no com "tools/rebar/rebar compile generate", portando é copiado manualmente
+	mkdir rel/ems_bus/lib/sd_notify
+	cp -r deps/sd_notify/ebin rel/ems_bus/lib/sd_notify
+	cp -r deps/sd_notify/priv rel/ems_bus/lib/sd_notify
+	
 	cd rel
-	echo 'Generating release with rebar...'
-	../tools/rebar/rebar compile generate || die 'Failed to generate release with rebar compile generate!'
-
-
 	mv ems_bus ems-bus
 	mv ems-bus/bin/ems_bus ems-bus/bin/ems-bus
 
@@ -360,12 +368,15 @@ for P in $*; do
 	if [[ "$P" =~ ^--.+$ ]]; then
 		if [ "$P" = "--help" ]; then
 			help
+		elif [[ "$P" = "--clean" ]]; then
+			clean
+			exit 1
 		elif [[ "$P" =~ --skip[_-]build ]]; then
-			echo "Skip build ems-bus active..."
+			echo "Skip build ems-bus enabled..."
 			SKIP_BUILD="true"
-		elif [[ "$P" =~ --skip[_-]upload ]]; then
-			echo "Skip upload release active..."
-			SKIP_UPLOAD="true"
+		elif [[ "$P" =~ --auto[_-]upload ]]; then
+			echo "Auto upload release build enabled..."
+			AUTO_UPLOAD="true"
 		else
 			echo "Invalid parameter: $P"
 			help
@@ -384,8 +395,8 @@ done
 #fi	
 
 
-config_release_path
 clean
+config_release_path
 make_release
 push_release
 clean
