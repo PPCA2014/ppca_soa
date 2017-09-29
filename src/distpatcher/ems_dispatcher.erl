@@ -352,8 +352,8 @@ dispatch_middleware_function(Request = #request{reason = ok,
 											 response_data = ems_schema:to_json(Error2),
 											 latency = ems_util:get_milliseconds() - T1}}
 	end;
-dispatch_middleware_function(Request = #request{t1 = T1}) ->
-	{error, request, Request#request{code = 400,
+dispatch_middleware_function(Request = #request{code = Code, t1 = T1}) ->
+	{error, request, Request#request{code = Code,
 									 content_type = ?CONTENT_TYPE_JSON,
 									 latency = ems_util:get_milliseconds() - T1}}.
 
