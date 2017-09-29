@@ -525,13 +525,37 @@ do_log_request(#request{rid = RID,
 										true ->
 										   case Service#service.result_cache > 0 of
 												true ->
-												   ResultCacheMin = trunc(Service#service.result_cache / 1000),
-												   case ResultCache of 
-														true ->  io_lib:format("Result-Cache: ~sms (~smin)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																															   integer_to_list(ResultCacheMin), 
-																															   integer_to_list(ResultCacheRid)]);
-														false -> io_lib:format("Result-Cache: ~sms (~smin)\n\t", [integer_to_list(Service#service.result_cache), 
-																												  integer_to_list(ResultCacheMin)])
+												   ResultCacheSec = trunc(Service#service.result_cache / 1000),
+												   case ResultCacheSec > 0 of 
+														true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
+														false -> ResultCacheMin = 0
+												   end,
+												   case ResultCacheMin > 0 of
+														true -> 
+														   case ResultCache of 
+																true ->  io_lib:format("Result-Cache: ~sms (~smin)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																																	   integer_to_list(ResultCacheMin), 
+																																	   integer_to_list(ResultCacheRid)]);
+																false -> io_lib:format("Result-Cache: ~sms (~smin)\n\t", [integer_to_list(Service#service.result_cache), 
+																														  integer_to_list(ResultCacheMin)])
+															end;
+														false ->
+														   case ResultCacheSec > 0 of
+																true -> 
+																   case ResultCache of 
+																		true ->  io_lib:format("Result-Cache: ~sms (~ssec)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																																			   integer_to_list(ResultCacheSec), 
+																																			   integer_to_list(ResultCacheRid)]);
+																		false -> io_lib:format("Result-Cache: ~sms (~ssec)\n\t", [integer_to_list(Service#service.result_cache), 
+																																  integer_to_list(ResultCacheSec)])
+																	end;
+																false ->
+																   case ResultCache of 
+																		true ->  io_lib:format("Result-Cache: ~sms <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																																	  integer_to_list(ResultCacheRid)]);
+																		false -> io_lib:format("Result-Cache: ~sms\n\t", [integer_to_list(Service#service.result_cache)])
+																	end
+															end
 													end;
 												false -> ""
 											end;
