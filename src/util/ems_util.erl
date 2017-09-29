@@ -120,7 +120,8 @@
 		 parse_basic_authorization_header/1,
 		 parse_result_cache/1,
 		 node_binary/0,
-		 parse_timeout/2
+		 parse_timeout/2,
+		 uptime_str/0
 		]).
 
 
@@ -1639,3 +1640,14 @@ parse_timeout(Timeout, MaxTimeout) ->
 	
 -spec node_binary() -> binary().
 node_binary() -> erlang:atom_to_binary(node(), utf8).
+
+uptime_str() ->
+	{UpTime, _} = erlang:statistics(wall_clock),
+    {D, {H, M, S}} = calendar:seconds_to_daystime(UpTime div 1000),
+    lists:flatten(io_lib:format("~p days, ~p hours, ~p minutes and ~p seconds", [D,H,M,S])).
+    
+	
+	
+	
+
+

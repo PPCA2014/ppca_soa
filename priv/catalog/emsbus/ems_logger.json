@@ -142,16 +142,28 @@
 	
 	{
 		"name": "/logger/response/true",
-		"comment": "Set show responder",
+		"comment": "Show response in log. Default is false.",
 		"owner": "ems_bus",
 		"version": "1.0.0",
-		"service" : "ems_logger_service:set_show_response",
+		"service" : "ems_logger_service:show_response",
 		"url": "logger/response/true",
 		"type": "POST",
 		"authorization": "basic",
 		"lang" : "erlang"
 	},
 	
+	{
+		"name": "/logger/response/false",
+		"comment": "Hide response in log.",
+		"owner": "ems_bus",
+		"version": "1.0.0",
+		"service" : "ems_logger_service:hide_response",
+		"url": "logger/response/false",
+		"type": "POST",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+
 	{
 		"name": "/logger/print/info",
 		"comment": "Print info in log",

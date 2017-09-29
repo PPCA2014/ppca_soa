@@ -21,8 +21,8 @@
 		 set_level_info/1,
 		 set_level_error/1,
 		 checkpoint/1,
-		 set_show_response/1,
-		 unset_show_response/1,
+		 show_response/1,
+		 hide_response/1,
 		 print_info_log/1,
 		 print_warn_log/1,
 		 print_error_log/1,
@@ -79,60 +79,60 @@ unset_debug_mode(Request) ->
 sync(Request) ->	
 	ems_logger:sync(),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 set_level_info(Request) ->	
 	ems_logger:set_level(info),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 set_level_error(Request) ->	
 	ems_logger:set_level(error),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
-set_show_response(Request) ->	
+show_response(Request) ->	
 	ems_logger:show_response(true),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
-unset_show_response(Request) ->	
+hide_response(Request) ->	
 	ems_logger:show_response(false),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 checkpoint(Request) ->	
 	ems_logger:checkpoint(),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 print_info_log(Request = #request{payload = Payload}) ->	
 	ems_logger:info(Payload),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 print_warn_log(Request = #request{payload = Payload}) ->	
 	ems_logger:warn(Payload),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 print_error_log(Request = #request{payload = Payload}) ->	
 	ems_logger:error(Payload),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 
 print_debug_log(Request = #request{payload = Payload}) ->	
 	ems_logger:debug(Payload),
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"ok\": \"true\"}">>}
+						 response_data = ?OK_JSON}
 	}.
 

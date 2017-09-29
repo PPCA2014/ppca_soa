@@ -9,6 +9,7 @@
 	"APIkey":"false",
 	"lang" : "erlang",
 	"pool_size" : 1,
-	"pool_max" : 1
+	"pool_max" : 1,
+	"enable" : false
 }
 

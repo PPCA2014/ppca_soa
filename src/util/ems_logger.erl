@@ -488,7 +488,7 @@ do_log_request(#request{rid = RID,
 			  }, 
 			  #state{show_response = ShowResponse}) ->
 			  
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~sResult-Cache: ~s\n\tCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~s~sCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Uri, 
 								   Version, 
@@ -523,11 +523,19 @@ do_log_request(#request{rid = RID,
 								   end,
 								   case Service =/= undefined of
 										true ->
-										   case ResultCache of 
-												true -> io_lib:format("~sms  <<RID: ~s>>", [integer_to_list(Service#service.result_cache), integer_to_list(ResultCacheRid)]); 
-												false -> integer_to_list(Service#service.result_cache) ++ "ms" 
+										   case Service#service.result_cache > 0 of
+												true ->
+												   ResultCacheMin = trunc(Service#service.result_cache / 1000),
+												   case ResultCache of 
+														true ->  io_lib:format("Result-Cache: ~sms (~smin)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																															   integer_to_list(ResultCacheMin), 
+																															   integer_to_list(ResultCacheRid)]);
+														false -> io_lib:format("Result-Cache: ~sms (~smin)\n\t", [integer_to_list(Service#service.result_cache), 
+																												  integer_to_list(ResultCacheMin)])
+													end;
+												false -> ""
 											end;
-										false -> "0ms"
+										false -> ""
 								   end,
 								   case CacheControl of
 										undefined -> <<>>;
@@ -576,12 +584,12 @@ do_log_request(#request{rid = RID,
 								   case Client of
 										public -> <<"public">>;
 										undefined -> <<>>;
-										_ -> iolist_to_binary([integer_to_binary(Client#client.codigo), <<" ">>, Client#client.name])
+										_ -> iolist_to_binary([integer_to_binary(Client#client.id), <<" ">>, Client#client.name])
 								   end,
 								   case User of
 										public -> <<"public">>;
 																						undefined -> <<>>;
-										_ ->  iolist_to_binary([integer_to_binary(User#user.codigo), <<" ">>,  User#user.name])
+										_ ->  iolist_to_binary([integer_to_binary(User#user.id), <<" ">>,  User#user.login])
 								   end,
 								   case Node of
 										undefined -> <<>>;

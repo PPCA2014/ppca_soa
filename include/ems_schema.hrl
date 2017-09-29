@@ -12,10 +12,10 @@
 -record(counter, {key :: atom(), 
      			  index :: non_neg_integer()}).
 
--record(user, {id :: non_neg_integer(), 					%% identifica o registro
-			   codigo :: non_neg_integer(),					%% identifica uma pessoa (pode haver duplicado pois a pessoa pode ter vários e-mails e login)
-			   login :: binary(),
-			   name :: binary(), 
+-record(user, {id :: non_neg_integer(), 					%% id (required)
+			   codigo :: non_neg_integer(),					%% identificador externo (aceita duplicados)
+			   login :: binary(),							%% login do usuário (required)
+			   name :: binary(), 							%% nome do usuário
 			   cpf :: binary(),
 			   email :: binary(), 
 			   password :: binary(),

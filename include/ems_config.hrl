@@ -148,6 +148,7 @@
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
 -define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public">>).
 -define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public">>).
+-define(OK_JSON, <<"{\"ok\": true}">>).
 
 % Default ports
 -define(LDAP_SERVER_PORT, 2389).
@@ -161,6 +162,8 @@
 
 % Timeout to close idle odbc connection
 -define(CLOSE_IDLE_CONNECTION_TIMEOUT, 60000 * 3).
+
+
 
 
 %  Definição para o arquivo de configuração

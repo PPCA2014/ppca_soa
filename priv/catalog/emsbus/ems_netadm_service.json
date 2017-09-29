@@ -1,5 +1,61 @@
 [
 	{
+		"name": "/netadm/restart",
+		"comment": "Restart ems-bus.",
+		"owner": "netadm",
+		"version": "1.0.0",
+		"service" : "ems_netadm_service:restart",
+		"url": "/netadm/restart",
+		"async": "false",
+		"result_cache" : 0,
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/netadm/pid",
+		"comment": "Get main pid of ems-bus.",
+		"owner": "netadm",
+		"version": "1.0.0",
+		"service" : "ems_netadm_service:pid",
+		"url": "/netadm/pid",
+		"async": "false",
+		"result_cache" : 0,
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/netadm/tasks",
+		"comment": "Get total tasks running.",
+		"owner": "netadm",
+		"version": "1.0.0",
+		"service" : "ems_netadm_service:tasks",
+		"url": "/netadm/tasks",
+		"async": "false",
+		"result_cache" : 0,
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+
+	{
+		"name": "/netadm/uptime",
+		"comment": "Get ems-bus uptime.",
+		"owner": "netadm",
+		"version": "1.0.0",
+		"service" : "ems_netadm_service:uptime",
+		"url": "/netadm/uptime",
+		"async": "false",
+		"result_cache" : 0,
+		"type": "GET",
+		"authorization": "basic",
+		"lang" : "erlang"
+	},
+
+	{
 		"name": "/netadm/names",
 		"comment": "List cluster services and port.",
 		"owner": "netadm",

@@ -21,7 +21,8 @@
 		 find_by_email/1, 
 		 find_by_cpf/1, 
 		 find_by_login_and_password/2,
-		 to_resource_owner/1]).
+		 to_resource_owner/1,
+		 add_user/2]).
 
 find_by_id(Id) -> ems_db:get(user, Id).
 
@@ -181,3 +182,7 @@ to_resource_owner(User) ->
 								 <<"type">>, User#user.type})
 	end.
 
+-spec add_user(binary(), binary()) -> {ok, #user{}} | {error, atom()}.
+add_user(Login, Password) ->
+	User = #user{login = Login, password = Password},
+	insert(User).
