@@ -85,7 +85,7 @@ do_find(#request{querystring_map = QuerystringMap}, Datasource) ->
 
 do_find_by_id(Request = #request{querystring_map = QuerystringMap}, 
 			  Datasource) ->
-	Id = ems_request:get_param_url(<<"id">>, 0, Request),
+	Id = ems_util:get_param_url(<<"id">>, 0, Request),
 	case Id > 0 of
 		true ->
 			Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
@@ -99,11 +99,11 @@ do_insert(#request{payload_map = Payload, service = Service}, Datasource) ->
 
 
 do_update(Request = #request{payload_map = Payload, service = Service}, Datasource) ->
-	Id = ems_request:get_param_url(<<"id">>, 0, Request),
+	Id = ems_util:get_param_url(<<"id">>, 0, Request),
 	ems_api_query:update(Id, Payload, Service, Datasource).
 
 
 do_delete(Request = #request{service = Service}, Datasource) ->
-	Id = ems_request:get_param_url(<<"id">>, 0, Request),
+	Id = ems_util:get_param_url(<<"id">>, 0, Request),
 	ems_api_query:delete(Id, Service, Datasource).
 

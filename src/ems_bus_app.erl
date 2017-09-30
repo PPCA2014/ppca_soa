@@ -39,7 +39,7 @@ start(_StartType, StartArgs) ->
 								true -> ems_logger:info("Default authorization mode: ~p <<with check constraint>>.", [AuthorizationMode]);
 								false -> ems_logger:info("Default authorization mode: ~p.", [AuthorizationMode])
 							end,
-							ems_logger:info("Server ~s started in ~pms.", [?SERVER_NAME, ems_util:get_milliseconds() - T1]),
+							ems_logger:info("Server ~s (PID ~s) started in ~pms.", [?SERVER_NAME, os:getpid(), ems_util:get_milliseconds() - T1]),
 							ems_logger:sync(),
 							ems_logger:set_level(info)
 					end), set_level),

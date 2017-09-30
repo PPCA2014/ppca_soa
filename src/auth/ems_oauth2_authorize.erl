@@ -10,8 +10,8 @@
 
 execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, host = Host}) -> 
 	GrantType = case Type of
-		"GET" ->  ems_request:get_querystring(<<"response_type">>, <<>>, Request);
-		"POST" -> ems_request:get_querystring(<<"grant_type">>, <<>>, Request)
+		"GET" ->  ems_util:get_querystring(<<"response_type">>, <<>>, Request);
+		"POST" -> ems_util:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case GrantType of
 			<<"password">> -> 
@@ -83,10 +83,10 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 %% URL de teste: GET http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w
 	
 code_request(Request = #request{authorization = Authorization}) ->
-    ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
-    State      = ems_request:get_querystring(<<"state">>, <<>>, Request),
-    Scope       = ems_request:get_querystring(<<"scope">>, <<>>,Request),
+    ClientId    = ems_util:get_querystring(<<"client_id">>, <<>>, Request),
+    RedirectUri = ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request),
+    State      = ems_util:get_querystring(<<"state">>, <<>>, Request),
+    Scope       = ems_util:get_querystring(<<"scope">>, <<>>,Request),
     case ems_util:parse_basic_authorization_header(Authorization) of
 		{ok, Username, Password} ->
 		    Authz = oauth2:authorize_code_request({Username,list_to_binary(Password)}, ClientId, RedirectUri, Scope, []),
@@ -122,8 +122,8 @@ code_request(Request = #request{authorization = Authorization}) ->
 %% Cliente Credencial Grant- seção 4.4.1 do RFC 6749. 
 %% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=client_credentials&client_id=s6BhdRkqt3&secret=qwer
 client_credentials_grant(Request = #request{authorization = Authorization}) ->
-	ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
+	ClientId = ems_util:get_querystring(<<"client_id">>, <<>>, Request),
+	Scope = ems_util:get_querystring(<<"scope">>, <<>>, Request),	
 	% O ClientId também pode ser passado via header Authorization
 	case ClientId == <<>> of
 		true -> 
@@ -140,7 +140,7 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 				false -> {error, einvalid_client_credentials}
 			end;
 		false -> 			
-			Secret = ems_request:get_querystring(<<"client_secret">>, <<>>, Request),
+			Secret = ems_util:get_querystring(<<"client_secret">>, <<>>, Request),
 			Auth = oauth2:authorize_client_credentials({ClientId, Secret}, Scope, []),
 			issue_token(Auth)
 	end.
@@ -148,9 +148,9 @@ client_credentials_grant(Request = #request{authorization = Authorization}) ->
 %% Resource Owner Password Credentials Grant - seção 4.3.1 do RFC 6749.
 %% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=password&username=johndoe&password=A3ddj3w
 password_grant(Request) -> 
-	Username = ems_request:get_querystring(<<"username">>, <<>>, Request),
-	Password = ems_request:get_querystring(<<"password">>, <<>>, Request),
-	Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),	
+	Username = ems_util:get_querystring(<<"username">>, <<>>, Request),
+	Password = ems_util:get_querystring(<<"password">>, <<>>, Request),
+	Scope = ems_util:get_querystring(<<"scope">>, <<>>, Request),	
 	Authorization = oauth2:authorize_password({Username, Password}, Scope, []),
 	issue_token(Authorization).
 	
@@ -159,10 +159,10 @@ password_grant(Request) ->
 
     
 authorization_request(Request) ->
-    %Scope = ems_request:get_querystring(<<"scope">>, <<>>, Request),
-    ClientId = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-    %State = ems_request:get_querystring(<<"state">>, <<>>, Request),
-    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
+    %Scope = ems_util:get_querystring(<<"scope">>, <<>>, Request),
+    ClientId = ems_util:get_querystring(<<"client_id">>, <<>>, Request),
+    %State = ems_util:get_querystring(<<"state">>, <<>>, Request),
+    RedirectUri = ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request),
     Resposta = case ems_oauth2_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 		{ok,_} -> 	{redirect, ClientId, RedirectUri};
 		Error -> 	Error
@@ -174,20 +174,20 @@ authorization_request(Request) ->
 
 
 refresh_token_request(Request) ->
-    ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-    ClientSecret = ems_request:get_querystring(<<"client_secret">>, <<>>, Request),
-	Reflesh_token = ems_request:get_querystring(<<"refresh_token">>, <<>>, Request),
-	Scope    = ems_request:get_querystring(<<"scope">>, <<>>, Request),
+    ClientId    = ems_util:get_querystring(<<"client_id">>, <<>>, Request),
+    ClientSecret = ems_util:get_querystring(<<"client_secret">>, <<>>, Request),
+	Reflesh_token = ems_util:get_querystring(<<"refresh_token">>, <<>>, Request),
+	Scope    = ems_util:get_querystring(<<"scope">>, <<>>, Request),
 	Authorization = ems_oauth2_backend:authorize_refresh_token({ClientId, ClientSecret}, Reflesh_token, Scope),
     issue_token(Authorization).  
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
 %% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w&secret=qwer&code=dxUlCWj2JYxnGp59nthGfXFFtn3hJTqx
 access_token_request(Request = #request{authorization = Authorization}) ->
-	Code = ems_request:get_querystring(<<"code">>, <<>>, Request),
-	ClientId    = ems_request:get_querystring(<<"client_id">>, <<>>, Request),
-    RedirectUri = ems_request:get_querystring(<<"redirect_uri">>, <<>>, Request),
-    ClientSecret = ems_request:get_querystring(<<"client_secret">>, <<>>, Request),
+	Code = ems_util:get_querystring(<<"code">>, <<>>, Request),
+	ClientId    = ems_util:get_querystring(<<"client_id">>, <<>>, Request),
+    RedirectUri = ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request),
+    ClientSecret = ems_util:get_querystring(<<"client_secret">>, <<>>, Request),
     case ClientSecret == <<>> of
 		true -> 
 			case Authorization =/= undefined of

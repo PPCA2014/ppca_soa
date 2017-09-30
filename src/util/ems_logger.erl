@@ -136,7 +136,7 @@ mode_debug(false) ->
 	ets:insert(debug_ets, {debug, false}).
 
 sync() ->
-	info("ems_logger manual sync buffer."),
+	info("ems_logger sync buffer."),
 	gen_server:call(?SERVER, sync_buffer). 		
 
 log_request(Request) -> 
@@ -169,7 +169,7 @@ log_file_name() ->
 	gen_server:call(?SERVER, log_file_name). 		
 	
 checkpoint() -> 
-	info("ems_logger manual archive log file checkpoint."),
+	info("ems_logger archive log file checkpoint."),
 	?SERVER ! checkpoint_archive_log.
 
 
@@ -194,7 +194,9 @@ format_alert(Message, Params) ->	io:format("\033[0;46m~s\033[0m", [io_lib:format
 %%====================================================================
  
 init(#service{properties = Props}) ->
-	ems_logger:info("Loading ERLANGMS ~s instance...", [?SERVER_NAME]),
+	ErlangVersion = erlang:system_info(otp_release),
+	{_, OSType} = os:type(),
+	info("Loading ~s instance on Erlang ~s << plataform  ~p >>", [?SERVER_NAME, ErlangVersion, OSType]),
 	Checkpoint = maps:get(<<"log_file_checkpoint">>, Props, ?LOG_FILE_CHECKPOINT),
 	LogFileMaxSize = maps:get(<<"log_file_max_size">>, Props, ?LOG_FILE_MAX_SIZE),
 	Conf = ems_config:getConfig(),

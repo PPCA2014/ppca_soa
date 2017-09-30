@@ -4,7 +4,7 @@
 -include("../include/ems_schema.hrl").
 
 callback(Request) -> 
-	Code = ems_request:get_querystring(<<"code">>, <<>>, Request),
+	Code = ems_util:get_querystring(<<"code">>, <<>>, Request),
 	Client = {<<"q1w2e3">>,<<"123456">>},
 	RedirectUri = <<"https://127.0.0.1:2302/callback">>,
 	Authorization = oauth2:authorize_code_grant(Client, Code, RedirectUri, []),

@@ -36,11 +36,6 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_request", 
-		"file": "ems_request.json"
-	},
-
-	{
 		"catalog": "/emsbus/ems_catalog", 
 		"file": "ems_catalog.json"
 	},

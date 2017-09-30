@@ -55,7 +55,7 @@ do_basic_authorization(Service, Request = #request{authorization = Authorization
 	
 do_bearer_authorization(_, #request{authorization = <<>>}) -> {error, access_denied};
 do_bearer_authorization(Service, Request = #request{authorization = undefined}) ->
-	AccessToken = ems_request:get_querystring(<<"token">>, <<"access_token">>, <<>>, Request), % a querystring pode ser token ou access_token
+	AccessToken = ems_util:get_querystring(<<"token">>, <<"access_token">>, <<>>, Request), % a querystring pode ser token ou access_token
 	do_oauth2_check_access_token(AccessToken, Service, Request);
 do_bearer_authorization(Service, Request = #request{authorization = Authorization}) ->	
 	case ems_util:parse_bearer_authorization_header(Authorization) of

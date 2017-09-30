@@ -21,7 +21,7 @@
  
 
 find_by_id(Request) -> 
-	Id = ems_request:get_param_url(<<"id">>, -1, Request),
+	Id = ems_util:get_param_url(<<"id">>, -1, Request),
 	{ok, Record} = ems_catalog_schema:find_by_id(Id),
 	ems_schema:to_json(Record).
 	
@@ -29,7 +29,7 @@ insert(#request{payload_map = CatalogSchemaMap}) ->
 	ems_catalog_schema:insert(CatalogSchemaMap).
 
 update(Request = #request{payload_map = CatalogSchemaMap}) ->
-	Id = ems_request:get_param_url(<<"id">>, -1, Request),
+	Id = ems_util:get_param_url(<<"id">>, -1, Request),
 	ems_catalog_schema:update(Id, CatalogSchemaMap).
 
 all(_Request) -> 
@@ -37,7 +37,7 @@ all(_Request) ->
 	ems_schema:to_json(Records).
 	
 delete(Request) -> 
-	Id = ems_request:get_param_url(<<"id">>, -1, Request),
+	Id = ems_util:get_param_url(<<"id">>, -1, Request),
 	ems_catalog_schema:delete(Id).
 	
 

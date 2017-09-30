@@ -28,7 +28,6 @@ check_result_cache(ReqHash, Timestamp2) ->
 	end.
 
 dispatch_request(Request = #request{req_hash = ReqHash, 
-					 			    url = Url,
 								    ip = Ip,
 								    ip_bin = IpBin,
 								    content_type = ContentTypeReq,
@@ -137,7 +136,6 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 													     latency = ems_util:get_milliseconds() - T1}
 						};
 				true ->
-					ems_logger:warn("ems_dispatcher service ~p not found. Reason: ~p.", [Url, Reason]),
 					Error2
 			end
 	end.

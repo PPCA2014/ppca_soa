@@ -46,7 +46,7 @@ LINUX_VERSION_ID=$(awk -F"=" '{ if ($1 == "VERSION_ID"){
 							   }'  /etc/os-release)
 							   
 							   
-echo "Build erlangms tool ( Version: $VERSION_SCRIPT   Hostname: `hostname`   Distro: $LINUX_DESCRIPTION )"
+echo "Build erlangms tool ( Version: $VERSION_SCRIPT   Hostname: `hostname` )"
 
 
 SKIP_DEPS="false"
@@ -85,6 +85,7 @@ help() {
 	echo "  --keep-db=true|false    -> Define if delete the priv/db folder"
 	echo "  --skip-dep=true|false   -> Define if skip rebar deps"
 	echo "  --skip-clean=true|false -> Define if rebar clean"
+	echo "  --clean                 -> Equal to --skip-clean=true"
 	echo
 	exit 1
 }
@@ -165,6 +166,8 @@ for P in $*; do
 			SKIP_DEPS="true"
 		elif [[ "$P" =~ --skip[\_-]clean$ ]]; then
 			SKIP_CLEAN="true"
+		elif [ "$P" = "--clean" ]; then
+			SKIP_CLEAN="false"
 		elif [[ "$P" =~ --keep[\_-]db$ ]]; then
 			KEEP_DB="true"
 		elif [ "$P" = "--help" ]; then
@@ -178,6 +181,7 @@ done
 
 check_erlang_version
 
+echo "Distro: $LINUX_DESCRIPTION"
 echo "Erlang version: $ERLANG_VERSION_OS"
 echo "SKIP DEPS: $SKIP_DEPS" 
 echo "SKIP CLEAN: $SKIP_CLEAN" 

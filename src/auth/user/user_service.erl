@@ -22,7 +22,7 @@ unique(insert, #user{name = Name}) ->
 	end.
 	
 perfil_by_user(Request) -> 
-	UserId = ems_request:get_param_url(<<"id">>, null, Request),
+	UserId = ems_util:get_param_url(<<"id">>, null, Request),
 	Result = ems_user_perfil:find_by_user(UserId),
 	case Result of
 		{ok, JsonData} ->
