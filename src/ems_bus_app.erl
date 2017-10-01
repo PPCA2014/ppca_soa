@@ -24,7 +24,7 @@ start(_StartType, StartArgs) ->
 					ems_dispatcher:start(),
 					ems_oauth2_backend:start(),
 					Ret = ems_bus_sup:start_link(StartArgs),
-					erlang:send_after(4500, spawn(fun() -> 
+					erlang:send_after(5000, spawn(fun() -> 
 							Conf = ems_config:getConfig(),
 							ems_logger:info("Hosts in the cluster: ~p.", [ case net_adm:host_file() of 
 																				{error, enoent} -> net_adm:localhost(); 

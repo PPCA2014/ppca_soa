@@ -195,8 +195,7 @@ format_alert(Message, Params) ->	io:format("\033[0;46m~s\033[0m", [io_lib:format
  
 init(#service{properties = Props}) ->
 	ErlangVersion = erlang:system_info(otp_release),
-	{_, OSType} = os:type(),
-	info("Loading ~s instance on Erlang ~s << plataform  ~p >>", [?SERVER_NAME, ErlangVersion, OSType]),
+	info("Loading ~s instance on Erlang ~s...", [?SERVER_NAME, ErlangVersion]),
 	Checkpoint = maps:get(<<"log_file_checkpoint">>, Props, ?LOG_FILE_CHECKPOINT),
 	LogFileMaxSize = maps:get(<<"log_file_max_size">>, Props, ?LOG_FILE_MAX_SIZE),
 	Conf = ems_config:getConfig(),
