@@ -27,24 +27,13 @@
 
 VERSION_SCRIPT="2.0.0"
 
-# Identify the linux distribution: ubuntu, debian, centos
-LINUX_DISTRO=$(awk -F"=" '{ if ($1 == "ID"){ 
-								gsub("\"", "", $2);  print $2 
-							} 
-						  }' /etc/os-release)
-
 # Get linux description
 LINUX_DESCRIPTION=$(awk -F"=" '{ if ($1 == "PRETTY_NAME"){ 
 									gsub("\"", "", $2);  print $2 
 								 } 
 							   }'  /etc/os-release)
 
-
-LINUX_VERSION_ID=$(awk -F"=" '{ if ($1 == "VERSION_ID"){ 
-									gsub("\"", "", $2);  print $2 
-								 } 
-							   }'  /etc/os-release)
-							   
+						   
 							   
 echo "Build erlangms tool ( Version: $VERSION_SCRIPT   Hostname: `hostname` )"
 
@@ -53,7 +42,7 @@ SKIP_DEPS="false"
 SKIP_CLEAN="false"
 KEEP_DB="false"
 
-# Erlang version supported
+# Erlang version required > 19
 ERLANG_VERSION=19
 
 # Erlang version installled
@@ -215,15 +204,9 @@ else
 fi
 
 if [ "$?" = "1" ]; then
-	echo "Attention: Deps folder corrupted, let's clean deps folder before and try again..."
-	clean_deps	
-	tools/rebar/rebar clean get-deps compile	
-	if [ "$?" = "1" ]; then
-		echo "Oops, something went wrong!"
-	else
-		echo "Ok!"
-	fi
+	echo "Oops, something wrong!"
 else
 	echo "Ok!"
 fi
+
 

@@ -37,7 +37,7 @@ start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
 
 start(Service = #service{name = Name}) -> 
- 	ServerName = list_to_atom(binary_to_list(Name)),
+ 	ServerName = erlang:binary_to_atom(Name, utf8),
     gen_server:start_link({local, ServerName}, ?MODULE, Service, []).
  
 stop() ->

@@ -40,8 +40,9 @@
 %% Server API
 %%====================================================================
 
-start(Service#service{name = Name}) -> 
-    gen_server:start_link({local, ?SERVER}, ?MODULE, Service, []).
+start(Service = #service{name = Name}) -> 
+   	ServerName = erlang:binary_to_atom(Name),
+    gen_server:start_link({local, ServerName}, ?MODULE, Service, []).
  
 stop() ->
     gen_server:cast(?SERVER, shutdown).
@@ -73,7 +74,7 @@ init(#service{name = Name,
 			  datasource = Datasource, 
 			  middleware = Middleware, 
 			  properties = Props}) ->
-	LastUpdateParamName = binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>)),
+	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
 	SqlLoad = binary_to_list(maps:get(<<"sql_load">>, Props, <<>>)),
@@ -96,17 +97,18 @@ handle_cast(shutdown, State) ->
 
 handle_cast(force_load_catalogs, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	State2 = State#state{last_update = undefined},
-	case update_or_load_catalogs(State2) of
+	case load_or_update(State2) of
 		{ok, State3} ->  {noreply, State3, UpdateCheckpoint};
 		_Error -> {noreply, State, UpdateCheckpoint}
 	end;
 
-handle_cast(pause, State) ->
-	ems_logger:info("ems_data_loader paused."),
+handle_cast(pause, State = #state{name = Name}) ->
+	ems_logger:info("~p paused.", [Name]),
 	{noreply, State};
 
-handle_cast(resume, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:info("ems_data_loader resume."),
+handle_cast(resume, State = #state{name = Name,
+								   update_checkpoint = UpdateCheckpoint}) ->
+	ems_logger:info("~p resume.", [Name]),
 	{noreply, State, UpdateCheckpoint};
 
 handle_cast(_Msg, State = #state{update_checkpoint = UpdateCheckpoint}) ->
@@ -118,13 +120,14 @@ handle_call(Msg, _From, State) ->
 handle_info(State = #state{update_checkpoint = UpdateCheckpoint}) ->
    {noreply, State, UpdateCheckpoint}.
 
-handle_info(check_force_load_catalogs, State = #state{update_checkpoint = UpdateCheckpoint}) ->
+handle_info(check_force_load_catalogs, State = #state{name = Name,
+													  update_checkpoint = UpdateCheckpoint}) ->
 	{{_, _, _}, {Hour, _, _}} = calendar:local_time(),
 	case Hour >= 4 andalso Hour =< 6 of
 		true ->
-			ems_logger:info("ems_data_loader force load catalogs checkpoint."),
+			ems_logger:info("~p force load checkpoint.", [Name]),
 			State2 = State#state{last_update = undefined},
-			case update_or_load_catalogs(State2) of
+			case load_or_update(State2) of
 				{ok, State3} ->
 					erlang:send_after(86400 * 1000, self(), check_force_load_catalogs),
 					{noreply, State3, UpdateCheckpoint};
@@ -137,24 +140,26 @@ handle_info(check_force_load_catalogs, State = #state{update_checkpoint = Update
 			{noreply, State, UpdateCheckpoint}
 	end;
 
-handle_info(timeout, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	case update_or_load_catalogs(State) of
+handle_info(timeout, State = #state{name = Name,
+									update_checkpoint = UpdateCheckpoint}) ->
+	case load_or_update(State) of
 		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
 		{error, eunavailable_odbc_connection} -> 
-			ems_logger:warn("ems_data_loader wait 5 minutes for next checkpoint while has no connection to load catalogs."),
+			ems_logger:warn("~p wait 5 minutes for next checkpoint while has no database connection.", [Name]),
 			{noreply, State};
 		_Error -> {noreply, State, UpdateCheckpoint}
 	end;
 			
-handle_info({_Pid, {error, Reason}}, State = #state{update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:warn("ems_data_loader is unable to load or update catalogs. Reason: ~p.", [Reason]),
+handle_info({_Pid, {error, Reason}}, State = #state{name = Name,
+													update_checkpoint = UpdateCheckpoint}) ->
+	ems_logger:warn("~p is unable to load or update data. Reason: ~p.", [Name, Reason]),
 	{noreply, State, UpdateCheckpoint};
 			
 handle_info(_, State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	{noreply, State, UpdateCheckpoint}.
 			
-terminate(Reason, _State) ->
-    ems_logger:warn("ems_data_loader was terminated. Reason: ~p.", [Reason]),
+terminate(Reason, #service{name = Name}) ->
+    ems_logger:warn("~p was terminated. Reason: ~p.", [Name, Reason]),
     ok.
  
 code_change(_OldVsn, State, _Extra) ->
@@ -167,14 +172,17 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 
-update_or_load_catalogs(State = #state{datasource = Datasource,
-									   last_update_param_name = LastUpdateParamName,
-									   last_update = LastUpdate}) ->
-	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), % garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
+load_or_update(State = #state{name = Name,
+							  table = Table,
+							  datasource = Datasource,
+							  last_update_param_name = LastUpdateParamName,
+							  last_update = LastUpdate}) ->
+	% garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
+	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), 
 	LastUpdateStr = ems_util:timestamp_str(),
-	case is_empty() orelse LastUpdate == undefined of
+	case mnesia:table_info(Table, size) == 0 orelse LastUpdate == undefined of
 		true -> 
-			?DEBUG("ems_data_loader checkpoint. operation: load_catalogs."),
+			?DEBUG("~p load checkpoint.", [Name]),
 			case load_catalogs_from_datasource(Datasource, LastUpdateStr, State) of
 				ok -> 
 					ems_db:set_param(LastUpdateParamName, NextUpdate),
@@ -183,7 +191,7 @@ update_or_load_catalogs(State = #state{datasource = Datasource,
 				Error -> Error
 			end;
 		false ->
-			?DEBUG("ems_data_loader checkpoint. operation: update_records   last_update: ~s.", [ems_util:timestamp_str(LastUpdate)]),
+			?DEBUG("~p update checkpoint. last update: ~s.", [Name, ems_util:timestamp_str(LastUpdate)]),
 			case update_records_from_datasource(Datasource, LastUpdate, LastUpdateStr, State) of
 				ok -> 
 					ems_db:set_param(LastUpdateParamName, NextUpdate),
@@ -194,55 +202,55 @@ update_or_load_catalogs(State = #state{datasource = Datasource,
 	end.
 
 
-load_catalogs_from_datasource(Datasource, CtrlInsert, #state{table = Table,
+load_catalogs_from_datasource(Datasource, CtrlInsert, #state{name = Name,
+															 table = Table,
 															 sql_load = SqlLoad,
 															 middleware = Middleware}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_data_loader load_catalogs_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
-				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadUsersTipoPessoa, []) of
+				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoad, []) of
 					{_,_,[]} -> 
 						ems_odbc_pool:release_connection(Datasource2),
-						?DEBUG("ems_data_loader did not load any catalogs tipo pessoa."),
+						?DEBUG("~p did not load any record.", [Name]),
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
-						case mnesia:clear_table(table) of
+						case mnesia:clear_table(Table) of
 							{atomic, ok} ->
-								ems_db:init_sequence(table, 0),
+								ems_db:init_sequence(Table, 0),
 								InsertFunc = fun() ->
 									CountRecords = insert_records(Records, 0, CtrlInsert, Middleware),
-									ems_logger:info("ems_data_loader load ~p catalogs tipo pessoa.", [CountRecords])
+									ems_logger:info("~p load ~p records.", [Name, CountRecords])
 								end,
 								mnesia:activity(transaction, InsertFunc),
 								ok;
 							_ ->
-								ems_logger:error("ems_data_loader could not clear catalog table before load catalogs. Load catalogs cancelled!"),
-								{error, efail_load_catalogs}
+								ems_logger:error("~p could not clear table before load data.", [Name]),
+								{error, efail_load_data}
 						end;
 					{error, Reason2} = Error -> 
 						ems_odbc_pool:release_connection(Datasource2),
-						ems_logger:error("ems_data_loader load catalogs tipo pessoa query error: ~p.", [Reason2]),
+						ems_logger:error("~p load data query error: ~p.", [Name, Reason2]),
 						Error
 				end,
 				Result;
 			Error2 -> 
-				ems_logger:warn("ems_data_loader has no connection to load catalogs from database."),
+				ems_logger:warn("~p has no connection to load data from database.", [Name]),
 				Error2
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("ems_data_loader load catalogs exception error: ~p.", [Reason3]),
+			ems_logger:error("~p load data exception error: ~p.", [Name, Reason3]),
 			{error, Reason3}
 	end.
 
-update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_update = SqlUpdate,	
+update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{name = Name,
+																		  sql_update = SqlUpdate,	
 																		  middleware = Middleware}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
-				?DEBUG("ems_data_loader update_records_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 				% Zera os segundos
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
@@ -252,30 +260,30 @@ update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_up
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdate, Params) of
 					{_,_,[]} -> 
 						ems_odbc_pool:release_connection(Datasource2),
-						?DEBUG("ems_data_loader did not update any catalogs tipo pessoa."),
+						?DEBUG("~p did not update any catalogs tipo pessoa.", [Name]),
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
 						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
 						UpdateFunc = fun() ->
 							CountRecords = update_records(Records, 0, CtrlUpdate, Middleware),
-							ems_logger:info("ems_data_loader update ~p catalogs tipo pessoa since ~s.", [CountRecords, LastUpdateStr])
+							ems_logger:info("~p update ~p records since ~s.", [Name, CountRecords, LastUpdateStr])
 						end,
 						mnesia:activity(transaction, UpdateFunc),
 						ok;
 					{error, Reason} = Error -> 
 						ems_odbc_pool:release_connection(Datasource2),
-						ems_logger:error("ems_data_loader update catalogs tipo pessoa error: ~p.", [Reason]),
+						ems_logger:error("~p update data error: ~p.", [Name, Reason]),
 						Error
 				end,
 				Result;
 			Error2 -> 
-				ems_logger:warn("ems_data_loader has no connection to update catalogs from database."),
+				ems_logger:warn("~p has no connection to update data from database.", [Name]),
 				Error2
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("ems_data_loader udpate catalogs exception error: ~p.", [Reason3]),
+			ems_logger:error("~p udpate data exception error: ~p.", [Name, Reason3]),
 			{error, Reason3}
 	end.
 
@@ -283,15 +291,14 @@ update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{sql_up
 insert_records([], Count, _CtrlInsert, _Middleware) -> Count;
 insert_records([H|T], Count, CtrlInsert, Middleware) ->
 	NewRecord = apply(Middleware, insert, [H]),
-	mnesia:write(User),
-	insert_records(T, Count+1, CtrlInsert).
+	mnesia:write(NewRecord),
+	insert_records(T, Count+1, CtrlInsert, Middleware).
 
 
 update_records([], Count, _CtrlUpdate, _Middleware) -> Count;
 update_records([H|T], Count, CtrlUpdate, Middleware) ->
 	UpdatedRecord = apply(Middleware, update, [H]),
-	mnesia:write(User2),
-	?DEBUG("ems_data_loader update catalog: ~p.\n", [User2]),
-	update_records(T, Count+1, CtrlUpdate).
+	mnesia:write(UpdatedRecord),
+	update_records(T, Count+1, CtrlUpdate, Middleware).
 
 
