@@ -233,6 +233,7 @@ make_result_entry(#user{codigo = UsuId,
 					    email = UsuEmail, 
 					    password = UsuPasswd, 
 					    type = UsuType, 
+					    subtype = UsuSubType,
 					    type_email = UsuTypeEmail, 
 					    ctrl_insert = UsuCtrlInsert, 
 						ctrl_update = UsuCtrlUpdate,
@@ -269,6 +270,7 @@ make_result_entry(#user{codigo = UsuId,
 	UsuEmail2 = format_user_field(UsuEmail),
 	UsuSenha2 = format_user_field(UsuPasswd),
 	UsuType2 = format_user_field(UsuType),
+	UsuSubType2 = format_user_field(UsuSubType),
 	UsuTypeEmail2 = format_user_field(UsuTypeEmail),
 	UsuCtrlInsert2 = format_user_field(UsuCtrlInsert),
 	UsuCtrlUpdate2 = format_user_field(UsuCtrlUpdate),
@@ -339,12 +341,11 @@ make_result_entry(#user{codigo = UsuId,
 														#'PartialAttribute'{type = <<"dataNascimento">>, vals = [DataNascimento2]},
 														#'PartialAttribute'{type = <<"sexo">>, vals = [Sexo2]},
 														#'PartialAttribute'{type = <<"telefone">>, vals = [Telefone2]},
-
 														#'PartialAttribute'{type = <<"celular">>, vals = [Celular2]},
-
 														#'PartialAttribute'{type = <<"ddd">>, vals = [DDD2]},
 														
 														#'PartialAttribute'{type = <<"matsipes">>, vals = [Matricula2]},
+														#'PartialAttribute'{type = <<"matricula">>, vals = [Matricula2]},
 
 														#'PartialAttribute'{type = <<"lotacao">>, vals = [Lotacao2]},
 														#'PartialAttribute'{type = <<"lotacaoSigla">>, vals = [LotacaoSigla2]},
@@ -355,10 +356,12 @@ make_result_entry(#user{codigo = UsuId,
 														#'PartialAttribute'{type = <<"lotacaoCodigoCargo">>, vals = [LotacaoCodigoCargo2]},
 														#'PartialAttribute'{type = <<"lotacaoCargo">>, vals = [LotacaoCargo2]}
 
-														#'PartialAttribute'{type = <<"ems_type_user">>, vals = [UsuType2]},
-														#'PartialAttribute'{type = <<"ems_type_email">>, vals = [UsuTypeEmail2]},
-														#'PartialAttribute'{type = <<"ems_ctrl_insert">>, vals = [UsuCtrlInsert2]},
-														#'PartialAttribute'{type = <<"ems_ctrl_update">>, vals = [UsuCtrlUpdate2]}
+														#'PartialAttribute'{type = <<"type">>, vals = [UsuType2]},
+														#'PartialAttribute'{type = <<"subtype">>, vals = [UsuSubType2]},
+														#'PartialAttribute'{type = <<"type_email">>, vals = [UsuTypeEmail2]},
+
+														#'PartialAttribute'{type = <<"ctrl_insert">>, vals = [UsuCtrlInsert2]},
+														#'PartialAttribute'{type = <<"ctrl_update">>, vals = [UsuCtrlUpdate2]}
 
 														]
 										}
