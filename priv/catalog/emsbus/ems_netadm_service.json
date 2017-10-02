@@ -8,7 +8,7 @@
 		"url": "/netadm/restart",
 		"async": "false",
 		"result_cache" : 0,
-		"type": "GET",
+		"type": "POST",
 		"authorization": "basic",
 		"lang" : "erlang"
 	},

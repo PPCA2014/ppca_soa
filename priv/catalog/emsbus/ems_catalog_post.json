@@ -1,0 +1,132 @@
+[
+	{
+		"name": "/catalog/post",
+		"comment": "List catalogs.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:find",
+		"url": "/catalog/post",
+		"async": "false",
+		"type": "GET",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_post"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service",
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
+	},
+
+	{
+		"name": "/catalog/post/:id",
+		"comment": "Find catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:find_by_id",
+		"url": "/catalog/post/:id",
+		"async": "false",
+		"type": "GET",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_post"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	},
+
+
+	{
+		"name": "/catalog/post",
+		"comment": "Create new catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:insert",
+		"middleware" : "ems_catalog_middleware",
+		"url": "/catalog/post",
+		"async": "false",
+		"type": "POST",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_post"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	},
+
+	{
+		"name": "/catalog/post/:id",
+		"comment": "Update catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:update",
+		"middleware" : "ems_catalog_middleware",
+		"url": "/catalog/post/:id",
+		"async": "false",
+		"type": "PUT",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_post"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	},
+
+	{
+		"name": "/catalog/post/:id",
+		"comment": "Delete service catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:delete",
+		"middleware" : "ems_catalog_middleware",
+		"url": "/catalog/post/:id",
+		"async": "false",
+		"type": "DELETE",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_post"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	}
+]

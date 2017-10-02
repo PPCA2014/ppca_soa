@@ -1,0 +1,132 @@
+[
+	{
+		"name": "/catalog/delete",
+		"comment": "List catalogs.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:find",
+		"url": "/catalog/delete",
+		"async": "false",
+		"type": "GET",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_delete"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service",
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
+	},
+
+	{
+		"name": "/catalog/delete/:id",
+		"comment": "Find catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:find_by_id",
+		"url": "/catalog/delete/:id",
+		"async": "false",
+		"type": "GET",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_delete"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	},
+
+
+	{
+		"name": "/catalog/delete",
+		"comment": "Create new catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:insert",
+		"middleware" : "ems_catalog_middleware",
+		"url": "/catalog/delete",
+		"async": "false",
+		"type": "POST",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_delete"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	},
+
+	{
+		"name": "/catalog/delete/:id",
+		"comment": "Update catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:update",
+		"middleware" : "ems_catalog_middleware",
+		"url": "/catalog/delete/:id",
+		"async": "false",
+		"type": "PUT",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_delete"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	},
+
+	{
+		"name": "/catalog/delete/:id",
+		"comment": "Delete service catalog.",
+		"owner": "ems-bus",
+		"version": "1.0.0",
+		"service" : "ems_api_query_service:delete",
+		"middleware" : "ems_catalog_middleware",
+		"url": "/catalog/delete/:id",
+		"async": "false",
+		"type": "DELETE",
+		"authorization" : "basic",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : "catalog_delete"
+		},
+		"schema_in" : "service",
+		"schema_out" : "service"
+	}
+]

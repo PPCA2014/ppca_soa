@@ -103,6 +103,36 @@ create_database(Nodes) ->
 									  {attributes, record_info(fields, ctrl_params)}]),
 									  
 
+    mnesia:create_table(catalog_get, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_post, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_put, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_delete, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_options, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_kernel, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
 	% foi preciso aguardar um pouco a inicialização do banco
 	ems_util:sleep(2500),
 
