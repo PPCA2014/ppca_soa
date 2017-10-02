@@ -91,8 +91,8 @@
 						 left join Sipes.dbo.Contratos c 
 								 on df.MatSipes = c.MatSipes 
 						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
-								 on df.MatSipes = lf.Sipes
-						 left join Sipes.dbo.Cargos ca
+								 on df.MatSipes = lf.Sipes 
+						 left join Sipes.dbo.Cargos ca 
 								 on c.CodCargo = ca.CodCargo 
 			) as t_users 
 			order by t_users.TipoEmailPessoa",
@@ -167,7 +167,7 @@
 					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p 
 								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa 
 						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe 
-								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa  
+								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa   
 						 join BDPessoa.dbo.TB_Email em 
 								 on pfe.PFmEmaCodigo = em.EmaCodigo 
 			) as t_users 
@@ -249,7 +249,7 @@
 								 on p.PesCodigoPessoa = df.PesCodigoPessoa 
 						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
 								 on df.MatSipes = lf.Sipes 
-						 left join Sipes.dbo.Cargos ca
+						 left join Sipes.dbo.Cargos ca 
 						 		 on c.CodCargo = ca.CodCargo 
 					where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
 			) as t_users 
