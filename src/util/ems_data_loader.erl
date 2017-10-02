@@ -73,6 +73,7 @@ resume() ->
 init(#service{name = Name, 
 			  datasource = Datasource, 
 			  middleware = Middleware, 
+			  timeout = Timeout,
 			  properties = Props}) ->
 	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
@@ -90,7 +91,7 @@ init(#service{name = Name,
 				   sql_update = SqlUpdate,
 				   table = Table,
 				   middleware = Middleware},
-	{ok, State, 7000}.
+	{ok, State, Timeout}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
