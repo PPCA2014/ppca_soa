@@ -314,7 +314,7 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 
 
 insert_users([], Count, _CtrlInsert) -> Count;
-insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, 
+insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, SubType, PasswdCrypto, 
 			   TypeEmail, Active, Endereco, ComplementoEndereco, Bairro, 
 			   Cidade, Uf, Cep, Rg, DataNascimento, Sexo, 
 			   Telefone, Celular, DDD, Matricula, Lotacao, LotacaoSigla,
@@ -331,6 +331,7 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 								_ -> ems_util:criptografia_sha1(Password)
 							end,
 				 type = Type,
+				 subtype = SubType,
 				 passwd_crypto = <<"SHA1">>,
 				 type_email = TypeEmail,
 				 endereco = ?UTF8_STRING(Endereco),
@@ -362,7 +363,7 @@ insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 
 
 update_users([], Count, _CtrlUpdate) -> Count;
-update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, 
+update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, SubType, PasswdCrypto, 
 			   TypeEmail, Active, Endereco, ComplementoEndereco, Bairro, 
 			   Cidade, Uf, Cep, Rg, DataNascimento, Sexo, 
 			   Telefone, Celular, DDD, Matricula, Lotacao, LotacaoSigla,
@@ -380,6 +381,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 											_ -> ems_util:criptografia_sha1(Password)
 										 end,
 							  type = Type,
+							  subtype = SubType,
 							  passwd_crypto = <<"SHA1">>,
 							  type_email = TypeEmail,
 							  endereco = ?UTF8_STRING(Endereco),
@@ -417,6 +419,7 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 										_ -> ems_util:criptografia_sha1(Password)
 									 end,
 						  type = Type,
+						  subtype = SubType,
 						  passwd_crypto = <<"SHA1">>,
 						  type_email = TypeEmail,
 						  endereco = ?UTF8_STRING(Endereco),
