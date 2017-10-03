@@ -41,6 +41,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/ems_catalog_loader_get", 
+		"file": "ems_catalog_loader_get.json"
+	},
+
+	{
 		"catalog": "/emsbus/ems_catalog_get", 
 		"file": "ems_catalog_get.json"
 	},

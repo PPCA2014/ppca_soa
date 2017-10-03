@@ -204,18 +204,6 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 	parse_querystring_def(T, [Q | Querystring], QtdRequired2).
 
 
-make_ets_rest_catalog([]) -> ok;
-make_ets_rest_catalog([H = {_Rowid, #service{type = Type}}|T]) -> 
-	case Type of
-		<<"GET">> -> ets:insert(ets_get, H);
-		<<"POST">> -> ets:insert(ets_post, H);
-		<<"PUT">> -> ets:insert(ets_put, H);
-		<<"DELETE">> -> ets:insert(ets_delete, H);
-		<<"OPTIONS">> -> ets:insert(ets_options, H)
-	end,
-	make_ets_rest_catalog(T). 	
-
-
 parse_tcp_listen_address(ListenAddress, CatName) ->
 	parse_tcp_listen_address_t(ListenAddress, CatName, []).
 parse_tcp_listen_address_t([], _, Result) -> Result;
@@ -283,6 +271,18 @@ compile_modulo_erlang(Path, ModuleNameCanonical) ->
 			end;
 		_ -> ok
 	end.
+
+
+make_ets_rest_catalog([]) -> ok;
+make_ets_rest_catalog([H = {_Rowid, #service{type = Type}}|T]) -> 
+	case Type of
+		<<"GET">> -> ets:insert(ets_get, H);
+		<<"POST">> -> ets:insert(ets_post, H);
+		<<"PUT">> -> ets:insert(ets_put, H);
+		<<"DELETE">> -> ets:insert(ets_delete, H);
+		<<"OPTIONS">> -> ets:insert(ets_options, H)
+	end,
+	make_ets_rest_catalog(T). 	
 
 
 %% @doc Faz o parser dos contratos de serviços no catálogo de serviços

@@ -9,7 +9,7 @@
 -module(ems_db).
 
 -export([start/0]).
--export([get/2, all/1, insert/1, update/1, delete/2, existe/1, match_object/1, 
+-export([get/2, all/1, insert/1, insert/2, update/1, delete/2, existe/1, match_object/1, 
 		 match/2, find/2, find/3, find/5, find_by_id/3, filter/2, 
 		 filter_with_limit/4, select_fields/2, 
 		 find_first/2, find_first/3, find_first/4]).
@@ -162,8 +162,7 @@ all(RecordType) ->
 	Records = mnesia:activity(async_dirty, Query),
 	{ok, Records}.
 
-insert(Record) ->
-	RecordType = element(1, Record),
+insert(RecordType, Record) ->
 	F = fun() ->
 		case element(2, Record) of
 			undefined ->
@@ -179,8 +178,14 @@ insert(Record) ->
 				end
 		end
 	end,		
-	{atomic, Result} = mnesia:transaction(F),
-	{ok, Result}.
+	case mnesia:transaction(F) of
+		{atomic, Result} -> {ok, Result};
+		Error -> Error
+	end.
+
+insert(Record) ->
+	RecordType = element(1, Record),
+	insert(RecordType, Record).
 
 update(Record) ->
 	Write = fun() -> mnesia:write(Record) end,

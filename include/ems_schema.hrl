@@ -186,6 +186,7 @@
 
 
 -record(service, {  id :: non_neg_integer(), 					%% Id do serviço
+					codigo :: non_neg_integer(),				%% Id do serviço banco externo
 					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
 					name :: binary(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço
@@ -220,7 +221,6 @@
 					schema_out :: non_neg_integer(),
 					pool_size :: non_neg_integer(),
 					pool_max :: non_neg_integer(),
-					properties :: map(),
 					timeout :: non_neg_integer(),
 					expires :: non_neg_integer(),
 					cache_control :: binary(),
@@ -242,7 +242,10 @@
 					tcp_ssl_keyfile,
 					protocol :: binary(),
 					oauth2_with_check_constraint = false :: boolean(),
-					oauth2_token_encrypt = false :: boolean()
+					oauth2_token_encrypt = false :: boolean(),
+					properties :: map(),						%% Outros parâmetros
+				    ctrl_insert,
+					ctrl_update 
 				}).
 
 

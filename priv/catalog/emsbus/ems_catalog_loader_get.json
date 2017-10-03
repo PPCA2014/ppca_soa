@@ -1,0 +1,57 @@
+{
+    "name": "ems_catalog_loader_get",
+	"comment": "Catalog for ems_catalog_loader_get",
+	"owner": "emsbus",
+	"version": "1.0.0",
+	"service" : "ems_data_loader:start",
+	"url": "/emsbus/ems_catalog_loader_get",
+	"async": "false",
+	"type": "KERNEL",
+	"lang" : "erlang",
+	"table" : "catalog_get",
+	"last_update_param_name" : "ems_catalog_loader_get_lastupdate",
+	"update_checkpoint" : 60000,
+	"datasource" : "ds_ems_user_loader",
+	"timeout" : 3000,
+	"middleware" : "ems_catalog_loader_get_middleware",
+	"pool_size" : 1,
+	"pool_max" : 1,
+	"enable" : false,
+	"sql_load" : 
+				"select CSRCodigo, 
+					   CSRNome, 
+					   CSRUrl,  
+					   CSRType, 
+					   CSRService, 
+					   CSRComment, 
+					   CSRVersion, 
+					   CSROwner, 
+					   CSRResultCache, 
+					   CSRAuthorization, 
+					   CSRLang, 
+					   CSRTimeout, 
+					   CSREnable, 
+					   CSRContentType 
+				from BDAcesso.dbo.TB_CatalogoServicoRest 
+				",
+
+	"sql_update" : 
+				"select CSRCodigo, 
+					   CSRNome, 
+					   CSRUrl,  
+					   CSRType, 
+					   CSRService, 
+					   CSRComment, 
+					   CSRVersion, 
+					   CSROwner, 
+					   CSRResultCache, 
+					   CSRAuthorization, 
+					   CSRLang, 
+					   CSRTimeout, 
+					   CSREnable, 
+					   CSRContentType 
+				from BDAcesso.dbo.TB_CatalogoServicoRest 
+				where CSRDataAlteracao >= ?
+				"
+	
+}
