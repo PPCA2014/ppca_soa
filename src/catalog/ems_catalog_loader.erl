@@ -106,31 +106,11 @@ is_name_querystring_valido(Name) ->
 	end.
 
 
-%% @doc Indica se o name da querystring é valido
-is_name_service_valido(Name) ->
-	case re:run(Name, "^[/_a-zA-Z-.][.:/_a-zA-Z0-9-]{0,300}$") of
-		nomatch -> false;
-		_ -> true
-	end.
-
 %% @doc Indica se o tipo dos dados são é valido
 is_type_valido(<<"int">>) 	 -> true;
 is_type_valido(<<"string">>) -> true;
-is_type_valido(<<"year">>) 	 -> true;
-is_type_valido(<<"date">>) 	 -> true;
-is_type_valido(<<"bool">>)   -> true;
-is_type_valido(Enum) when length(Enum) > 0 -> true;
 is_type_valido(_) 	 		 -> false.
 
-%% @doc Indica se o tamanho é válido
-is_valid_length(Value, MaxLength) -> length(binary_to_list(Value)) =< MaxLength.
-
-%% @doc Valida o name do serviço
-valida_name_service(Name) ->
-	case is_name_service_valido(Name) of
-		true -> ok;
-		false -> erlang:error(invalid_name_service)
-	end.
 
 %% @doc Valida o name da querystring
 valida_name_querystring(Name) ->
@@ -144,32 +124,6 @@ valida_type_querystring(Type) ->
 	case is_type_valido(Type) of
 		true -> ok;
 		false -> erlang:error(invalid_type_querystring)
-	end.
-
-%% @doc Valida o método do serviço 
-valida_type_service(Type) ->
-	case ems_util:is_metodo_suportado(Type) orelse Type =:= <<"KERNEL">> of
-		true -> ok;
-		false -> erlang:error(invalid_type_service)
-	end.
-
-valida_url_service(<<"/">>) -> ok;
-valida_url_service(Url) ->
-	case ems_util:is_url_valido(Url) andalso is_valid_length(Url, 300) of
-		true -> ok;
-		false -> erlang:error(invalid_url_service)
-	end.
-	
-
-valida_lang(<<"java">>) -> ok;
-valida_lang(<<"erlang">>) -> ok;
-valida_lang(<<"net">>) -> ok;
-valida_lang(_) -> erlang:error(invalid_lang_service).
-
-valida_length(Value, MaxLength) ->
-	case is_valid_length(Value, MaxLength) of
-		true -> ok;
-		false -> erlang:error(invalid_length)
 	end.
 
 
@@ -188,8 +142,6 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 	Required = ems_util:parse_bool(maps:get(<<"required">>, H, false)),
 	valida_name_querystring(Name),
 	valida_type_querystring(Type),
-	valida_length(Default, 150),
-	valida_length(Comment, 4000),
 	case Required of
 		true  -> QtdRequired2 = QtdRequired + 1;
 		false -> QtdRequired2 = QtdRequired;
@@ -300,7 +252,7 @@ parse_catalog([], CatREST, CatRE, CatKernel, _Id, _Conf) ->
 parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 	try
 		?DEBUG("Parse catalog ~p.", [H]),
-		Name = maps:get(<<"name">>, H),
+		Name = ems_util:parse_name_service(maps:get(<<"name">>, H)),
 		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, H, true)),
 		case Enable0 =:= false andalso lists:member(Name, Conf#config.cat_enable_services) of
 			true -> Enable1 = true;
@@ -312,17 +264,16 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 		end,
 		case Enable of 
 			true ->
-				Url2 = maps:get(<<"url">>, H),
-				Type = maps:get(<<"type">>, H, <<"GET">>),
-				valida_url_service(Url2),
+				Url2 = ems_util:parse_url_service(maps:get(<<"url">>, H)),
+				Type = ems_util:parse_type_service(maps:get(<<"type">>, H, <<"GET">>)),
 				ServiceImpl = maps:get(<<"service">>, H),
-				{ModuleName, ModuleNameCanonical, FunctionName} = parse_service_service(ServiceImpl),
+				{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
 				Comment = maps:get(<<"comment">>, H, <<>>),
 				Version = maps:get(<<"version">>, H, <<"1.0.0">>),
 				Owner = maps:get(<<"owner">>, H, <<>>),
 				Async = ems_util:parse_bool(maps:get(<<"async">>, H, false)),
 				Rowid = ems_util:make_rowid(Url2),
-				Lang = maps:get(<<"lang">>, H, <<>>),
+				Lang = ems_util:parse_lang(maps:get(<<"lang">>, H, <<>>)),
 				Ds = maps:get(<<"datasource">>, H, undefined),
 				case parse_datasource(Ds, Rowid, Conf) of
 					{error, enoent} ->
@@ -358,12 +309,6 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 						Path = ems_util:parse_path(maps:get(<<"path">>, H, CatalogPath), Conf#config.static_file_path),
 						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
 						Protocol = maps:get(<<"protocol">>, H, <<>>),
-						valida_lang(Lang),
-						valida_name_service(Name),
-						valida_type_service(Type),
-						valida_length(Comment, 1000),
-						valida_length(Version, 10),
-						valida_length(Owner, 30),
 						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
 						ListenAddress_t = parse_tcp_listen_address(ListenAddress, Name),
 						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
@@ -399,7 +344,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 						PageModule = compile_page_module(Page, Rowid, Conf),
 						case UseRE of
 							true -> 
-								Service = new_service_re(Rowid, IdBin, Name, Url2, 
+								Service = ems_catalog:new_service_re(Rowid, IdBin, Name, Url2, 
 														   ServiceImpl,
 														   ModuleName, 
 														   ModuleNameCanonical,
@@ -423,7 +368,7 @@ parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 									_ -> parse_catalog(T, CatREST, [Service|CatRE], CatKernel, Id+1, Conf)
 								end;
 							false -> 
-								Service = new_service(Rowid, IdBin, Name, Url2, 
+								Service = ems_catalog:new_service(Rowid, IdBin, Name, Url2, 
 														ServiceImpl,
 														ModuleName,
 														ModuleNameCanonical,
@@ -481,17 +426,6 @@ parse_datasource(DsName, _Rowid, Conf) ->
 	end.
 	
 	
-parse_service_service(Service) ->
-	try
-		[ModuleName, FunctionName] = binary:split(Service, <<":">>),
-		ModuleName2 = binary_to_list(ModuleName),
-		FunctionName2 = binary_to_list(FunctionName),
-		ModuleNameCanonical = lists:last(string:tokens(ModuleName2, ".")),
-		{ModuleName2, ModuleNameCanonical, FunctionName2}
-	catch
-		_Exception:_Reason ->  erlang:error(invalid_service_service)
-	end.
-	
 parse_node_service(<<>>) -> <<>>;
 parse_node_service(List) -> List.
 
@@ -520,151 +454,6 @@ parse_host_service(_Host, ModuleName, Node, Conf) ->
 	ClusterNode = lists:map(fun(X) -> list_to_atom(X) end, ClusterName),
 	{ClusterNode, ClusterName}.
 	
-
-new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName, 
-			   Type, Enable, Comment, Version, Owner, Async, Querystring, 
-			   QtdQuerystringRequired, Host, HostName, ResultCache,
-			   Authorization, Node, Lang, Datasource,
-			   Debug, SchemaIn, SchemaOut, PoolSize, PoolMax, Properties,
-			   Page, PageModule, Timeout, Middleware, CacheControl, 
-			   ExpiresMinute, Public, ContentType, Path, RedirectUrl,
-			   ListenAddress, ListenAddress_t, AllowedAddress, 
-			   AllowedAddress_t, Port, MaxConnections,
-			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			   CatalogPath, CatalogFile) ->
-	PatternKey = ems_util:make_rowid_from_url(Url, Type),
-	{ok, Id_re_compiled} = re:compile(PatternKey),
-	#service{
-				rowid = Rowid,
-				id = Id,
-				name = Name,
-				url = Url,
-				type = Type,
-				service = Service,
-			    module_name = ModuleName,
-			    module_name_canonical = ModuleNameCanonical,
-			    module = list_to_atom(ModuleName),
-			    function_name = FunctionName,
-			    function = list_to_atom(FunctionName),
-			    id_re_compiled = Id_re_compiled,
-			    public = Public,
-			    comment = Comment,
-			    version = Version,
-			    owner = Owner,
-				async = ems_util:parse_bool(Async),
-			    querystring = Querystring,
-			    qtd_querystring_req = QtdQuerystringRequired,
-			    host = Host,
-			    host_name = HostName,
-			    result_cache = ResultCache,
-			    authorization = Authorization,
-			    node = Node,
-			    page = Page,
-			    page_module = PageModule,
-			    datasource = Datasource,
-			    debug = Debug,
-			    lang = Lang,
-			    schema_in = SchemaIn,
-			    schema_out = SchemaOut,
-			    pool_size = PoolSize,
-			    pool_max = PoolMax,
-			    timeout = Timeout,
-			    middleware = Middleware,
-			    properties = Properties,
-			    cache_control = CacheControl,
-			    expires = ExpiresMinute,
-			    content_type = ContentType,
-			    catalog_path = CatalogPath,
-			    catalog_file = CatalogFile,
-			    path = Path,
-			    redirect_url = RedirectUrl,
-			    enable = Enable,
-				tcp_listen_address = ListenAddress,
-				tcp_listen_address_t = ListenAddress_t,
-				tcp_allowed_address = AllowedAddress,
-				tcp_allowed_address_t = AllowedAddress_t,
-				tcp_max_connections = MaxConnections,
-				tcp_port = Port,
-				tcp_is_ssl = IsSsl,
-				tcp_ssl_cacertfile = SslCaCertFile,
-				tcp_ssl_certfile = SslCertFile,
-				tcp_ssl_keyfile = SslKeyFile,
-				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
-				oauth2_token_encrypt = OAuth2TokenEncrypt,
-				protocol = Protocol
-			}.
-
-new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
-			Type, Enable, Comment, Version, Owner, Async, Querystring, 
-			QtdQuerystringRequired, Host, HostName, ResultCache,
-			Authorization, Node, Lang, Datasource, Debug, SchemaIn, SchemaOut, 
-			PoolSize, PoolMax, Properties, Page, PageModule, Timeout, Middleware, 
-			CacheControl, ExpiresMinute, Public, ContentType, Path, RedirectUrl,
-			ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
-			Port, MaxConnections,
-			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			CatalogPath, CatalogFile) ->
-	#service{
-				rowid = Rowid,
-				id = Id,
-				name = Name,
-				url = Url,
-				type = Type,
-				service = Service,
-			    module_name = ModuleName,
-			    module_name_canonical = ModuleNameCanonical,
-			    module = list_to_atom(ModuleName),
-			    function_name = FunctionName,
-			    function = list_to_atom(FunctionName),
-			    public = Public,
-			    comment = Comment,
-			    version = Version,
-			    owner = Owner,
-			    async = Async,
-			    querystring = Querystring,
-			    qtd_querystring_req = QtdQuerystringRequired,
-			    host = Host,
-			    host_name = HostName,
-			    result_cache = ResultCache,
-			    authorization = Authorization,
-			    node = Node,
-			    page = Page,
-			    page_module = PageModule,
-			    datasource = Datasource,
-			    debug = Debug,
-			    lang = Lang,
-			    schema_in = SchemaIn,
-			    schema_out = SchemaOut,
-			    pool_size = PoolSize,
-			    pool_max = PoolMax,
-			    timeout = Timeout,
-			    middleware = Middleware,
-			    properties = Properties,
-			    cache_control = CacheControl,
-			    expires = ExpiresMinute,
-			    content_type = ContentType,
-			    catalog_path = CatalogPath,
-			    catalog_file = CatalogFile,
-			    path = Path,
-			    redirect_url = RedirectUrl,
-			    enable = Enable,
-				tcp_listen_address = ListenAddress,
-				tcp_listen_address_t = ListenAddress_t,
-				tcp_allowed_address = AllowedAddress,
-				tcp_allowed_address_t = AllowedAddress_t,
-				tcp_max_connections = MaxConnections,
-				tcp_port = Port,
-				tcp_is_ssl = IsSsl,
-				tcp_ssl_cacertfile = SslCaCertFile,
-				tcp_ssl_certfile = SslCertFile,
-				tcp_ssl_keyfile = SslKeyFile,
-				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
-				oauth2_token_encrypt = OAuth2TokenEncrypt,
-				protocol = Protocol
-			}.
-
 
 
 

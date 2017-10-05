@@ -1,9 +1,7 @@
-%%********************************************************************
-%% @title Module ems_data_loader
-%% @version 1.0.0
-%% @doc ems_data_loader
-%% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
-%% @copyright ErlangMS Team
+%%******************************************************************** 
+%% @title Module ems_data_loader %% @version 1.0.0 %% @doc 
+%% @author Everton de Vargas Agilar  <evertonagilar@gmail.com> 
+%% @copyright ErlangMS Team 
 %%********************************************************************
 
 -module(ems_data_loader).
@@ -26,7 +24,6 @@
 			    datasource,
 				update_checkpoint,
 				last_update,
-				table,
 				last_update_param_name,
 				sql_load,
 				sql_update,
@@ -83,7 +80,6 @@ init(#service{name = Name,
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
 	SqlLoad = binary_to_list(maps:get(<<"sql_load">>, Props, <<>>)),
 	SqlUpdate = binary_to_list(maps:get(<<"sql_update">>, Props, <<>>)),
-	Table = binary_to_atom(maps:get(<<"table">>, Props, <<>>), utf8),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
 	State = #state{name = binary_to_list(Name),
 				   datasource = Datasource, 
@@ -92,16 +88,15 @@ init(#service{name = Name,
 				   last_update = LastUpdate,
 				   sql_load = SqlLoad,
 				   sql_update = SqlUpdate,
-				   table = Table,
 				   middleware = Middleware},
 	{ok, State, Timeout}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(sync, State) -> handle_load_or_update(State);
+handle_cast(sync, State) -> handle_do_check_load_or_update(State);
 
-handle_cast(sync_full, State) -> handle_load_or_update(State#state{last_update = undefined});
+handle_cast(sync_full, State) -> handle_do_check_load_or_update(State#state{last_update = undefined});
 
 handle_cast(pause, State = #state{name = Name}) ->
 	ems_logger:info("~s paused.", [Name]),
@@ -119,12 +114,12 @@ handle_call(last_update, _From, State = #state{last_update_param_name = LastUpda
 	Reply = {ok, ems_db:get_param(LastUpdateParamName)},
 	{reply, Reply, State};
 
-handle_call(is_empty, _From, State = #state{table = Table}) ->
-	Reply = {ok, mnesia:table_info(Table, size) == 0},
+handle_call(is_empty, _From, State) ->
+	Reply = {ok, do_is_empty(State)},
 	{reply, Reply, State};
 
-handle_call(size_table, _From, State = #state{table = Table}) ->
-	Reply = {ok, mnesia:table_info(Table, size)},
+handle_call(size_table, _From, State) ->
+	Reply = {ok, do_size_table(State)},
 	{reply, Reply, State};
 
 handle_call(Msg, _From, State) ->
@@ -140,7 +135,7 @@ handle_info(check_sync_full, State = #state{name = Name,
 		true ->
 			ems_logger:info("~s force load checkpoint.", [Name]),
 			State2 = State#state{last_update = undefined},
-			case load_or_update(State2) of
+			case do_check_load_or_update(State2) of
 				{ok, State3} ->
 					erlang:send_after(86400 * 1000, self(), check_sync_full),
 					{noreply, State3, UpdateCheckpoint};
@@ -153,7 +148,7 @@ handle_info(check_sync_full, State = #state{name = Name,
 			{noreply, State, UpdateCheckpoint}
 	end;
 
-handle_info(timeout, State) -> handle_load_or_update(State);
+handle_info(timeout, State) -> handle_do_check_load_or_update(State);
 
 handle_info({_Pid, {error, Reason}}, State = #state{name = Name,
 													update_checkpoint = UpdateCheckpoint}) ->
@@ -171,9 +166,9 @@ terminate(Reason, #service{name = Name}) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-handle_load_or_update(State = #state{name = Name,
+handle_do_check_load_or_update(State = #state{name = Name,
 									 update_checkpoint = UpdateCheckpoint}) ->
-	case load_or_update(State) of
+	case do_check_load_or_update(State) of
 		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
 		{error, eunavailable_odbc_connection} -> 
 			ems_logger:warn("~s wait 5 minutes for next checkpoint while has no database connection.", [Name]),
@@ -187,18 +182,17 @@ handle_load_or_update(State = #state{name = Name,
 %%====================================================================
 
 
-load_or_update(State = #state{name = Name,
-							  table = Table,
-							  datasource = Datasource,
-							  last_update_param_name = LastUpdateParamName,
-							  last_update = LastUpdate}) ->
+do_check_load_or_update(State = #state{name = Name,
+									   datasource = Datasource,
+									   last_update_param_name = LastUpdateParamName,
+									   last_update = LastUpdate}) ->
 	% garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), 
 	LastUpdateStr = ems_util:timestamp_str(),
-	case mnesia:table_info(Table, size) == 0 orelse LastUpdate == undefined of
+	case LastUpdate == undefined orelse do_is_empty(State) of
 		true -> 
 			?DEBUG("~s load checkpoint.", [Name]),
-			case load_catalogs_from_datasource(Datasource, LastUpdateStr, State) of
+			case do_load(Datasource, LastUpdateStr, State) of
 				ok -> 
 					ems_db:set_param(LastUpdateParamName, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -207,7 +201,7 @@ load_or_update(State = #state{name = Name,
 			end;
 		false ->
 			?DEBUG("~s update checkpoint. last update: ~s.", [Name, ems_util:timestamp_str(LastUpdate)]),
-			case update_records_from_datasource(Datasource, LastUpdate, LastUpdateStr, State) of
+			case do_update(Datasource, LastUpdate, LastUpdateStr, State) of
 				ok -> 
 					ems_db:set_param(LastUpdateParamName, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -217,10 +211,9 @@ load_or_update(State = #state{name = Name,
 	end.
 
 
-load_catalogs_from_datasource(Datasource, CtrlInsert, #state{name = Name,
-															 table = Table,
-															 sql_load = SqlLoad,
-															 middleware = Middleware}) -> 
+-spec do_load(#service_datasource{}, tuple(), #state{}) -> ok | {error, atom()}.
+do_load(Datasource, CtrlInsert, State = #state{name = Name,
+											   sql_load = SqlLoad}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -231,42 +224,42 @@ load_catalogs_from_datasource(Datasource, CtrlInsert, #state{name = Name,
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
-						case mnesia:clear_table(Table) of
-							{atomic, ok} ->
-								ems_db:init_sequence(Table, 0),
-								InsertFunc = fun() ->
-									Count = insert_records(Records, 0, CtrlInsert, Middleware, Table),
-									case Count of 
-										1 -> ems_logger:info("~s load ~p record.",  [Name, Count]);
-										_ -> ems_logger:info("~s load ~p records.", [Name, Count])
-									end
+						io:format("aqui0\n"),
+						case do_clear_table(State) of
+							ok ->
+								io:format("aqui1\n"),
+								do_reset_sequence(State),
+								io:format("aqui2\n"),
+								do_visit_records_transaction(Records, [], 1, CtrlInsert, State, insert),
+								Count = length(Records),
+								case Count of 
+									1 -> ems_logger:info("~s load 1 record.",  [Name]);
+									_ -> ems_logger:info("~s load ~p records.", [Name, Count])
 								end,
-								mnesia:activity(transaction, InsertFunc),
 								ok;
-							_ ->
+							Error ->
 								ems_logger:error("~s could not clear table before load data.", [Name]),
-								{error, efail_load_data}
+								Error
 						end;
-					{error, Reason2} = Error -> 
+					{error, Reason2} = Error3 -> 
 						ems_odbc_pool:release_connection(Datasource2),
 						ems_logger:error("~s load data query error: ~p.", [Name, Reason2]),
-						Error
+						Error3
 				end,
 				Result;
-			Error2 -> 
+			Error4 -> 
 				ems_logger:warn("~s has no connection to load data from database.", [Name]),
-				Error2
+				Error4
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("~s load data exception error: ~p.", [Name, Reason3]),
+			ems_logger:error("~s load exception error: ~p.", [Name, Reason3]),
 			{error, Reason3}
 	end.
 
-update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{name = Name,
-																		  table = Table,
-																		  sql_update = SqlUpdate,	
-																		  middleware = Middleware}) -> 
+-spec do_update(#service_datasource{}, tuple(), tuple(), #state{}) -> ok | {error, atom()}.
+do_update(Datasource, LastUpdate, CtrlUpdate, State = #state{name = Name,
+															 sql_update = SqlUpdate}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -283,15 +276,13 @@ update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{name =
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
+						do_visit_records_transaction(Records, [], 1, CtrlUpdate, State, update),
+						Count = length(Records),
 						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
-						UpdateFunc = fun() ->
-							Count = update_records(Records, 0, CtrlUpdate, Middleware, Table),
-							case Count of
-								1 -> ems_logger:info("~s update ~p record since ~s.", [Name, Count, LastUpdateStr]);
-								_ -> ems_logger:info("~s update ~p records since ~s.", [Name, Count, LastUpdateStr])
-							end
+						case Count of
+							1 -> ems_logger:info("~s update 1 record since ~s.", [Name, LastUpdateStr]);
+							_ -> ems_logger:info("~s update ~p records since ~s.", [Name, Count, LastUpdateStr])
 						end,
-						mnesia:activity(transaction, UpdateFunc),
 						ok;
 					{error, Reason} = Error -> 
 						ems_odbc_pool:release_connection(Datasource2),
@@ -305,24 +296,82 @@ update_records_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{name =
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("~s udpate data exception error: ~p.", [Name, Reason3]),
+			ems_logger:error("~s udpate exception error: ~p.", [Name, Reason3]),
 			{error, Reason3}
 	end.
 
 
-insert_records([], Count, _CtrlInsert, _Middleware, _Table) -> Count;
-insert_records([H|T], Count, CtrlInsert, Middleware, Table) ->
-	NewRecord = apply(Middleware, insert, [H, CtrlInsert]),
-	NewRecord2 = setelement(1, NewRecord, Table),
-	mnesia:write(NewRecord2),
-	insert_records(T, Count+1, CtrlInsert, Middleware, Table).
+-spec do_visit_records_transaction(list(tuple()), list(tuple()), non_neg_integer, tuple(), #state{}, insert | update) -> ok.
+do_visit_records_transaction(Records, L, Count, CtrlData, State, Operation) when Count == 100 orelse (length(Records) == 0 andalso length(L) > 0) -> 
+	io:format("aqui3\n"),
+	F = fun() -> do_visit_records_persist(L, CtrlData, State, Operation) end,
+	mnesia:activity(transaction, F),
+	do_visit_records_transaction(Records, [], 1, CtrlData, State, Operation);
+do_visit_records_transaction([], _, _, _, _, _) -> ok;
+do_visit_records_transaction([H|T], L, Count, CtrlData, State, Operation) ->
+	do_visit_records_transaction(T, [H|L], Count+1, CtrlData, State, Operation).
+	
+
+-spec do_visit_records_persist(list(tuple()), tuple(), #state{}, insert | update) -> ok.
+do_visit_records_persist([], _, _, _) -> ok;
+do_visit_records_persist([H|T], CtrlDate, State, insert) ->
+	do_insert_record(H, CtrlDate, State),
+	do_visit_records_persist(T, CtrlDate, State, insert);
+do_visit_records_persist([H|T], CtrlDate, State, update) ->
+	do_update_record(H, CtrlDate, State),
+	do_visit_records_persist(T, CtrlDate, State, update).
 
 
-update_records([], Count, _CtrlUpdate, _Middleware, _Table) -> Count;
-update_records([H|T], Count, CtrlUpdate, Middleware, Table) ->
-	UpdatedRecord = apply(Middleware, update, [H, CtrlUpdate]),
-	UpdatedRecord2 = setelement(1, UpdatedRecord, Table),
-	mnesia:write(UpdatedRecord2),
-	update_records(T, Count+1, CtrlUpdate, Middleware, Table).
+-spec do_insert_record(tuple(), tuple(), #state{}) -> ok | {error, atom()}.
+do_insert_record(Record, CtrlInsert, #state{name = Name, middleware = Middleware}) ->
+	io:format("aqui2\n"),
+	case apply(Middleware, insert, [Record, CtrlInsert]) of
+		{ok, NewRecord, Table} ->
+			io:format("aqui3\n"),
+			NewRecord2 = setelement(1, NewRecord, Table),
+			mnesia:write(NewRecord2),
+			ok;
+		{error, Reason} = Error ->
+			ems_logger:error("~s data insert error: ~p.", [Name, Reason]),
+			Error
+	end.
+
+
+-spec do_update_record(list(), tuple(), #state{}) -> ok | {error, atom()}.
+do_update_record(Record, CtrlUpdate, #state{name = Name, middleware = Middleware}) ->
+	case apply(Middleware, update, [Record, CtrlUpdate]) of
+		{ok, UpdatedRecord, Table} ->
+			UpdatedRecord2 = setelement(1, UpdatedRecord, Table),
+			mnesia:write(UpdatedRecord2),
+			ok;
+		{error, Reason} = Error ->	
+			ems_logger:error("~s data update error: ~p.", [Name, Reason]),
+			Error
+	end.
+
+
+-spec do_is_empty(#state{}) -> {ok, boolean()}.
+do_is_empty(#state{middleware = Middleware}) ->
+	apply(Middleware, is_empty, []).
+
+
+-spec do_size_table(#state{}) -> {ok, non_neg_integer()}.
+do_size_table(#state{middleware = Middleware}) ->
+	apply(Middleware, size_table, []).
+
+
+-spec do_clear_table(#state{}) -> ok | {error, efail_clear_ets_table}.
+do_clear_table(#state{middleware = Middleware}) ->
+	apply(Middleware, clear_table, []).
+
+
+-spec do_reset_sequence(#state{}) -> ok.
+do_reset_sequence(#state{middleware = Middleware}) ->
+	apply(Middleware, reset_sequence, []).
+
+
+-spec do_lock_table(#state{}) -> ok | {error, efail_lock_table}.
+do_lock_table(#state{middleware = Middleware}) ->
+	apply(Middleware, lock_table, []).
 
 

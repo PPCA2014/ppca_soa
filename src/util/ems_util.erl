@@ -67,6 +67,7 @@
 		 allow_ip_address/2,
 		 parse_authorization_type/1,
 		 parse_bearer_authorization_header/1,
+		 parse_type_service/1,
 		 match_ip_address/2,
 		 mask_ipaddress_to_tuple/1,
 		 is_url_valido/1,
@@ -121,6 +122,10 @@
 		 parse_result_cache/1,
 		 node_binary/0,
 		 parse_timeout/2,
+		 parse_url_service/1,
+		 parse_lang/1,
+		 parse_name_service/1,
+		 parse_service_service/1,
 		 uptime_str/0,
 		 get_property_request/2, 
 		 get_param_url/3,
@@ -920,6 +925,21 @@ parse_bool(1) -> true;
 parse_bool(<<"1">>) -> true;
 parse_bool(_) -> false.
 
+
+-spec parse_service_service(binary() | string()) -> {string(), string(), string()}.
+parse_service_service(Service) when is_binary(Service) ->
+	parse_service_service(binary_to_list(Service));
+parse_service_service(Service) ->
+	try
+		[ModuleName, FunctionName] = string:split(Service, ":"),
+		ModuleName2 = ModuleName,
+		FunctionName2 = FunctionName,
+		ModuleNameCanonical = lists:last(string:tokens(ModuleName2, ".")),
+		{ModuleName2, ModuleNameCanonical, FunctionName2}
+	catch
+		_Exception:_Reason ->  erlang:error(einvalid_service_service)
+	end.
+
 	 
 %% @doc Translates the code into a more useful description
 -spec posix_error_description(atom()) -> string().
@@ -1500,8 +1520,9 @@ is_metodo_suportado("OPTIONS") -> true;
 is_metodo_suportado("HEAD") -> true;
 is_metodo_suportado(_) -> false.
 
-%% @doc Indica se a URL é valida
--spec is_url_valido(string()) -> boolean().
+-spec is_url_valido(binary() | string()) -> boolean().
+is_url_valido(Url) when is_binary(Url) ->
+	is_url_valido(binary_to_list(Url));
 is_url_valido(Url) ->
 	case re:run(Url, "^((http:\/\/)|(\/))?([a-z_0-9\-]+\.)?[a-z_0-9\-.\/]+\.[a-z_0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
 		nomatch -> false;
@@ -1566,18 +1587,27 @@ parse_bearer_authorization_header(Header) ->
 		_ -> {error, access_denied}
 	end.
 
--spec parse_authorization_type(binary()) -> atom().
+-spec parse_authorization_type(binary() | string() | oauth2 | basic | public | 0 | 1 | 2) -> atom().
 parse_authorization_type(<<"Basic">>) -> basic;
 parse_authorization_type(<<"basic">>) -> basic;
 parse_authorization_type(<<"OAuth2">>) -> oauth2;
 parse_authorization_type(<<"oauth2">>) -> oauth2;
 parse_authorization_type(<<"Public">>) -> public;
 parse_authorization_type(<<"public">>) -> public;
+parse_authorization_type("Basic") -> basic;
+parse_authorization_type("basic") -> basic;
+parse_authorization_type("OAuth2") -> oauth2;
+parse_authorization_type("oauth2") -> oauth2;
+parse_authorization_type("Public") -> public;
+parse_authorization_type("public") -> public;
 parse_authorization_type(<<>>) -> public;
 parse_authorization_type(oauth2) -> oauth2;
 parse_authorization_type(basic) -> basic;
 parse_authorization_type(public) -> public;
-parse_authorization_type(_) -> erlang:error(einvalid_authorization_mode).
+parse_authorization_type(0) -> public;
+parse_authorization_type(1) -> basic;
+parse_authorization_type(2) -> oauth2;
+parse_authorization_type(_) -> erlang:error(einvalid_authorization_type).
 
 
 %% *********** Functions for data validation ************
@@ -1629,7 +1659,8 @@ mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
 
 -spec parse_result_cache(non_neg_integer()) -> non_neg_integer().
 parse_result_cache(ResultCache) ->
-	case is_integer(ResultCache) andalso ResultCache >= 0 of
+	% Máximo permitido: 1 dia
+	case is_integer(ResultCache) andalso ResultCache >= 0 andalso ResultCache =< 86400000 of
 		true -> ResultCache;
 		_ -> erlang:error(einvalid_result_cache)
 	end.	
@@ -1642,6 +1673,56 @@ parse_timeout(Timeout, MaxTimeout) ->
 		_ -> erlang:error(einvalid_timeout)
 	end.	
 
+-spec parse_type_service(binary() | string() | non_neg_integer()) -> binary(). 
+parse_type_service(<<"GET">>) -> <<"GET">>;
+parse_type_service(<<"POST">>) -> <<"POST">>;
+parse_type_service(<<"PUT">>) -> <<"PUT">>;
+parse_type_service(<<"DELETE">>) -> <<"DELETE">>;
+parse_type_service(<<"OPTIONS">>) -> <<"OPTIONS">>;
+parse_type_service(<<"KERNEL">>) -> <<"KERNEL">>;
+parse_type_service("GET") -> <<"GET">>;
+parse_type_service("POST") -> <<"POST">>;
+parse_type_service("PUT") -> <<"PUT">>;
+parse_type_service("DELETE") -> <<"DELETE">>;
+parse_type_service("OPTIONS") -> <<"OPTIONS">>;
+parse_type_service("KERNEL") -> <<"KERNEL">>;
+parse_type_service(0) -> <<"GET">>;
+parse_type_service(1) -> <<"POST">>;
+parse_type_service(2) -> <<"PUT">>;
+parse_type_service(3) -> <<"DELETE">>;
+parse_type_service(4) -> <<"OPTIONS">>;
+parse_type_service(5) -> <<"KERNEL">>;
+parse_type_service(_) -> erlang:error(einvalid_type_service).
+
+
+-spec parse_url_service(binary() | list()) -> binary().
+parse_url_service(<<"/">>) -> <<"/">>;
+parse_url_service(Url) when is_binary(Url) ->
+	parse_url_service(binary_to_list(Url));
+parse_url_service(Url) ->
+	LenUrl = length(Url),
+	case LenUrl > 0 andalso LenUrl =< 360 andalso is_url_valido(Url) of
+		true -> list_to_binary(Url);
+		false -> erlang:error(einvalid_url_service)
+	end.
+
+-spec parse_lang(binary() | string() | non_neg_integer()) -> binary().
+parse_lang(<<"erlang">>) -> <<"erlang">>;
+parse_lang("erlang") -> <<"erlang">>;
+parse_lang(<<"java">>) -> <<"java">>;
+parse_lang("java") -> <<"java">>;
+parse_lang(0) -> <<"erlang">>;
+parse_lang(1) -> <<"java">>;
+parse_lang(_) -> erlang:error(einvalid_lang_service).
+
+-spec parse_name_service(binary() | string()) -> binary().
+parse_name_service(Name) when is_list(Name) ->
+	parse_name_service(list_to_binary(Name));
+parse_name_service(Name) ->
+	case re:run(Name, "^[/_a-zA-Z-.][.:/_a-zA-Z0-9-]{0,300}$") of
+		nomatch -> erlang:error(einvalid_name_service);
+		_ -> Name
+	end.
 	
 -spec node_binary() -> binary().
 node_binary() -> erlang:atom_to_binary(node(), utf8).
