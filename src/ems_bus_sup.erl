@@ -22,7 +22,7 @@ start_link(Args) ->
 %% ===================================================================
 
 init([]) ->
-	KernelServices = ems_catalog:list_kernel_catalog(),
+	KernelServices = ems_catalog_lookup:list_kernel_catalog(),
     PoolSpecs = lists:map(
 		fun(S = #service{name = WorkerName, 
 						  pool_size = PoolSize, 
