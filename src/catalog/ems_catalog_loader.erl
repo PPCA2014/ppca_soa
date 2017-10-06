@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_catalog_loader
 %% @version 1.0.0
-%% @doc Module responsible for parse e load catalog services
+%% @doc Module responsible for load catalog services from disk
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -98,133 +98,6 @@ parse_filename_catalog(FileName, CurrentDir) ->
 	end.
 
 
-%% @doc Indica se o name da querystring é valido
-is_name_querystring_valido(Name) ->
-	case re:run(Name, "^[_a-zA-Z][_a-zA-Z0-9]{0,29}$") of
-		nomatch -> false;
-		_ -> true
-	end.
-
-
-%% @doc Indica se o tipo dos dados são é valido
-is_type_valido(<<"int">>) 	 -> true;
-is_type_valido(<<"string">>) -> true;
-is_type_valido(_) 	 		 -> false.
-
-
-%% @doc Valida o name da querystring
-valida_name_querystring(Name) ->
-	case is_name_querystring_valido(Name) of
-		true -> ok;
-		false -> erlang:error(invalid_name_querystring)
-	end.
-
-%% @doc Valida o tipo de dado da querystring
-valida_type_querystring(Type) ->
-	case is_type_valido(Type) of
-		true -> ok;
-		false -> erlang:error(invalid_type_querystring)
-	end.
-
-
-%% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
-parse_querystring([]) -> {[], 0};
-parse_querystring(Querystring) -> parse_querystring_def(Querystring, [], 0).
-	
-%% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
-parse_querystring_def([], Querystring, QtdRequired) -> 	
-	{Querystring, QtdRequired};
-parse_querystring_def([H|T], Querystring, QtdRequired) -> 
-	Name = maps:get(<<"name">>, H),
-	Type = maps:get(<<"type">>, H, <<"string">>),
-	Default = maps:get(<<"default">>, H, <<>>),
-	Comment = maps:get(<<"comment">>, H, <<>>),
-	Required = ems_util:parse_bool(maps:get(<<"required">>, H, false)),
-	valida_name_querystring(Name),
-	valida_type_querystring(Type),
-	case Required of
-		true  -> QtdRequired2 = QtdRequired + 1;
-		false -> QtdRequired2 = QtdRequired;
-		_ -> QtdRequired2 = QtdRequired,
-			 erlang:error(invalid_required_querystring)
-	end,
-	Q = #{<<"name">>     => Name,
-		  <<"type">>     => Type,
-		  <<"default">>  => Default,
-		  <<"comment">>  => Comment,
-		  <<"required">> => Required},
-	parse_querystring_def(T, [Q | Querystring], QtdRequired2).
-
-
-parse_tcp_listen_address(ListenAddress, CatName) ->
-	parse_tcp_listen_address_t(ListenAddress, CatName, []).
-parse_tcp_listen_address_t([], _, Result) -> Result;
-parse_tcp_listen_address_t([H|T], CatName, Result) ->
-	case inet:parse_address(H) of
-		{ok, {0, 0, 0, 0}} ->
-			case ems_util:ip_list() of
-				{ok, IpList} -> IpList;
-				{error, Reason} ->
-					ems_logger:format_warn("ems_catalog_loader was unable to get the list of available device ips. Reason: ~p.\n", [Reason]),
-					[]
-			end;
-		{ok, L2} -> 
-			case lists:member(L2, Result) of
-				true -> parse_tcp_listen_address_t(T, CatName, Result);
-				false -> parse_tcp_listen_address_t(T, CatName, [L2|Result])
-			end;
-		{error, einval} -> 
-			ems_logger:format_warn("ems_catalog_loader parse invalid IP ~s on property tcp_listen_address of catalog ~p.\n", [H, CatName]),
-			parse_tcp_listen_address_t(T, CatName, Result)
-	end.
-	
-
-parse_allowed_address_t(all) -> all;
-parse_allowed_address_t(undefined) -> undefined;
-parse_allowed_address_t(AllowedAddress) ->
-	lists:map(fun(IP) -> 
-					ems_util:mask_ipaddress_to_tuple(IP)
-			  end, AllowedAddress).
-
-parse_allowed_address(all) -> all;
-parse_allowed_address(undefined) -> all;
-parse_allowed_address(AddrList) -> 
-	ems_util:binlist_to_list(AddrList).
-
-
-parse_tcp_port(undefined) -> undefined;
-parse_tcp_port(<<Port/binary>>) -> 
-	parse_tcp_port(binary_to_list(Port));		
-parse_tcp_port(Port) when is_list(Port) -> 
-	parse_tcp_port(list_to_integer(Port));
-parse_tcp_port(Port) when is_integer(Port) -> 
-	case ems_util:is_range_valido(Port, ?TCP_PORT_MIN, ?TCP_PORT_MAX) of
-		true -> Port;
-		false -> erlang:error("Parameter tcp_port invalid. Enter a value between 1024 and 5000.")
-	end.
-
-parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
-parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
-
-
-compile_modulo_erlang(undefined, _) -> ok;
-compile_modulo_erlang(Path, ModuleNameCanonical) ->
-	FileName = Path ++ "/" ++ ModuleNameCanonical ++ ".erl",
-	case filelib:is_regular(FileName) of
-		true ->
-			io:format("Compile file ~p ", [FileName]),
-			code:add_path(Path), 
-			case compile:file(FileName, [{outdir, Path ++ "/"}]) of
-				error -> io:format("[ ERROR ]\n");
-				{error, Errors, _Warnings} -> 
-					io:format("[ ERROR ]\n"),
-					io:format_error("~p\n", [Errors]);
-				_ -> io:format("[ OK ]\n")
-			end;
-		_ -> ok
-	end.
-
-
 make_ets_rest_catalog([]) -> ok;
 make_ets_rest_catalog([H = {_Rowid, #service{type = Type}}|T]) -> 
 	case Type of
@@ -248,211 +121,25 @@ parse_catalog([], CatREST, CatRE, CatKernel, _Id, _Conf) ->
 	make_ets_rest_catalog(CatREST),
 	ems_util:list_to_ets(CatREST, ets_rest, [ordered_set, public, {read_concurrency, true}]),
 	ets:insert(ets_ems_catalog, {cat, {CatREST, CatRE, CatKernel}});
+
 	
 parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
-	try
-		?DEBUG("Parse catalog ~p.", [H]),
-		Name = ems_util:parse_name_service(maps:get(<<"name">>, H)),
-		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, H, true)),
-		case Enable0 =:= false andalso lists:member(Name, Conf#config.cat_enable_services) of
-			true -> Enable1 = true;
-			false -> Enable1 = Enable0
-		end,
-		case Enable1 =:= true andalso lists:member(Name, Conf#config.cat_disable_services) of
-			true -> Enable = false;
-			false -> Enable = Enable1
-		end,
-		case Enable of 
-			true ->
-				Url2 = ems_util:parse_url_service(maps:get(<<"url">>, H)),
-				Type = ems_util:parse_type_service(maps:get(<<"type">>, H, <<"GET">>)),
-				ServiceImpl = maps:get(<<"service">>, H),
-				{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
-				Comment = maps:get(<<"comment">>, H, <<>>),
-				Version = maps:get(<<"version">>, H, <<"1.0.0">>),
-				Owner = maps:get(<<"owner">>, H, <<>>),
-				Async = ems_util:parse_bool(maps:get(<<"async">>, H, false)),
-				Rowid = ems_util:make_rowid(Url2),
-				Lang = ems_util:parse_lang(maps:get(<<"lang">>, H, <<>>)),
-				Ds = maps:get(<<"datasource">>, H, undefined),
-				case parse_datasource(Ds, Rowid, Conf) of
-					{error, enoent} ->
-						ems_logger:format_warn("Service ~p will be disabled because the datasource ~p was not found in the configuration file.\n", [Name, Ds]),
-						parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf);	
-					Datasource ->
-						case Type of
-							<<"GET">> -> ResultCache = ems_util:parse_result_cache(maps:get(<<"result_cache">>, H, Conf#config.ems_result_cache));
-							_ -> ResultCache = 0
-						end,
-						Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, H, Conf#config.authorization)),
-						OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, H, Conf#config.oauth2_with_check_constraint)),
-						OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, H, false)),
-						Debug = ems_util:parse_bool(maps:get(<<"debug">>, H, false)),
-						UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, H, false)),
-						SchemaIn = maps:get(<<"schema_in">>, H, null),
-						SchemaOut = maps:get(<<"schema_out">>, H, null),
-						PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, H, 1)),
- 						PoolMax0 = ems_config:getConfig(<<"pool_max">>, Name, maps:get(<<"pool_max">>, H, 1)),
-						% Ajusta o pool_max para o valor de pool_size se for menor
-						case PoolMax0 < PoolSize of
-							true -> PoolMax = PoolSize;
-							false -> PoolMax = PoolMax0
-						end,
-						Timeout = ems_util:parse_timeout(maps:get(<<"timeout">>, H, ?SERVICE_TIMEOUT), ?SERVICE_MAX_TIMEOUT),
-						Middleware = parse_middleware(maps:get(<<"middleware">>, H, undefined)),
-						CacheControl = maps:get(<<"cache_control">>, H, ?CACHE_CONTROL_1_SECOND),
-						ExpiresMinute = maps:get(<<"expires_minute">>, H, 1),
-						Public = ems_util:parse_bool(maps:get(<<"public">>, H, true)),
-						ContentType = maps:get(<<"content_type">>, H, ?CONTENT_TYPE_JSON),
-						CatalogPath = maps:get(<<"catalog_path">>, H, <<>>),
-						CatalogFile = maps:get(<<"catalog_file">>, H, <<>>),
-						Path = ems_util:parse_path(maps:get(<<"path">>, H, CatalogPath), Conf#config.static_file_path),
-						RedirectUrl = maps:get(<<"redirect_url">>, H, <<>>),
-						Protocol = maps:get(<<"protocol">>, H, <<>>),
-						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, H, Conf#config.tcp_listen_address)),
-						ListenAddress_t = parse_tcp_listen_address(ListenAddress, Name),
-						AllowedAddress = parse_allowed_address(maps:get(<<"tcp_allowed_address">>, H, Conf#config.tcp_allowed_address)),
-						AllowedAddress_t = parse_allowed_address_t(AllowedAddress),
-						MaxConnections = maps:get(<<"tcp_max_connections">>, H, [?HTTP_MAX_CONNECTIONS]),
-						Port = parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, H, undefined))),
-						Ssl = maps:get(<<"tcp_ssl">>, H, undefined),
-						case Ssl of
-							undefined ->
-								IsSsl = false,
-								SslCaCertFile = undefined,
-								SslCertFile = undefined,
-								SslKeyFile = undefined;
-							_ ->
-								IsSsl = true,
-								SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
-								SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
-								SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
-						end,
-						case Lang of
-							<<"erlang">> -> 
-								Node = <<>>,
-								Host = '',
-								HostName = Conf#config.ems_hostname,
-								compile_modulo_erlang(Path, ModuleNameCanonical);
-							_ ->	
-								Node = parse_node_service(maps:get(<<"node">>, H, Conf#config.cat_node_search)),
-								{Host, HostName} = parse_host_service(maps:get(<<"host">>, H, Conf#config.cat_host_search), ModuleName, Node, Conf)
-						end,
-						{Querystring, QtdQuerystringRequired} = parse_querystring(maps:get(<<"querystring">>, H, [])),
-						IdBin = list_to_binary(integer_to_list(Id)),
-						Page = maps:get(<<"page">>, H, undefined),
-						PageModule = compile_page_module(Page, Rowid, Conf),
-						case UseRE of
-							true -> 
-								Service = ems_catalog:new_service_re(Rowid, IdBin, Name, Url2, 
-														   ServiceImpl,
-														   ModuleName, 
-														   ModuleNameCanonical,
-														   FunctionName, Type, Enable, Comment, 
-														   Version, Owner, Async, 
-														   Querystring, QtdQuerystringRequired,
-														   Host, HostName, ResultCache,
-														   Authorization, Node, Lang,
-														   Datasource, Debug, SchemaIn, SchemaOut, 
-														   PoolSize, PoolMax, H, Page, 
-														   PageModule, Timeout, 
-														   Middleware, CacheControl, ExpiresMinute, 
-														   Public, ContentType, Path, RedirectUrl,
-														   ListenAddress, ListenAddress_t, AllowedAddress, 
-														   AllowedAddress_t, Port, MaxConnections,
-														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														   CatalogPath, CatalogFile),
-								case Type of
-									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
-									_ -> parse_catalog(T, CatREST, [Service|CatRE], CatKernel, Id+1, Conf)
-								end;
-							false -> 
-								Service = ems_catalog:new_service(Rowid, IdBin, Name, Url2, 
-														ServiceImpl,
-														ModuleName,
-														ModuleNameCanonical,
-														FunctionName, Type, Enable, Comment,
-														Version, Owner, Async, 
-														Querystring, QtdQuerystringRequired,
-														Host, HostName, ResultCache,
-														Authorization, Node, Lang,
-														Datasource, Debug, SchemaIn, SchemaOut, 
-														PoolSize, PoolMax, H, Page, 
-														PageModule, Timeout, 
-														Middleware, CacheControl, 
-														ExpiresMinute, Public, 
-														ContentType, Path, RedirectUrl,
-														ListenAddress, ListenAddress_t, AllowedAddress, 
-														AllowedAddress_t, Port, MaxConnections,
-														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														CatalogPath, CatalogFile),
-								case Type of
-									<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
-									_ -> parse_catalog(T, [{Rowid, Service}|CatREST], CatRE, CatKernel, Id+1, Conf)
-								end
-						end
-				end;
-			false -> 
-				parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf)
-		end
-	catch
-		_Exception:Reason -> 
-			ems_logger:format_warn("ems_catalog_loader parse invalid catalog specification: ~p\n\t~p.\n", [Reason, H]),
-			parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf)
+	?DEBUG("Parse catalog ~p.", [H]),
+	case ems_catalog:new_service_from_map(H, Conf) of
+		{ok, Service = #service{type = Type,
+								rowid = Rowid}} ->
+			case Type of
+				<<"KERNEL">> -> parse_catalog(T, CatREST, CatRE, [Service|CatKernel], Id+1, Conf);
+				_ -> parse_catalog(T, [{Rowid, Service}|CatREST], CatRE, CatKernel, Id+1, Conf)
+			end;
+		{error, _Reason} -> parse_catalog(T, CatREST, CatRE, CatKernel, Id, Conf)
 	end.
 
-parse_middleware(undefined) -> undefined;
-parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
-	
-
-compile_page_module(undefined, _, _) -> undefined;
-compile_page_module(Page, Rowid, Conf) -> 
-	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	PageFile = ems_util:parse_path(Page, Conf#config.static_file_path),
-	case ems_django:compile_file(binary_to_list(PageFile), ModuleNamePage) of
-		{ok, PageModule} -> PageModule;
-		_ -> throw({einvalid_page, Page})
-	end.
 
 	
-parse_datasource(undefined, _, _) -> undefined;
-parse_datasource(M, Rowid, _) when erlang:is_map(M) -> ems_db:create_datasource_from_map(M, Rowid);
-parse_datasource(DsName, _Rowid, Conf) -> 
-	case maps:get(DsName, Conf#config.ems_datasources, undefined) of
-		undefined -> {error, enoent};
-		M -> M
-	end.
 	
-	
-parse_node_service(<<>>) -> <<>>;
-parse_node_service(List) -> List.
 
 	
-%% @doc O host pode ser um alias definido no arquivo de configuração
-parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
-parse_host_service(_Host, ModuleName, Node, Conf) ->
-	ModuleNameCanonical = [case X of 46 -> 95; _ -> X end || X <- ModuleName], % Troca . por _
-	ListHost = case net_adm:host_file() of
-		{error, _Reason} -> [Conf#config.ems_host];
-		Hosts -> Hosts
-	end,
-	case erlang:is_list(Node) of
-		true  -> ListNode = Node;
-		false -> ListNode = [Node]
-	end,
-	ListHost2 = [case string:tokens(atom_to_list(X), ".") of
-					[N, _] -> N;
-					[N] -> N
-				 end || X <- ListHost],
-	ListNode2 = lists:map(fun(X) -> binary_to_list(X) end, ListNode),
-	ClusterName = [case X of
-						[] -> ModuleNameCanonical ++ "@" ++ Y;
-						_  -> ModuleNameCanonical ++ "_" ++ X ++ "@" ++ Y 
-				   end || X <- ListNode2, Y <- ListHost2],
-	ClusterNode = lists:map(fun(X) -> list_to_atom(X) end, ClusterName),
-	{ClusterNode, ClusterName}.
 	
 
 

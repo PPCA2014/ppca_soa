@@ -6,7 +6,6 @@
 	"service" : "ems_odbc_pool:start",
 	"url": "/emsbus/ems_odbc_pool",
 	"type": "KERNEL",
-	"APIkey":"false",
 	"lang" : "erlang",
 	"pool_size" : 1,
 	"pool_max" : 1

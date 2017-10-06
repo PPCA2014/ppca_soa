@@ -39,7 +39,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 						"HEAD" -> Request#request{type = "GET"};
 						_ -> Request
 				  end,
-	case ems_catalog:lookup(RequestLookup) of
+	case ems_catalog_lookup:lookup(RequestLookup) of
 		{Service = #service{content_type = ContentTypeService,
 							tcp_allowed_address_t = AllowedAddress,
 							result_cache = ResultCache}, 

@@ -11,119 +11,12 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([lookup/1, lookup/2, get_querystring/2, 
-		 get_metadata_json/1, 
-		 list_kernel_catalog/0, list_re_catalog/0,
-		 new_service/54, new_service_re/54]).
+-export([new_service/54, 
+		 new_service_re/54,
+		 new_service_from_map/2,
+		 get_metadata_json/1]).
 
-
-lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) ->	
-	case Type of
-		"GET" -> EtsLookup = ets_get;
-		"POST" -> EtsLookup = ets_post;
-		"PUT" -> EtsLookup = ets_put;
-		"DELETE" -> EtsLookup = ets_delete;
-		"OPTIONS" -> EtsLookup = ets_options;
-		"HEAD" -> EtsLookup = ets_get;
-		"INFO" -> EtsLookup = ets_get
-	end,
-	case ets:lookup(EtsLookup, Rowid) of
-		[] -> % is regular expression??
-			case lookup_re(Request, list_re_catalog()) of
-				{error, enoent} = Error -> Error;
-				{Service, ParamsMapRE} -> 
-					Querystring = processa_querystring(Service, Request),
-					{Service, ParamsMapRE, Querystring}
-			end;
-		[{_Rowid, Service}] -> 
-			Querystring = processa_querystring(Service, Request),
-			{Service, ParamsMap, Querystring}
-	end.
-
-lookup(Method, Uri) ->
-	case ems_util:encode_request(Method, Uri) of
-		{ok, Request} -> lookup(Request);
-		Error -> Error
-	end.
-
-list_kernel_catalog() ->
-	case ets:lookup(ets_ems_catalog, cat) of
-		[] -> {error, enoent};
-		[{cat, {_, _, CatKernel}}] -> CatKernel
-	end.
-
-list_re_catalog() ->
-	case ets:lookup(ets_ems_catalog, cat) of
-		[] -> {error, enoent};
-		[{cat, {_, CatRE, _}}] -> CatRE
-	end.
-    
-    
-%%====================================================================
-%% Funções internas
-%%====================================================================
-
-
-get_querystring(<<QueryName/binary>>, Servico) ->	
-	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#service.comment == QueryName],
-	Query.
-
-processa_querystring(Service, Request) ->
-	%% Querystrings do módulo ems_static_file_service e ems_options_service não são processados.
-	QuerystringUser = Request#request.querystring_map,
-	case Service#service.module of
-		ems_static_file_service -> QuerystringUser;
-		ems_options_service -> QuerystringUser;
-		_ ->
-			QuerystringServico = Service#service.querystring,
-			case QuerystringUser =:= #{} of
-				true -> 
-					case QuerystringServico =:= [] of
-						true -> QuerystringUser;
-						false -> valida_querystring(QuerystringServico, QuerystringUser, [])
-					end;
-				false -> 
-					case QuerystringServico =:= [] of
-						true -> #{};
-						false -> valida_querystring(QuerystringServico, QuerystringUser, [])
-					end
-			end
-	end.
-
-valida_querystring([], _QuerystringUser, QuerystringList) -> maps:from_list(QuerystringList);
-valida_querystring([H|T], QuerystringUser, QuerystringList) ->
-	%% Verifica se encontra a query na querystring do usuário
-	NomeQuery = maps:get(<<"name">>, H),
-	case maps:find(NomeQuery, QuerystringUser) of
-		{ok, Value} -> 
-			valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
-		error ->
-			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
-			case maps:get(<<"default">>, H, enoent) of
-				enoent -> [];
-				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
-			end
-	end.
-
-lookup_re(_, []) -> {error, enoent};
-lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
-	try
-		RE = H#service.id_re_compiled,
-		PatternKey = ems_util:make_rowid_from_url(Url, Type),
-		case re:run(PatternKey, RE, [{capture,all_names,binary}]) of
-			match -> {H, #{}};
-			{match, Params} -> 
-				{namelist, ParamNames} = re:inspect(RE, namelist),
-				ParamsMap = maps:from_list(lists:zip(ParamNames, Params)),
-				{H, ParamsMap};
-			nomatch -> lookup_re(Request, T);
-			{error, _ErrType} -> {error, enoent}
-		end
-	catch 
-		_Exception:_Reason -> {error, enoent}
-	end.
-
-
+-spec get_metadata_json(#service{}) -> binary().
 get_metadata_json(#service{id = Id,
 						  name = Name,
 						  content_type = ContentType,
@@ -317,4 +210,232 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				oauth2_token_encrypt = OAuth2TokenEncrypt,
 				protocol = Protocol
 			}.
+
+
+parse_middleware(undefined) -> undefined;
+parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
+
+parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
+parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
+
+compile_modulo_erlang(undefined, _) -> ok;
+compile_modulo_erlang(Path, ModuleNameCanonical) ->
+	FileName = Path ++ "/" ++ ModuleNameCanonical ++ ".erl",
+	case filelib:is_regular(FileName) of
+		true ->
+			io:format("Compile file ~p ", [FileName]),
+			code:add_path(Path), 
+			case compile:file(FileName, [{outdir, Path ++ "/"}]) of
+				error -> io:format("[ ERROR ]\n");
+				{error, Errors, _Warnings} -> 
+					io:format("[ ERROR ]\n"),
+					io:format_error("~p\n", [Errors]);
+				_ -> io:format("[ OK ]\n")
+			end;
+		_ -> ok
+	end.
+	
+
+compile_page_module(undefined, _, _) -> undefined;
+compile_page_module(Page, Rowid, Conf) -> 
+	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
+	PageFile = ems_util:parse_path(Page, Conf#config.static_file_path),
+	case ems_django:compile_file(binary_to_list(PageFile), ModuleNamePage) of
+		{ok, PageModule} -> PageModule;
+		_ -> throw({einvalid_page, Page})
+	end.
+
+	
+parse_datasource(undefined, _, _) -> undefined;
+parse_datasource(M, Rowid, _) when erlang:is_map(M) -> ems_db:create_datasource_from_map(M, Rowid);
+parse_datasource(DsName, _Rowid, Conf) -> 
+	case maps:get(DsName, Conf#config.ems_datasources, undefined) of
+		undefined -> {error, enoent};
+		M -> M
+	end.
+	
+	
+parse_node_service(<<>>) -> <<>>;
+parse_node_service(List) -> List.
+
+%% @doc O host pode ser um alias definido no arquivo de configuração
+parse_host_service(<<>>, _,_,_) -> {'', atom_to_list(node())};
+parse_host_service(_Host, ModuleName, Node, Conf) ->
+	ModuleNameCanonical = [case X of 46 -> 95; _ -> X end || X <- ModuleName], % Troca . por _
+	ListHost = case net_adm:host_file() of
+		{error, _Reason} -> [Conf#config.ems_host];
+		Hosts -> Hosts
+	end,
+	case erlang:is_list(Node) of
+		true  -> ListNode = Node;
+		false -> ListNode = [Node]
+	end,
+	ListHost2 = [case string:tokens(atom_to_list(X), ".") of
+					[N, _] -> N;
+					[N] -> N
+				 end || X <- ListHost],
+	ListNode2 = lists:map(fun(X) -> binary_to_list(X) end, ListNode),
+	ClusterName = [case X of
+						[] -> ModuleNameCanonical ++ "@" ++ Y;
+						_  -> ModuleNameCanonical ++ "_" ++ X ++ "@" ++ Y 
+				   end || X <- ListNode2, Y <- ListHost2],
+	ClusterNode = lists:map(fun(X) -> list_to_atom(X) end, ClusterName),
+	{ClusterNode, ClusterName}.
+
+
+%-spec new_service_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
+										  cat_disable_services = DisableServices,
+										  ems_result_cache = ResultCacheDefault,
+										  authorization = AuthorizationDefault,
+										  oauth2_with_check_constraint = Oauth2WithCheckConstraintDefault,
+										  static_file_path = StaticFilePathDefault,
+										  tcp_listen_address = TcpListenAddressDefault,
+										  tcp_allowed_address = TcpAllowedAddressDefault,
+										  cat_node_search = CatNodeSearchDefault,
+										  cat_host_search = CatHostSearchDefault,
+										  ems_hostname = HostNameDefault}) ->
+	try
+		Name = ems_util:parse_name_service(maps:get(<<"name">>, Map)),
+		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, Map, true)),
+		case Enable0 =:= false andalso lists:member(Name, EnableServices) of
+			true -> Enable1 = true;
+			false -> Enable1 = Enable0
+		end,
+		case Enable1 =:= true andalso lists:member(Name, DisableServices) of
+			true -> Enable = false;
+			false -> Enable = Enable1
+		end,
+		case Enable of 
+			true ->
+				Id = undefined,
+				Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map)),
+				Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
+				ServiceImpl = maps:get(<<"service">>, Map),
+				{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
+				Comment = maps:get(<<"comment">>, Map, <<>>),
+				Version = maps:get(<<"version">>, Map, <<"1.0.0">>),
+				Owner = maps:get(<<"owner">>, Map, <<>>),
+				Async = ems_util:parse_bool(maps:get(<<"async">>, Map, false)),
+				Rowid = ems_util:make_rowid(Url2),
+				Lang = ems_util:parse_lang(maps:get(<<"lang">>, Map, <<>>)),
+				Ds = maps:get(<<"datasource">>, Map, undefined),
+				case parse_datasource(Ds, Rowid, Conf) of
+					{error, enoent} -> 
+						{error, eundefine_datasource};
+					Datasource ->
+						case Type of
+							<<"GET">> -> ResultCache = ems_util:parse_result_cache(maps:get(<<"result_cache">>, Map, ResultCacheDefault));
+							_ -> ResultCache = 0
+						end,
+						Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Map, AuthorizationDefault)),
+						OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Map, Oauth2WithCheckConstraintDefault)),
+						OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, Map, false)),
+						Debug = ems_util:parse_bool(maps:get(<<"debug">>, Map, false)),
+						UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
+						SchemaIn = maps:get(<<"schema_in">>, Map, null),
+						SchemaOut = maps:get(<<"schema_out">>, Map, null),
+						PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, Map, 1)),
+ 						PoolMax0 = ems_config:getConfig(<<"pool_max">>, Name, maps:get(<<"pool_max">>, Map, 1)),
+						% Ajusta o pool_max para o valor de pool_size se for menor
+						case PoolMax0 < PoolSize of
+							true -> PoolMax = PoolSize;
+							false -> PoolMax = PoolMax0
+						end,
+						Timeout = ems_util:parse_timeout(maps:get(<<"timeout">>, Map, ?SERVICE_TIMEOUT), ?SERVICE_MAX_TIMEOUT),
+						Middleware = parse_middleware(maps:get(<<"middleware">>, Map, undefined)),
+						CacheControl = maps:get(<<"cache_control">>, Map, ?CACHE_CONTROL_1_SECOND),
+						ExpiresMinute = maps:get(<<"expires_minute">>, Map, 1),
+						Public = ems_util:parse_bool(maps:get(<<"public">>, Map, true)),
+						ContentType = maps:get(<<"content_type">>, Map, ?CONTENT_TYPE_JSON),
+						CatalogPath = maps:get(<<"catalog_path">>, Map, <<>>),
+						CatalogFile = maps:get(<<"catalog_file">>, Map, <<>>),
+						Path = ems_util:parse_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault),
+						RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
+						Protocol = maps:get(<<"protocol">>, Map, <<>>),
+						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault)),
+						ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress, Name),
+						AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
+						AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
+						MaxConnections = maps:get(<<"tcp_max_connections">>, Map, [?HTTP_MAX_CONNECTIONS]),
+						Port = ems_util:parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, Map, undefined))),
+						Ssl = maps:get(<<"tcp_ssl">>, Map, undefined),
+						case Ssl of
+							undefined ->
+								IsSsl = false,
+								SslCaCertFile = undefined,
+								SslCertFile = undefined,
+								SslKeyFile = undefined;
+							_ ->
+								IsSsl = true,
+								SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
+								SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
+								SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
+						end,
+						case Lang of
+							<<"erlang">> -> 
+								Node = <<>>,
+								Mapost = '',
+								MapostName = HostNameDefault,
+								compile_modulo_erlang(Path, ModuleNameCanonical);
+							_ ->	
+								Node = parse_node_service(maps:get(<<"node">>, Map, CatNodeSearchDefault)),
+								{Mapost, MapostName} = parse_host_service(maps:get(<<"host">>, Map, CatHostSearchDefault), ModuleName, Node, Conf)
+						end,
+						{Querystring, QtdQuerystringRequired} = ems_util:parse_querystring_def(maps:get(<<"querystring">>, Map, [])),
+						Page = maps:get(<<"page">>, Map, undefined),
+						PageModule = compile_page_module(Page, Rowid, Conf),
+						case UseRE of
+							true -> 
+								Service = ems_catalog:new_service_re(Rowid, Id, Name, Url2, 
+														   ServiceImpl,
+														   ModuleName, 
+														   ModuleNameCanonical,
+														   FunctionName, Type, Enable, Comment, 
+														   Version, Owner, Async, 
+														   Querystring, QtdQuerystringRequired,
+														   Mapost, MapostName, ResultCache,
+														   Authorization, Node, Lang,
+														   Datasource, Debug, SchemaIn, SchemaOut, 
+														   PoolSize, PoolMax, Map, Page, 
+														   PageModule, Timeout, 
+														   Middleware, CacheControl, ExpiresMinute, 
+														   Public, ContentType, Path, RedirectUrl,
+														   ListenAddress, ListenAddress_t, AllowedAddress, 
+														   AllowedAddress_t, Port, MaxConnections,
+														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+														   CatalogPath, CatalogFile);
+							false -> 
+								Service = ems_catalog:new_service(Rowid, Id, Name, Url2, 
+														ServiceImpl,
+														ModuleName,
+														ModuleNameCanonical,
+														FunctionName, Type, Enable, Comment,
+														Version, Owner, Async, 
+														Querystring, QtdQuerystringRequired,
+														Mapost, MapostName, ResultCache,
+														Authorization, Node, Lang,
+														Datasource, Debug, SchemaIn, SchemaOut, 
+														PoolSize, PoolMax, Map, Page, 
+														PageModule, Timeout, 
+														Middleware, CacheControl, 
+														ExpiresMinute, Public, 
+														ContentType, Path, RedirectUrl,
+														ListenAddress, ListenAddress_t, AllowedAddress, 
+														AllowedAddress_t, Port, MaxConnections,
+														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+														CatalogPath, CatalogFile)
+						end,
+						{ok, Service}
+				end;
+			false -> 
+				{error, edisable_service}
+		end
+	catch
+		_Exception:Reason -> 
+			ems_logger:format_warn("ems_catalog parse invalid service specification: ~p\n\t~p.\n", [Reason, Map]),
+			{error, einvalid_service}
+	end.
 

@@ -189,10 +189,11 @@ do_check_load_or_update(State = #state{name = Name,
 	% garante que os dados serão atualizados mesmo que as datas não estejam sincronizadas
 	NextUpdate = ems_util:date_dec_minute(calendar:local_time(), 6), 
 	LastUpdateStr = ems_util:timestamp_str(),
+	Conf = ems_config:getConfig(),
 	case LastUpdate == undefined orelse do_is_empty(State) of
 		true -> 
 			?DEBUG("~s load checkpoint.", [Name]),
-			case do_load(Datasource, LastUpdateStr, State) of
+			case do_load(Datasource, LastUpdateStr, Conf, State) of
 				ok -> 
 					ems_db:set_param(LastUpdateParamName, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -201,7 +202,7 @@ do_check_load_or_update(State = #state{name = Name,
 			end;
 		false ->
 			?DEBUG("~s update checkpoint. last update: ~s.", [Name, ems_util:timestamp_str(LastUpdate)]),
-			case do_update(Datasource, LastUpdate, LastUpdateStr, State) of
+			case do_update(Datasource, LastUpdate, LastUpdateStr, Conf, State) of
 				ok -> 
 					ems_db:set_param(LastUpdateParamName, NextUpdate),
 					State2 = State#state{last_update = NextUpdate},
@@ -211,9 +212,9 @@ do_check_load_or_update(State = #state{name = Name,
 	end.
 
 
--spec do_load(#service_datasource{}, tuple(), #state{}) -> ok | {error, atom()}.
-do_load(Datasource, CtrlInsert, State = #state{name = Name,
-											   sql_load = SqlLoad}) -> 
+-spec do_load(#service_datasource{}, tuple(), #config{}, #state{}) -> ok | {error, atom()}.
+do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
+													 sql_load = SqlLoad}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -230,7 +231,7 @@ do_load(Datasource, CtrlInsert, State = #state{name = Name,
 								io:format("aqui1\n"),
 								do_reset_sequence(State),
 								io:format("aqui2\n"),
-								do_visit_records_transaction(Records, [], 1, CtrlInsert, State, insert),
+								do_visit_records_transaction(Records, [], 1, CtrlInsert, Conf, State, insert),
 								Count = length(Records),
 								case Count of 
 									1 -> ems_logger:info("~s load 1 record.",  [Name]);
@@ -257,9 +258,9 @@ do_load(Datasource, CtrlInsert, State = #state{name = Name,
 			{error, Reason3}
 	end.
 
--spec do_update(#service_datasource{}, tuple(), tuple(), #state{}) -> ok | {error, atom()}.
-do_update(Datasource, LastUpdate, CtrlUpdate, State = #state{name = Name,
-															 sql_update = SqlUpdate}) -> 
+-spec do_update(#service_datasource{}, tuple(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
+do_update(Datasource, LastUpdate, CtrlUpdate, Conf, State = #state{name = Name,
+																   sql_update = SqlUpdate}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -276,7 +277,7 @@ do_update(Datasource, LastUpdate, CtrlUpdate, State = #state{name = Name,
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
-						do_visit_records_transaction(Records, [], 1, CtrlUpdate, State, update),
+						do_visit_records_transaction(Records, [], 1, CtrlUpdate, Conf, State, update),
 						Count = length(Records),
 						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
 						case Count of
@@ -301,33 +302,30 @@ do_update(Datasource, LastUpdate, CtrlUpdate, State = #state{name = Name,
 	end.
 
 
--spec do_visit_records_transaction(list(tuple()), list(tuple()), non_neg_integer, tuple(), #state{}, insert | update) -> ok.
-do_visit_records_transaction(Records, L, Count, CtrlData, State, Operation) when Count == 100 orelse (length(Records) == 0 andalso length(L) > 0) -> 
-	io:format("aqui3\n"),
-	F = fun() -> do_visit_records_persist(L, CtrlData, State, Operation) end,
+-spec do_visit_records_transaction(list(tuple()), list(tuple()), non_neg_integer, tuple(), #config{}, #state{}, insert | update) -> ok.
+do_visit_records_transaction(Records, L, Count, CtrlData, Conf, State, Operation) when Count == 100 orelse (length(Records) == 0 andalso length(L) > 0) -> 
+	F = fun() -> do_visit_records_persist(L, CtrlData, Conf, State, Operation) end,
 	mnesia:activity(transaction, F),
-	do_visit_records_transaction(Records, [], 1, CtrlData, State, Operation);
-do_visit_records_transaction([], _, _, _, _, _) -> ok;
-do_visit_records_transaction([H|T], L, Count, CtrlData, State, Operation) ->
-	do_visit_records_transaction(T, [H|L], Count+1, CtrlData, State, Operation).
+	do_visit_records_transaction(Records, [], 1, CtrlData, Conf, State, Operation);
+do_visit_records_transaction([], _, _, _, _, _, _) -> ok;
+do_visit_records_transaction([H|T], L, Count, CtrlData, Conf, State, Operation) ->
+	do_visit_records_transaction(T, [H|L], Count+1, CtrlData, Conf, State, Operation).
 	
 
--spec do_visit_records_persist(list(tuple()), tuple(), #state{}, insert | update) -> ok.
-do_visit_records_persist([], _, _, _) -> ok;
-do_visit_records_persist([H|T], CtrlDate, State, insert) ->
-	do_insert_record(H, CtrlDate, State),
-	do_visit_records_persist(T, CtrlDate, State, insert);
-do_visit_records_persist([H|T], CtrlDate, State, update) ->
-	do_update_record(H, CtrlDate, State),
-	do_visit_records_persist(T, CtrlDate, State, update).
+-spec do_visit_records_persist(list(tuple()), tuple(), #config{}, #state{}, insert | update) -> ok.
+do_visit_records_persist([], _, _, _, _) -> ok;
+do_visit_records_persist([H|T], CtrlDate, Conf, State, insert) ->
+	do_insert_record(H, CtrlDate, Conf, State),
+	do_visit_records_persist(T, CtrlDate, Conf, State, insert);
+do_visit_records_persist([H|T], CtrlDate, Conf, State, update) ->
+	do_update_record(H, CtrlDate, Conf, State),
+	do_visit_records_persist(T, CtrlDate, Conf, State, update).
 
 
--spec do_insert_record(tuple(), tuple(), #state{}) -> ok | {error, atom()}.
-do_insert_record(Record, CtrlInsert, #state{name = Name, middleware = Middleware}) ->
-	io:format("aqui2\n"),
-	case apply(Middleware, insert, [Record, CtrlInsert]) of
+-spec do_insert_record(tuple(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
+do_insert_record(Record, CtrlInsert, Conf, #state{name = Name, middleware = Middleware}) ->
+	case apply(Middleware, insert, [Record, CtrlInsert, Conf]) of
 		{ok, NewRecord, Table} ->
-			io:format("aqui3\n"),
 			NewRecord2 = setelement(1, NewRecord, Table),
 			mnesia:write(NewRecord2),
 			ok;
@@ -337,9 +335,9 @@ do_insert_record(Record, CtrlInsert, #state{name = Name, middleware = Middleware
 	end.
 
 
--spec do_update_record(list(), tuple(), #state{}) -> ok | {error, atom()}.
-do_update_record(Record, CtrlUpdate, #state{name = Name, middleware = Middleware}) ->
-	case apply(Middleware, update, [Record, CtrlUpdate]) of
+-spec do_update_record(list(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
+do_update_record(Record, CtrlUpdate, Conf, #state{name = Name, middleware = Middleware}) ->
+	case apply(Middleware, update, [Record, CtrlUpdate, Conf]) of
 		{ok, UpdatedRecord, Table} ->
 			UpdatedRecord2 = setelement(1, UpdatedRecord, Table),
 			mnesia:write(UpdatedRecord2),
@@ -370,8 +368,5 @@ do_reset_sequence(#state{middleware = Middleware}) ->
 	apply(Middleware, reset_sequence, []).
 
 
--spec do_lock_table(#state{}) -> ok | {error, efail_lock_table}.
-do_lock_table(#state{middleware = Middleware}) ->
-	apply(Middleware, lock_table, []).
 
 

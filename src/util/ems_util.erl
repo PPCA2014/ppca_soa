@@ -17,9 +17,10 @@
 		 json_decode/1,
 		 hd_or_empty/1,
 		 json_decode_as_map/1,
+		 json_encode_table/2,
+		 json_decode_as_map_file/1,
 		 tuple_to_binlist/1, 
 		 list_to_binlist/1,
-		 parse_bool/1,
 		 binary_to_integer/1,
 		 mes_extenso/1,
 		 binlist_to_list/1,
@@ -27,18 +28,27 @@
 		 list_to_ets/3,
 		 profile/0,
 		 make_rowid_from_url/2,
-		 get_params_from_url/1,
-		 get_rowid_and_params_from_url/2,
 		 string_is_integer/1,
 		 read_file_as_map/1,
 		 read_file_as_list/1,
+ 		 read_file_as_string/1,
 		 tail_file/2,
+		 load_from_file_req/1,
 		 node_is_live/1,
+ 		 node_binary/0,
 		 get_node_name/0,
+		 get_params_from_url/1,
+		 get_rowid_and_params_from_url/2,
 		 get_priv_dir/0,
 		 get_working_dir/0,
-		 json_encode_table/2,
-		 json_decode_as_map_file/1,
+ 		 get_milliseconds/0,
+		 get_http_header_adicionais/1,
+		 get_param_header/2,
+		 get_property_request/2, 
+		 get_param_url/3,
+		 get_querystring/3,
+		 get_querystring/4,
+		 get_querystring/2,
 		 date_add_minute/2,
 		 date_dec_minute/2,
 		 date_add_second/2,
@@ -46,34 +56,52 @@
 		 date_add_day/2,
 		 date_to_string/1,
 		 date_to_binary/1,
+ 		 no_periodo/2,
 		 timestamp_str/1,
 		 timestamp_binary/1,
-		 remove_quoted_str/1,
+		 uptime_str/0,
 		 boolean_to_binary/1,
-		 normalize_field_utf8/1,
-		 utf8_string_win/1,
-		 utf8_string_linux/1,
+ 		 replacenth/3,
 		 replace/3,
 		 replace_all/2,
-		 read_file_as_string/1,
-		 is_number/1,
 		 encrypt_public_key/2,
 		 decrypt_private_key/2,
 		 open_file/1,
-		 is_cpf_valid/1, is_cnpj_valid/1, 
-		 replacenth/3,
+		 is_number/1,
+		 is_cpf_valid/1, 
+		 is_cnpj_valid/1, 
 		 ip_list/0,
-		 posix_error_description/1,
-		 allow_ip_address/2,
-		 parse_authorization_type/1,
-		 parse_bearer_authorization_header/1,
-		 parse_type_service/1,
-		 match_ip_address/2,
-		 mask_ipaddress_to_tuple/1,
 		 is_url_valido/1,
 		 is_content_length_valido/1,
+ 		 is_email_valido/1, 
+ 		 is_range_valido/3,
+		 is_letter/1,
+		 is_letter_lower/1,
+		 posix_error_description/1,
+		 parse_if_modified_since/1,
+		 parse_basic_authorization_header/1,
+		 parse_result_cache/1,
+		 parse_timeout/2,
+		 parse_url_service/1,
+		 parse_lang/1,
+		 parse_name_service/1,
+		 parse_name_querystring/1,
+		 parse_type_service/1,
+		 parse_type_querystring/1,
+		 parse_service_service/1,
+		 parse_querystring_def/1,
+		 parse_path/2,
+ 		 parse_bool/1,
+		 parse_authorization_type/1,
+		 parse_bearer_authorization_header/1,
+		 parse_tcp_listen_address/1,
+		 parse_allowed_address_t/1,
+		 parse_allowed_address/1,
+		 parse_tcp_port/1,
+		 match_ip_address/2,
+ 		 allow_ip_address/2,
+		 mask_ipaddress_to_tuple/1,
 		 encode_request_cowboy/2,
-		 is_email_valido/1, is_range_valido/3,
 		 msg_campo_obrigatorio/2, msg_email_invalido/2, mensagens/1,
 		 msg_registro_ja_existe/1, msg_registro_ja_existe/2,
 		 hashsym_and_params/1,
@@ -83,9 +111,8 @@
 		 make_rowid/1,
 		 make_rowid/2,
 		 make_rowid_id/1,
+ 		 remove_quoted_str/1,
 		 quote/1,
-		 no_periodo/2,
-		 get_milliseconds/0,
 		 remove_ult_backslash_url/1,
 		 remove_ult_backslash_url/2,
 		 name_case/1,
@@ -96,16 +123,15 @@
 		 utf8_list_to_string/1,
 		 utf8_list_to_binary/1,
 		 utf8_binary_to_list/1,
+		 normalize_field_utf8/1,
+		 utf8_string_win/1,
+		 utf8_string_linux/1,
 		 criptografia_sha1/1,
 		 head_file/2,
 		 replace_all_vars/2,
-		 parse_path/2,
 		 to_utf8/1,
-		 is_letter/1,
-		 is_letter_lower/1,
 		 load_erlang_module/1,
 		 mime_type/1,
-		 parse_if_modified_since/1,
 		 encode_response/3,
 		 encode_response/4,
 		 encode_response/2,
@@ -114,24 +140,9 @@
 		 method_to_string/1,
 		 decode_http_header/2,
 		 decode_http_request/1,
-		 get_http_header_adicionais/1,
-		 get_param_header/2,
 		 format_header_value/2,
 		 is_metodo_suportado/1,
-		 parse_basic_authorization_header/1,
-		 parse_result_cache/1,
-		 node_binary/0,
-		 parse_timeout/2,
-		 parse_url_service/1,
-		 parse_lang/1,
-		 parse_name_service/1,
-		 parse_service_service/1,
-		 uptime_str/0,
-		 get_property_request/2, 
-		 get_param_url/3,
-		 get_querystring/3,
-		 get_querystring/4,
-		 load_from_file_req/1
+		 tuple_to_maps_with_keys/2
 		]).
 
 
@@ -202,6 +213,7 @@ get_working_dir() ->
 
 
 %% @doc Dorme por um determinado tempo
+-spec sleep(non_neg_integer()) -> true.
 sleep(T) ->
     receive
 	    after T -> true
@@ -1610,53 +1622,6 @@ parse_authorization_type(2) -> oauth2;
 parse_authorization_type(_) -> erlang:error(einvalid_authorization_type).
 
 
-%% *********** Functions for data validation ************
-
--spec is_range_valido(integer(), integer(), integer()) -> boolean().
-is_range_valido(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> true;
-is_range_valido(_Number, _RangeIni, _RangeFim) -> false.
-
-
--spec is_email_valido(string()) -> boolean().
-is_email_valido(Value) -> 
-	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
-		nomatch -> false;
-		_ -> true
-	end.
-
-%% @doc Retorna mensagem registro já existente
-msg_registro_ja_existe(Pattern) ->
-	case ems_db:existe(Pattern) of
-		false -> [];
-		_ -> <<"Registro já está cadastrado."/utf8>>
-	end.
-
-%% @doc Retorna mensagem registro já existente
-msg_registro_ja_existe(Pattern, Message) ->
-	case ems_db:existe(Pattern) of
-		false -> [];
-		_ -> Message
-	end.
-		
-%% @doc Mensagens de campo obrigatório
-msg_campo_obrigatorio(NomeCampo, []) -> 
-	iolist_to_binary(io_lib:format(<<"Campo não preenchido: '~s'."/utf8>>, [NomeCampo]));
-msg_campo_obrigatorio(NomeCampo, <<>>) -> 
-	iolist_to_binary(io_lib:format(<<"Campo não preenchido: '~s'."/utf8>>, [NomeCampo]));
-msg_campo_obrigatorio(_NomeCampo, _Value) -> [].
-
-%% @doc Mensagem de e-mail inválido
-msg_email_invalido(_NomeCampo, []) -> [];
-msg_email_invalido(_NomeCampo, Value) -> 
-	case is_email_valido(Value) of
-		false -> iolist_to_binary(io_lib:format(<<"Email informado é inválido: '~s'."/utf8>>, [Value]));
-		_ -> []
-	end.
-
-%% @doc Retorna somente mensagens não vazias
-mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
-
-
 -spec parse_result_cache(non_neg_integer()) -> non_neg_integer().
 parse_result_cache(ResultCache) ->
 	% Máximo permitido: 1 dia
@@ -1686,13 +1651,21 @@ parse_type_service("PUT") -> <<"PUT">>;
 parse_type_service("DELETE") -> <<"DELETE">>;
 parse_type_service("OPTIONS") -> <<"OPTIONS">>;
 parse_type_service("KERNEL") -> <<"KERNEL">>;
-parse_type_service(0) -> <<"GET">>;
-parse_type_service(1) -> <<"POST">>;
-parse_type_service(2) -> <<"PUT">>;
-parse_type_service(3) -> <<"DELETE">>;
-parse_type_service(4) -> <<"OPTIONS">>;
-parse_type_service(5) -> <<"KERNEL">>;
+parse_type_service(0) -> <<"KERNEL">>;
+parse_type_service(1) -> <<"GET">>;
+parse_type_service(2) -> <<"POST">>;
+parse_type_service(3) -> <<"PUT">>;
+parse_type_service(4) -> <<"DELETE">>;
+parse_type_service(5) -> <<"OPTIONS">>;
 parse_type_service(_) -> erlang:error(einvalid_type_service).
+
+
+-spec parse_type_querystring(binary() | string() | non_neg_integer()) -> binary(). 
+parse_type_querystring(<<"int">>) -> <<"int">>;
+parse_type_querystring(<<"string">>) -> <<"string">>;
+parse_type_querystring(0) -> <<"int">>;
+parse_type_querystring(1) -> <<"string">>;
+parse_type_querystring(_) -> erlang:error(einvalid_type_querystring).
 
 
 -spec parse_url_service(binary() | list()) -> binary().
@@ -1723,6 +1696,91 @@ parse_name_service(Name) ->
 		nomatch -> erlang:error(einvalid_name_service);
 		_ -> Name
 	end.
+	
+
+parse_name_querystring(Name) when is_list(Name) ->
+	parse_name_querystring(list_to_binary(Name));
+parse_name_querystring(Name) ->
+	case re:run(Name, "^[_a-zA-Z][_a-zA-Z0-9]{0,29}$") of
+		nomatch -> erlang:error(einvalid_name_querystring);
+		_ -> Name
+	end.
+	
+	
+%% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
+-spec parse_querystring_def(list()) -> {list(map()), non_neg_integer()}.	
+parse_querystring_def([]) -> {[], 0};
+parse_querystring_def(Querystring) -> parse_querystring_def(Querystring, [], 0).
+	
+%% @doc Retorna uma mapa das querystrings e a quantidade de queries obrigatórias
+-spec parse_querystring_def(list(), list(), non_neg_integer()) -> {list(map()), non_neg_integer()}.	
+parse_querystring_def([], Querystring, QtdRequired) -> 	
+	{Querystring, QtdRequired};
+parse_querystring_def([H|T], Querystring, QtdRequired) -> 
+	Name = parse_name_querystring(maps:get(<<"name">>, H)),
+	Type = parse_type_querystring(maps:get(<<"type">>, H, <<"string">>)),
+	Default = maps:get(<<"default">>, H, <<>>),
+	Comment = maps:get(<<"comment">>, H, <<>>),
+	Required = parse_bool(maps:get(<<"required">>, H, false)),
+	case Required of
+		true  -> QtdRequired2 = QtdRequired + 1;
+		false -> QtdRequired2 = QtdRequired
+	end,
+	Q = #{<<"name">>     => Name,
+		  <<"type">>     => Type,
+		  <<"default">>  => Default,
+		  <<"comment">>  => Comment,
+		  <<"required">> => Required},
+	parse_querystring_def(T, [Q | Querystring], QtdRequired2).
+
+	
+-spec parse_tcp_listen_address(list(string())) -> list(tuple()). 
+parse_tcp_listen_address(ListenAddress) ->
+	parse_tcp_listen_address_t(ListenAddress, []).
+
+-spec parse_tcp_listen_address_t(list(string()), list(tuple())) -> list(tuple()). 
+parse_tcp_listen_address_t([], Result) -> Result;
+parse_tcp_listen_address_t([H|T], Result) ->
+	case inet:parse_address(H) of
+		{ok, {0, 0, 0, 0}} ->
+			case ip_list() of
+				{ok, IpList} -> IpList;
+				{error, Reason} -> []
+			end;
+		{ok, L2} -> 
+			case lists:member(L2, Result) of
+				true -> parse_tcp_listen_address_t(T, Result);
+				false -> parse_tcp_listen_address_t(T, [L2|Result])
+			end;
+		{error, einval} -> 
+			parse_tcp_listen_address_t(T, Result)
+	end.
+	
+-spec parse_allowed_address_t(all | undefined | list()) -> all | undefined | list().
+parse_allowed_address_t(all) -> all;
+parse_allowed_address_t(undefined) -> undefined;
+parse_allowed_address_t(AllowedAddress) ->
+	lists:map(fun(IP) -> 
+					ems_util:mask_ipaddress_to_tuple(IP)
+			  end, AllowedAddress).
+
+parse_allowed_address(all) -> all;
+parse_allowed_address(undefined) -> all;
+parse_allowed_address(AddrList) -> 
+	ems_util:binlist_to_list(AddrList).
+
+-spec parse_tcp_port(undefined | binary() | string() | non_neg_integer()) -> non_neg_integer().
+parse_tcp_port(undefined) -> undefined;
+parse_tcp_port(<<Port/binary>>) -> 
+	parse_tcp_port(binary_to_list(Port));		
+parse_tcp_port(Port) when is_list(Port) -> 
+	parse_tcp_port(list_to_integer(Port));
+parse_tcp_port(Port) when is_integer(Port) -> 
+	case is_range_valido(Port, ?TCP_PORT_MIN, ?TCP_PORT_MAX) of
+		true -> Port;
+		false -> erlang:error(einvalid_tcp_port)
+	end.
+	
 	
 -spec node_binary() -> binary().
 node_binary() -> erlang:atom_to_binary(node(), utf8).
@@ -1767,6 +1825,12 @@ get_param_url(NomeParam, Default, Request) ->
 	ParamsUrl = Request#request.params_url,
 	NomeParam2 = iolist_to_binary(NomeParam),
 	maps:get(NomeParam2, ParamsUrl, Default).
+
+
+get_querystring(<<QueryName/binary>>, Servico) ->	
+	[Query] = [Q || Q <- maps:get(<<"querystring">>, Servico, <<>>), Q#service.comment == QueryName],
+	Query.
+
 
 %% @doc Retorna uma querystring do request
 get_querystring(QueryName, Default, #request{querystring_map = QuerystringMap}) ->
@@ -1846,3 +1910,55 @@ load_from_file_req(Request = #request{url = Url,
 	end.
 
 
+tuple_to_maps_with_keys(Tuple, Keys) ->
+	Fields = erlang:tuple_to_list(Tuple),
+	Record = [{X,Y} || X <- Fields, Y <- Keys],
+	maps:from_list(Record).
+
+
+	
+%% *********** Functions for data validation ************
+
+-spec is_range_valido(integer(), integer(), integer()) -> boolean().
+is_range_valido(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> true;
+is_range_valido(_Number, _RangeIni, _RangeFim) -> false.
+
+
+-spec is_email_valido(string()) -> boolean().
+is_email_valido(Value) -> 
+	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
+		nomatch -> false;
+		_ -> true
+	end.
+
+%% @doc Retorna mensagem registro já existente
+msg_registro_ja_existe(Pattern) ->
+	case ems_db:existe(Pattern) of
+		false -> [];
+		_ -> <<"Registro já está cadastrado."/utf8>>
+	end.
+
+%% @doc Retorna mensagem registro já existente
+msg_registro_ja_existe(Pattern, Message) ->
+	case ems_db:existe(Pattern) of
+		false -> [];
+		_ -> Message
+	end.
+		
+%% @doc Mensagens de campo obrigatório
+msg_campo_obrigatorio(NomeCampo, []) -> 
+	iolist_to_binary(io_lib:format(<<"Campo não preenchido: '~s'."/utf8>>, [NomeCampo]));
+msg_campo_obrigatorio(NomeCampo, <<>>) -> 
+	iolist_to_binary(io_lib:format(<<"Campo não preenchido: '~s'."/utf8>>, [NomeCampo]));
+msg_campo_obrigatorio(_NomeCampo, _Value) -> [].
+
+%% @doc Mensagem de e-mail inválido
+msg_email_invalido(_NomeCampo, []) -> [];
+msg_email_invalido(_NomeCampo, Value) -> 
+	case is_email_valido(Value) of
+		false -> iolist_to_binary(io_lib:format(<<"Email informado é inválido: '~s'."/utf8>>, [Value]));
+		_ -> []
+	end.
+
+%% @doc Retorna somente mensagens não vazias
+mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
