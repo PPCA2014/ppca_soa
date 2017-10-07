@@ -1745,7 +1745,7 @@ parse_tcp_listen_address_t([H|T], Result) ->
 		{ok, {0, 0, 0, 0}} ->
 			case ip_list() of
 				{ok, IpList} -> IpList;
-				{error, Reason} -> []
+				_Error -> []
 			end;
 		{ok, L2} -> 
 			case lists:member(L2, Result) of
