@@ -13,7 +13,7 @@
 
 -export([new_service/54, 
 		 new_service_re/54,
-		 new_service_from_map/2,
+		 new_service_from_map/2, new_service_from_map/3,
 		 get_metadata_json/1]).
 
 -spec get_metadata_json(#service{}) -> binary().
@@ -36,7 +36,7 @@ get_metadata_json(#service{id = Id,
 						  querystring = Querystring,
 						  cache_control = CacheControl}) ->
 	iolist_to_binary([<<"{"/utf8>>,
-					   <<"\"id\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Id, <<"\""/utf8>>, <<","/utf8>>,
+					   <<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Id), <<","/utf8>>,
 					   <<"\"name\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Name, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"content_type\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, ContentType, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"type\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Type, <<"\""/utf8>>, <<","/utf8>>,
@@ -286,8 +286,11 @@ parse_host_service(_Host, ModuleName, Node, Conf) ->
 	{ClusterNode, ClusterName}.
 
 
+new_service_from_map(Map, Conf) -> new_service_from_map(Map, Conf, undefined).
+
 %-spec new_service_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
-new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
+new_service_from_map(Map, 
+					 Conf = #config{cat_enable_services = EnableServices,
 										  cat_disable_services = DisableServices,
 										  ems_result_cache = ResultCacheDefault,
 										  authorization = AuthorizationDefault,
@@ -297,7 +300,8 @@ new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 										  tcp_allowed_address = TcpAllowedAddressDefault,
 										  cat_node_search = CatNodeSearchDefault,
 										  cat_host_search = CatHostSearchDefault,
-										  ems_hostname = HostNameDefault}) ->
+										  ems_hostname = HostNameDefault}, 
+ 				     Id) ->
 	try
 		Name = ems_util:parse_name_service(maps:get(<<"name">>, Map)),
 		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, Map, true)),
@@ -311,7 +315,7 @@ new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		end,
 		case Enable of 
 			true ->
-				Id = undefined,
+				Id = Id,
 				Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map)),
 				Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
 				ServiceImpl = maps:get(<<"service">>, Map),
@@ -355,6 +359,7 @@ new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 						CatalogFile = maps:get(<<"file_name">>, Map, <<>>),
 						case ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault, CatalogPath) of
 							{ok, Path} -> 
+									io:format("paht is ~p\n", [Path]),
 								RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
 								Protocol = maps:get(<<"protocol">>, Map, <<>>),
 								ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault)),

@@ -47,7 +47,7 @@ parse_catalog([], CatREST, CatRE, CatKernel, _Id, _Conf) ->
 	
 parse_catalog([H|T], CatREST, CatRE, CatKernel, Id, Conf) ->
 	?DEBUG("Parse catalog ~p.", [H]),
-	case ems_catalog:new_service_from_map(H, Conf) of
+	case ems_catalog:new_service_from_map(H, Conf, Id) of
 		{ok, Service = #service{type = Type,
 								rowid = Rowid}} ->
 			case Type of

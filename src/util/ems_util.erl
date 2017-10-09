@@ -738,6 +738,8 @@ replace_all_vars(Subject, [{Key, Value}|VarTail]) ->
 
 % Process the path "~" and "." wildcards and variable path. Return path
 -spec parse_file_name_path(string() | binary(), list(tuple()) | undefined, binary()) -> {ok, string()} | {error, string()}.
+parse_file_name_path(undefined, _, _) -> {ok, <<>>};
+parse_file_name_path(<<>>, _, _) -> {ok, <<>>};
 parse_file_name_path(Path, StaticFilePathList, RootPath) when is_binary(Path) ->
 	parse_file_name_path(binary_to_list(Path), StaticFilePathList, RootPath);
 parse_file_name_path(Path, StaticFilePathList, RootPath) ->
@@ -1870,6 +1872,8 @@ load_from_file_req(Request = #request{url = Url,
 														 expires = ExpiresMinute,
 														 path = Path}}) ->
 	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
+	io:format("aqui1  path ~p  filename ~p\n", [Path, FileName]),
+
 	case file:read_file_info(FileName, [{time, universal}]) of
 		{ok,{file_info, FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} -> 
 			?DEBUG("ems_static_file_service loading file ~p.", [FileName]),
