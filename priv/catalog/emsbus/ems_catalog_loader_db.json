@@ -12,7 +12,7 @@
 	"update_checkpoint" : 60000,
 	"datasource" : "ds_ems_user_loader",
 	"timeout" : 1000,
-	"middleware" : "ems_catalog_loader_db_middleware",
+	"middleware" : "ems_catalog_loader_db",
 	"pool_size" : 1,
 	"pool_max" : 1,
 	"enable" : false,
@@ -53,8 +53,8 @@
 				   CSETcpSslCaCertfile,
 				   CSETcpSslCertfile,
 				   CSETcpSslKeyfile,
-				   CSEOAuth2WithCheckConstraint
-				from dbo.TB_CatalogoServicoErlangms
+				   CSEOAuth2WithCheckConstraint 
+				from BDAcesso.dbo.TB_CatalogoServicoErlangms
 				",
 
 	"sql_update" : 
@@ -94,8 +94,8 @@
 				   CSETcpSslCaCertfile,
 				   CSETcpSslCertfile,
 				   CSETcpSslKeyfile,
-				   CSEOAuth2WithCheckConstraint
-				from dbo.TB_CatalogoServicoErlangms 
+				   CSEOAuth2WithCheckConstraint 
+				from BDAcesso.dbo.TB_CatalogoServicoErlangms 
 				where CSECtrlUpdate >= ?
 				"
 	

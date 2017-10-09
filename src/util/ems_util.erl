@@ -90,7 +90,7 @@
 		 parse_type_querystring/1,
 		 parse_service_service/1,
 		 parse_querystring_def/1,
-		 parse_path/2,
+		 parse_file_name_path/3,
  		 parse_bool/1,
 		 parse_authorization_type/1,
 		 parse_bearer_authorization_header/1,
@@ -737,38 +737,49 @@ replace_all_vars(Subject, [{Key, Value}|VarTail]) ->
 
 
 % Process the path "~" and "." wildcards and variable path. Return path
--spec parse_path(string() | binary(), list(tuple())) -> string().
-parse_path(<<>>, _) -> undefined;
-parse_path(Path, StaticFilePathList) when is_binary(Path) ->
-	parse_path(binary_to_list(Path), StaticFilePathList);
-parse_path(Path, StaticFilePathList) ->
+-spec parse_file_name_path(string() | binary(), list(tuple()) | undefined, binary()) -> {ok, string()} | {error, string()}.
+parse_file_name_path(Path, StaticFilePathList, RootPath) when is_binary(Path) ->
+	parse_file_name_path(binary_to_list(Path), StaticFilePathList, RootPath);
+parse_file_name_path(Path, StaticFilePathList, RootPath) ->
 	Ch = string:substr(Path, 1, 1),
 	Ch2 = string:substr(Path, 2, 1),
 	case Ch =:= "/" orelse (is_letter(Ch) andalso Ch2 =:= ":")   of
-		true -> remove_ult_backslash_url(Path);  
+		true -> {ok, remove_ult_backslash_url(Path)};  
 		false ->
 			case Ch == "~" of
 				true -> 
 					case init:get_argument(home) of
-						{ok, [[HomePath]]} -> replace(Path, "~", HomePath);
-						_Error -> throw({error, einvalid_path_catalog})
+						{ok, [[HomePath]]} -> {ok, replace(Path, "~", HomePath)};
+						Error -> Error
 					end;
 				_ -> 
 					case Ch == "." of
-						true -> remove_ult_backslash_url(?STATIC_FILE_PATH ++ "/" ++ string:substr(Path, 3));
+						true -> 
+							case RootPath of
+								undefined -> {ok, remove_ult_backslash_url(string:substr(Path, 3))};
+								_ -> {ok, remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ string:substr(Path, 3))}
+							end;
 						false -> 
 							Path2 = replace_all_vars(Path, StaticFilePathList),
 							% after process variables, check ~ or . wildcards
 							case string:substr(Path2, 1, 1) == "~" of
 								true -> 
 									case init:get_argument(home) of
-										{ok, [[HomePath]]} -> replace(Path2, "~", HomePath);
-										_Error -> throw({error, einvalid_path_catalog})
+										{ok, [[HomePath]]} -> {ok, replace(Path2, "~", HomePath)};
+										_Error -> {error, Path}
 									end;
 								_ -> 
 									case Ch == "." of
-										true -> remove_ult_backslash_url(?STATIC_FILE_PATH ++ "/" ++ string:substr(Path2, 3));
-										false ->  Path2
+										true -> 
+											case RootPath of
+												undefined -> {ok, remove_ult_backslash_url(string:substr(Path2, 3))};
+												_ -> {ok, remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ string:substr(Path2, 3))}
+											end;
+										false ->  
+											case RootPath of
+												undefined -> {ok, remove_ult_backslash_url(Path2)};
+												_ -> {ok, remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ Path2)}
+											end
 									end
 							end
 					end

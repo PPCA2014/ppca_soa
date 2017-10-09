@@ -239,10 +239,13 @@ compile_modulo_erlang(Path, ModuleNameCanonical) ->
 compile_page_module(undefined, _, _) -> undefined;
 compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
-	PageFile = ems_util:parse_path(Page, Conf#config.static_file_path),
-	case ems_django:compile_file(binary_to_list(PageFile), ModuleNamePage) of
-		{ok, PageModule} -> PageModule;
-		_ -> throw({einvalid_page, Page})
+	case ems_util:parse_file_name_path(Page, "", Conf#config.static_file_path) of
+		{ok, PageFile} ->
+			case ems_django:compile_file(binary_to_list(PageFile), ModuleNamePage) of
+				{ok, PageModule} -> PageModule;
+				_ -> erlang:error(einvalid_page_module_service)
+			end;
+		_ -> erlang:error(einvalid_page_module_service)
 	end.
 
 	
@@ -348,87 +351,90 @@ new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 						ExpiresMinute = maps:get(<<"expires_minute">>, Map, 1),
 						Public = ems_util:parse_bool(maps:get(<<"public">>, Map, true)),
 						ContentType = maps:get(<<"content_type">>, Map, ?CONTENT_TYPE_JSON),
-						CatalogPath = maps:get(<<"catalog_path">>, Map, <<>>),
-						CatalogFile = maps:get(<<"catalog_file">>, Map, <<>>),
-						Path = ems_util:parse_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault),
-						RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
-						Protocol = maps:get(<<"protocol">>, Map, <<>>),
-						ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault)),
-						ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
-						AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
-						AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
-						MaxConnections = maps:get(<<"tcp_max_connections">>, Map, [?HTTP_MAX_CONNECTIONS]),
-						Port = ems_util:parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, Map, undefined))),
-						Ssl = maps:get(<<"tcp_ssl">>, Map, undefined),
-						case Ssl of
-							undefined ->
-								IsSsl = false,
-								SslCaCertFile = undefined,
-								SslCertFile = undefined,
-								SslKeyFile = undefined;
-							_ ->
-								IsSsl = true,
-								SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
-								SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
-								SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
-						end,
-						case Lang of
-							<<"erlang">> -> 
-								Node = <<>>,
-								Mapost = '',
-								MapostName = HostNameDefault,
-								compile_modulo_erlang(Path, ModuleNameCanonical);
-							_ ->	
-								Node = parse_node_service(maps:get(<<"node">>, Map, CatNodeSearchDefault)),
-								{Mapost, MapostName} = parse_host_service(maps:get(<<"host">>, Map, CatHostSearchDefault), ModuleName, Node, Conf)
-						end,
-						{Querystring, QtdQuerystringRequired} = ems_util:parse_querystring_def(maps:get(<<"querystring">>, Map, [])),
-						Page = maps:get(<<"page">>, Map, undefined),
-						PageModule = compile_page_module(Page, Rowid, Conf),
-						case UseRE of
-							true -> 
-								Service = new_service_re(Rowid, Id, Name, Url2, 
-														   ServiceImpl,
-														   ModuleName, 
-														   ModuleNameCanonical,
-														   FunctionName, Type, Enable, Comment, 
-														   Version, Owner, Async, 
-														   Querystring, QtdQuerystringRequired,
-														   Mapost, MapostName, ResultCache,
-														   Authorization, Node, Lang,
-														   Datasource, Debug, SchemaIn, SchemaOut, 
-														   PoolSize, PoolMax, Map, Page, 
-														   PageModule, Timeout, 
-														   Middleware, CacheControl, ExpiresMinute, 
-														   Public, ContentType, Path, RedirectUrl,
-														   ListenAddress, ListenAddress_t, AllowedAddress, 
-														   AllowedAddress_t, Port, MaxConnections,
-														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														   CatalogPath, CatalogFile);
-							false -> 
-								Service = new_service(Rowid, Id, Name, Url2, 
-														ServiceImpl,
-														ModuleName,
-														ModuleNameCanonical,
-														FunctionName, Type, Enable, Comment,
-														Version, Owner, Async, 
-														Querystring, QtdQuerystringRequired,
-														Mapost, MapostName, ResultCache,
-														Authorization, Node, Lang,
-														Datasource, Debug, SchemaIn, SchemaOut, 
-														PoolSize, PoolMax, Map, Page, 
-														PageModule, Timeout, 
-														Middleware, CacheControl, 
-														ExpiresMinute, Public, 
-														ContentType, Path, RedirectUrl,
-														ListenAddress, ListenAddress_t, AllowedAddress, 
-														AllowedAddress_t, Port, MaxConnections,
-														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														CatalogPath, CatalogFile)
-						end,
-						{ok, Service}
+						CatalogPath = maps:get(<<"file_path">>, Map, <<>>),
+						CatalogFile = maps:get(<<"file_name">>, Map, <<>>),
+						case ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault, CatalogPath) of
+							{ok, Path} -> 
+								RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
+								Protocol = maps:get(<<"protocol">>, Map, <<>>),
+								ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault)),
+								ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
+								AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
+								AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
+								MaxConnections = maps:get(<<"tcp_max_connections">>, Map, [?HTTP_MAX_CONNECTIONS]),
+								Port = ems_util:parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, Map, undefined))),
+								Ssl = maps:get(<<"tcp_ssl">>, Map, undefined),
+								case Ssl of
+									undefined ->
+										IsSsl = false,
+										SslCaCertFile = undefined,
+										SslCertFile = undefined,
+										SslKeyFile = undefined;
+									_ ->
+										IsSsl = true,
+										SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
+										SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
+										SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
+								end,
+								case Lang of
+									<<"erlang">> -> 
+										Node = <<>>,
+										Mapost = '',
+										MapostName = HostNameDefault,
+										compile_modulo_erlang(Path, ModuleNameCanonical);
+									_ ->	
+										Node = parse_node_service(maps:get(<<"node">>, Map, CatNodeSearchDefault)),
+										{Mapost, MapostName} = parse_host_service(maps:get(<<"host">>, Map, CatHostSearchDefault), ModuleName, Node, Conf)
+								end,
+								{Querystring, QtdQuerystringRequired} = ems_util:parse_querystring_def(maps:get(<<"querystring">>, Map, [])),
+								Page = maps:get(<<"page">>, Map, undefined),
+								PageModule = compile_page_module(Page, Rowid, Conf),
+								case UseRE of
+									true -> 
+										Service = new_service_re(Rowid, Id, Name, Url2, 
+																   ServiceImpl,
+																   ModuleName, 
+																   ModuleNameCanonical,
+																   FunctionName, Type, Enable, Comment, 
+																   Version, Owner, Async, 
+																   Querystring, QtdQuerystringRequired,
+																   Mapost, MapostName, ResultCache,
+																   Authorization, Node, Lang,
+																   Datasource, Debug, SchemaIn, SchemaOut, 
+																   PoolSize, PoolMax, Map, Page, 
+																   PageModule, Timeout, 
+																   Middleware, CacheControl, ExpiresMinute, 
+																   Public, ContentType, Path, RedirectUrl,
+																   ListenAddress, ListenAddress_t, AllowedAddress, 
+																   AllowedAddress_t, Port, MaxConnections,
+																   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+																   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+																   CatalogPath, CatalogFile);
+									false -> 
+										Service = new_service(Rowid, Id, Name, Url2, 
+																ServiceImpl,
+																ModuleName,
+																ModuleNameCanonical,
+																FunctionName, Type, Enable, Comment,
+																Version, Owner, Async, 
+																Querystring, QtdQuerystringRequired,
+																Mapost, MapostName, ResultCache,
+																Authorization, Node, Lang,
+																Datasource, Debug, SchemaIn, SchemaOut, 
+																PoolSize, PoolMax, Map, Page, 
+																PageModule, Timeout, 
+																Middleware, CacheControl, 
+																ExpiresMinute, Public, 
+																ContentType, Path, RedirectUrl,
+																ListenAddress, ListenAddress_t, AllowedAddress, 
+																AllowedAddress_t, Port, MaxConnections,
+																IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+																OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+																CatalogPath, CatalogFile)
+								end,
+								{ok, Service};
+							_Error -> erlang:error(einvalid_path_service)
+						end
 				end;
 			false -> 
 				{error, edisable_service}
@@ -436,6 +442,6 @@ new_service_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 	catch
 		_Exception:Reason -> 
 			ems_logger:format_warn("ems_catalog parse invalid service specification: ~p\n\t~p.\n", [Reason, Map]),
-			{error, einvalid_service}
+			{error, Reason}
 	end.
 
