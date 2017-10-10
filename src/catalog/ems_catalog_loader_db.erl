@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_catalog_loader_db
 %% @version 1.0.0
-%% @doc Module ems_catalog_loader_db
+%% @doc Module responsible for load catalog services from database
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************

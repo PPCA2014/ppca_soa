@@ -1,5 +1,7 @@
 %%******************************************************************** 
-%% @title Module ems_data_loader %% @version 1.0.0 %% @doc 
+%% @title Module ems_data_loader  
+%% @version 1.0.0 %%
+%% @doc Module responsible for load records from database
 %% @author Everton de Vargas Agilar  <evertonagilar@gmail.com> 
 %% @copyright ErlangMS Team 
 %%********************************************************************
@@ -47,7 +49,7 @@ last_update(Server) -> gen_server:call(Server, last_update).
 	
 is_empty(Server) -> gen_server:call(Server, is_empty).
 
-size_table(Server) -> gen_server:call(Server, size_table). % mnesia:table_info(catalog, size).
+size_table(Server) -> gen_server:call(Server, size_table).
 
 sync(Server) -> 
 	gen_server:cast(Server, sync),
@@ -214,6 +216,7 @@ do_check_load_or_update(State = #state{name = Name,
 
 -spec do_load(#service_datasource{}, tuple(), #config{}, #state{}) -> ok | {error, atom()}.
 do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
+													 middleware = Middleware,
 													 sql_load = SqlLoad}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
@@ -225,13 +228,10 @@ do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
-						io:format("aqui0\n"),
 						case do_clear_table(State) of
 							ok ->
-								io:format("aqui1\n"),
 								do_reset_sequence(State),
-								io:format("aqui2\n"),
-								do_visit_records_transaction(Records, [], 1, CtrlInsert, Conf, State, insert),
+								ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert),
 								Count = length(Records),
 								case Count of 
 									1 -> ems_logger:info("~s load 1 record.",  [Name]);
@@ -259,8 +259,9 @@ do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
 	end.
 
 -spec do_update(#service_datasource{}, tuple(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
-do_update(Datasource, LastUpdate, CtrlUpdate, Conf, State = #state{name = Name,
-																   sql_update = SqlUpdate}) -> 
+do_update(Datasource, LastUpdate, CtrlUpdate, Conf, #state{name = Name,
+														   middleware = Middleware,
+														   sql_update = SqlUpdate}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -273,11 +274,11 @@ do_update(Datasource, LastUpdate, CtrlUpdate, Conf, State = #state{name = Name,
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdate, Params) of
 					{_,_,[]} -> 
 						ems_odbc_pool:release_connection(Datasource2),
-						?DEBUG("~s did not update any catalogs tipo pessoa.", [Name]),
+						?DEBUG("~s did not load any record.", [Name]),
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
-						do_visit_records_transaction(Records, [], 1, CtrlUpdate, Conf, State, update),
+						ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update),
 						Count = length(Records),
 						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
 						case Count of
@@ -300,53 +301,6 @@ do_update(Datasource, LastUpdate, CtrlUpdate, Conf, State = #state{name = Name,
 			ems_logger:error("~s udpate exception error: ~p.", [Name, Reason3]),
 			{error, Reason3}
 	end.
-
-
--spec do_visit_records_transaction(list(tuple()), list(tuple()), non_neg_integer, tuple(), #config{}, #state{}, insert | update) -> ok.
-do_visit_records_transaction(Records, L, Count, CtrlData, Conf, State, Operation) when Count == 100 orelse (length(Records) == 0 andalso length(L) > 0) -> 
-	F = fun() -> do_visit_records_persist(L, CtrlData, Conf, State, Operation) end,
-	mnesia:activity(transaction, F),
-	do_visit_records_transaction(Records, [], 1, CtrlData, Conf, State, Operation);
-do_visit_records_transaction([], _, _, _, _, _, _) -> ok;
-do_visit_records_transaction([H|T], L, Count, CtrlData, Conf, State, Operation) ->
-	do_visit_records_transaction(T, [H|L], Count+1, CtrlData, Conf, State, Operation).
-	
-
--spec do_visit_records_persist(list(tuple()), tuple(), #config{}, #state{}, insert | update) -> ok.
-do_visit_records_persist([], _, _, _, _) -> ok;
-do_visit_records_persist([H|T], CtrlDate, Conf, State, insert) ->
-	do_insert_record(H, CtrlDate, Conf, State),
-	do_visit_records_persist(T, CtrlDate, Conf, State, insert);
-do_visit_records_persist([H|T], CtrlDate, Conf, State, update) ->
-	do_update_record(H, CtrlDate, Conf, State),
-	do_visit_records_persist(T, CtrlDate, Conf, State, update).
-
-
--spec do_insert_record(tuple(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
-do_insert_record(Record, CtrlInsert, Conf, #state{name = Name, middleware = Middleware}) ->
-	case apply(Middleware, insert, [Record, CtrlInsert, Conf]) of
-		{ok, NewRecord, Table} ->
-			NewRecord2 = setelement(1, NewRecord, Table),
-			mnesia:write(NewRecord2),
-			ok;
-		{error, Reason} = Error ->
-			ems_logger:error("~s data insert error: ~p.", [Name, Reason]),
-			Error
-	end.
-
-
--spec do_update_record(list(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
-do_update_record(Record, CtrlUpdate, Conf, #state{name = Name, middleware = Middleware}) ->
-	case apply(Middleware, update, [Record, CtrlUpdate, Conf]) of
-		{ok, UpdatedRecord, Table} ->
-			UpdatedRecord2 = setelement(1, UpdatedRecord, Table),
-			mnesia:write(UpdatedRecord2),
-			ok;
-		{error, Reason} = Error ->	
-			ems_logger:error("~s data update error: ~p.", [Name, Reason]),
-			Error
-	end.
-
 
 -spec do_is_empty(#state{}) -> {ok, boolean()}.
 do_is_empty(#state{middleware = Middleware}) ->

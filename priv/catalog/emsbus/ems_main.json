@@ -11,6 +11,11 @@
 	},
 	
 	{
+		"catalog": "/emsbus/ems_catalog_loader_js", 
+		"file": "ems_catalog_loader_js.json"
+	},
+
+	{
 		"catalog": "/emsbus/ems_http_server", 
 		"file": "ems_http_server.json"
 	},

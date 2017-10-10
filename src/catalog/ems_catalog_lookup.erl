@@ -47,9 +47,16 @@ lookup(Method, Uri) ->
 	end.
 
 list_kernel_catalog() ->
-	case ets:lookup(ets_ems_catalog, cat) of
-		[] -> {error, enoent};
-		[{cat, {_, _, CatKernel}}] -> CatKernel
+	case mnesia:table_info(catalog_kernel_fs, size) == 0 of
+		true -> 
+			Conf = ems_config:getConfig(),
+			{ok, CatKernel} = ems_json_loader:scan(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>),
+			CatKernel;
+		false ->
+			case ets:lookup(ets_ems_catalog, cat) of
+				[] -> {error, enoent};
+				[{cat, {_, _, CatKernel}}] -> CatKernel
+			end
 	end.
 
 list_re_catalog() ->
