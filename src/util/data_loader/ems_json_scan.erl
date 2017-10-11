@@ -14,57 +14,58 @@
 -export([scan/2, scan/3, scan_with_filter/4, scan_with_filter/5]).
 
 -spec scan(string() | binary() | list(tuple()), #config{}) -> list(map()).
-scan([{_NodeName, _JsonFileName}|_] = L, Conf) -> 
-	{ok, scan_files(L, [], Conf, undefined, undefined)}.
+scan([{_NodeName, _JsonFilename}|_] = L, Conf) -> 
+	{ok, scan_files(L, [], Conf, undefined, undefined)};
+scan(Filename, Conf) -> 
+	{ok, scan_file(Filename, [], "", Conf, undefined, undefined)}.
 	
 -spec scan(string() | binary() | list(tuple()), binary(), #config{}) -> list(map()).	
-scan(FileName, RootPath, Conf) -> 
-	{ok, scan_file(FileName, [], RootPath, Conf, undefined, undefined)}.
-	
+scan(Filename, RootPath, Conf) -> 
+	{ok, scan_file(Filename, [], RootPath, Conf, undefined, undefined)}.
+
 -spec scan_with_filter(string() | binary() | list(tuple()), #config{}, binary(), any()) -> list(map()).
-scan_with_filter([{_NodeName, _JsonFileName}|_] = L, Conf, FilterKey, FilterValue) -> 
+scan_with_filter([{_NodeName, _JsonFilename}|_] = L, Conf, FilterKey, FilterValue) -> 
 	{ok, scan_files(L, [], Conf, FilterKey, FilterValue)}.
 	
 -spec scan_with_filter(string() | binary() | list(tuple()), binary(), #config{}, binary(), any()) -> list(map()).	
-scan_with_filter(FileName, RootPath, Conf, FilterKey, FilterValue) -> 
-	{ok, scan_file(FileName, [], RootPath, Conf, FilterKey, FilterValue)}.
+scan_with_filter(Filename, RootPath, Conf, FilterKey, FilterValue) -> 
+	{ok, scan_file(Filename, [], RootPath, Conf, FilterKey, FilterValue)}.
 
 
 %% internal functions
 
 -spec scan_files(list(tuple()), list(), #config{}, binary(), any()) -> list().
 scan_files([], Result, _, _, _) -> Result;
-scan_files([{NodeName, JsonFileName}|Rest], Result, Conf, FilterKey, FilterValue) ->
-	RootPath = filename:dirname(JsonFileName),
-	case parse_filename_path(JsonFileName, RootPath, Conf) of
-		{ok, FileName} ->
-			io:format("ems_json_scan loading ~p from ~p.\n", [binary_to_list(NodeName), FileName]),
-			Result2 = scan_file(FileName, Result, RootPath, Conf, FilterKey, FilterValue),
+scan_files([{_NodeName, JsonFilename}|Rest], Result, Conf, FilterKey, FilterValue) ->
+	RootPath = filename:dirname(JsonFilename),
+	case parse_filename_path(JsonFilename, RootPath, Conf) of
+		{ok, Filename} ->
+			Result2 = scan_file(Filename, Result, RootPath, Conf, FilterKey, FilterValue),
 			scan_files(Rest, Result2, Conf, FilterKey, FilterValue);
-		{error, FileName} ->
-			ems_logger:format_warn("ems_json_scan failed to scan invalid file ~p. Ignoring this file.\n", [FileName])
+		{error, Filename} ->
+			ems_logger:warn("ems_json_scan failed to scan invalid file ~p. Ignoring this file.\n", [Filename])
 	end.
 		
 		
 -spec scan_file(string() | binary(), list(map()), binary(), #config{}, binary(), any()) -> list(map()) | {error, atom()}.
-scan_file(JsonFileName, Result, RootPath, Conf, FilterKey, FilterValue) ->
-	case parse_filename_path(JsonFileName, RootPath, Conf) of
-		{ok, FileName} ->
-			CurrentDir = filename:dirname(FileName),
-			case ems_util:read_file_as_map(FileName) of
+scan_file(JsonFilename, Result, RootPath, Conf, FilterKey, FilterValue) ->
+	case parse_filename_path(JsonFilename, RootPath, Conf) of
+		{ok, Filename} ->
+			CurrentDir = filename:dirname(Filename),
+			case ems_util:read_file_as_map(Filename) of
 				{ok, FileList} when is_list(FileList) -> 
-					scan_file_entry(FileList, CurrentDir, FileName, Result, RootPath, Conf, FilterKey, FilterValue);
+					scan_file_entry(FileList, CurrentDir, Filename, Result, RootPath, Conf, FilterKey, FilterValue);
 				{ok, FileMap} -> 
-					scan_file_entry([FileMap], CurrentDir, FileName, Result, RootPath, Conf, FilterKey, FilterValue);
+					scan_file_entry([FileMap], CurrentDir, Filename, Result, RootPath, Conf, FilterKey, FilterValue);
 				{error, enoent} ->
-					ems_logger:format_warn("ems_json_scan file ~p does not exist, ignoring this file.\n", [FileName]),
+					ems_logger:warn("ems_json_scan file ~p does not exist, ignoring this file.\n", [Filename]),
 					Result;
 				_ -> 
-					ems_logger:format_warn("ems_json_scan failed to read invalid file ~p. Ignoring this file.\n", [FileName]),
+					ems_logger:warn("ems_json_scan failed to read invalid file ~p. Ignoring this file.\n", [Filename]),
 					Result
 			end;
-		{error, FileName} ->
-			ems_logger:format_warn("ems_json_scan failed to scan invalid file ~p. Ignoring this file.\n", [FileName])
+		{error, Filename} ->
+			ems_logger:warn("ems_json_scan failed to scan invalid file ~p. Ignoring this file.\n", [Filename])
 	end.
 	
 -spec scan_file_entry(list(), string(), string(), list(), binary(), #config{}, binary(), any()) -> list().
@@ -78,7 +79,7 @@ scan_file_entry([Map|MapTail], CurrentDir, CurrentFilenameMap, Result, RootPath,
 					Result2 = scan_file(FilenameMap, Result, RootPath, Conf, FilterKey, FilterValue),
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, Result2, RootPath, Conf, FilterKey, FilterValue);			
 				{error, FilenameMap} ->
-					ems_logger:format_warn("ems_json_scan scan invalid file ~p. Ignoring this file.\n", [FilenameMap]),
+					ems_logger:warn("ems_json_scan scan invalid file ~p. Ignoring this file.\n", [FilenameMap]),
 					?DEBUG("~p: ~p.", [FilenameMap, Map]),
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, Result, RootPath, Conf, FilterKey, FilterValue)
 			end;
@@ -94,6 +95,6 @@ scan_file_entry([Map|MapTail], CurrentDir, CurrentFilenameMap, Result, RootPath,
 	end.
 
 -spec parse_filename_path(string() | binary(), binary(), #config{}) -> {ok, string()} | {error, string()}.
-parse_filename_path(JsonFileName, RootPath, #config{static_file_path = StaticFilePath}) -> 
-	ems_util:parse_file_name_path(JsonFileName, StaticFilePath, RootPath).
+parse_filename_path(JsonFilename, RootPath, #config{static_file_path = StaticFilePath}) -> 
+	ems_util:parse_file_name_path(JsonFilename, StaticFilePath, RootPath).
 	

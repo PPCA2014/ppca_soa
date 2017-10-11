@@ -30,7 +30,12 @@ stop() -> gen_server:call(?MODULE, stop).
 
 local_time() -> calendar:local_time().
 
-local_time_str() -> ets:lookup_element(?MODULE, clock, 2).
+local_time_str() ->
+	try
+		ets:lookup_element(?MODULE, clock, 2)
+	catch
+		_Exception:_Reason -> ems_util:timestamp_str()
+	end.
 
 local_time_str(LocalTime) -> ems_util:timestamp_str(LocalTime).
 

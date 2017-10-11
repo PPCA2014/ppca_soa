@@ -11,9 +11,9 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([insert/3, update/3, is_empty/0, size_table/0, clear_table/0, reset_sequence/0]).
+-export([insert/3, update/3, is_empty/0, size_table/0, clear_table/0, reset_sequence/0, get_filename/0]).
 
--spec insert(map(), tuple(), #config{}) -> {ok, #service{}, atom()} | {error, atom()}.
+-spec insert(map(), tuple(), #config{}) -> {ok, #service{}, atom()} | {ok, skip} | {error, atom()}.
 insert(Map, CtrlInsert, Conf) ->
 	try
 		?DEBUG("ems_catalog_loader_fs insert catalog ~p from filesystem.", [Map]),
@@ -24,28 +24,44 @@ insert(Map, CtrlInsert, Conf) ->
 				Catalog2 = Catalog#service{id = Id,
 										   ctrl_insert = CtrlInsert},
 				{ok, Catalog2, EtsTable};
+			{error, edisable_service} ->
+				{ok, skip};
 			Error -> Error
 		end
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
 
--spec update(tuple(), tuple(), #config{}) -> {ok, #service{}, atom()} | {error, atom()}.
-update(Map = #{<<"type">> := Type, <<"rowid">> := Rowid}, CtrlUpdate, Conf) ->
+-spec update(tuple(), tuple(), #config{}) -> {ok, #service{}, atom()} | {ok, skip} | {error, atom()}.
+update(Map, CtrlUpdate, Conf) ->
 	try
-		EtsTable = ets_table(Type),
-		case ems_db:find_first(EtsTable, [{rowid, "==", Rowid}]) of
-			{error, enoent} -> insert(Map, CtrlUpdate, Conf);
-			CurrentCatalog ->
-				?DEBUG("ems_catalog_loader_fs update catalog ~p from filesystem.", [Map]),
-				case ems_catalog:new_service_from_map(Map, Conf) of
-					{ok, Catalog} -> 
+		case ems_catalog:new_service_from_map(Map, Conf) of
+			{ok, Catalog = #service{type = Type, rowid = Rowid}} -> 
+				EtsTable = ets_table(Type),
+				case ems_db:find_first(EtsTable, [{rowid, "==", Rowid}]) of
+					{error, enoent} -> 
+						io:format("novo...\n\n"),
+						Id = ets_sequence(Catalog#service.type),
+						Catalog2 = Catalog#service{id = Id,
+												   ctrl_insert = CtrlUpdate},
+						{ok, Catalog2, EtsTable};
+					CurrentCatalog ->
+						io:format("is update\n"),
+						?DEBUG("ems_catalog_loader_fs update catalog ~p from filesystem.", [Map]),
 						Catalog2 = Catalog#service{ctrl_update = CtrlUpdate},
-						Catalog3 = maps:merge(CurrentCatalog, Catalog2),
-						{ok, Catalog3, EtsTable};
-					Error -> Error
-				end
+						CurrentCatalog2 = setelement(1, CurrentCatalog, service),
+						Catalog3 = Catalog2,
+						io:format("foi...\n"),
+						{ok, Catalog3, EtsTable}
+				end;
+			{error, edisable_service} ->
+				io:format("ok skip..."),
+				{ok, skip};
+			Error -> 
+				io:format("erro eh ~p\n", [Error]),
+				Error
 		end
+
 	catch
 		_Exception:Reason -> {error, Reason}
 	end.
@@ -130,3 +146,7 @@ ets_sequence(<<"DELETE">>) -> ems_db:sequence(catalog_delete_fs);
 ets_sequence(<<"OPTIONS">>) -> ems_db:sequence(catalog_options_fs);
 ets_sequence(<<"KERNEL">>) -> ems_db:sequence(catalog_kernel_fs).
 
+-spec get_filename() -> list(tuple()).
+get_filename() -> 
+	Conf = ems_config:getConfig(),
+	Conf#config.cat_path_search.

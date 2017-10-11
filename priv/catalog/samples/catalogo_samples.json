@@ -27,10 +27,5 @@
 	{
 		"catalog": "/samples/hackathon", 
 		"file": "catalogo_hackathon.json"
-	},
-	{
-		"catalog": "/samples/catalogo_dinamic_menu", 
-		"file": "catalogo_dinamic_menu.json"
-	}
-	
+	}	
 ]

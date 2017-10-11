@@ -103,6 +103,36 @@ create_database(Nodes) ->
 									  {attributes, record_info(fields, ctrl_params)}]),
 									  
 
+    mnesia:create_table(catalog_get_fs, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_post_fs, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_put_fs, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_delete_fs, [{type, set},
+									  {disc_copies, Nodes},
+									  {index, [#service.rowid]},
+									  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_options_fs, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_kernel_fs, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
     mnesia:create_table(catalog_get, [{type, set},
 									  {disc_copies, Nodes},
 									  {index, [#service.rowid]},

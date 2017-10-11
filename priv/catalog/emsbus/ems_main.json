@@ -11,23 +11,18 @@
 	},
 	
 	{
-		"catalog": "/emsbus/ems_catalog_loader_js", 
-		"file": "ems_catalog_loader_js.json"
+		"catalog": "/emsbus/ems_cache", 
+		"file": "ems_cache.json"
 	},
 
 	{
-		"catalog": "/emsbus/ems_http_server", 
-		"file": "ems_http_server.json"
+		"catalog": "/emsbus/ems_odbc_pool", 
+		"file": "ems_odbc_pool.json"
 	},
 
 	{
-		"catalog": "/emsbus/ems_dns_server", 
-		"file": "ems_dns_server.json"
-	},
-
-	{
-		"catalog": "/emsbus/ems_ldap_server", 
-		"file": "ems_ldap_server.json"
+		"catalog": "/emsbus/ems_file_watcher", 
+		"file": "ems_file_watcher.json"
 	},
 
 	{
@@ -36,8 +31,24 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_cache", 
-		"file": "ems_cache.json"
+		"catalog": "/emsbus/ems_dns_server", 
+		"file": "ems_dns_server.json"
+	},
+
+	{
+		"catalog": "/emsbus/ems_http_server", 
+		"file": "ems_http_server.json"
+	},
+
+	{
+		"catalog": "/emsbus/ems_ldap_server", 
+		"file": "ems_ldap_server.json"
+	},
+
+
+	{
+		"catalog": "/emsbus/ems_catalog_loader_fs", 
+		"file": "ems_catalog_loader_fs.json"
 	},
 
 	{
@@ -126,11 +137,6 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_odbc_pool", 
-		"file": "ems_odbc_pool.json"
-	},
-
-	{
 		"catalog": "/emsbus/ems_netadm_service", 
 		"file": "ems_netadm_service.json"
 	},
@@ -153,11 +159,6 @@
 	{
 		"catalog": "/emsbus/ems_client_loader", 
 		"file": "ems_client_loader.json"
-	},
-	
-	{
-		"catalog": "/emsbus/ems_file_watcher", 
-		"file": "ems_file_watcher.json"
 	},
 	
 	{

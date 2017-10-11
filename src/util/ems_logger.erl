@@ -31,6 +31,8 @@
 		 log_file_head/0,
 		 log_file_head/1,
 		 log_file_name/0,
+		 format_info/1, 
+		 format_info/2,
 		 format_warn/1, 
 		 format_warn/2,
 		 format_error/1, 
@@ -174,6 +176,9 @@ checkpoint() ->
 
 
 % write direct messages to console
+format_info(Message) ->	io:format(Message).
+format_info(Message, Params) ->	io:format("~s", [io_lib:format(Message, Params)]).
+
 format_warn(Message) ->	io:format("\033[0;33m~s\033[0m", [Message]).
 format_warn(Message, Params) ->	io:format("\033[0;33m~s\033[0m", [io_lib:format(Message, Params)]).
 
@@ -194,8 +199,7 @@ format_alert(Message, Params) ->	io:format("\033[0;46m~s\033[0m", [io_lib:format
 %%====================================================================
  
 init(#service{properties = Props}) ->
-	ErlangVersion = erlang:system_info(otp_release),
-	info("Loading ~s instance on Erlang ~s...", [?SERVER_NAME, ErlangVersion]),
+	info("Loading ~s instance on Erlang/OTP ~s...", [?SERVER_NAME, erlang:system_info(otp_release)]),
 	Checkpoint = maps:get(<<"log_file_checkpoint">>, Props, ?LOG_FILE_CHECKPOINT),
 	LogFileMaxSize = maps:get(<<"log_file_max_size">>, Props, ?LOG_FILE_MAX_SIZE),
 	Conf = ems_config:getConfig(),

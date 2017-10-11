@@ -46,16 +46,22 @@ lookup(Method, Uri) ->
 		Error -> Error
 	end.
 
+-spec list_kernel_catalog() -> list(tuple()).
 list_kernel_catalog() ->
 	case mnesia:table_info(catalog_kernel_fs, size) == 0 of
 		true -> 
 			Conf = ems_config:getConfig(),
-			{ok, CatKernel} = ems_json_loader:scan(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>),
-			CatKernel;
+			case ems_json_scan:scan_with_filter(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>) of
+				{ok, CatKernel} -> 
+					CatKernel2 = [ems_catalog:new_service_from_map(Map, Conf) || Map <- CatKernel],
+					CatKernel3 = [Cat || {Reason, Cat} <- CatKernel2, Reason == ok],
+					CatKernel3;
+				Error -> Error
+			end;
 		false ->
-			case ets:lookup(ets_ems_catalog, cat) of
-				[] -> {error, enoent};
-				[{cat, {_, _, CatKernel}}] -> CatKernel
+			case ems_db:all(catalog_kernel_fs) of
+				{ok, CatKernel} -> [setelement(1, Cat, service) || Cat <- CatKernel];
+				Error -> Error
 			end
 	end.
 

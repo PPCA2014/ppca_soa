@@ -25,10 +25,7 @@
 -define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
 
 % Nome do servidor
--define(SERVER_NAME, io_lib:format(<<"ems-bus-~s">>, [case application:get_key(ems_bus, vsn) of 
-																{ok, Version} -> Version;
-																undefined -> "1.0.0"
-														end])).
+-define(SERVER_NAME, ems_util:server_name()).
 
 
 % Caminho do diretório privado

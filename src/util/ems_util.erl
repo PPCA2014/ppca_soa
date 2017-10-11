@@ -11,7 +11,9 @@
 -include("../../include/ems_config.hrl").
 -include("../../include/ems_schema.hrl").
 
--export([sleep/1,
+-export([version/0,
+		 server_name/0,
+		 sleep/1,
 		 timestamp_str/0,
 		 json_encode/1,
 		 json_decode/1,
@@ -145,6 +147,19 @@
 		 tuple_to_maps_with_keys/2
 		]).
 
+-spec version() -> string().
+version() ->
+	case application:get_key(ems_bus, vsn) of 
+		{ok, Version} -> Version;
+		undefined -> "1.0.0"
+	end.
+
+-spec server_name() -> string().
+server_name() ->
+	io_lib:format(<<"ems-bus-~s">>, [case application:get_key(ems_bus, vsn) of 
+											{ok, Version} -> Version;
+											undefined -> "1.0.0"
+									 end]).
 
 %% Retorna o hash da url e os parâmetros do request
 hashsym_and_params(S) when is_binary(S) -> hashsym_and_params(binary_to_list(S), 1, 0, []);

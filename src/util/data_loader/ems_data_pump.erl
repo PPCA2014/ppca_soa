@@ -41,6 +41,8 @@ do_insert_record(Record, CtrlInsert, Conf, Name, Middleware) ->
 			NewRecord2 = setelement(1, NewRecord, Table),
 			mnesia:write(NewRecord2),
 			ok;
+		{ok, skip} -> 
+			ok;
 		{error, Reason} = Error ->
 			ems_logger:error("~s data insert error: ~p.", [Name, Reason]),
 			Error
@@ -53,8 +55,10 @@ do_update_record(Record, CtrlUpdate, Conf, Name, Middleware) ->
 			UpdatedRecord2 = setelement(1, UpdatedRecord, Table),
 			mnesia:write(UpdatedRecord2),
 			ok;
+		{ok, skip} -> 
+			ok;
 		{error, Reason} = Error ->	
-			ems_logger:error("~s data update error: ~p.", [Name, Reason]),
+			ems_logger:error("~s data update error>>>>>: ~p.", [Name, Reason]),
 			Error
 	end.
 

@@ -27,7 +27,7 @@ start(_StartType, StartArgs) ->
 					ems_logger:info("Hosts in the cluster: ~p.", [ case net_adm:host_file() of 
 																		{error, enoent} -> net_adm:localhost(); 
 																		Hosts -> Hosts 
-																  end]),
+																   end]),
 					AuthorizationMode = case Conf#config.authorization of
 											basic -> <<"basic, oauth2">>;
 											oauth2 -> <<"oauth2">>;
@@ -38,7 +38,6 @@ start(_StartType, StartArgs) ->
 						false -> ems_logger:info("Default authorization mode: ~p.", [AuthorizationMode])
 					end,
 					ems_logger:info("Server ~s (PID ~s) started in ~pms.", [?SERVER_NAME, os:getpid(), ems_util:get_milliseconds() - T1]),
-					ems_logger:sync(),
 					ems_logger:set_level(info)
 			end), set_level),
 			Ret;

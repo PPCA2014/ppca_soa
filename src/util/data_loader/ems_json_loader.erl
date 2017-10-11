@@ -71,18 +71,13 @@ resume(Server) ->
 %%====================================================================
  
 init(#service{name = Name, 
-			  path = Filename, 
 			  middleware = Middleware, 
 			  timeout = Timeout,
 			  properties = Props}) ->
 	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
-	Conf = ems_config:getConfig(),
-	Filename = case maps:get(<<"filename">>, Props, <<>>) of
-					<<>> -> Conf#config.cat_path_search;
-					FileName -> binary_to_list(FileName)
-			   end,
+	Filename = do_get_filename(Middleware),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
 	State = #state{name = binary_to_list(Name),
 				   update_checkpoint = UpdateCheckpoint,
@@ -167,13 +162,9 @@ terminate(Reason, #service{name = Name}) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-handle_do_check_load_or_update(State = #state{name = Name,
-									 update_checkpoint = UpdateCheckpoint}) ->
+handle_do_check_load_or_update(State = #state{update_checkpoint = UpdateCheckpoint}) ->
 	case do_check_load_or_update(State) of
 		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
-		{error, eunavailable_odbc_connection} -> 
-			ems_logger:warn("~s wait 5 minutes for next checkpoint while has no database connection.", [Name]),
-			{noreply, State};
 		_Error -> {noreply, State, UpdateCheckpoint}
 	end.
 	
@@ -217,7 +208,7 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 										 middleware = Middleware,
 										 filename = Filename}) -> 
 	try
-		case ems_json_loader:scan(Filename, Conf) of
+		case ems_json_scan:scan(Filename, Conf) of
 			{ok, []} -> 
 				?DEBUG("~s did not load any record.", [Name]),
 				ok;
@@ -254,7 +245,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 		%{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 		% Zera os segundos
 		%DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
-		case ems_json_loader:scan(Filename, Conf) of
+		case ems_json_scan:scan(Filename, Conf) of
 			{ok, []} -> 
 				?DEBUG("~s did not load any record.", [Name]),
 				ok;
@@ -295,3 +286,7 @@ do_clear_table(#state{middleware = Middleware}) ->
 -spec do_reset_sequence(#state{}) -> ok.
 do_reset_sequence(#state{middleware = Middleware}) ->
 	apply(Middleware, reset_sequence, []).
+	
+-spec do_get_filename(atom()) -> string() | list(tuple()).
+do_get_filename(Middleware) -> apply(Middleware, get_filename, []).
+	

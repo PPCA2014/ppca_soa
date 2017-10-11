@@ -359,7 +359,6 @@ new_service_from_map(Map,
 						CatalogFile = maps:get(<<"file_name">>, Map, <<>>),
 						case ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault, CatalogPath) of
 							{ok, Path} -> 
-									io:format("paht is ~p\n", [Path]),
 								RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
 								Protocol = maps:get(<<"protocol">>, Map, <<>>),
 								ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault)),

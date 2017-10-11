@@ -10,7 +10,7 @@
 	"lang" : "erlang",
 	"last_update_param_name" : "ems_catalog_loader_fs_lastupdate",
 	"update_checkpoint" : 60000,
-	"timeout" : 1000,
+	"timeout" : 2000,
 	"middleware" : "ems_catalog_loader_fs",
 	"pool_size" : 1,
 	"pool_max" : 1,
