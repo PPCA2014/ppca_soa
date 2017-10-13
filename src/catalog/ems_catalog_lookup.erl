@@ -12,9 +12,17 @@
 -include("../include/ems_schema.hrl").
 
 -export([lookup/1, 
-		 lookup/2,  
+		 lookup/2,
+		 find_fs/2,  
 		 list_kernel_catalog/0, 
 		 list_re_catalog/0]).
+
+-spec find_fs(catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs | catalog_kernel_fs, non_neg_integer()) -> {ok, #service{}} | {error, atom()}.
+find_fs(Table, Rowid) ->
+	case ems_db:find_first(Table, [{rowid, "==", Rowid}]) of
+		{error, Reason} -> {error, Reason};
+		Record -> {ok, setelement(1, Record, service)}
+	end.
 
 
 lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) ->	

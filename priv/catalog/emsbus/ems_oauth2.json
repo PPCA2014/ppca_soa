@@ -232,43 +232,5 @@
 			}
 		],
 		"lang" : "erlang"
-	},
-	
-	{
-		"name": "redirect_url_login",
-		"comment": "Redirect url /authz to /authz/index.html",
-		"owner": "seguranca",
-		"version": "1.0.0",
-		"service" : "ems_redirect_url_service:execute",
-		"url": "/authz",
-		"redirect_url" : "/authz/index.html",
-		"path" : "{{priv/www/authz}}",
-		"type": "GET",
-		"cache_control" : "no-cache",
-		"expires_minute" : 0,
-		"querystring": [
-			{
-				"name": "client_id",
-				"type": "string",
-				"comment": ""
-			}
-		],
-		"lang" : "erlang"
-	},
-	
-	{
-		"name": "authz",
-		"comment": "Pagina de authz ErlangMS",
-		"owner": "seguranca",
-		"version": "1.0.0",
-		"service" : "ems_static_file_service:execute",
-		"url": "/authz/",
-		"use_re" : true,
-		"path" : "priv/www/authz",
-		"type": "GET",
-		"cache_control" : "no-cache",
-		"expires_minute" : 0,
-		"lang" : "erlang"
 	}
-
 ]

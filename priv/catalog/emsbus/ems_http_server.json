@@ -19,7 +19,8 @@
 		"tcp_send_timeout" : 12000,
 		"tcp_backlog" : 1024,
 		"tcp_buffer" : 8000,
-		"tcp_delay_send" : false
+		"tcp_delay_send" : false,
+		"start_timeout" : 3000
 	},
 
 	{
@@ -48,6 +49,7 @@
 			"certfile" : "server.crt",
 			"keyfile" : "server.key",
 			"depth" : 0
-		}
+		},
+		"start_timeout" : 3100
 	}
 ]

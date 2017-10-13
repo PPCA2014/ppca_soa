@@ -14,5 +14,6 @@
 	"ldap_password_admin" : "123456",
 	"pool_size" : 1,
 	"pool_max" : 1,
-	"enable" : false
+	"enable" : false,
+	"start_timeout" : 3000
 }

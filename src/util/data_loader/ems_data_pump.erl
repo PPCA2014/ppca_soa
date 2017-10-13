@@ -11,54 +11,64 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([data_pump/8]).
+-export([data_pump/12]).
 
 
--spec data_pump(list(tuple()), list(tuple()), non_neg_integer(), tuple(), #config{}, binary(), binary(), insert | update) -> ok.
-data_pump(Records, L, Count, CtrlData, Conf, Name, Middleware, Operation) when Count == 100 orelse (length(Records) == 0 andalso length(L) > 0) -> 
-	F = fun() -> do_visit_records_persist(L, CtrlData, Conf, Name, Middleware, Operation) end,
-	mnesia:activity(transaction, F),
-	data_pump(Records, [], 1, CtrlData, Conf, Name, Middleware, Operation);
-data_pump([], _, _, _, _, _, _, _) -> ok;
-data_pump([H|T], L, Count, CtrlData, Conf, Name, Middleware, Operation) ->
-	data_pump(T, [H|L], Count+1, CtrlData, Conf, Name, Middleware, Operation).
+-spec data_pump(list(tuple()), list(tuple()), non_neg_integer(), tuple(), #config{}, binary(), binary(), insert | update, non_neg_integer(), non_neg_integer(), non_neg_integer(), fs | db) -> {ok, non_neg_integer(), non_neg_integer(), non_neg_integer()}.
+data_pump(Records, L, Count, CtrlData, Conf, Name, Middleware, Operation, InsertCount, UpdateCount, ErrorCount, SourceType) when Count == 100 orelse (length(Records) == 0 andalso length(L) > 0) -> 
+	F = fun() -> do_visit_records_persist(L, CtrlData, Conf, Name, Middleware, Operation, InsertCount, UpdateCount, ErrorCount, SourceType) end,
+	{ok, InsertCount2, UpdateCount2, ErrorCount2} = mnesia:activity(transaction, F),
+	data_pump(Records, [], 1, CtrlData, Conf, Name, Middleware, Operation, InsertCount2, UpdateCount2, ErrorCount2, SourceType);
+data_pump([], _, _, _, _, _, _, _, InsertCount, UpdateCount, ErrorCount, _) -> {ok, InsertCount, UpdateCount, ErrorCount};
+data_pump([H|T], L, Count, CtrlData, Conf, Name, Middleware, Operation, InsertCount, UpdateCount, ErrorCount, SourceType) ->
+	data_pump(T, [H|L], Count+1, CtrlData, Conf, Name, Middleware, Operation, InsertCount, UpdateCount, ErrorCount, SourceType).
 	
 
--spec do_visit_records_persist(list(tuple()), tuple(), #config{}, binary(), binary(), insert | update) -> ok.
-do_visit_records_persist([], _, _, _, _, _) -> ok;
-do_visit_records_persist([H|T], CtrlDate, Conf, Name, Middleware, insert) ->
-	do_insert_record(H, CtrlDate, Conf, Name, Middleware),
-	do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, insert);
-do_visit_records_persist([H|T], CtrlDate, Conf, Name, Middleware, update) ->
-	do_update_record(H, CtrlDate, Conf, Name, Middleware),
-	do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, update).
+-spec do_visit_records_persist(list(tuple()), tuple(), #config{}, binary(), binary(), insert | update, non_neg_integer(), non_neg_integer(), non_neg_integer(), fs | db) -> ok.
+do_visit_records_persist([], _, _, _, _, _, InsertCount, UpdateCount, ErrorCount, _) -> {ok, InsertCount, UpdateCount, ErrorCount};
+do_visit_records_persist([H|T], CtrlDate, Conf, Name, Middleware, insert, InsertCount, UpdateCount, ErrorCount, SourceType) ->
+	case do_insert_record(H, CtrlDate, Conf, Name, Middleware, SourceType) of
+		{ok, insert} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, insert, InsertCount+1, UpdateCount, ErrorCount, SourceType);
+		{ok, skip} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, insert, InsertCount, UpdateCount, ErrorCount, SourceType);
+		{error, edisabled} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, insert, InsertCount, UpdateCount, ErrorCount, SourceType);
+		_Error -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, insert, InsertCount, UpdateCount, ErrorCount+1, SourceType)
+	end;
+do_visit_records_persist([H|T], CtrlDate, Conf, Name, Middleware, update, InsertCount, UpdateCount, ErrorCount, SourceType) ->
+	case do_update_record(H, CtrlDate, Conf, Name, Middleware, SourceType) of
+		{ok, insert} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, update, InsertCount+1, UpdateCount, ErrorCount, SourceType);
+		{ok, update} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, update, InsertCount, UpdateCount+1, ErrorCount, SourceType);
+		{ok, skip} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, update, InsertCount, UpdateCount, ErrorCount, SourceType);
+		{error, edisabled} -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, update, InsertCount, UpdateCount, ErrorCount, SourceType);
+		_Error -> do_visit_records_persist(T, CtrlDate, Conf, Name, Middleware, update, InsertCount, UpdateCount, ErrorCount+1, SourceType)
+	end.
 
 
--spec do_insert_record(tuple(), tuple(), #config{}, binary(), binary()) -> ok | {error, atom()}.
-do_insert_record(Record, CtrlInsert, Conf, Name, Middleware) ->
-	case apply(Middleware, insert, [Record, CtrlInsert, Conf]) of
-		{ok, NewRecord, Table} ->
+-spec do_insert_record(tuple(), tuple(), #config{}, binary(), binary(), fs | db) -> ok | {error, atom()}.
+do_insert_record(Record, CtrlInsert, Conf, Name, Middleware, SourceType) ->
+	case apply(Middleware, insert, [Record, CtrlInsert, Conf, SourceType]) of
+		{ok, NewRecord, Table, insert} ->
 			NewRecord2 = setelement(1, NewRecord, Table),
 			mnesia:write(NewRecord2),
-			ok;
-		{ok, skip} -> 
-			ok;
+			{ok, insert};
+		{ok, skip} -> {ok, skip};
+		{error, edisabled} -> {error, edisabled};
 		{error, Reason} = Error ->
 			ems_logger:error("~s data insert error: ~p.", [Name, Reason]),
 			Error
 	end.
 
--spec do_update_record(list(), tuple(), #config{}, binary(), binary()) -> ok | {error, atom()}.
-do_update_record(Record, CtrlUpdate, Conf, Name, Middleware) ->
-	case apply(Middleware, update, [Record, CtrlUpdate, Conf]) of
-		{ok, UpdatedRecord, Table} ->
+
+-spec do_update_record(list(), tuple(), #config{}, binary(), binary(), fs | db) -> ok | {error, atom()}.
+do_update_record(Record, CtrlUpdate, Conf, Name, Middleware, SourceType) ->
+	case apply(Middleware, update, [Record, CtrlUpdate, Conf, SourceType]) of
+		{ok, UpdatedRecord, Table, Operation} ->
 			UpdatedRecord2 = setelement(1, UpdatedRecord, Table),
 			mnesia:write(UpdatedRecord2),
-			ok;
-		{ok, skip} -> 
-			ok;
+			{ok, Operation};
+		{ok, skip} -> {ok, skip};
+		{error, edisabled} -> {error, edisabled};
 		{error, Reason} = Error ->	
-			ems_logger:error("~s data update error>>>>>: ~p.", [Name, Reason]),
+			ems_logger:error("~s data update error: ~p.", [Name, Reason]),
 			Error
 	end.
 

@@ -11,8 +11,8 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([new_service/54, 
-		 new_service_re/54,
+-export([new_service/56, 
+		 new_service_re/56,
 		 new_service_from_map/2, new_service_from_map/3,
 		 get_metadata_json/1]).
 
@@ -78,7 +78,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			   CatalogPath, CatalogFile) ->
+			   CatalogPath, CatalogFile, CtrlModified, StartTimeout) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -138,7 +138,9 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				tcp_ssl_keyfile = SslKeyFile,
 				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
 				oauth2_token_encrypt = OAuth2TokenEncrypt,
-				protocol = Protocol
+				protocol = Protocol,
+				ctrl_modified = CtrlModified,
+				start_timeout = StartTimeout
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
@@ -151,7 +153,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			Port, MaxConnections,
 			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			CatalogPath, CatalogFile) ->
+			CatalogPath, CatalogFile, CtrlModified, StartTimeout) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -208,7 +210,9 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				tcp_ssl_keyfile = SslKeyFile,
 				oauth2_with_check_constraint = OAuth2WithCheckConstraint,
 				oauth2_token_encrypt = OAuth2TokenEncrypt,
-				protocol = Protocol
+				protocol = Protocol,
+				ctrl_modified = CtrlModified,
+				start_timeout = StartTimeout
 			}.
 
 
@@ -291,16 +295,16 @@ new_service_from_map(Map, Conf) -> new_service_from_map(Map, Conf, undefined).
 %-spec new_service_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
 new_service_from_map(Map, 
 					 Conf = #config{cat_enable_services = EnableServices,
-										  cat_disable_services = DisableServices,
-										  ems_result_cache = ResultCacheDefault,
-										  authorization = AuthorizationDefault,
-										  oauth2_with_check_constraint = Oauth2WithCheckConstraintDefault,
-										  static_file_path = StaticFilePathDefault,
-										  tcp_listen_address = TcpListenAddressDefault,
-										  tcp_allowed_address = TcpAllowedAddressDefault,
-										  cat_node_search = CatNodeSearchDefault,
-										  cat_host_search = CatHostSearchDefault,
-										  ems_hostname = HostNameDefault}, 
+								    cat_disable_services = DisableServices,
+								    ems_result_cache = ResultCacheDefault,
+								    authorization = AuthorizationDefault,
+								    oauth2_with_check_constraint = Oauth2WithCheckConstraintDefault,
+								    static_file_path = StaticFilePathDefault,
+								    tcp_listen_address = TcpListenAddressDefault,
+								    tcp_allowed_address = TcpAllowedAddressDefault,
+								    cat_node_search = CatNodeSearchDefault,
+								    cat_host_search = CatHostSearchDefault,
+								    ems_hostname = HostNameDefault}, 
  				     Id) ->
 	try
 		Name = ems_util:parse_name_service(maps:get(<<"name">>, Map)),
@@ -393,6 +397,8 @@ new_service_from_map(Map,
 								{Querystring, QtdQuerystringRequired} = ems_util:parse_querystring_def(maps:get(<<"querystring">>, Map, [])),
 								Page = maps:get(<<"page">>, Map, undefined),
 								PageModule = compile_page_module(Page, Rowid, Conf),
+								CtrlModified = maps:get(<<"ctrl_modified">>, Map, undefined),
+								StartTimeout = maps:get(<<"start_timeout">>, Map, undefined),
 								case UseRE of
 									true -> 
 										Service = new_service_re(Rowid, Id, Name, Url2, 
@@ -413,7 +419,7 @@ new_service_from_map(Map,
 																   AllowedAddress_t, Port, MaxConnections,
 																   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 																   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																   CatalogPath, CatalogFile);
+																   CatalogPath, CatalogFile, CtrlModified, StartTimeout);
 									false -> 
 										Service = new_service(Rowid, Id, Name, Url2, 
 																ServiceImpl,
@@ -434,14 +440,14 @@ new_service_from_map(Map,
 																AllowedAddress_t, Port, MaxConnections,
 																IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 																OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																CatalogPath, CatalogFile)
+																CatalogPath, CatalogFile, CtrlModified, StartTimeout)
 								end,
 								{ok, Service};
 							_Error -> erlang:error(einvalid_path_service)
 						end
 				end;
 			false -> 
-				{error, edisable_service}
+				{error, edisabled}
 		end
 	catch
 		_Exception:Reason -> 

@@ -14,7 +14,6 @@
 -export([version/0,
 		 server_name/0,
 		 sleep/1,
-		 timestamp_str/0,
 		 json_encode/1,
 		 json_decode/1,
 		 hd_or_empty/1,
@@ -59,6 +58,7 @@
 		 date_to_string/1,
 		 date_to_binary/1,
  		 no_periodo/2,
+ 		 timestamp_str/0,
 		 timestamp_str/1,
 		 timestamp_binary/1,
 		 uptime_str/0,
@@ -69,6 +69,7 @@
 		 encrypt_public_key/2,
 		 decrypt_private_key/2,
 		 open_file/1,
+		 file_last_modified/1,
 		 is_number/1,
 		 is_cpf_valid/1, 
 		 is_cnpj_valid/1, 
@@ -826,6 +827,14 @@ decrypt_private_key(CryptText,PrivateKey) ->
 open_file(FilePath) ->
    {ok, PemBin2 } = file:read_file(FilePath),
     PemBin2.
+
+-spec file_last_modified(string()) -> tuple().
+file_last_modified(FilePath) ->
+	case file:read_file_info(FilePath, [{time, universal}]) of
+		{ok, {file_info, _FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} -> MTime;
+		Error -> Error
+	end.
+		
 
 %% Converte arquivo latin1 para utf8 formatando os unicodes
 %% Esta função está desconfigurando os arquivos no formato utf8	

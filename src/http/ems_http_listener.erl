@@ -79,7 +79,7 @@ init({IpAddress,
 	end,
 	case Ret of
 		{ok, _PidCowboy} -> 
-			ems_logger:info("ems_http_listener listener ~s in port ~p on IP ~s.", [ProtocolStr, Port, IpAddressStr]);
+			ems_logger:info("ems_http_listener listener ~s in ~s:~p.", [ProtocolStr, IpAddressStr, Port]);
 		{error, eaddrinuse} -> 
 			ems_logger:error("ems_http_listener can not listen ~s on port ~p because it is already in use on IP ~s by other process.", [ProtocolStr, Port, IpAddressStr])
 	end,

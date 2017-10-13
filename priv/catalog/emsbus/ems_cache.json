@@ -2,11 +2,10 @@
     "name": "ems_cache",
 	"comment": "Catalog for ems_cache",
 	"owner": "ems_bus",
-	"version": "1",
+	"version": "1.0.0",
 	"service" : "ems_cache:start",
 	"url": "/emsbus/ems_cache",
 	"type": "KERNEL",
-	"APIkey":"false",
 	"lang" : "erlang",
 	"pool_size" : 1,
 	"pool_max" : 1

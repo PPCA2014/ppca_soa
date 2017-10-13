@@ -15,21 +15,21 @@
 
 -spec scan(string() | binary() | list(tuple()), #config{}) -> list(map()).
 scan([{_NodeName, _JsonFilename}|_] = L, Conf) -> 
-	{ok, scan_files(L, [], Conf, undefined, undefined)};
+	{ok, lists:reverse(scan_files(L, [], Conf, undefined, undefined))};
 scan(Filename, Conf) -> 
-	{ok, scan_file(Filename, [], "", Conf, undefined, undefined)}.
+	{ok, lists:reverse(scan_file(Filename, [], "", Conf, undefined, undefined))}.
 	
 -spec scan(string() | binary() | list(tuple()), binary(), #config{}) -> list(map()).	
 scan(Filename, RootPath, Conf) -> 
-	{ok, scan_file(Filename, [], RootPath, Conf, undefined, undefined)}.
+	{ok, lists:reverse(scan_file(Filename, [], RootPath, Conf, undefined, undefined))}.
 
 -spec scan_with_filter(string() | binary() | list(tuple()), #config{}, binary(), any()) -> list(map()).
 scan_with_filter([{_NodeName, _JsonFilename}|_] = L, Conf, FilterKey, FilterValue) -> 
-	{ok, scan_files(L, [], Conf, FilterKey, FilterValue)}.
+	{ok, lists:reverse(scan_files(L, [], Conf, FilterKey, FilterValue))}.
 	
 -spec scan_with_filter(string() | binary() | list(tuple()), binary(), #config{}, binary(), any()) -> list(map()).	
 scan_with_filter(Filename, RootPath, Conf, FilterKey, FilterValue) -> 
-	{ok, scan_file(Filename, [], RootPath, Conf, FilterKey, FilterValue)}.
+	{ok, lists:reverse(scan_file(Filename, [], RootPath, Conf, FilterKey, FilterValue))}.
 
 
 %% internal functions
@@ -43,7 +43,7 @@ scan_files([{_NodeName, JsonFilename}|Rest], Result, Conf, FilterKey, FilterValu
 			Result2 = scan_file(Filename, Result, RootPath, Conf, FilterKey, FilterValue),
 			scan_files(Rest, Result2, Conf, FilterKey, FilterValue);
 		{error, Filename} ->
-			ems_logger:warn("ems_json_scan failed to scan invalid file ~p. Ignoring this file.\n", [Filename])
+			ems_logger:warn("ems_json_scan scan invalid file ~p.", [Filename])
 	end.
 		
 		
@@ -58,14 +58,14 @@ scan_file(JsonFilename, Result, RootPath, Conf, FilterKey, FilterValue) ->
 				{ok, FileMap} -> 
 					scan_file_entry([FileMap], CurrentDir, Filename, Result, RootPath, Conf, FilterKey, FilterValue);
 				{error, enoent} ->
-					ems_logger:warn("ems_json_scan file ~p does not exist, ignoring this file.\n", [Filename]),
+					ems_logger:warn("ems_json_scan file ~p does not exist.", [Filename]),
 					Result;
 				_ -> 
-					ems_logger:warn("ems_json_scan failed to read invalid file ~p. Ignoring this file.\n", [Filename]),
+					ems_logger:warn("ems_json_scan scan invalid file ~p.", [Filename]),
 					Result
 			end;
 		{error, Filename} ->
-			ems_logger:warn("ems_json_scan failed to scan invalid file ~p. Ignoring this file.\n", [Filename])
+			ems_logger:warn("ems_json_scan scan invalid file ~p.", [Filename])
 	end.
 	
 -spec scan_file_entry(list(), string(), string(), list(), binary(), #config{}, binary(), any()) -> list().
@@ -79,7 +79,7 @@ scan_file_entry([Map|MapTail], CurrentDir, CurrentFilenameMap, Result, RootPath,
 					Result2 = scan_file(FilenameMap, Result, RootPath, Conf, FilterKey, FilterValue),
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, Result2, RootPath, Conf, FilterKey, FilterValue);			
 				{error, FilenameMap} ->
-					ems_logger:warn("ems_json_scan scan invalid file ~p. Ignoring this file.\n", [FilenameMap]),
+					ems_logger:warn("ems_json_scan scan invalid file ~p.", [FilenameMap]),
 					?DEBUG("~p: ~p.", [FilenameMap, Map]),
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, Result, RootPath, Conf, FilterKey, FilterValue)
 			end;
@@ -89,7 +89,8 @@ scan_file_entry([Map|MapTail], CurrentDir, CurrentFilenameMap, Result, RootPath,
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, Result, RootPath, Conf, FilterKey, FilterValue);
 				false ->
 					Map2 = Map#{<<"file_path">> => CurrentDir,
-								<<"file_name">> => CurrentFilenameMap},
+								<<"file_name">> => CurrentFilenameMap,
+								<<"ctrl_modified">> => ems_util:timestamp_str(ems_util:file_last_modified(CurrentFilenameMap))},
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, [Map2 | Result], RootPath, Conf, FilterKey, FilterValue)
 			end
 	end.

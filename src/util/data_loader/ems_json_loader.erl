@@ -216,12 +216,8 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 				case do_clear_table(State) of
 					ok ->
 						do_reset_sequence(State),
-						ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert),
-						Count = length(Records),
-						case Count of 
-							1 -> ems_logger:info("~s load 1 record.",  [Name]);
-							_ -> ems_logger:info("~s load ~p records.", [Name, Count])
-						end,
+						{ok, InsertCount, _, ErrorCount} = ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, fs),
+						ems_logger:info("~s sync ~p inserts(s), ~p error(s).", [Name, InsertCount, ErrorCount]),
 						ok;
 					Error ->
 						ems_logger:error("~s could not clear table before load data.", [Name]),
@@ -250,13 +246,9 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 				?DEBUG("~s did not load any record.", [Name]),
 				ok;
 			{ok, Records} ->
-				ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update),
-				Count = length(Records),
+				{ok, InsertCount, UpdateCount, ErrorCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, fs),
 				LastUpdateStr = ems_util:timestamp_str(LastUpdate),
-				case Count of
-					1 -> ems_logger:info("~s update 1 record since ~s.", [Name, LastUpdateStr]);
-					_ -> ems_logger:info("~s update ~p records since ~s.", [Name, Count, LastUpdateStr])
-				end,
+				ems_logger:info("~s sync ~p inserts(s), ~p updates(s), ~p error(s) since ~s.", [Name, InsertCount, UpdateCount, ErrorCount, LastUpdateStr]),
 				ok;
 			{error, Reason} = Error -> 
 				ems_logger:error("~s update data error: ~p.", [Name, Reason]),
@@ -270,22 +262,22 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 
 -spec do_is_empty(#state{}) -> {ok, boolean()}.
 do_is_empty(#state{middleware = Middleware}) ->
-	apply(Middleware, is_empty, []).
+	apply(Middleware, is_empty, [fs]).
 
 
 -spec do_size_table(#state{}) -> {ok, non_neg_integer()}.
 do_size_table(#state{middleware = Middleware}) ->
-	apply(Middleware, size_table, []).
+	apply(Middleware, size_table, [fs]).
 
 
 -spec do_clear_table(#state{}) -> ok | {error, efail_clear_ets_table}.
 do_clear_table(#state{middleware = Middleware}) ->
-	apply(Middleware, clear_table, []).
+	apply(Middleware, clear_table, [fs]).
 
 
 -spec do_reset_sequence(#state{}) -> ok.
 do_reset_sequence(#state{middleware = Middleware}) ->
-	apply(Middleware, reset_sequence, []).
+	apply(Middleware, reset_sequence, [fs]).
 	
 -spec do_get_filename(atom()) -> string() | list(tuple()).
 do_get_filename(Middleware) -> apply(Middleware, get_filename, []).

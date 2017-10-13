@@ -187,7 +187,7 @@
 
 -record(service, {  id :: non_neg_integer(), 					%% Id do serviço
 					codigo :: non_neg_integer(),				%% Id do serviço banco externo
-					rowid,				  						%% Identificador interno do contrato (utilizado para localizar o contrato)
+					rowid :: non_neg_integer(),					%% Identificador interno do contrato (utilizado para localizar o contrato)
 					name :: binary(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço
 					type = <<"GET">> :: binary(),				%% Verbo HTTP do contrato (GET, POST, PUT, DELETE e OPTIONS) ou KERNEL para módulos do barramento
@@ -244,8 +244,10 @@
 					oauth2_with_check_constraint = false :: boolean(),
 					oauth2_token_encrypt = false :: boolean(),
 					properties :: map(),						%% Outros parâmetros
-				    ctrl_insert,
-					ctrl_update 
+				    ctrl_insert,								%% Data que o serviço foi inserido no banco mnesia
+					ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
+					ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+					start_timeout :: non_neg_integer()			%% Define um timeout inicial para o processo
 				}).
 
 
