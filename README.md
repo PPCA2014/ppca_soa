@@ -153,12 +153,16 @@ Obs.: The priv/catalog/catalog.json file is called the service master catalog an
  
 execute(Request) -> 
 	{ok, Request#request{code = 200, 
-						 response_data = <<"{\"message\": \"Hello World!!!\"}">>}
+		response_data = <<"{\"message\": \"Hello World!!!\"}">>}
 	}.
 	
 ```
 
+During the execution of a service by a client, the bus finds the required service contract and executes the corresponding service code. The Request object is passed to the service code and after it is finished, the result is sent to the client according to the protocol used (HTTP, LDAP, etc).
+
 ###### 4) Compile the project and restart the bus
+
+If the service is written in Erlang, you must compile the bus project with the build.sh utility. Later to run ErlangMS in the foreground, use the start.sh utility.
 
 ```console
 $ ./build.sh
@@ -192,27 +196,9 @@ $ curl http://localhost:2301/samples/hello_world
 ```
 
 
+###### 2) Now, code the service in Java version
 
-## Implementing a Hello World Service in Java EE
-=====
-
-##1) First, you must specify the service contract
-```console
-{
-	"name" : "/samples/hello_world",
-	"comment": "Hello World in Java",
-	"owner": "samples",
-	"version": "1",
-	"service" : "br.erlangms.samples.service.HelloWorldFacade:helloWorld",
-	"url": "/samples/hello_world",
-	"type": "GET",
-	"lang" : "java"
-}
-```
-
-*This contract is saved in the catalog directory of the bus (localized in the folder priv/conf/catalog)*
-
-###### 2) Service implementation
+The coded version of the Java service has a design similar to the Erlang version. The service code will receive a Request object and must return the result to the bus. The developer does not have to worry about data serialization since everything is done automatically through the ems_java package provided in the ErlangMS site in github.
 
 ```java
 package br.erlangms.samples.service;
@@ -233,120 +219,27 @@ public class HelloWorldFacade extends EmsServiceFacade {
 }
 
 ```
-
-### Details of the architecture
-
-* The architecture provides that the services are implemented according to the design *Domain Driven Design (DDD)* but for simplicity only the facade of the service is displayed here;
-
-* The publication of services in a node depends on the programming language. Java services can be published in a *JBoss or Wildfly* container;
-
-* The services can communicate with each other with any other service on the same node or another node within the cluster transparently;
-
-* When a consumer invokes a service on the bus through a REST request is made the order for the code of the appropriate service at any node in the cluster;
-
-* If more than one node with the same published service, the request is sent to only one node following a round-robin strategy.
+Running a service in Java is a little more complex due to the need to publish the service code in a Java EE container. For example, in UnB, web services in Java are published in JBoss containers. Bus communication with Java containers is performed automatically by the ems_java package but the necessary configuration will not be discussed here.
 
 
 
 ###### 3) Consuming the service
 
-*To execute the specified service can make an HTTP/REST request to the service through your url.*
-
 Exemplifying with the curl utility
 
 ```
-curl -X GET localhost:2301/samples/hello_world
+curl -X GET localhost:2301/samples/hello_world_java
 {"message": "Hello World!!!"}
 ```
 
-Log data bus
 
-```console
-REQUEST ROWID <<"GET#/samples/hello_world">>.
-CAST helloworld_facade:execute em puebla {RID: 1457890196200613870, URI: /samples/hello_world}.
-GET /samples/hello_world HTTP/1.1 {
-        RID: 1457890196200613870
-        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8:
-        User-Agent: Mozilla/5.0 (X11; Linux x86_64) Chrome/49.0.2623.87 Safari/537.36
-        Content-Type: application/json
-        Payload: 
-        Service: br.erlangms.samples.service.HelloWorldFacade:helloWorld
-        Query: []
-        Authorization: 
-        Status: 200 <<ok>> (2ms)
-        Send: ok
-}
-```
-
-Communication between services in the cluster
-=====
-
-Remember that *consumers* invoke services through REST calls. Moreover, within the cluster, the services(who are also consumers) can communicate with each other asynchronously instead of making REST calls. 
-
-The following example shows two services in two modules: unb_questionario and unb_sae. The second service invokes the first service by calling the *GetStream()* method.
-
-
-#### Class *PerguntaQuestionarioService* of the module *unb_questionario*
-
-```java
-@Stateless
-public class PerguntaQuestionarioService {
-	
-	public Pergunta findById(Integer id) {
-		return QuestionarioInfra.getInstance()
-			.getPerguntaRepository()
-			.findById(id);
-	}
-
-	public Pergunta update(Pergunta pergunta){
-		pergunta.validar();
-		return QuestionarioInfra.getInstance()
-			.getPerguntaRepository()
-			.update(pergunta);
-	}
-
-	public Pergunta insert(Pergunta pergunta) {
-		pergunta.validar();
-		return QuestionarioInfra.getInstance()
-			.getPerguntaRepository()
-			.insert(pergunta);
-	}
-	
-	...
-```
-
-
-#### Class *service proxy* of the module *unb_sae* for access *PerguntaQuestionarioService*
-
-```java
-@Stateless
-public class PerguntaQuestionarioProxy extends EmsServiceProxy {
-
-	public PerguntaVo findById(Integer id){
-		return getStream().from("/questionario/pergunta/:id")
-				.setParameter(id)
-				.request()
-				.getObject(PerguntaVo.class);
-	}
-	
-	...
-}
-```
-
-*Facade classes omitted in this code*
-
-
-Compiling the project:
-=====
-
-Check the wiki below to see how to download the project, compile and configure: <https://github.com/erlangMS/msbus/wiki/Instalar-o-EBS-ErlangMS-msbus>
 
 
 Project dependencies for the bus
 =====
 
-* Erlang R18 - <http://www.erlang.org/download.html>
-* jsx - encode/decore JSON <https://github.com/talentdeficit/jsx>
+* Erlang R19 - <http://www.erlang.org/download.html>
+
 
 
 Documentation of functional programming
