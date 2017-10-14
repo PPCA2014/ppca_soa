@@ -13,38 +13,44 @@
 
 -export([lookup/1, 
 		 lookup/2,
-		 find_fs/2,  
+		 find/2,  
 		 list_kernel_catalog/0, 
 		 list_re_catalog/0]).
 
--spec find_fs(catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs | catalog_kernel_fs, non_neg_integer()) -> {ok, #service{}} | {error, atom()}.
-find_fs(Table, Rowid) ->
+-spec find(catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs | catalog_kernel_fs |
+		   catalog_get_db | catalog_post_db | catalog_put_db | catalog_delete_db | catalog_options_db | catalog_kernel_db,
+		   non_neg_integer()) -> {ok, #service{}} | {error, atom()}.
+find(Table, Rowid) ->
 	case ems_db:find_first(Table, [{rowid, "==", Rowid}]) of
 		{error, Reason} -> {error, Reason};
 		Record -> {ok, setelement(1, Record, service)}
 	end.
 
+-spec lookup(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
+lookup(Request) ->	
+	case lookup_db(Request) of
+		{error, enoent} -> lookup_fs(Request);
+		Result -> Result
+	end.
 
-lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) ->	
-	case Type of
-		"GET" -> EtsLookup = ets_get;
-		"POST" -> EtsLookup = ets_post;
-		"PUT" -> EtsLookup = ets_put;
-		"DELETE" -> EtsLookup = ets_delete;
-		"OPTIONS" -> EtsLookup = ets_options;
-		"HEAD" -> EtsLookup = ets_get;
-		"INFO" -> EtsLookup = ets_get
-	end,
-	case ets:lookup(EtsLookup, Rowid) of
-		[] -> % is regular expression??
+-spec lookup_db(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
+lookup_db(_Request) -> {error, enoent}.
+
+-spec lookup_fs(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
+lookup_fs(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) ->	
+	Table = ems_catalog:get_table(Type, fs),
+	case find(Table, Rowid) of
+		{error, enoent} -> 
+			% check is regular expression??
 			case lookup_re(Request, list_re_catalog()) of
 				{error, enoent} = Error -> Error;
 				{Service, ParamsMapRE} -> 
-					Querystring = processa_querystring(Service, Request),
+					Querystring = ems_util:parse_request_querystring(Service, Request),
 					{Service, ParamsMapRE, Querystring}
 			end;
-		[{_Rowid, Service}] -> 
-			Querystring = processa_querystring(Service, Request),
+		{ok, Service} -> 
+			io:format("is ~p\n", [Service]),
+			Querystring = ems_util:parse_request_querystring(Service, Request),
 			{Service, ParamsMap, Querystring}
 	end.
 
@@ -84,43 +90,6 @@ list_re_catalog() ->
 %% Funções internas
 %%====================================================================
 
-processa_querystring(Service, Request) ->
-	%% Querystrings do módulo ems_static_file_service e ems_options_service não são processados.
-	QuerystringUser = Request#request.querystring_map,
-	case Service#service.module of
-		ems_static_file_service -> QuerystringUser;
-		ems_options_service -> QuerystringUser;
-		_ ->
-			QuerystringServico = Service#service.querystring,
-			case QuerystringUser =:= #{} of
-				true -> 
-					case QuerystringServico =:= [] of
-						true -> QuerystringUser;
-						false -> valida_querystring(QuerystringServico, QuerystringUser, [])
-					end;
-				false -> 
-					case QuerystringServico =:= [] of
-						true -> #{};
-						false -> valida_querystring(QuerystringServico, QuerystringUser, [])
-					end
-			end
-	end.
-
-valida_querystring([], _QuerystringUser, QuerystringList) -> maps:from_list(QuerystringList);
-valida_querystring([H|T], QuerystringUser, QuerystringList) ->
-	%% Verifica se encontra a query na querystring do usuário
-	NomeQuery = maps:get(<<"name">>, H),
-	case maps:find(NomeQuery, QuerystringUser) of
-		{ok, Value} -> 
-			valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
-		error ->
-			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
-			case maps:get(<<"default">>, H, enoent) of
-				enoent -> [];
-				Value -> valida_querystring(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
-			end
-	end.
-
 lookup_re(_, []) -> {error, enoent};
 lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 	try
@@ -138,5 +107,6 @@ lookup_re(Request = #request{type = Type, url = Url}, [H|T]) ->
 	catch 
 		_Exception:_Reason -> {error, enoent}
 	end.
+
 
 

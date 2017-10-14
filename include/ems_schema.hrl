@@ -198,7 +198,7 @@
 					module :: atom(),  							%% Atom do processo do módulo de serviço que vai atender a requisição
 					function_name :: string(),					%% Nome da mensagem ou função que vai ser invocada no processo que vai atender a requisição
 					function :: atom(),  						%% Atom da mensagem ou função que vai ser invocada no processo que vai atender a requisição
-					id_re_compiled,   							%% Identificador da expressão regular que vai verificar se a URL bate com a URL da requisição
+					id_re_compiled = undefined, 				%% Identificador da expressão regular que vai verificar se a URL bate com a URL da requisição
 					public = true :: boolean(), 				%% Indica se o contrato estará listado no Portal API Management
 					comment :: binary(), 						%% Comentário sobre o que o contrato oferece em termos de serviço
 					version = "1.0.0" :: binary(), 				%% Versão do contrato do serviço
@@ -234,9 +234,9 @@
 					tcp_listen_address_t,
 					tcp_allowed_address,
 					tcp_allowed_address_t,
-					tcp_max_connections,
-					tcp_port,
-					tcp_is_ssl = false,
+					tcp_max_connections non_neg_integer(),
+					tcp_port :: non_neg_integer(),
+					tcp_is_ssl = false :: boolean(),
 					tcp_ssl_cacertfile,
 					tcp_ssl_certfile,
 					tcp_ssl_keyfile,

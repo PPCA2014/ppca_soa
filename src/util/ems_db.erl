@@ -133,32 +133,42 @@ create_database(Nodes) ->
 										  {index, [#service.rowid]},
 										  {attributes, record_info(fields, service)}]),
 
-    mnesia:create_table(catalog_get, [{type, set},
-									  {disc_copies, Nodes},
-									  {index, [#service.rowid]},
-									  {attributes, record_info(fields, service)}]),
-
-    mnesia:create_table(catalog_post, [{type, set},
-									  {disc_copies, Nodes},
-									  {index, [#service.rowid]},
-									  {attributes, record_info(fields, service)}]),
-
-    mnesia:create_table(catalog_put, [{type, set},
-									  {disc_copies, Nodes},
-									  {index, [#service.rowid]},
-									  {attributes, record_info(fields, service)}]),
-
-    mnesia:create_table(catalog_delete, [{type, set},
-									  {disc_copies, Nodes},
-									  {index, [#service.rowid]},
-									  {attributes, record_info(fields, service)}]),
-
-    mnesia:create_table(catalog_options, [{type, set},
+    mnesia:create_table(catalog_re_fs, [{type, set},
 										  {disc_copies, Nodes},
 										  {index, [#service.rowid]},
 										  {attributes, record_info(fields, service)}]),
 
-    mnesia:create_table(catalog_kernel, [{type, set},
+    mnesia:create_table(catalog_get_db, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_post_db, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_put_db, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_delete_db, [{type, set},
+										  {disc_copies, Nodes},
+										  {index, [#service.rowid]},
+										  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_options_db, [{type, set},
+											  {disc_copies, Nodes},
+											  {index, [#service.rowid]},
+											  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_kernel_db, [{type, set},
+											  {disc_copies, Nodes},
+											  {index, [#service.rowid]},
+											  {attributes, record_info(fields, service)}]),
+
+    mnesia:create_table(catalog_re_db, [{type, set},
 										  {disc_copies, Nodes},
 										  {index, [#service.rowid]},
 										  {attributes, record_info(fields, service)}]),

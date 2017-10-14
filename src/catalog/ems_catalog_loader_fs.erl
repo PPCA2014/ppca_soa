@@ -133,36 +133,6 @@ reset_sequence(fs) ->
 
 %% internal functions
 
--spec ets_table(binary(), fs | db) -> catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs.
-ets_table(<<"GET">>, db) -> catalog_get_db;
-ets_table(<<"POST">>, db) -> catalog_post_db;
-ets_table(<<"PUT">>, db) -> catalog_put_db;
-ets_table(<<"DELETE">>, db) -> catalog_delete_db;
-ets_table(<<"OPTIONS">>, db) -> catalog_options_db;
-ets_table(<<"KERNEL">>, db) -> catalog_kernel_db;
-ets_table(<<"GET">>, fs) -> catalog_get_fs;
-ets_table(<<"POST">>, fs) -> catalog_post_fs;
-ets_table(<<"PUT">>, fs) -> catalog_put_fs;
-ets_table(<<"DELETE">>, fs) -> catalog_delete_fs;
-ets_table(<<"OPTIONS">>, fs) -> catalog_options_fs;
-ets_table(<<"KERNEL">>, fs) -> catalog_kernel_fs.
-
-
--spec ets_sequence(binary(), fs | db) -> non_neg_integer.
-ets_sequence(<<"GET">>, db) -> ems_db:sequence(catalog_get_db);
-ets_sequence(<<"POST">>, db) -> ems_db:sequence(catalog_post_db);
-ets_sequence(<<"PUT">>, db) -> ems_db:sequence(catalog_put_db);
-ets_sequence(<<"DELETE">>, db) -> ems_db:sequence(catalog_delete_db);
-ets_sequence(<<"OPTIONS">>, db) -> ems_db:sequence(catalog_options_db);
-ets_sequence(<<"KERNEL">>, db) -> ems_db:sequence(catalog_kernel_db);
-ets_sequence(<<"GET">>, fs) -> ems_db:sequence(catalog_get_fs);
-ets_sequence(<<"POST">>, fs) -> ems_db:sequence(catalog_post_fs);
-ets_sequence(<<"PUT">>, fs) -> ems_db:sequence(catalog_put_fs);
-ets_sequence(<<"DELETE">>, fs) -> ems_db:sequence(catalog_delete_fs);
-ets_sequence(<<"OPTIONS">>, fs) -> ems_db:sequence(catalog_options_fs);
-ets_sequence(<<"KERNEL">>, fs) -> ems_db:sequence(catalog_kernel_fs).
-
-
 -spec get_filename() -> list(tuple()).
 get_filename() -> 
 	Conf = ems_config:getConfig(),
@@ -171,19 +141,19 @@ get_filename() ->
 	
 -spec prepare_insert_or_update(map() | tuple(), tuple(), #config{}, atom()) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
 prepare_insert_or_update(Tuple, CtrlDate, Conf, SourceType) when is_tuple(Tuple) ->
-	Map = to_map(Tuple),
+	Map = ems_catalog:tuple_to_map(Tuple),
 	prepare_insert_or_update(Map, CtrlDate, Conf, SourceType);
 prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 	try
 		case ems_catalog:new_service_from_map(Map, Conf) of
 			{ok, NewCatalog = #service{type = ServiceType, rowid = Rowid, ctrl_modified = FileCtrlModified}} -> 
-				EtsTable = ets_table(ServiceType, SourceType),
-				case ems_catalog_lookup:find_fs(EtsTable, Rowid) of
+				Table = ems_catalog:get_table(NewCatalog, SourceType),
+				case ems_catalog_lookup:find(Table, Rowid) of
 					{error, enoent} -> 
-						Id = ets_sequence(ServiceType, SourceType),
+						Id = ems_catalog:get_sequence(ServiceType, SourceType),
 						Catalog = NewCatalog#service{id = Id,
 												     ctrl_insert = CtrlDate},
-						{ok, Catalog, EtsTable, insert};
+						{ok, Catalog, Table, insert};
 					{ok, CurrentCatalog = #service{ctrl_modified = CatCtrlModified}} ->
 						case FileCtrlModified > CatCtrlModified of
 							true ->
@@ -246,7 +216,7 @@ prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 												ctrl_update = CtrlDate,
 												ctrl_modified = FileCtrlModified
 											},
-								{ok, Catalog, EtsTable, update};
+								{ok, Catalog, Table, update};
 							false -> {ok, skip}
 						end
 				end;
@@ -257,41 +227,3 @@ prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 		_Exception:Reason -> {error, Reason}
 	end.
 
-to_map(RecordTuple) ->
-		ems_util:tuple_to_maps_with_keys(RecordTuple, [<<"codigo">>,
-														<<"name">>,
-														<<"url">>,
-														<<"use_re">>,
-														<<"type">>,
-														<<"service">>,
-														<<"comment">>,
-														<<"version">>,
-														<<"owner">>,
-														<<"result_cache">>,
-														<<"authorization">>,
-														<<"lang">>,
-														<<"timeout">>,
-														<<"enable">>,
-														<<"content_type">>,
-														<<"async">>,
-														<<"host">>,
-														<<"node">>,
-														<<"debug">>,
-														<<"schema_in">>,
-														<<"schema_out">>,
-														<<"middleware">>,
-														<<"cache_control">>,
-														<<"expires">>,
-														<<"public">>,
-														<<"path">>,
-														<<"redirect_url">>,
-														<<"tcp_listen_address">>,
-														<<"tcp_allowed_address">>,
-														<<"tcp_max_connections">>,
-														<<"tcp_port">>,
-														<<"tcp_is_ssl">>,
-														<<"tcp_ssl_cacertfile">>,
-														<<"tcp_ssl_certfile">>,
-														<<"tcp_ssl_keyfile">>,
-														<<"oauth2_with_check_constraint">>]).
-	

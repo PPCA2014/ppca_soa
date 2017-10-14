@@ -101,6 +101,7 @@
 		 parse_allowed_address_t/1,
 		 parse_allowed_address/1,
 		 parse_tcp_port/1,
+		 parse_request_querystring/2,
 		 match_ip_address/2,
  		 allow_ip_address/2,
 		 mask_ipaddress_to_tuple/1,
@@ -1999,3 +2000,41 @@ msg_email_invalido(_NomeCampo, Value) ->
 
 %% @doc Retorna somente mensagens não vazias
 mensagens(L) -> lists:filter(fun(X) -> X /= [] end, L).
+
+-spec parse_request_querystring(#service{}, #request{}) -> map().
+parse_request_querystring(Service, Request) ->
+	%% Querystrings do módulo ems_static_file_service e ems_options_service não são processados.
+	QuerystringUser = Request#request.querystring_map,
+	case Service#service.module of
+		ems_static_file_service -> QuerystringUser;
+		ems_options_service -> QuerystringUser;
+		_ ->
+			QuerystringServico = Service#service.querystring,
+			case QuerystringUser =:= #{} of
+				true -> 
+					case QuerystringServico =:= [] of
+						true -> QuerystringUser;
+						false -> parse_request_querystring_defaults(QuerystringServico, QuerystringUser, [])
+					end;
+				false -> 
+					case QuerystringServico =:= [] of
+						true -> #{};
+						false -> parse_request_querystring_defaults(QuerystringServico, QuerystringUser, [])
+					end
+			end
+	end.
+
+parse_request_querystring_defaults([], _QuerystringUser, QuerystringList) -> maps:from_list(QuerystringList);
+parse_request_querystring_defaults([H|T], QuerystringUser, QuerystringList) ->
+	%% Verifica se encontra a query na querystring do usuário
+	NomeQuery = maps:get(<<"name">>, H),
+	case maps:find(NomeQuery, QuerystringUser) of
+		{ok, Value} -> 
+			parse_request_querystring_defaults(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList]);
+		error ->
+			%% se o usuário não informou a querystring, verifica se tem valor default na definição do serviço
+			case maps:get(<<"default">>, H, enoent) of
+				enoent -> [];
+				Value -> parse_request_querystring_defaults(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
+			end
+	end.

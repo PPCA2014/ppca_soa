@@ -14,7 +14,11 @@
 -export([new_service/56, 
 		 new_service_re/56,
 		 new_service_from_map/2, new_service_from_map/3,
-		 get_metadata_json/1]).
+		 get_metadata_json/1,
+		 get_table/2,
+		 get_sequence/2,
+		 tuple_to_map/1]).
+		 
 
 -spec get_metadata_json(#service{}) -> binary().
 get_metadata_json(#service{id = Id,
@@ -401,25 +405,29 @@ new_service_from_map(Map,
 								StartTimeout = maps:get(<<"start_timeout">>, Map, undefined),
 								case UseRE of
 									true -> 
-										Service = new_service_re(Rowid, Id, Name, Url2, 
-																   ServiceImpl,
-																   ModuleName, 
-																   ModuleNameCanonical,
-																   FunctionName, Type, Enable, Comment, 
-																   Version, Owner, Async, 
-																   Querystring, QtdQuerystringRequired,
-																   Mapost, MapostName, ResultCache,
-																   Authorization, Node, Lang,
-																   Datasource, Debug, SchemaIn, SchemaOut, 
-																   PoolSize, PoolMax, Map, Page, 
-																   PageModule, Timeout, 
-																   Middleware, CacheControl, ExpiresMinute, 
-																   Public, ContentType, Path, RedirectUrl,
-																   ListenAddress, ListenAddress_t, AllowedAddress, 
-																   AllowedAddress_t, Port, MaxConnections,
-																   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-																   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																   CatalogPath, CatalogFile, CtrlModified, StartTimeout);
+										case Type of
+											<<"GET">> -> 
+												Service = new_service_re(Rowid, Id, Name, Url2, 
+																		   ServiceImpl,
+																		   ModuleName, 
+																		   ModuleNameCanonical,
+																		   FunctionName, Type, Enable, Comment, 
+																		   Version, Owner, Async, 
+																		   Querystring, QtdQuerystringRequired,
+																		   Mapost, MapostName, ResultCache,
+																		   Authorization, Node, Lang,
+																		   Datasource, Debug, SchemaIn, SchemaOut, 
+																		   PoolSize, PoolMax, Map, Page, 
+																		   PageModule, Timeout, 
+																		   Middleware, CacheControl, ExpiresMinute, 
+																		   Public, ContentType, Path, RedirectUrl,
+																		   ListenAddress, ListenAddress_t, AllowedAddress, 
+																		   AllowedAddress_t, Port, MaxConnections,
+																		   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+																		   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+																		   CatalogPath, CatalogFile, CtrlModified, StartTimeout);
+											_ -> erlang:error(einvalid_re_service)
+										end;
 									false -> 
 										Service = new_service(Rowid, Id, Name, Url2, 
 																ServiceImpl,
@@ -455,3 +463,73 @@ new_service_from_map(Map,
 			{error, Reason}
 	end.
 
+-spec get_table(binary(), fs | db) -> catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs.
+get_table(#service{type = <<"GET">>, use_re = false}, db) -> catalog_get_db;
+get_table(#service{type = <<"GET">>, use_re = true}, db) -> catalog_re_db;
+get_table(#service{type = <<"POST">>}, db) -> catalog_post_db;
+get_table(#service{type = <<"PUT">>}, db) -> catalog_put_db;
+get_table(#service{type = <<"DELETE">>}, db) -> catalog_delete_db;
+get_table(#service{type = <<"OPTIONS">>}, db) -> catalog_options_db;
+get_table(#service{type = <<"KERNEL">>}, db) -> catalog_kernel_db;
+get_table(#service{type = <<"GET">>, use_re = false}, fs) -> catalog_get_fs;
+get_table(#service{type = <<"GET">>, use_re = true}, fs) -> catalog_re_fs;
+get_table(#service{type = <<"POST">>}, fs) -> catalog_post_fs;
+get_table(#service{type = <<"PUT">>}, fs) -> catalog_put_fs;
+get_table(#service{type = <<"DELETE">>}, fs) -> catalog_delete_fs;
+get_table(#service{type = <<"OPTIONS">>}, fs) -> catalog_options_fs;
+get_table(#service{type = <<"KERNEL">>}, fs) -> catalog_kernel_fs;
+
+
+-spec get_sequence(binary(), fs | db) -> non_neg_integer.
+get_sequence(<<"GET">>, db) -> ems_db:sequence(catalog_get_db);
+get_sequence(<<"POST">>, db) -> ems_db:sequence(catalog_post_db);
+get_sequence(<<"PUT">>, db) -> ems_db:sequence(catalog_put_db);
+get_sequence(<<"DELETE">>, db) -> ems_db:sequence(catalog_delete_db);
+get_sequence(<<"OPTIONS">>, db) -> ems_db:sequence(catalog_options_db);
+get_sequence(<<"KERNEL">>, db) -> ems_db:sequence(catalog_kernel_db);
+get_sequence(<<"GET">>, fs) -> ems_db:sequence(catalog_get_fs);
+get_sequence(<<"POST">>, fs) -> ems_db:sequence(catalog_post_fs);
+get_sequence(<<"PUT">>, fs) -> ems_db:sequence(catalog_put_fs);
+get_sequence(<<"DELETE">>, fs) -> ems_db:sequence(catalog_delete_fs);
+get_sequence(<<"OPTIONS">>, fs) -> ems_db:sequence(catalog_options_fs);
+get_sequence(<<"KERNEL">>, fs) -> ems_db:sequence(catalog_kernel_fs).
+
+-spec tuple_to_map(tuple()) -> map().
+tuple_to_map(RecordTuple) ->
+		ems_util:tuple_to_maps_with_keys(RecordTuple, [<<"codigo">>,
+														<<"name">>,
+														<<"url">>,
+														<<"use_re">>,
+														<<"type">>,
+														<<"service">>,
+														<<"comment">>,
+														<<"version">>,
+														<<"owner">>,
+														<<"result_cache">>,
+														<<"authorization">>,
+														<<"lang">>,
+														<<"timeout">>,
+														<<"enable">>,
+														<<"content_type">>,
+														<<"async">>,
+														<<"host">>,
+														<<"node">>,
+														<<"debug">>,
+														<<"schema_in">>,
+														<<"schema_out">>,
+														<<"middleware">>,
+														<<"cache_control">>,
+														<<"expires">>,
+														<<"public">>,
+														<<"path">>,
+														<<"redirect_url">>,
+														<<"tcp_listen_address">>,
+														<<"tcp_allowed_address">>,
+														<<"tcp_max_connections">>,
+														<<"tcp_port">>,
+														<<"tcp_is_ssl">>,
+														<<"tcp_ssl_cacertfile">>,
+														<<"tcp_ssl_certfile">>,
+														<<"tcp_ssl_keyfile">>,
+														<<"oauth2_with_check_constraint">>]).
+	
