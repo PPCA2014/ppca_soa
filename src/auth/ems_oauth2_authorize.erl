@@ -10,8 +10,8 @@
 
 execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, host = Host}) -> 
 	GrantType = case Type of
-		"GET" ->  ems_util:get_querystring(<<"response_type">>, <<>>, Request);
-		"POST" -> ems_util:get_querystring(<<"grant_type">>, <<>>, Request)
+		<<"GET">> ->  ems_util:get_querystring(<<"response_type">>, <<>>, Request);
+		<<"POST">> -> ems_util:get_querystring(<<"grant_type">>, <<>>, Request)
 	end,
     Result = case GrantType of
 			<<"password">> -> 

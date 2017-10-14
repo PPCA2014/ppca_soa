@@ -16,7 +16,7 @@
 authenticate(Service = #service{authorization = AuthorizationMode}, 
 			 Request = #request{type = Method}) ->
 	case Method of
-		"OPTIONS" -> {ok, public, public, <<>>, <<>>};
+		<<"OPTIONS">> -> {ok, public, public, <<>>, <<>>};
 		"HEAD" -> {ok, public, public, <<>>, <<>>};
 		_ -> 
 			% mesmo sendo público, faz o parser dos cabeçalhos e tenta autenticação com as credenciais informadas

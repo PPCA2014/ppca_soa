@@ -146,11 +146,11 @@ prepare_insert_or_update(Tuple, CtrlDate, Conf, SourceType) when is_tuple(Tuple)
 prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 	try
 		case ems_catalog:new_service_from_map(Map, Conf) of
-			{ok, NewCatalog = #service{type = ServiceType, rowid = Rowid, ctrl_modified = FileCtrlModified}} -> 
-				Table = ems_catalog:get_table(NewCatalog, SourceType),
+			{ok, NewCatalog = #service{type = ServiceType, use_re = UseRE, rowid = Rowid, ctrl_modified = FileCtrlModified}} -> 
+				Table = ems_catalog:get_table(ServiceType, UseRE, SourceType),
 				case ems_catalog_lookup:find(Table, Rowid) of
 					{error, enoent} -> 
-						Id = ems_catalog:get_sequence(ServiceType, SourceType),
+						Id = ems_db:sequence(Table),
 						Catalog = NewCatalog#service{id = Id,
 												     ctrl_insert = CtrlDate},
 						{ok, Catalog, Table, insert};

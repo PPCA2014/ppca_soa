@@ -15,8 +15,7 @@
 		 new_service_re/56,
 		 new_service_from_map/2, new_service_from_map/3,
 		 get_metadata_json/1,
-		 get_table/2,
-		 get_sequence/2,
+		 get_table/3,
 		 tuple_to_map/1]).
 		 
 
@@ -97,12 +96,13 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    module = list_to_atom(ModuleName),
 			    function_name = FunctionName,
 			    function = list_to_atom(FunctionName),
+			    use_re = true,
 			    id_re_compiled = Id_re_compiled,
 			    public = Public,
 			    comment = Comment,
 			    version = Version,
 			    owner = Owner,
-				async = ems_util:parse_bool(Async),
+				async = Async,
 			    querystring = Querystring,
 			    qtd_querystring_req = QtdQuerystringRequired,
 			    host = Host,
@@ -425,8 +425,10 @@ new_service_from_map(Map,
 																		   AllowedAddress_t, Port, MaxConnections,
 																		   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 																		   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																		   CatalogPath, CatalogFile, CtrlModified, StartTimeout);
-											_ -> erlang:error(einvalid_re_service)
+																		   CatalogPath, CatalogFile, CtrlModified, StartTimeout),
+												{ok, Service};
+											_ -> 
+												erlang:error(einvalid_re_service)
 										end;
 									false -> 
 										Service = new_service(Rowid, Id, Name, Url2, 
@@ -448,10 +450,11 @@ new_service_from_map(Map,
 																AllowedAddress_t, Port, MaxConnections,
 																IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 																OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																CatalogPath, CatalogFile, CtrlModified, StartTimeout)
-								end,
-								{ok, Service};
-							_Error -> erlang:error(einvalid_path_service)
+																CatalogPath, CatalogFile, CtrlModified, StartTimeout),
+										{ok, Service}
+								end;
+							_Error -> 
+								erlang:error(einvalid_path_service)
 						end
 				end;
 			false -> 
@@ -463,36 +466,22 @@ new_service_from_map(Map,
 			{error, Reason}
 	end.
 
--spec get_table(binary(), fs | db) -> catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs.
-get_table(#service{type = <<"GET">>, use_re = false}, db) -> catalog_get_db;
-get_table(#service{type = <<"GET">>, use_re = true}, db) -> catalog_re_db;
-get_table(#service{type = <<"POST">>}, db) -> catalog_post_db;
-get_table(#service{type = <<"PUT">>}, db) -> catalog_put_db;
-get_table(#service{type = <<"DELETE">>}, db) -> catalog_delete_db;
-get_table(#service{type = <<"OPTIONS">>}, db) -> catalog_options_db;
-get_table(#service{type = <<"KERNEL">>}, db) -> catalog_kernel_db;
-get_table(#service{type = <<"GET">>, use_re = false}, fs) -> catalog_get_fs;
-get_table(#service{type = <<"GET">>, use_re = true}, fs) -> catalog_re_fs;
-get_table(#service{type = <<"POST">>}, fs) -> catalog_post_fs;
-get_table(#service{type = <<"PUT">>}, fs) -> catalog_put_fs;
-get_table(#service{type = <<"DELETE">>}, fs) -> catalog_delete_fs;
-get_table(#service{type = <<"OPTIONS">>}, fs) -> catalog_options_fs;
-get_table(#service{type = <<"KERNEL">>}, fs) -> catalog_kernel_fs;
-
-
--spec get_sequence(binary(), fs | db) -> non_neg_integer.
-get_sequence(<<"GET">>, db) -> ems_db:sequence(catalog_get_db);
-get_sequence(<<"POST">>, db) -> ems_db:sequence(catalog_post_db);
-get_sequence(<<"PUT">>, db) -> ems_db:sequence(catalog_put_db);
-get_sequence(<<"DELETE">>, db) -> ems_db:sequence(catalog_delete_db);
-get_sequence(<<"OPTIONS">>, db) -> ems_db:sequence(catalog_options_db);
-get_sequence(<<"KERNEL">>, db) -> ems_db:sequence(catalog_kernel_db);
-get_sequence(<<"GET">>, fs) -> ems_db:sequence(catalog_get_fs);
-get_sequence(<<"POST">>, fs) -> ems_db:sequence(catalog_post_fs);
-get_sequence(<<"PUT">>, fs) -> ems_db:sequence(catalog_put_fs);
-get_sequence(<<"DELETE">>, fs) -> ems_db:sequence(catalog_delete_fs);
-get_sequence(<<"OPTIONS">>, fs) -> ems_db:sequence(catalog_options_fs);
-get_sequence(<<"KERNEL">>, fs) -> ems_db:sequence(catalog_kernel_fs).
+-spec get_table(#service{}, boolean(), fs | db) -> catalog_get_db | catalog_post_db | catalog_put_db | catalog_delete_db | catalog_options_db |
+												   catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs.
+get_table(<<"GET">>, false, db) -> catalog_get_db;
+get_table(<<"GET">>, true, db) -> catalog_re_db;
+get_table(<<"POST">>, _, db) -> catalog_post_db;
+get_table(<<"PUT">>, _, db) -> catalog_put_db;
+get_table(<<"DELETE">>, _, db) -> catalog_delete_db;
+get_table(<<"OPTIONS">>, _, db) -> catalog_options_db;
+get_table(<<"KERNEL">>, _, db) -> catalog_kernel_db;
+get_table(<<"GET">>, false, fs) -> catalog_get_fs;
+get_table(<<"GET">>, true, fs) -> catalog_re_fs;
+get_table(<<"POST">>, _, fs) -> catalog_post_fs;
+get_table(<<"PUT">>, _, fs) -> catalog_put_fs;
+get_table(<<"DELETE">>, _, fs) -> catalog_delete_fs;
+get_table(<<"OPTIONS">>, _, fs) -> catalog_options_fs;
+get_table(<<"KERNEL">>, _, fs) -> catalog_kernel_fs.
 
 -spec tuple_to_map(tuple()) -> map().
 tuple_to_map(RecordTuple) ->

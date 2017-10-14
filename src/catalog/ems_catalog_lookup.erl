@@ -28,30 +28,42 @@ find(Table, Rowid) ->
 
 -spec lookup(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
 lookup(Request) ->	
-	case lookup_db(Request) of
-		{error, enoent} -> lookup_fs(Request);
+	case lookup(Request, false, db) of
+		{error, enoent} -> 
+			case lookup(Request, false, fs) of
+				{error, enoent} -> 
+					case lookup(Request, true, db) of
+						{error, enoent} -> lookup(Request, true, fs);
+						Result -> Result
+					end;
+				Result -> Result
+			end;			
 		Result -> Result
 	end.
 
--spec lookup_db(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
-lookup_db(_Request) -> {error, enoent}.
 
--spec lookup_fs(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
-lookup_fs(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}) ->	
-	Table = ems_catalog:get_table(Type, fs),
-	case find(Table, Rowid) of
-		{error, enoent} -> 
-			% check is regular expression??
-			case lookup_re(Request, list_re_catalog()) of
-				{error, enoent} = Error -> Error;
-				{Service, ParamsMapRE} -> 
+-spec lookup(#request{}, boolean(), atom()) -> {error, enoent} | {#service{}, map(), map()}.
+lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}, FindWithRE, SourceType) ->	
+	Table = ems_catalog:get_table(Type, FindWithRE, SourceType),
+	case FindWithRE of
+		false ->
+			case find(Table, Rowid) of
+				{ok, Service} -> 
 					Querystring = ems_util:parse_request_querystring(Service, Request),
-					{Service, ParamsMapRE, Querystring}
+					{Service, ParamsMap, Querystring};
+				_ -> {error, enoent}
 			end;
-		{ok, Service} -> 
-			io:format("is ~p\n", [Service]),
-			Querystring = ems_util:parse_request_querystring(Service, Request),
-			{Service, ParamsMap, Querystring}
+		true ->
+			case ems_db:all(Table) of
+				{ok, Records} ->
+					case lookup_re(Request, Records) of
+						{error, enoent} = Error -> Error;
+						{Service, ParamsMapRE} -> 
+							Querystring = ems_util:parse_request_querystring(Service, Request),
+							{Service, ParamsMapRE, Querystring}
+					end;
+				_ -> {error, enoent}
+			end
 	end.
 
 lookup(Method, Uri) ->

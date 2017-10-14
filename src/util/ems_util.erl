@@ -80,6 +80,7 @@
  		 is_range_valido/3,
 		 is_letter/1,
 		 is_letter_lower/1,
+ 		 is_service_type/1,
 		 posix_error_description/1,
 		 parse_if_modified_since/1,
 		 parse_basic_authorization_header/1,
@@ -115,8 +116,8 @@
 		 make_rowid/1,
 		 make_rowid/2,
 		 make_rowid_id/1,
- 		 remove_quoted_str/1,
 		 quote/1,
+ 		 remove_quoted_str/1,
 		 remove_ult_backslash_url/1,
 		 remove_ult_backslash_url/2,
 		 name_case/1,
@@ -145,7 +146,6 @@
 		 decode_http_header/2,
 		 decode_http_request/1,
 		 format_header_value/2,
-		 is_metodo_suportado/1,
 		 tuple_to_maps_with_keys/2
 		]).
 
@@ -1287,8 +1287,8 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
 		T1 = get_milliseconds(),
-		Method = binary_to_list(cowboy_req:method(CowboyReq)),
-		case is_metodo_suportado(Method) of
+		Type = cowboy_req:method(CowboyReq),
+		case is_service_type(Type) of
 			true ->
 				{Ip, _} = cowboy_req:peer(CowboyReq),
 				IpBin = list_to_binary(inet_parse:ntoa(Ip)),
@@ -1355,7 +1355,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 				Request = #request{
 					rid = RID,
 					rowid = Rowid,
-					type = Method,
+					type = Type,
 					uri = Uri,
 					url = Url2,
 					version = Version,
@@ -1555,20 +1555,14 @@ is_content_length_valido(_) -> true.
 
 
 %% @doc Retorna booleano se o método é suportado pelo servidor
--spec is_metodo_suportado(binary() | string()) -> boolean().
-is_metodo_suportado(<<"GET">>) -> true;
-is_metodo_suportado(<<"POST">>) -> true;
-is_metodo_suportado(<<"PUT">>) -> true;
-is_metodo_suportado(<<"DELETE">>) -> true;
-is_metodo_suportado(<<"OPTIONS">>) -> true;
-is_metodo_suportado(<<"HEAD">>) -> true;
-is_metodo_suportado("GET") -> true;
-is_metodo_suportado("POST") -> true;
-is_metodo_suportado("PUT") -> true;
-is_metodo_suportado("DELETE") -> true;
-is_metodo_suportado("OPTIONS") -> true;
-is_metodo_suportado("HEAD") -> true;
-is_metodo_suportado(_) -> false.
+-spec is_service_type(binary() | string()) -> boolean().
+is_service_type(<<"GET">>) -> true;
+is_service_type(<<"POST">>) -> true;
+is_service_type(<<"PUT">>) -> true;
+is_service_type(<<"DELETE">>) -> true;
+is_service_type(<<"OPTIONS">>) -> true;
+is_service_type(<<"HEAD">>) -> true;
+is_service_type(_) -> false.
 
 -spec is_url_valido(binary() | string()) -> boolean().
 is_url_valido(Url) when is_binary(Url) ->
@@ -1735,7 +1729,6 @@ parse_name_service(Name) ->
 		_ -> Name
 	end.
 	
-
 parse_name_querystring(Name) when is_list(Name) ->
 	parse_name_querystring(list_to_binary(Name));
 parse_name_querystring(Name) ->

@@ -35,8 +35,8 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 								    t1 = T1}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	RequestLookup = case Type of
-						"OPTIONS" -> Request#request{type = "GET"};
-						"HEAD" -> Request#request{type = "GET"};
+						<<"OPTIONS">> -> Request#request{type = <<"GET">>};
+						"HEAD" -> Request#request{type = <<"GET">>};
 						_ -> Request
 				  end,
 	case ems_catalog_lookup:lookup(RequestLookup) of
@@ -62,7 +62,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 																			  _ -> ContentTypeService
 																		end},
 							case Type of
-								"OPTIONS" -> 
+								<<"OPTIONS">> -> 
 										{ok, request, Request2#request{code = 200, 
 																	   content_type = ?CONTENT_TYPE_JSON,
 																	   response_data = ems_catalog:get_metadata_json(Service),
@@ -74,7 +74,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
-								"GET" ->
+								<<"GET">> ->
 									case ResultCache > 0 of
 										true ->
 											case check_result_cache(ReqHash, T1) of
@@ -101,7 +101,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 													   params_url = ParamsMap,
 													   querystring_map = QuerystringMap},
 							case Type of
-								"OPTIONS" -> 
+								<<"OPTIONS">> -> 
 										{ok, request, Request2#request{code = 200, 
 																	   content_type = ?CONTENT_TYPE_JSON,
 																	   response_data = ems_catalog:get_metadata_json(Service),
@@ -129,7 +129,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 			end;
 		{error, Reason} = Error2 -> 
 			if 
-				Type =:= "OPTIONS" orelse Type =:= "HEAD" ->
+				Type =:= <<"OPTIONS">> orelse Type =:= "HEAD" ->
 						{error, request, Request#request{code = 200, 
 													     reason = Reason, 
 													     response_header = #{<<"ems-node">> => ems_util:node_binary()},
@@ -317,7 +317,7 @@ dispatch_middleware_function(Request = #request{reason = ok,
 		end,
 		case Result of
 			{ok, Request2 = #request{response_header = ResponseHeader}} ->
-				case Type =:= "GET" of
+				case Type =:= <<"GET">> of
 					true -> 
 						case ResultCache > 0 of
 							true ->

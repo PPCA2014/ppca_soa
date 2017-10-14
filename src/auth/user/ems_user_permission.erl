@@ -42,10 +42,10 @@ has_grant_permission(#service{oauth2_with_check_constraint = true},
 							  grant_put = GrantPut, 
 							  grant_delete = GrantDelete}} ->
 			case Type of
-				"GET" -> GrantGet == true;
-				"POST" -> GrantPost == true;
-				"PUT" -> GrantPut == true;
-				"DELETE" -> GrantDelete == true
+				<<"GET">> -> GrantGet == true;
+				<<"POST">> -> GrantPost == true;
+				<<"PUT">> -> GrantPut == true;
+				<<"DELETE">> -> GrantDelete == true
 			end;
 		_ -> false
 	end.
