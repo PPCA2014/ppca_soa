@@ -139,6 +139,7 @@ Open your text editor, enter the following specification and save it to a file c
 
 ]
 ```
+Obs.: The priv/catalog/catalog.json file is called the service master catalog and is the first catalog read by the bus during its execution. In this file, there are only includes for other service catalog files.
 
 ###### 3) Now, code the service and save in src/samples
 
