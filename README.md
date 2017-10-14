@@ -1,10 +1,10 @@
-= ErlangMS
+# ErlangMS
 
 ErlangMS is a Enterprise Service Bus (ESB) developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas Agilar*. 
 
 The ESB consists of a server, called *ems-bus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
 
-== Main design features
+## Main design features
 
 * Back-end modular and based on the concept of service catalogs;
 
@@ -23,13 +23,13 @@ The ESB consists of a server, called *ems-bus*, and a *documented architecture* 
 * User, customer, and access profiles are stored externally to the bus to simplify integration with the system used by the organization;
 
 
-== Installation instructions
+## Installation instructions
 
 
 To install ErlangMS in the Debian, Ubuntu or CentOS, follow the instructions below:
 
 
-##1) Download setup
+###### 1) Download setup
 
 ```console
 $ wget https://raw.githubusercontent.com/erlangMS/releases/master/setup/setup-emsbus-linux.x86_64.sh
@@ -37,7 +37,7 @@ $ chmod +x setup-emsbus-linux.x86_64.sh
 ```
 
 
-##2) Run the setup as root or with the sudo command
+###### 2) Run the setup as root or with the sudo command
 
 ```console
 $ sudo ./setup-emsbus-linux.x86_64.sh
@@ -66,17 +66,12 @@ You want to send the installation log via email? [Yn]n
 ```
 
 
-Running instructions
-=====
+## Running instructions
 
 
 ```console
 $ sudo systemctl start ems-bus
 ```
-
-Test instructions
-=====
-
 
 If everything is OK, go to http://localhost:2301/ on your browser.
 
@@ -107,7 +102,7 @@ Implementing a Hello World Service in Java EE
 
 *This contract is saved in the catalog directory of the bus (localized in the folder priv/conf/catalog)*
 
-##2) Service implementation
+###### 2) Service implementation
 
 ```java
 package br.erlangms.samples.service;
@@ -143,7 +138,7 @@ public class HelloWorldFacade extends EmsServiceFacade {
 
 
 
-##3) Consuming the service
+###### 3) Consuming the service
 
 *To execute the specified service can make an HTTP/REST request to the service through your url.*
 
