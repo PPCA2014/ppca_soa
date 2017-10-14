@@ -75,15 +75,119 @@ $ sudo systemctl start ems-bus
 
 If everything is OK, go to http://localhost:2301/ on your browser.
 
+Exemplifying with the curl utility
+
 ```console
 $ curl http://localhost:2301
 *{"message": "It works!!!"}*
 ```
 
 
+## Implementing a Hello World service in Erlang or Java language
+
+###### 1) First, you must specify the service contract
+
+Open your text editor, enter the following specification and save it to a file called hello_world.json
+
+```console
+[
+	{
+		"name" : "/samples/hello_world",
+		"comment": "Hello World em Erlang",
+		"owner": "samples",
+		"version": "1",
+		"service" : "helloworld_service:execute",
+		"url": "/samples/hello_world",
+		"type": "GET",
+		"authorization" : "public",
+		"lang" : "erlang"
+	},
+
+	{
+		"name" : "/samples/hello_world_java",
+		"comment": "Hello World em Java",
+		"owner": "samples",
+		"version": "1",
+		"service" : "br.erlangms.samples.service.HelloWorldService:helloWorld",
+		"url": "/samples/hello_world_java",
+		"type": "GET",
+		"authorization" : "public",
+		"lang" : "java"
+	}
+]
+```
+
+###### 2) After, tell the bus about the new service, including an entry in the file priv/catalog/catalog.json
+
+```console
+[
+
+	{
+		"catalog": "emsbus", 
+		"file": "emsbus/ems_main.json"
+	},
+
+	{
+		"catalog": "hello_world", 
+		"file": "samples/hello_world.json"
+	}
+
+]
+```
+
+###### 3) Now, code the service and save in src/samples
+
+```console
+
+-module(helloworld_service).
+
+-include("../include/ems_schema.hrl").
+
+-export([execute/1]).
+ 
+execute(Request) -> 
+	{ok, Request#request{code = 200, 
+						 response_data = <<"{\"message\": \"Hello World!!!\"}">>}
+	}.
+	
+```
+
+###### 4) Compile the project and restart the bus
+
+```console
+$ ./build.sh
+$ ./start.sh
+Erlang/OTP 20 [erts-9.1] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:10] [kernel-poll:false]
+
+Eshell V9.1  (abort with ^G)
+(emsbus@philco)1> 
+ems_config loading configuration file "/home/agilar/desenvolvimento/erlangms/ems-bus/priv/conf/emsbus.conf"...
+INFO 14/10/2017 16:12:42  Loading ESB ems-bus-1.0.18 instance on Erlang/OTP 20.
+INFO 14/10/2017 16:12:42  ems_logger debug mode disabled.
+INFO 14/10/2017 16:12:42  ems_logger archive log file checkpoint.
+INFO 14/10/2017 16:12:42  ems_logger open "/home/agilar/desenvolvimento/erlangms/ems-bus/priv/log/emsbus@philco/2017/out/emsbus_out_14102017_161242.log" for append.
+INFO 14/10/2017 16:12:42  Start ems_http_server.
+INFO 14/10/2017 16:12:42  Start ems_file_watcher.
+INFO 14/10/2017 16:12:42  Start ems_https_server.
+INFO 14/10/2017 16:12:42  Start ems_cache.
+INFO 14/10/2017 16:12:42  Start ems_odbc_pool.
+INFO 14/10/2017 16:12:42  Hosts in the cluster: [philco].
+INFO 14/10/2017 16:12:42  Default authorization mode: <<"oauth2">>.
+INFO 14/10/2017 16:12:42  ESB ems-bus-1.0.18 (PID 11580) started in 48ms.
+INFO 14/10/2017 16:12:42  ems_logger set level info.
+INFO 14/10/2017 16:12:45  ems_http_listener listener http in 127.0.0.1:2301.
+INFO 14/10/2017 16:12:45  ems_http_listener listener http in 192.168.0.11:2301.
+INFO 14/10/2017 16:12:45  ems_http_listener listener https in 127.0.0.1:2344.
+INFO 14/10/2017 16:12:45  ems_http_listener listener https in 192.168.0.11:2344.
+INFO 14/10/2017 16:12:45  ems_catalog_loader_fs sync 0 inserts(s), 0 updates(s), 0 error(s) since 14/10/2017 15:25:30.
+
+$ curl http://localhost:2301/samples/hello_world
+{"message": "Hello World!!!"}
+```
 
 
-Implementing a Hello World Service in Java EE
+
+## Implementing a Hello World Service in Java EE
 =====
 
 ##1) First, you must specify the service contract
