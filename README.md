@@ -1,109 +1,89 @@
 ErlangMS
 ====
 
-ErlangMS is a platform developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas Agilar*. 
+ErlangMS is a Enterprise Service Bus (ESB) developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas Agilar*. 
 
-The platform consists of a Enterprise Service Bus (ESB), called *ems-bus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
+The ESB consists of a server, called *ems-bus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
 
 ###Main design features
 
-* Back-end modular and multi-platform;
+* Back-end modular and based on the concept of service catalogs;
 
-* Communication services is through asynchronous messages and requests for services by customers through HTTP/REST and LDAP;
+* Communication services is through asynchronous messages and requests for services by customers through HTTP/REST or LDAP;
 
-* Published services are specified in a service catalog in JSON format;
+* Published services are specified in a service catalogd in JSON format;
 
-* Services can be published in one or more nodes in the cluster (eg, Containers JBoss in Java EE ou native Erlang node), to avoid single points of failure (SPOFs);
+* Published services can be implemented in Erlang or Java;
 
 * Support HTTP Basic authentication;
  
-* Support Lightweight Directory Access Protocol (LDAP v3) for authentication (Proxy LDAP);
+* Support Lightweight Directory Access Protocol (LDAP v3) authentication (Proxy LDAP);
 
-* OAuth2 authentication (in progress);
+* Support OAuth2 authentication;
 
-
-
-*See the platform architecture em https:*//github.com/erlangMS/msbus/blob/master/doc/arquitetura_erlangms.pdf
+* User, customer, and access profiles are stored externally to the bus to simplify integration with the system used by the organization;
 
 
-Running the bus
+Installation instructions
 =====
 
-If the project is already installed and configured, run the *start* command, according to the operating system:
+To install ErlangMS in the Debian, Ubuntu or CentOS, follow the instructions below:
 
-If you are in Linux, type:
+
+##1) Download setup
 
 ```console
-$ ./start.sh
-(emsbus@puebla)1> 
-ErlangMS Development Version 1
-Initializing the pool of the main services...
-Start ems_eventmgr with 1 worker
-Start ems_catalog with 2 workers
-Start ems_user with 2 workers
-Start ems_cache with 1 worker
-Start ems_http_server with 1 worker
-Start ems_ldap_server with 1 worker
-Start ems_request with 1 worker
-Start ems_http_worker with 3 workers
-Start ems_ldap_worker with 3 workers
-Start ems_health with 6 workers
-Start ems_dispatcher with 6 workers
-Start ems_static_file_service with 6 workers
-Start ems_user_service with 2 workers
-Start ems_catalog_service with 2 workers
-Start ems_info_service with 2 workers
-Start ems_favicon_service with 2 workers
-Start ems_options_service with 2 workers
-Start ems_ldap_service with 2 workers
-Start ems_health_service with 12 workers
-Reading config parameters from ../emsbus/priv/conf/emsbus.conf...
-cat_host_alias: #{<<"local">> => <<"puebla">>}
-cat_host_search: local
-cat_node_search: node01, node02, node03
-log_file_dest: logs
-log_file_checkpoint: 6000ms
-tcp_listen_address: ["127.0.0.1"]
-tcp_allowed_address: []
-tcp_port: 2301
-tcp_keepalive: true
-tcp_nodelay: true
-tcp_max_http_worker: 128
-Portal Api Management: http://127.0.0.1:2301/portal/index.html
-Node emsbus@puebla started in 246ms.
-Listening http packets on 127.0.0.1:2301.
-Listening ldap packets on 127.0.0.1:2389.
+$ wget https://raw.githubusercontent.com/erlangMS/releases/master/setup/setup-emsbus-linux.x86_64.sh
+$ chmod +x setup-emsbus-linux.x86_64.sh
 ```
+
+
+##2) Run the setup as root or with the sudo command
+
+```console
+$ sudo ./setup-emsbus-linux.x86_64.sh
+Preparing for installation, please wait...
+Downloading https://github.com/erlangms/releases/raw/master/1.0.12/ems-bus-1.0.12-centos.7.x86_64.rpm...
+Starting the ERLANGMS installation on CentOS Linux 7 (Core)
+Purpose: A service-oriented bus developed in Erlang/OTP by Everton de Vargas Agilar
+Version: ems-bus-1.0.12-centos.7.x86_64
+Log file: setup_emsbus__06032017_084841.log
+Host ip: 164.41.103.35
+Date: 06/03/2017 08:48:45
+=============================================================================
+Skipping EPEL 7 repository installation because it is already installed.
+Skipping Erlang Runtime Library installation because it is already installed.
+Skipping python34 installation because it is already installed.
+Skipping openldap installation because it is already installed.
+Skipping openldap-clients installation because it is already installed.
+Skipping driver SQL-Server freetds installation because it is already installed.
+Removing previously installed 1.0.12 version.
+Installing ems-bus-1.0.12-centos.7.x86_64.rpm...
+Preparing...                          ########################################
+Updating / installing...
+ems-bus-1.0.12-centos.7               ########################################
+Installation was unsuccessful.
+You want to send the installation log via email? [Yn]n
+```
+
+
+Running instructions
+=====
+
+
+```console
+$ sudo systemctl start ems-bus
+```
+
+Test instructions
+=====
 
 
 If everything is OK, go to http://localhost:2301/ on your browser.
 
-*{"message": "It works!!!"}*
-
-
-Running multiples instances of bus
-=====
-
-You can start multiples instances of the bus (locally or on different servers) to avoid SPOFs.
-
 ```console
-$ ./ems_ctl.sh start bus_01
-
-ErlangMS Control Manager [ Hostname: puebla,  Version: 1.0 ]
-Checking for an instance bus_01 @ puebla running...
-bus_01@puebla is stopped!
-Starting instance ErlangMS bus_01@puebla...
-...
-
-
-$ ./ems_ctl.sh start bus_02
-
-ErlangMS Control Manager [ Hostname: puebla,  Version: 1.0 ]
-Checking for an instance bus_02 @ puebla running...
-bus_02@puebla is stopped!
-Starting instance ErlangMS bus_01@puebla...
-...
-
+$ curl http://localhost:2301
+*{"message": "It works!!!"}*
 ```
 
 
