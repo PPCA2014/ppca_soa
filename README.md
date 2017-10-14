@@ -88,9 +88,11 @@ $ curl http://localhost:2301
 
 ## Implementing a Hello World service in Erlang or Java language
 
+To implement a new service, you must clone the project in github and save the services implemented in the src folder.
+
 ###### 1) First, you must specify the service contract
 
-Open your text editor, enter the following specification and save it to a file called hello_world.json
+Open your text editor, enter the following specification and save it to a file called priv/catalog/samples/hello_world.json
 
 ```console
 [
