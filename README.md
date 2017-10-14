@@ -166,7 +166,7 @@ If the service is written in Erlang, you must compile the bus project with the b
 
 ```console
 $ ./build.sh
-Build erlangms tool ( Version: 2.0.0   Hostname: philco )
+Build erlangms tool ( Version: 2.0.0   Hostname: localhost )
 Verify if exist conf file /etc/default/erlangms-build... OK
 Reading settings from /etc/default/erlangms-build... OK
 Checking installed erlang version... OK
@@ -201,7 +201,7 @@ $ ./start.sh
 Erlang/OTP 20 [erts-9.1] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:10] [kernel-poll:false]
 
 Eshell V9.1  (abort with ^G)
-(emsbus@philco)1> 
+(emsbus@localhost)1> 
 ems_config loading configuration file "/home/agilar/desenvolvimento/erlangms/ems-bus/priv/conf/emsbus.conf"...
 INFO 14/10/2017 16:12:42  Loading ESB ems-bus-1.0.18 instance on Erlang/OTP 20.
 INFO 14/10/2017 16:12:42  ems_logger debug mode disabled.
