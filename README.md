@@ -166,6 +166,37 @@ If the service is written in Erlang, you must compile the bus project with the b
 
 ```console
 $ ./build.sh
+Build erlangms tool ( Version: 2.0.0   Hostname: philco )
+Verify if exist conf file /etc/default/erlangms-build... OK
+Reading settings from /etc/default/erlangms-build... OK
+Checking installed erlang version... OK
+Distro: Ubuntu Artful Aardvark (development branch)
+Erlang version: 20
+SKIP DEPS: true
+SKIP CLEAN: true
+KEEP DB: true
+Date: 14/10/2017 17:19:11
+=============================================================================
+Compiling the project erlangms...
+==> jsx (compile)
+==> rfc3339 (compile)
+==> cowlib (compile)
+==> ranch (compile)
+==> cowboy (compile)
+==> parse_trans (compile)
+==> json_rec (compile)
+==> poolboy (compile)
+==> inotify (compile)
+WARN:  Missing plugins: [pc]
+==> esqlite (compile)
+==> mochiweb (compile)
+==> oauth2 (compile)
+==> erlydtl (compile)
+==> jesse (compile)
+==> rel (compile)
+==> ems-bus (compile)
+Ok!
+
 $ ./start.sh
 Erlang/OTP 20 [erts-9.1] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:10] [kernel-poll:false]
 
