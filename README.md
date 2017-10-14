@@ -10,7 +10,7 @@ The ESB consists of a server, called *ems-bus*, and a *documented architecture* 
 
 * Communication services is through asynchronous messages and requests for services by customers through HTTP/REST or LDAP;
 
-* Published services are specified in a service catalogd in JSON format;
+* Published services are specified in a service catalogs in JSON format;
 
 * Published services can be implemented in Erlang or Java;
 
