@@ -76,7 +76,7 @@ If the bus is stopped, use the following command to start it.
 $ sudo systemctl start ems-bus
 ```
 
-If everything is OK, go to http://localhost:2301/ on your browser.
+If everything is ok, go to http://localhost:2301/ on your browser.
 
 Exemplifying with the curl utility
 
