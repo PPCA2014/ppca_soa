@@ -2,7 +2,7 @@
 
 ErlangMS is a Enterprise Service Bus (ESB) developed in *Erlang/OTP* to facilitate the integration of systems through a service-oriented approach for the systems of the University of Brazilia. This work is the result of efforts made in the Master of Applied Computing at the University of Brasilia by graduate student *Everton Vargas Agilar*. 
 
-The ESB consists of a server called *ems-bus*, and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
+The ESB consists of a server called *ems-bus* and a *documented architecture* to implement the services in Erlang, Java and future in .NET Framework languages.
 
 ## Main design features
 
