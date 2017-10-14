@@ -227,7 +227,7 @@ $ curl http://localhost:2301/samples/hello_world
 ```
 
 
-###### 2) Now, code the service in Java version
+###### 5) Now, code the service in Java version
 
 The coded version of the Java service has a design similar to the Erlang version. The service code will receive a Request object and must return the result to the bus. The developer does not have to worry about data serialization since everything is done automatically through the ems_java package provided in the ErlangMS site in github.
 
@@ -254,7 +254,7 @@ Running a service in Java is a little more complex due to the need to publish th
 
 
 
-###### 3) Consuming the service
+###### 6) Consuming the service
 
 Exemplifying with the curl utility
 
