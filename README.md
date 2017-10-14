@@ -20,7 +20,7 @@ The ESB consists of a server called *ems-bus* and a *documented architecture* to
 
 * Support OAuth2 authentication;
 
-* Users, clientes, and access profiles to authentication are stored externally to the bus to simplify integration with the enterprise system or SGBD used by the organization.
+* Users, clients, and access profiles to authentication are stored externally to the bus to simplify integration with the enterprise system or SGBD used by the organization.
 
 
 ## Installation instructions
