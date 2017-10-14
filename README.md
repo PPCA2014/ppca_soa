@@ -68,6 +68,9 @@ You want to send the installation log via email? [Yn]n
 
 ## Running instructions
 
+ErlangMS is installed as a service on the systemd. The systemd start, stop, and status options can be used to start, stop and query the bus status.
+
+If the bus is stopped, use the following command to start it.
 
 ```console
 $ sudo systemctl start ems-bus
