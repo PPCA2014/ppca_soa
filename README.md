@@ -25,6 +25,7 @@ The ESB consists of a server called *ems-bus* and a *documented architecture* to
 
 ## Installation instructions
 
+The ErlangMS software is installed in the /usr/lib/ems-bus folder under the proprietary user erlangms in the operating system. For security reasons, the bus runs as erlangms instead of root. In addition, the home directory of the /var/opt/ erlangms bus is created. In this folder you will find the configuration file the emsbus.conf of the bus and the configuration file odbc.ini used by the ESB to access the database.
 
 To install ErlangMS in the Debian, Ubuntu or CentOS, follow the instructions below:
 
@@ -64,7 +65,6 @@ ems-bus-1.0.12-centos.7               ########################################
 Installation was unsuccessful.
 You want to send the installation log via email? [Yn]n
 ```
-
 
 ## Running instructions
 
