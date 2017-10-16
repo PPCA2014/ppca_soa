@@ -248,6 +248,7 @@
 				    ctrl_insert,								%% Data que o serviço foi inserido no banco mnesia
 					ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
 					ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+					ctrl_hash,									%% Hash gerado para poder comparar dois registros
 					start_timeout :: non_neg_integer()			%% Define um timeout inicial para o processo
 				}).
 

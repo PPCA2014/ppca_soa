@@ -1766,11 +1766,14 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 
 	
 -spec parse_tcp_listen_address(list(string())) -> list(tuple()). 
+parse_tcp_listen_address(undefined) -> [];
 parse_tcp_listen_address(ListenAddress) ->
 	parse_tcp_listen_address_t(ListenAddress, []).
 
 -spec parse_tcp_listen_address_t(list(string()), list(tuple())) -> list(tuple()). 
 parse_tcp_listen_address_t([], Result) -> Result;
+parse_tcp_listen_address_t([H|T], Result) when is_binary(H) ->
+	parse_tcp_listen_address_t([binary_to_list(H)|T], Result);
 parse_tcp_listen_address_t([H|T], Result) ->
 	case inet:parse_address(H) of
 		{ok, {0, 0, 0, 0}} ->
@@ -1941,10 +1944,17 @@ load_from_file_req(Request = #request{url = Url,
 	end.
 
 
+-spec tuple_to_maps_with_keys(list(tuple()), list(tuple())) -> map().
 tuple_to_maps_with_keys(Tuple, Keys) ->
 	Fields = erlang:tuple_to_list(Tuple),
-	Record = [{X,Y} || X <- Fields, Y <- Keys],
+	Record = tuple_to_maps_with_keys(Fields, Keys, []),
 	maps:from_list(Record).
+
+tuple_to_maps_with_keys(_, [], Result) -> Result;
+tuple_to_maps_with_keys([null|FldT], Keys, Result) ->
+	tuple_to_maps_with_keys([undefined|FldT], Keys, Result);
+tuple_to_maps_with_keys([FldH|FldT], [KeyH|KeyT], Result) ->
+	tuple_to_maps_with_keys(FldT, KeyT, [{KeyH, FldH} | Result]).
 
 
 	

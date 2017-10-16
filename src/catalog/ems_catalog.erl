@@ -11,12 +11,11 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([new_service/56, 
-		 new_service_re/56,
+-export([new_service/57, 
+		 new_service_re/57,
 		 new_service_from_map/2, new_service_from_map/3,
 		 get_metadata_json/1,
-		 get_table/3,
-		 tuple_to_map/1]).
+		 get_table/3]).
 		 
 
 -spec get_metadata_json(#service{}) -> binary().
@@ -81,7 +80,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			   CatalogPath, CatalogFile, CtrlModified, StartTimeout) ->
+			   CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -144,6 +143,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				oauth2_token_encrypt = OAuth2TokenEncrypt,
 				protocol = Protocol,
 				ctrl_modified = CtrlModified,
+				ctrl_hash = CtrlHash,
 				start_timeout = StartTimeout
 			}.
 
@@ -157,7 +157,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			Port, MaxConnections,
 			IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			CatalogPath, CatalogFile, CtrlModified, StartTimeout) ->
+			CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -216,10 +216,11 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				oauth2_token_encrypt = OAuth2TokenEncrypt,
 				protocol = Protocol,
 				ctrl_modified = CtrlModified,
+				ctrl_hash = CtrlHash,
 				start_timeout = StartTimeout
 			}.
 
-
+parse_middleware(null) -> undefined;
 parse_middleware(undefined) -> undefined;
 parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 
@@ -266,6 +267,7 @@ parse_datasource(DsName, _Rowid, Conf) ->
 	end.
 	
 	
+parse_node_service(undefined) -> <<>>;
 parse_node_service(<<>>) -> <<>>;
 parse_node_service(List) -> List.
 
@@ -369,7 +371,7 @@ new_service_from_map(Map,
 							{ok, Path} -> 
 								RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
 								Protocol = maps:get(<<"protocol">>, Map, <<>>),
-								ListenAddress = ems_util:binlist_to_list(maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault)),
+								ListenAddress = maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault),
 								ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
 								AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
 								AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
@@ -402,6 +404,7 @@ new_service_from_map(Map,
 								Page = maps:get(<<"page">>, Map, undefined),
 								PageModule = compile_page_module(Page, Rowid, Conf),
 								CtrlModified = maps:get(<<"ctrl_modified">>, Map, undefined),
+								CtrlHash = erlang:phash2(Map),
 								StartTimeout = maps:get(<<"start_timeout">>, Map, undefined),
 								case UseRE of
 									true -> 
@@ -425,7 +428,7 @@ new_service_from_map(Map,
 																		   AllowedAddress_t, Port, MaxConnections,
 																		   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 																		   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																		   CatalogPath, CatalogFile, CtrlModified, StartTimeout),
+																		   CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
 												{ok, Service};
 											_ -> 
 												erlang:error(einvalid_re_service)
@@ -450,7 +453,7 @@ new_service_from_map(Map,
 																AllowedAddress_t, Port, MaxConnections,
 																IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 																OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																CatalogPath, CatalogFile, CtrlModified, StartTimeout),
+																CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
 										{ok, Service}
 								end;
 							_Error -> 
@@ -483,42 +486,3 @@ get_table(<<"DELETE">>, _, fs) -> catalog_delete_fs;
 get_table(<<"OPTIONS">>, _, fs) -> catalog_options_fs;
 get_table(<<"KERNEL">>, _, fs) -> catalog_kernel_fs.
 
--spec tuple_to_map(tuple()) -> map().
-tuple_to_map(RecordTuple) ->
-		ems_util:tuple_to_maps_with_keys(RecordTuple, [<<"codigo">>,
-														<<"name">>,
-														<<"url">>,
-														<<"use_re">>,
-														<<"type">>,
-														<<"service">>,
-														<<"comment">>,
-														<<"version">>,
-														<<"owner">>,
-														<<"result_cache">>,
-														<<"authorization">>,
-														<<"lang">>,
-														<<"timeout">>,
-														<<"enable">>,
-														<<"content_type">>,
-														<<"async">>,
-														<<"host">>,
-														<<"node">>,
-														<<"debug">>,
-														<<"schema_in">>,
-														<<"schema_out">>,
-														<<"middleware">>,
-														<<"cache_control">>,
-														<<"expires">>,
-														<<"public">>,
-														<<"path">>,
-														<<"redirect_url">>,
-														<<"tcp_listen_address">>,
-														<<"tcp_allowed_address">>,
-														<<"tcp_max_connections">>,
-														<<"tcp_port">>,
-														<<"tcp_is_ssl">>,
-														<<"tcp_ssl_cacertfile">>,
-														<<"tcp_ssl_certfile">>,
-														<<"tcp_ssl_keyfile">>,
-														<<"oauth2_with_check_constraint">>]).
-	

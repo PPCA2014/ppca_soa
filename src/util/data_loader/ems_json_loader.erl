@@ -72,7 +72,7 @@ resume(Server) ->
  
 init(#service{name = Name, 
 			  middleware = Middleware, 
-			  timeout = Timeout,
+			  start_timeout = StartTimeout,
 			  properties = Props}) ->
 	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
@@ -85,7 +85,7 @@ init(#service{name = Name,
 				   last_update = LastUpdate,
 				   filename = Filename,
 				   middleware = Middleware},
-	{ok, State, Timeout}.
+	{ok, State, StartTimeout}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -216,8 +216,8 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 				case do_clear_table(State) of
 					ok ->
 						do_reset_sequence(State),
-						{ok, InsertCount, _, ErrorCount} = ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, fs),
-						ems_logger:info("~s sync ~p inserts(s), ~p error(s).", [Name, InsertCount, ErrorCount]),
+						{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, fs, []),
+						ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
 						ok;
 					Error ->
 						ems_logger:error("~s could not clear table before load data.", [Name]),
@@ -246,9 +246,9 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 				?DEBUG("~s did not load any record.", [Name]),
 				ok;
 			{ok, Records} ->
-				{ok, InsertCount, UpdateCount, ErrorCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, fs),
+				{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, fs, []),
 				LastUpdateStr = ems_util:timestamp_str(LastUpdate),
-				ems_logger:info("~s sync ~p inserts(s), ~p updates(s), ~p error(s) since ~s.", [Name, InsertCount, UpdateCount, ErrorCount, LastUpdateStr]),
+				ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]),
 				ok;
 			{error, Reason} = Error -> 
 				ems_logger:error("~s update data error: ~p.", [Name, Reason]),

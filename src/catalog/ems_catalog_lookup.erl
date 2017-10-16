@@ -14,6 +14,7 @@
 -export([lookup/1, 
 		 lookup/2,
 		 find/2,  
+		 all/1,
 		 list_kernel_catalog/0, 
 		 list_re_catalog/0]).
 
@@ -24,6 +25,16 @@ find(Table, Rowid) ->
 	case ems_db:find_first(Table, [{rowid, "==", Rowid}]) of
 		{error, Reason} -> {error, Reason};
 		Record -> {ok, setelement(1, Record, service)}
+	end.
+
+-spec all(catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs | catalog_kernel_fs |
+		   catalog_get_db | catalog_post_db | catalog_put_db | catalog_delete_db | catalog_options_db | catalog_kernel_db) -> list() | {error, atom()}.
+all(Table) ->
+	case ems_db:all(Table) of
+		{ok, Records} -> 
+			Records2 = [setelement(1, R, service) || R <- Records],
+			{ok, Records2};
+		Error -> Error
 	end.
 
 -spec lookup(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
@@ -54,7 +65,7 @@ lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}, F
 				_ -> {error, enoent}
 			end;
 		true ->
-			case ems_db:all(Table) of
+			case all(Table) of
 				{ok, Records} ->
 					case lookup_re(Request, Records) of
 						{error, enoent} = Error -> Error;

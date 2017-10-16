@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Module ems_catalog_loader_fs
+%% @title Module ems_catalog_loader_middleware
 %% @version 1.0.0
-%% @doc Module responsible for load catalog services from filesystem
+%% @doc Module responsible for load catalog services from filesystem or db
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_catalog_loader_fs).
+-module(ems_catalog_loader_middleware).
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
@@ -140,13 +140,10 @@ get_filename() ->
 	
 	
 -spec prepare_insert_or_update(map() | tuple(), tuple(), #config{}, atom()) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-prepare_insert_or_update(Tuple, CtrlDate, Conf, SourceType) when is_tuple(Tuple) ->
-	Map = ems_catalog:tuple_to_map(Tuple),
-	prepare_insert_or_update(Map, CtrlDate, Conf, SourceType);
 prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 	try
 		case ems_catalog:new_service_from_map(Map, Conf) of
-			{ok, NewCatalog = #service{type = ServiceType, use_re = UseRE, rowid = Rowid, ctrl_modified = FileCtrlModified}} -> 
+			{ok, NewCatalog = #service{type = ServiceType, use_re = UseRE, rowid = Rowid, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash}} -> 
 				Table = ems_catalog:get_table(ServiceType, UseRE, SourceType),
 				case ems_catalog_lookup:find(Table, Rowid) of
 					{error, enoent} -> 
@@ -154,69 +151,74 @@ prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 						Catalog = NewCatalog#service{id = Id,
 												     ctrl_insert = CtrlDate},
 						{ok, Catalog, Table, insert};
-					{ok, CurrentCatalog = #service{ctrl_modified = CatCtrlModified}} ->
-						case FileCtrlModified > CatCtrlModified of
+					{ok, CurrentCatalog = #service{ctrl_modified = CurrentCtrlModified, ctrl_hash = CurrentCtrlHash}} ->
+						case CtrlHash =/= CurrentCtrlHash of
 							true ->
-								?DEBUG("ems_catalog_loader_fs update catalog ~p from filesystem.", [Map]),
-								Catalog = CurrentCatalog#service{
-												name = NewCatalog#service.name,
-												url = NewCatalog#service.url,
-												type = NewCatalog#service.type,
-												service = NewCatalog#service.service,
-												module_name = NewCatalog#service.module_name,
-												module_name_canonical = NewCatalog#service.module_name_canonical,
-												module = NewCatalog#service.module,
-												function_name = NewCatalog#service.function_name,
-												function = NewCatalog#service.function,
-												public = NewCatalog#service.public,
-												comment = NewCatalog#service.comment,
-												version = NewCatalog#service.version,
-												owner = NewCatalog#service.owner,
-												async = NewCatalog#service.async,
-												querystring = NewCatalog#service.querystring,
-												qtd_querystring_req = NewCatalog#service.qtd_querystring_req,
-												host = NewCatalog#service.host,
-												host_name = NewCatalog#service.host_name,
-												result_cache = NewCatalog#service.result_cache,
-												authorization = NewCatalog#service.authorization,
-												node = NewCatalog#service.node,
-												page = NewCatalog#service.page,
-												page_module = NewCatalog#service.page_module,
-												datasource = NewCatalog#service.datasource,
-												debug = NewCatalog#service.debug,
-												lang = NewCatalog#service.lang,
-												schema_in = NewCatalog#service.schema_in,
-												schema_out = NewCatalog#service.schema_out,
-												pool_size = NewCatalog#service.pool_size,
-												pool_max = NewCatalog#service.pool_max,
-												timeout = NewCatalog#service.timeout,
-												middleware = NewCatalog#service.middleware,
-												properties = NewCatalog#service.properties,
-												cache_control = NewCatalog#service.cache_control,
-												expires = NewCatalog#service.expires,
-												content_type = NewCatalog#service.content_type,
-												catalog_path = NewCatalog#service.catalog_path,
-												catalog_file = NewCatalog#service.catalog_file,
-												path = NewCatalog#service.path,
-												redirect_url = NewCatalog#service.redirect_url,
-												enable = NewCatalog#service.enable,
-												tcp_listen_address = NewCatalog#service.tcp_listen_address,
-												tcp_listen_address_t = NewCatalog#service.tcp_listen_address_t,
-												tcp_allowed_address = NewCatalog#service.tcp_allowed_address,
-												tcp_allowed_address_t = NewCatalog#service.tcp_allowed_address_t,
-												tcp_max_connections = NewCatalog#service.tcp_max_connections,
-												tcp_port = NewCatalog#service.tcp_port,
-												tcp_is_ssl = NewCatalog#service.tcp_is_ssl,
-												tcp_ssl_cacertfile = NewCatalog#service.tcp_ssl_cacertfile,
-												tcp_ssl_certfile = NewCatalog#service.tcp_ssl_certfile,
-												tcp_ssl_keyfile = NewCatalog#service.tcp_ssl_keyfile,
-												oauth2_with_check_constraint = NewCatalog#service.oauth2_with_check_constraint,
-												oauth2_token_encrypt = NewCatalog#service.oauth2_token_encrypt,
-												protocol = NewCatalog#service.protocol,
-												ctrl_update = CtrlDate,
-												ctrl_modified = FileCtrlModified
-											},
-								{ok, Catalog, Table, update};
+								case CtrlModified == undefined orelse CtrlModified > CurrentCtrlModified of
+									true ->
+										?DEBUG("ems_catalog_loader_middleware update ~p from ~p.", [Map, SourceType]),
+										Catalog = CurrentCatalog#service{
+														name = NewCatalog#service.name,
+														url = NewCatalog#service.url,
+														type = NewCatalog#service.type,
+														service = NewCatalog#service.service,
+														module_name = NewCatalog#service.module_name,
+														module_name_canonical = NewCatalog#service.module_name_canonical,
+														module = NewCatalog#service.module,
+														function_name = NewCatalog#service.function_name,
+														function = NewCatalog#service.function,
+														public = NewCatalog#service.public,
+														comment = NewCatalog#service.comment,
+														version = NewCatalog#service.version,
+														owner = NewCatalog#service.owner,
+														async = NewCatalog#service.async,
+														querystring = NewCatalog#service.querystring,
+														qtd_querystring_req = NewCatalog#service.qtd_querystring_req,
+														host = NewCatalog#service.host,
+														host_name = NewCatalog#service.host_name,
+														result_cache = NewCatalog#service.result_cache,
+														authorization = NewCatalog#service.authorization,
+														node = NewCatalog#service.node,
+														page = NewCatalog#service.page,
+														page_module = NewCatalog#service.page_module,
+														datasource = NewCatalog#service.datasource,
+														debug = NewCatalog#service.debug,
+														lang = NewCatalog#service.lang,
+														schema_in = NewCatalog#service.schema_in,
+														schema_out = NewCatalog#service.schema_out,
+														pool_size = NewCatalog#service.pool_size,
+														pool_max = NewCatalog#service.pool_max,
+														timeout = NewCatalog#service.timeout,
+														middleware = NewCatalog#service.middleware,
+														properties = NewCatalog#service.properties,
+														cache_control = NewCatalog#service.cache_control,
+														expires = NewCatalog#service.expires,
+														content_type = NewCatalog#service.content_type,
+														catalog_path = NewCatalog#service.catalog_path,
+														catalog_file = NewCatalog#service.catalog_file,
+														path = NewCatalog#service.path,
+														redirect_url = NewCatalog#service.redirect_url,
+														enable = NewCatalog#service.enable,
+														tcp_listen_address = NewCatalog#service.tcp_listen_address,
+														tcp_listen_address_t = NewCatalog#service.tcp_listen_address_t,
+														tcp_allowed_address = NewCatalog#service.tcp_allowed_address,
+														tcp_allowed_address_t = NewCatalog#service.tcp_allowed_address_t,
+														tcp_max_connections = NewCatalog#service.tcp_max_connections,
+														tcp_port = NewCatalog#service.tcp_port,
+														tcp_is_ssl = NewCatalog#service.tcp_is_ssl,
+														tcp_ssl_cacertfile = NewCatalog#service.tcp_ssl_cacertfile,
+														tcp_ssl_certfile = NewCatalog#service.tcp_ssl_certfile,
+														tcp_ssl_keyfile = NewCatalog#service.tcp_ssl_keyfile,
+														oauth2_with_check_constraint = NewCatalog#service.oauth2_with_check_constraint,
+														oauth2_token_encrypt = NewCatalog#service.oauth2_token_encrypt,
+														protocol = NewCatalog#service.protocol,
+														ctrl_update = CtrlDate,
+														ctrl_modified = CtrlModified,
+														ctrl_hash = CtrlHash
+													},
+										{ok, Catalog, Table, update};
+									false -> {ok, skip}
+								end;
 							false -> {ok, skip}
 						end
 				end;

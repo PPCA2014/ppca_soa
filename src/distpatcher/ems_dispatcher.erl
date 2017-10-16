@@ -191,7 +191,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 				_ -> 
 					UserJson = ems_schema:to_json(User)
 			end,
-			Msg = {{Rid, Url, Type, ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, 
+			Msg = {{Rid, Url, binary_to_list(Type), ParamsMap, QuerystringMap, Payload, ContentType, ModuleName, FunctionName, 
 					ClientJson, UserJson, ems_catalog:get_metadata_json(Service), Scope, 
 					undefined, undefined}, self()
 				  },

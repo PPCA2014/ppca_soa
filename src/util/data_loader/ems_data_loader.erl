@@ -29,7 +29,8 @@
 				last_update_param_name,
 				sql_load,
 				sql_update,
-				middleware
+				middleware,
+				fields
 			}).
 
 -define(SERVER, ?MODULE).
@@ -75,13 +76,14 @@ resume(Server) ->
 init(#service{name = Name, 
 			  datasource = Datasource, 
 			  middleware = Middleware, 
-			  timeout = Timeout,
+			  start_timeout = StartTimeout,
 			  properties = Props}) ->
 	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
 	SqlLoad = binary_to_list(maps:get(<<"sql_load">>, Props, <<>>)),
 	SqlUpdate = binary_to_list(maps:get(<<"sql_update">>, Props, <<>>)),
+	Fields = maps:get(<<"fields">>, Props, <<>>),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
 	State = #state{name = binary_to_list(Name),
 				   datasource = Datasource, 
@@ -90,8 +92,9 @@ init(#service{name = Name,
 				   last_update = LastUpdate,
 				   sql_load = SqlLoad,
 				   sql_update = SqlUpdate,
-				   middleware = Middleware},
-	{ok, State, Timeout}.
+				   middleware = Middleware,
+				   fields = Fields},
+	{ok, State, StartTimeout}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -217,7 +220,8 @@ do_check_load_or_update(State = #state{name = Name,
 -spec do_load(#service_datasource{}, tuple(), #config{}, #state{}) -> ok | {error, atom()}.
 do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
 													 middleware = Middleware,
-													 sql_load = SqlLoad}) -> 
+													 sql_load = SqlLoad,
+													 fields = Fields}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -231,12 +235,8 @@ do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
 						case do_clear_table(State) of
 							ok ->
 								do_reset_sequence(State),
-								ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert),
-								Count = length(Records),
-								case Count of 
-									1 -> ems_logger:info("~s load 1 record.",  [Name]);
-									_ -> ems_logger:info("~s load ~p records.", [Name, Count])
-								end,
+								{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, db, Fields),
+								ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
 								ok;
 							Error ->
 								ems_logger:error("~s could not clear table before load data.", [Name]),
@@ -261,7 +261,8 @@ do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
 -spec do_update(#service_datasource{}, tuple(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
 do_update(Datasource, LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 														   middleware = Middleware,
-														   sql_update = SqlUpdate}) -> 
+														   sql_update = SqlUpdate,
+														   fields = Fields}) -> 
 	try
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
@@ -269,6 +270,12 @@ do_update(Datasource, LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 				% Zera os segundos
 				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 				Params = [{sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
+						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]},
 						  {sql_timestamp, [DateInitial]}],
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdate, Params) of
@@ -278,13 +285,9 @@ do_update(Datasource, LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
-						ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update),
-						Count = length(Records),
+						{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
 						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
-						case Count of
-							1 -> ems_logger:info("~s update 1 record since ~s.", [Name, LastUpdateStr]);
-							_ -> ems_logger:info("~s update ~p records since ~s.", [Name, Count, LastUpdateStr])
-						end,
+						ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]),
 						ok;
 					{error, Reason} = Error -> 
 						ems_odbc_pool:release_connection(Datasource2),
@@ -304,23 +307,19 @@ do_update(Datasource, LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 
 -spec do_is_empty(#state{}) -> {ok, boolean()}.
 do_is_empty(#state{middleware = Middleware}) ->
-	apply(Middleware, is_empty, []).
+	apply(Middleware, is_empty, [db]).
 
 
 -spec do_size_table(#state{}) -> {ok, non_neg_integer()}.
 do_size_table(#state{middleware = Middleware}) ->
-	apply(Middleware, size_table, []).
+	apply(Middleware, size_table, [db]).
 
 
 -spec do_clear_table(#state{}) -> ok | {error, efail_clear_ets_table}.
 do_clear_table(#state{middleware = Middleware}) ->
-	apply(Middleware, clear_table, []).
+	apply(Middleware, clear_table, [db]).
 
 
 -spec do_reset_sequence(#state{}) -> ok.
 do_reset_sequence(#state{middleware = Middleware}) ->
-	apply(Middleware, reset_sequence, []).
-
-
-
-
+	apply(Middleware, reset_sequence, [db]).

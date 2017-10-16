@@ -11,8 +11,8 @@
 	"last_update_param_name" : "ems_catalog_loader_db_lastupdate",
 	"update_checkpoint" : 60000,
 	"datasource" : "ds_ems_user_loader",
-	"timeout" : 1000,
-	"middleware" : "ems_catalog_loader_db",
+	"start_timeout" : 4000,
+	"middleware" : "ems_catalog_loader_middleware",
 	"pool_size" : 1,
 	"pool_max" : 1,
 	"enable" : false,
@@ -96,7 +96,16 @@
 				   CSETcpSslKeyfile,
 				   CSEOAuth2WithCheckConstraint 
 				from BDAcesso.dbo.TB_CatalogoServicoErlangms 
-				where CSECtrlUpdate >= ?
-				"
+				where CSECtrlUpdate >= ? or CSECtrlInsert >= ?
+				",
+	"fields" : ["codigo", "name", "url", "use_re", "type", "service", 
+				"comment", "version", "owner", "result_cache",
+				"authorization", "lang", "timeout", "enable",
+				"content_type", "async", "host", "node", "debug",
+				"schema_in", "schema_out", "middleware", "cache_control",
+				"expires", "public", "path", "redirect_url","tcp_listen_address",
+				"tcp_allowed_address", "tcp_max_connections","tcp_port",
+				"tcp_is_ssl","tcp_ssl_cacertfile","tcp_ssl_certfile",
+				"tcp_ssl_keyfile","oauth2_with_check_constraint"]
 	
 }
