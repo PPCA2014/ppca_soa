@@ -42,8 +42,8 @@ SKIP_DEPS="false"
 SKIP_CLEAN="false"
 KEEP_DB="false"
 
-# Erlang version required > 19
-ERLANG_VERSION=19
+# Erlang version required > 20
+ERLANG_VERSION=20
 
 # Erlang version installled
 ERLANG_VERSION_OS=`erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell 2> /dev/null | sed 's/[^0-9]//g'`
@@ -69,12 +69,14 @@ help() {
 	echo ""
 	echo "Additional parameters:"
 	echo "  --keep-db               -> Does not delete the priv/db folder"
-	echo "  --skip-dep              -> Skip rebar deps"
+	echo "  --skip-deps             -> Skip rebar deps"
 	echo "  --skip-clean            -> Skip rebar clean"
 	echo "  --keep-db=true|false    -> Define if delete the priv/db folder"
 	echo "  --skip-dep=true|false   -> Define if skip rebar deps"
 	echo "  --skip-clean=true|false -> Define if rebar clean"
 	echo "  --clean                 -> Equal to --skip-clean=true"
+	echo "  --rmdb                  -> Equal to --keep-db=false"
+	echo "  --getdeps               -> Equal to --skip-deps=false"
 	echo
 	exit 1
 }
@@ -151,7 +153,7 @@ for P in $*; do
 			SKIP_CLEAN="$(echo $P | cut -d= -f2)"
 		elif [[ "$P" =~ ^--keep[\_-]db=(true|false)$ ]]; then
 			KEEP_DB="$(echo $P | cut -d= -f2)"
-		elif [[ "$P" =~ --skip[\_-]deps$ ]]; then
+		elif [[ "$P" =~ --skip[\_-]deps?$ ]]; then
 			SKIP_DEPS="true"
 		elif [[ "$P" =~ --skip[\_-]clean$ ]]; then
 			SKIP_CLEAN="true"
@@ -159,6 +161,10 @@ for P in $*; do
 			SKIP_CLEAN="false"
 		elif [[ "$P" =~ --keep[\_-]db$ ]]; then
 			KEEP_DB="true"
+		elif [ "$P" = "--rmdb" ]; then
+			KEEP_DB="false"
+		elif [ "$P" = "--getdeps" ]; then
+			SKIP_DEPS="false"
 		elif [ "$P" = "--help" ]; then
 			help
 		else

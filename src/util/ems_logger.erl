@@ -248,8 +248,8 @@ handle_call(sync_buffer, _From, State) ->
 	NewState = sync_buffer(State),
 	{reply, ok, NewState};
 
-handle_call(log_file_name, _From, State = #state{log_file_name = FileNameLog}) ->
-	{reply, FileNameLog, State};
+handle_call(log_file_name, _From, State = #state{log_file_name = FilenameLog}) ->
+	{reply, FilenameLog, State};
 
 handle_call({log_file_head, N}, _From, State) ->
 	Result = log_file_head(State, N),
@@ -288,16 +288,16 @@ code_change(_OldVsn, State, _Extra) ->
 
 -spec checkpoint_arquive_log(#state{}, boolean()) -> #state{} | {error, atom()}.
 checkpoint_arquive_log(State = #state{log_file_handle = CurrentIODevice, 
-									  log_file_name = CurrentLogFileName}, Immediate) ->
+									  log_file_name = CurrentLogFilename}, Immediate) ->
 	case Immediate of
 		true -> ems_logger:info("ems_logger immediate archive log file checkpoint.");
 		false -> ems_logger:info("ems_logger archive log file checkpoint.")
 	end,
-	close_filename_device(CurrentIODevice, CurrentLogFileName),
+	close_filename_device(CurrentIODevice, CurrentLogFilename),
 	case open_filename_device() of
-		{ok, LogFileName, IODevice2} ->
-			ems_logger:info("ems_logger open ~p for append.", [LogFileName]),
-			State2 = State#state{log_file_name = LogFileName, 
+		{ok, LogFilename, IODevice2} ->
+			ems_logger:info("ems_logger open ~p for append.", [LogFilename]),
+			State2 = State#state{log_file_name = LogFilename, 
 								 log_file_handle = IODevice2,
 								 sync_buffer_error_count = 0};
 		{error, Reason} ->
@@ -312,15 +312,15 @@ open_filename_device() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	MesAbrev = ems_util:mes_abreviado(Mes),
 	NodeName = ems_util:get_node_name(),
-	LogFileName = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~s_~2..0w~2..0w~4..0w_~2..0w~2..0w~2..0w.log", [?LOG_PATH, atom_to_list(node()), Ano, MesAbrev, NodeName, MesAbrev, Dia, Mes, Ano, Hora, Min, Seg])),
-	open_filename_device(LogFileName).
+	LogFilename = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~s_~2..0w~2..0w~4..0w_~2..0w~2..0w~2..0w.log", [?LOG_PATH, atom_to_list(node()), Ano, MesAbrev, NodeName, MesAbrev, Dia, Mes, Ano, Hora, Min, Seg])),
+	open_filename_device(LogFilename).
 
-open_filename_device(LogFileName) ->
-	case filelib:ensure_dir(LogFileName) of
+open_filename_device(LogFilename) ->
+	case filelib:ensure_dir(LogFilename) of
 		ok ->
-			case file:open(LogFileName, [append, {delayed_write, 256, 2}]) of
+			case file:open(LogFilename, [append, {delayed_write, 256, 2}]) of
 				{ok, IODevice} -> 
-					{ok, LogFileName, IODevice};
+					{ok, LogFilename, IODevice};
 				{error, enospc} = Error ->
 					ems_logger:error("ems_logger open_filename_device does not have disk storage space to write to the log files."),
 					Error;
@@ -333,16 +333,16 @@ open_filename_device(LogFileName) ->
 			Error
 	end.
 
-log_file_head(#state{log_file_name = LogFileName}, N) ->
-	case ems_util:head_file(LogFileName, N) of
+log_file_head(#state{log_file_name = LogFilename}, N) ->
+	case ems_util:head_file(LogFilename, N) of
 		{ok, List} -> {ok, List};
 		{error, Reason} = Error -> 
 			ems_logger:error("ems_logger log_file_head failed to open log file for read. Reason: ~p.", [Reason]),
 			Error
 	end.
 
-log_file_tail(#state{log_file_name = LogFileName}, N) ->
-	case ems_util:tail_file(LogFileName, N) of
+log_file_tail(#state{log_file_name = LogFilename}, N) ->
+	case ems_util:tail_file(LogFilename, N) of
 		{ok, List} -> {ok, List};
 		{error, Reason} = Error -> 
 			ems_logger:error("ems_logger log_file_tail failed to open log file for read. Reason: ~p.", [Reason]),
@@ -350,8 +350,8 @@ log_file_tail(#state{log_file_name = LogFileName}, N) ->
 	end.
 
 close_filename_device(undefined, _) -> ok;
-close_filename_device(IODevice, LogFileName) -> 
-	?DEBUG("ems_logger close log file ~p.", [LogFileName]),
+close_filename_device(IODevice, LogFilename) -> 
+	?DEBUG("ems_logger close log file ~p.", [LogFilename]),
 	file:close(IODevice).
 
 set_timeout_for_sync_buffer(#state{flag_checkpoint_sync_buffer = false, log_file_checkpoint=Timeout}) ->    
@@ -418,12 +418,12 @@ sync_buffer(State = #state{sync_buffer_error_count = 10}) ->
 	ems_logger:error("ems_logger tried to unload cache buffer 10 times without success. Clear log buffer cache."),
 	State#state{buffer = [], flag_checkpoint_sync_buffer = false, sync_buffer_error_count = 0};
 sync_buffer(State = #state{buffer = Buffer,
-						   log_file_name = CurrentLogFileName,
+						   log_file_name = CurrentLogFilename,
 						   log_file_max_size = LogFileMaxSize,
 						   log_file_handle = IODevice}) ->
-	%?DEBUG("ems_logger sync_buffer to log file ~p. Buffer count: ~p, FileSize: ~p.", [CurrentLogFileName, string:len(Buffer), filelib:file_size(CurrentLogFileName)]),
+	%?DEBUG("ems_logger sync_buffer to log file ~p. Buffer count: ~p, FileSize: ~p.", [CurrentLogFilename, string:len(Buffer), filelib:file_size(CurrentLogFilename)]),
 	% check limit log file max size
-	case filelib:file_size(CurrentLogFileName) > LogFileMaxSize of
+	case filelib:file_size(CurrentLogFilename) > LogFileMaxSize of
 		true -> 
 			ems_logger:info("ems_logger is writing to a log file that has already exceeded the allowed limit."),
 			State2 = checkpoint_arquive_log(State, true),
@@ -483,7 +483,7 @@ do_log_request(#request{rid = RID,
 						node_exec = Node,
 						referer = Referer,
 						user_agent = UserAgent,
-						filename = FileName,
+						filename = Filename,
 						client = Client,
 						user = User,
 						scope = Scope,
@@ -493,7 +493,7 @@ do_log_request(#request{rid = RID,
 			  }, 
 			  #state{show_response = ShowResponse}) ->
 			  
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~s~sCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFileName: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
+	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~s~sCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFilename: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
 	Texto1 = io_lib:format(Texto, [Metodo, 
 								   Uri, 
 								   Version, 
@@ -624,9 +624,9 @@ do_log_request(#request{rid = RID,
 										undefined -> <<>>;
 										_ -> Node
 								   end,
-								   case FileName of
+								   case Filename of
 										undefined -> <<>>;
-										_ -> FileName
+										_ -> Filename
 								   end,
 								   Code, 
 								   Reason, 

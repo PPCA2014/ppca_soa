@@ -7,10 +7,10 @@
 
 execute(Request) ->	
 	case ems_util:load_from_file_req(Request) of
-		{ok, Request2 = #request{filename = FileName, service = Service}} = FileReq->
-			case ems_util:load_erlang_module(FileName) of
+		{ok, Request2 = #request{filename = Filename, service = Service}} = FileReq->
+			case ems_util:load_erlang_module(Filename) of
 				{ok, ModuleController} ->
-					case ems_django:load_module_template(FileName) of
+					case ems_django:load_module_template(Filename) of
 						{ok, ModuleTemplate} -> 
 							Service2 = Service#service{module_name = atom_to_list(ModuleController),
 													   module = ModuleController,

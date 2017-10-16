@@ -314,8 +314,8 @@ json_encode(L) when is_list(L) ->
 json_encode(Value)-> ?JSON_LIB:encode(Value).
 
 
-json_decode_as_map_file(FileName) ->
-	case file:read_file(FileName) of
+json_decode_as_map_file(Filename) ->
+	case file:read_file(Filename) of
 		{ok, JSON} -> json_decode_as_map(JSON);
 		{error, enoent} -> {error, einvalid_json_filename}
 	end.
@@ -703,16 +703,16 @@ utf8_string_linux(Text) ->
 	end.
 	
 
--spec read_file_as_map(FileName :: string()) -> map().
-read_file_as_map(FileName) -> 	
-	case file:read_file(FileName) of
+-spec read_file_as_map(Filename :: string()) -> map().
+read_file_as_map(Filename) -> 	
+	case file:read_file(Filename) of
 		{ok, Arq} -> json_decode_as_map(Arq);
 		Error -> Error
 	end.
 
 -spec read_file_as_list(string()) -> list().
-read_file_as_list(FileName) ->
-  {ok, IO} = file:open( FileName, [read] ),
+read_file_as_list(Filename) ->
+  {ok, IO} = file:open( Filename, [read] ),
   read_file_as_list( io:get_line(IO, ''), IO, [] ).
 
 read_file_as_list( eof, _IO, Acc ) -> lists:reverse( Acc );
@@ -721,13 +721,13 @@ read_file_as_list( Line, IO, Acc ) -> read_file_as_list( io:get_line(IO, ''), IO
 
 
 -spec head_file(string(), non_neg_integer()) -> list().
-head_file(FileName, N) ->
-	L = read_file_as_list(FileName),
+head_file(Filename, N) ->
+	L = read_file_as_list(Filename),
 	{ok, lists:sublist(L, N)}.
 
 -spec tail_file(string(), non_neg_integer()) -> list().
-tail_file(FileName, N) ->
-	L = read_file_as_list(FileName),
+tail_file(Filename, N) ->
+	L = read_file_as_list(Filename),
 	Len = length(L),
 	case Len > N of 	
 		true ->	{ok, lists:nthtail(Len-N, L)};
@@ -754,29 +754,29 @@ replace_all_vars(Subject, [{Key, Value}|VarTail]) ->
 
 
 % Process the path "~" and "." wildcards and variable path. Return path
--spec parse_file_name_path(string() | binary(), list(tuple()) | undefined, binary()) -> {ok, string()} | {error, string()}.
-parse_file_name_path(undefined, _, _) -> {ok, <<>>};
-parse_file_name_path(<<>>, _, _) -> {ok, <<>>};
+-spec parse_file_name_path(string() | binary(), list(tuple()) | undefined, binary()) -> string().
+parse_file_name_path(undefined, _, _) -> <<>>;
+parse_file_name_path(<<>>, _, _) -> <<>>;
 parse_file_name_path(Path, StaticFilePathList, RootPath) when is_binary(Path) ->
 	parse_file_name_path(binary_to_list(Path), StaticFilePathList, RootPath);
 parse_file_name_path(Path, StaticFilePathList, RootPath) ->
 	Ch = string:substr(Path, 1, 1),
 	Ch2 = string:substr(Path, 2, 1),
 	case Ch =:= "/" orelse (is_letter(Ch) andalso Ch2 =:= ":")   of
-		true -> {ok, remove_ult_backslash_url(Path)};  
+		true -> remove_ult_backslash_url(Path);  
 		false ->
 			case Ch == "~" of
 				true -> 
 					case init:get_argument(home) of
-						{ok, [[HomePath]]} -> {ok, replace(Path, "~", HomePath)};
-						Error -> Error
+						{ok, [[HomePath]]} -> replace(Path, "~", HomePath);
+						{error, Reason} -> erlang:error(Reason)
 					end;
 				_ -> 
 					case Ch == "." of
 						true -> 
 							case RootPath of
-								undefined -> {ok, remove_ult_backslash_url(string:substr(Path, 3))};
-								_ -> {ok, remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ string:substr(Path, 3))}
+								undefined -> remove_ult_backslash_url(string:substr(Path, 3));
+								_ -> remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ string:substr(Path, 3))
 							end;
 						false -> 
 							Path2 = replace_all_vars(Path, StaticFilePathList),
@@ -784,20 +784,20 @@ parse_file_name_path(Path, StaticFilePathList, RootPath) ->
 							case string:substr(Path2, 1, 1) == "~" of
 								true -> 
 									case init:get_argument(home) of
-										{ok, [[HomePath]]} -> {ok, replace(Path2, "~", HomePath)};
-										_Error -> {error, Path}
+										{ok, [[HomePath]]} -> replace(Path2, "~", HomePath);
+										{error, Reason} -> erlang:error(Reason)
 									end;
 								_ -> 
 									case Ch == "." of
 										true -> 
 											case RootPath of
-												undefined -> {ok, remove_ult_backslash_url(string:substr(Path2, 3))};
-												_ -> {ok, remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ string:substr(Path2, 3))}
+												undefined -> remove_ult_backslash_url(string:substr(Path2, 3));
+												_ -> remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ string:substr(Path2, 3))
 											end;
 										false ->  
 											case RootPath of
-												undefined -> {ok, remove_ult_backslash_url(Path2)};
-												_ -> {ok, remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ Path2)}
+												undefined -> remove_ult_backslash_url(Path2);
+												_ -> remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ Path2)
 											end
 									end
 							end
@@ -806,8 +806,8 @@ parse_file_name_path(Path, StaticFilePathList, RootPath) ->
 	end.
 
 
-read_file_as_string(FileName) -> 	
-	case file:read_file(FileName) of
+read_file_as_string(Filename) -> 	
+	case file:read_file(Filename) of
 		{ok, Arq} -> Arq;
 		Error -> throw(Error)
 	end.
@@ -839,10 +839,10 @@ file_last_modified(FilePath) ->
 
 %% Converte arquivo latin1 para utf8 formatando os unicodes
 %% Esta função está desconfigurando os arquivos no formato utf8	
-to_utf8(FileName) ->
+to_utf8(Filename) ->
 	try
-		{ok, File} = file:open(FileName, [read,binary]),
-		Size = filelib:file_size(FileName),
+		{ok, File} = file:open(Filename, [read,binary]),
+		Size = filelib:file_size(Filename),
 		{ok, Device} = file:read(File,Size),
 		{Type, _Bytes} = unicode:bom_to_encoding(Device),
 		case Type of
@@ -914,18 +914,18 @@ is_cnpj_valid(S) ->
 	end.
 
 
-load_erlang_module(FileName) ->
-	ModuleName = filename:rootname(filename:basename(FileName)),
+load_erlang_module(Filename) ->
+	ModuleName = filename:rootname(filename:basename(Filename)),
 	ModuleNameAtom = list_to_atom(ModuleName),
-	FileNameMod = filename:rootname(FileName) ++ ".erl",
-	case filelib:file_size(FileNameMod) > 0 of
+	FilenameMod = filename:rootname(Filename) ++ ".erl",
+	case filelib:file_size(FilenameMod) > 0 of
 		true ->
 			case code:ensure_loaded(ModuleNameAtom) of
 				{module, _} -> {ok, ModuleNameAtom};
 				_Error -> 
-					FileNamePath = filename:dirname(FileName), 
-					code:add_path(FileNamePath), 
-					case compile:file(FileNameMod, [{outdir, FileNamePath ++ "/"}]) of
+					FilenamePath = filename:dirname(Filename), 
+					code:add_path(FilenamePath), 
+					case compile:file(FilenameMod, [{outdir, FilenamePath ++ "/"}]) of
 						error -> 
 							io:format("[ ERROR ]\n"),
 							{error, einvalid_module_sintax};
@@ -1892,11 +1892,11 @@ load_from_file_req(Request = #request{url = Url,
 									  service = #service{cache_control = CacheControl,
 														 expires = ExpiresMinute,
 														 path = Path}}) ->
-	FileName = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
-	case file:read_file_info(FileName, [{time, universal}]) of
+	Filename = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
+	case file:read_file_info(Filename, [{time, universal}]) of
 		{ok,{file_info, FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} -> 
-			?DEBUG("ems_static_file_service loading file ~p.", [FileName]),
-			MimeType = mime_type(filename:extension(FileName)),
+			?DEBUG("ems_static_file_service loading file ~p.", [Filename]),
+			MimeType = mime_type(filename:extension(Filename)),
 			ETag = integer_to_binary(erlang:phash2({FSize, MTime}, 16#ffffffff)),
 			LastModified = cowboy_clock:rfc1123(MTime),
 			ExpireDate = date_add_minute(Timestamp, ExpiresMinute + 120), % add +120min (2h) para ser horário GMT
@@ -1912,18 +1912,18 @@ load_from_file_req(Request = #request{url = Url,
 											 reason = enot_modified,
 											 content_type = MimeType,
 											 etag = ETag,
-											 filename = FileName,
+											 filename = Filename,
 											 response_data = <<>>, 
 											 response_header = HttpHeader}
 						 };
 				false ->
-					case file:read_file(FileName) of
+					case file:read_file(Filename) of
 						{ok, FileData} -> 
 							{ok, Request#request{code = 200, 
 											     reason = ok,
 												 content_type = MimeType,
 											     etag = ETag,
-											     filename = FileName,
+											     filename = Filename,
 											     response_data = FileData, 
 											     response_header = HttpHeader}
 							};
@@ -1936,7 +1936,7 @@ load_from_file_req(Request = #request{url = Url,
 					end
 			end;
 		{error, Reason} = Error -> 
-			ems_logger:warn("ems_static_file_service file ~p does not exist.", [FileName]),
+			ems_logger:warn("ems_static_file_service file ~p does not exist.", [Filename]),
 			{error, Request#request{code = case Reason of enoent -> 404; _ -> 400 end, 
 									reason = Reason,	
 									response_data = ems_schema:to_json(Error)}

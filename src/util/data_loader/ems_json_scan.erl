@@ -97,5 +97,5 @@ scan_file_entry([Map|MapTail], CurrentDir, CurrentFilenameMap, Result, RootPath,
 
 -spec parse_filename_path(string() | binary(), binary(), #config{}) -> {ok, string()} | {error, string()}.
 parse_filename_path(JsonFilename, RootPath, #config{static_file_path = StaticFilePath}) -> 
-	ems_util:parse_file_name_path(JsonFilename, StaticFilePath, RootPath).
+	{ok, ems_util:parse_file_name_path(JsonFilename, StaticFilePath, RootPath)}.
 	

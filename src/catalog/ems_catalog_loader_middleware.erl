@@ -212,6 +212,7 @@ prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 														oauth2_with_check_constraint = NewCatalog#service.oauth2_with_check_constraint,
 														oauth2_token_encrypt = NewCatalog#service.oauth2_token_encrypt,
 														protocol = NewCatalog#service.protocol,
+														filename = NewCatalog#service.filename,
 														ctrl_update = CtrlDate,
 														ctrl_modified = CtrlModified,
 														ctrl_hash = CtrlHash

@@ -56,9 +56,9 @@ log_file_head(Request) ->
 
 
 log_file_name(Request) ->	
-	FileName = ems_logger:log_file_name(),
+	Filename = ems_logger:log_file_name(),
 	{ok, Request#request{code = 200, 
-						 response_data = ems_schema:to_json({ok, FileName})}
+						 response_data = ems_schema:to_json({ok, Filename})}
 	}.
    
 check_debug_mode(Request) ->	

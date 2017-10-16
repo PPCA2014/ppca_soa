@@ -42,8 +42,8 @@ execute(Request = #request{timestamp = Timestamp})	->
 			end
 	end.
 
-file_info(FileName) ->
-	case file:read_file_info(FileName, [{time, universal}]) of
+file_info(Filename) ->
+	case file:read_file_info(Filename, [{time, universal}]) of
 		{ok,{file_info, FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} = 
 			Result -> Result,
 			{FSize, MTime};

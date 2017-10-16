@@ -14,11 +14,11 @@
 -export([compile_file/2, compile_file/3, render/2, load_module_template/1]).
 		 
 -spec compile_file(string(), atom()) -> {ok, atom()} | {error, atom()}.
-compile_file(FileName, ModuleName) -> erlydtl:compile_file(FileName, ModuleName, [{out_dir, "ebin"}]).
+compile_file(Filename, ModuleName) -> erlydtl:compile_file(Filename, ModuleName, [{out_dir, "ebin"}]).
 
 
 -spec compile_file(string(), atom(), string()) -> {ok, atom()} | {error, atom()}.
-compile_file(FileName, ModuleName, OutputDir) -> erlydtl:compile_file(FileName, ModuleName, [{out_dir, OutputDir}]).
+compile_file(Filename, ModuleName, OutputDir) -> erlydtl:compile_file(Filename, ModuleName, [{out_dir, OutputDir}]).
 
 
 -spec render(atom(), list(tuple())) -> {ok, binary()} | {error, atom()}.
@@ -32,18 +32,18 @@ render(ModuleName, Args) ->
 
 	
 -spec load_module_template(string()) -> {ok, atom()} | {error, atom()}.
-load_module_template(FileName) ->
-	ModuleName = list_to_atom("mod_djt_" ++ integer_to_list(erlang:phash2(FileName))),
+load_module_template(Filename) ->
+	ModuleName = list_to_atom("mod_djt_" ++ integer_to_list(erlang:phash2(Filename))),
 	case code:ensure_loaded(ModuleName) of
 		{module, _} -> {ok , ModuleName};
 		_Error -> 
-			FileNamePath = filename:dirname(FileName), 
-			case compile_file(FileName, ModuleName, FileNamePath) of
+			FilenamePath = filename:dirname(Filename), 
+			case compile_file(Filename, ModuleName, FilenamePath) of
 				{ok, ModuleName} -> 
-					ems_logger:info("ems_django compile file ~p << ~p >>.", [FileName, ModuleName]),
+					ems_logger:info("ems_django compile file ~p << ~p >>.", [Filename, ModuleName]),
 					{ok , ModuleName};
 				{error, Reason} = Error ->
-					ems_logger:error("ems_django compile invalid file ~p. Reason: ~p.", [FileName, Reason]),
+					ems_logger:error("ems_django compile invalid file ~p. Reason: ~p.", [Filename, Reason]),
 					Error
 			end
 	end.
