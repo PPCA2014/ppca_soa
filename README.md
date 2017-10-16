@@ -269,7 +269,7 @@ curl -X GET localhost:2301/samples/hello_world_java
 Project dependencies for the bus
 =====
 
-* Erlang R19 - <http://www.erlang.org/download.html>
+* Erlang R20 - <http://www.erlang.org/download.html>
 
 
 
