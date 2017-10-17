@@ -1953,6 +1953,8 @@ tuple_to_maps_with_keys(Tuple, Keys) ->
 tuple_to_maps_with_keys(_, [], Result) -> Result;
 tuple_to_maps_with_keys([null|FldT], Keys, Result) ->
 	tuple_to_maps_with_keys([undefined|FldT], Keys, Result);
+tuple_to_maps_with_keys([FldH|FldT], Keys, Result) when is_list(FldH) ->
+	tuple_to_maps_with_keys([list_to_binary(FldH)|FldT], Keys, Result);
 tuple_to_maps_with_keys([FldH|FldT], [KeyH|KeyT], Result) ->
 	tuple_to_maps_with_keys(FldT, KeyT, [{KeyH, FldH} | Result]).
 
