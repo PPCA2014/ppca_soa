@@ -146,7 +146,7 @@
 					  response_header = #{},
 					  req_hash,
 					  host :: binary(),							%% Ip do barramento
-					  filename :: string(),
+					  filename :: string(),						%% Qual arquivo foi lido do disco
 					  referer :: binary(),
 					  access_token :: binary(),
 					  scope :: binary(),
@@ -230,6 +230,7 @@
 					catalog_path :: string(),					%% Local de onde o catálogo foi carregado
 					catalog_file :: string(),					%% Nome do arquivo onde está especificado o catálogo
 					path :: string(),							%% Local para carregar arquivos estáticos
+					filename :: binary(),						%% Alguns serviços podem precisar informar um nome de arquivo
 					redirect_url :: binary(),					%% redirect url						
 					tcp_listen_address,
 					tcp_listen_address_t,

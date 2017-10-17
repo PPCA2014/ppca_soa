@@ -308,28 +308,28 @@ release_connection(Datasource) -> ems_odbc_pool:release_connection(Datasource).
 get_odbc_connection(Datasource) -> ems_odbc_pool:get_connection(Datasource).
 
 
-create_sqlite_from_csv(#service_datasource{connection = FileName,
+create_sqlite_from_csv(#service_datasource{connection = Filename,
 										   table_name = TableName,
 										   csv_delimiter = Delimiter}) -> 
-	FileNamePath = ?CSV_FILE_PATH ++ "/" ++ FileName,
-	case filelib:last_modified(FileNamePath) of
+	FilenamePath = ?CSV_FILE_PATH ++ "/" ++ Filename,
+	case filelib:last_modified(FilenamePath) of
 		0 -> {error, ecsvfile_not_exist};
 		LastModified ->
 			SqliteFile = ?DATABASE_PATH ++ "/sqlite3_" ++ TableName,
 			DatabaseExist = filelib:is_file(SqliteFile), 
 			F = fun() ->
-				Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, FileName)),
+				Ctrl = ems_util:hd_or_empty(mnesia:read(ctrl_sqlite_table, Filename)),
 				case Ctrl =:= [] orelse not DatabaseExist orelse Ctrl#ctrl_sqlite_table.last_modified =/= LastModified of
 					true ->
 						Csv2SqliteCmd = lists:flatten(io_lib:format('~s "~s" "~s" "~s" "~s"',
 																	 [?CSV2SQLITE_PATH,
 																	  SqliteFile, 
 																	  TableName, 
-																	  FileNamePath, 
+																	  FilenamePath, 
 																	  Delimiter])),
 						ems_logger:info("OS command: ~p.", [Csv2SqliteCmd]),
 						os:cmd(Csv2SqliteCmd),
-						mnesia:write(#ctrl_sqlite_table{file_name = FileName, last_modified = LastModified});
+						mnesia:write(#ctrl_sqlite_table{file_name = Filename, last_modified = LastModified});
 					false -> 
 						% Não foi necessário criar o arquivo csv. Não houve mudança no arquivo csv
 						ok
@@ -352,10 +352,10 @@ get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Dr
 	end.
 
 
-%create_sqlite_virtual_table_from_csv_file(FileName, TableName, _PrimaryKey) -> 
+%create_sqlite_virtual_table_from_csv_file(Filename, TableName, _PrimaryKey) -> 
 %	{ok, Conn} = ems_db:get_odbc_connection("DRIVER=SQLite;Version=3;New=True;"),
 %	odbc:sql_query(Conn, "select load_extension(\"/usr/lib/x86_64-linux-gnu/libsqlite3_mod_csvtable.so\")"),
-%	CreateTableDDL = lists:flatten(io_lib:format("create virtual table ~s using csvtable(\"~s\")", [TableName, FileName])),
+%	CreateTableDDL = lists:flatten(io_lib:format("create virtual table ~s using csvtable(\"~s\")", [TableName, Filename])),
 %	odbc:sql_query(Conn, CreateTableDDL),
 %	odbc:commit(Conn, commit),
 %	{ok, Conn}.

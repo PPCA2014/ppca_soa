@@ -164,5 +164,11 @@
 	{
 		"catalog": "/emsbus/ems_auth_login", 
 		"file": "ems_auth_login.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_logger_os_service", 
+		"file": "ems_logger_os_service.json"
 	}	
+	
 ]

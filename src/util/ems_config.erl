@@ -111,20 +111,20 @@ code_change(_OldVsn, State, _Extra) ->
 get_config_data() ->
 	case init:get_argument(home) of
 		{ok, [[HomePath]]} -> 
-			FileName = lists:concat([HomePath, "/.erlangms/", node(), ".conf"]),
-			case file:read_file(FileName) of 
+			Filename = lists:concat([HomePath, "/.erlangms/", node(), ".conf"]),
+			case file:read_file(Filename) of 
 				{ok, Arq} -> 
-					?DEBUG("ems_config checking if node file configuration ~p exist: Ok", [FileName]),
-					{ok, Arq, FileName};
+					?DEBUG("ems_config checking if node file configuration ~p exist: Ok", [Filename]),
+					{ok, Arq, Filename};
 				_Error -> 
-					?DEBUG("ems_config checking if node file configuration ~p exist: No", [FileName]),
-					FileName2 = lists:concat([HomePath, "/.erlangms/emsbus.conf"]),
-					case file:read_file(FileName2) of 
+					?DEBUG("ems_config checking if node file configuration ~p exist: No", [Filename]),
+					Filename2 = lists:concat([HomePath, "/.erlangms/emsbus.conf"]),
+					case file:read_file(Filename2) of 
 						{ok, Arq2} -> 
-							?DEBUG("ems_config checking if file configuration ~p exist: Ok", [FileName2]),
-							{ok, Arq2, FileName2};
+							?DEBUG("ems_config checking if file configuration ~p exist: Ok", [Filename2]),
+							{ok, Arq2, Filename2};
 						_Error -> 
-							?DEBUG("ems_config checking if file configuration ~p exist: No", [FileName2]),
+							?DEBUG("ems_config checking if file configuration ~p exist: No", [Filename2]),
 							case file:read_file(?CONF_FILE_PATH) of 
 								{ok, Arq3} -> 
 									?DEBUG("ems_config checking if global file configuration ~p exist: Ok", [?CONF_FILE_PATH]),
@@ -146,29 +146,29 @@ get_config_data() ->
 			end
 	end.
 
-print_config_settings(Json = #config{ems_debug = true, config_file = FileName}) ->
-	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [FileName]),
+print_config_settings(Json = #config{ems_debug = true, config_file = Filename}) ->
+	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [Filename]),
 	ems_logger:format_debug("~p\n", [Json]);
-print_config_settings(#config{ems_debug = false, config_file = FileName}) ->
-	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [FileName]).
+print_config_settings(#config{ems_debug = false, config_file = Filename}) ->
+	ems_logger:format_alert("\nems_config loading configuration file ~p...\n", [Filename]).
 
 % Load the configuration file
 load_config() ->
 	case get_config_data() of
-		{ok, ConfigData, FileName} ->
+		{ok, ConfigData, Filename} ->
 			case ems_util:json_decode_as_map(ConfigData) of
 				{ok, Json} -> 
 					try
-						Result = parse_config(Json, FileName),
+						Result = parse_config(Json, Filename),
 						print_config_settings(Result),
 						Result
 					catch 
 						_Exception:Reason ->
-							ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Reason: ~p. Running with default settings.\n", [FileName, Reason]),
+							ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Reason: ~p. Running with default settings.\n", [Filename, Reason]),
 							get_default_config()
 					end;
 				_Error -> 
-					ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Running with default settings.\n", [FileName]),
+					ems_logger:format_warn("\nems_config parse invalid configuration file ~p. Running with default settings.\n", [Filename]),
 					get_default_config()
 			end;
 		{error, enofile_config} ->
