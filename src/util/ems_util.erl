@@ -754,7 +754,7 @@ replace_all_vars(Subject, [{Key, Value}|VarTail]) ->
 
 
 % Process the path "~" and "." wildcards and variable path. Return path
--spec parse_file_name_path(string() | binary(), list(tuple()) | undefined, binary()) -> string().
+-spec parse_file_name_path(string() | binary(), list(tuple()) | undefined, binary() | undefined) -> string().
 parse_file_name_path(undefined, _, _) -> <<>>;
 parse_file_name_path(<<>>, _, _) -> <<>>;
 parse_file_name_path(Path, StaticFilePathList, RootPath) when is_binary(Path) ->
@@ -797,6 +797,7 @@ parse_file_name_path(Path, StaticFilePathList, RootPath) ->
 										false ->  
 											case RootPath of
 												undefined -> remove_ult_backslash_url(Path2);
+												<<>> -> remove_ult_backslash_url(Path2);
 												_ -> remove_ult_backslash_url(remove_ult_backslash_url(RootPath) ++ "/" ++ Path2)
 											end
 									end
