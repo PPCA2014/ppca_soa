@@ -146,7 +146,8 @@
 		 decode_http_header/2,
 		 decode_http_request/1,
 		 format_header_value/2,
-		 tuple_to_maps_with_keys/2
+		 tuple_to_maps_with_keys/2,
+		 compile_modulo_erlang/2
 		]).
 
 -spec version() -> string().
@@ -2043,4 +2044,33 @@ parse_request_querystring_defaults([H|T], QuerystringUser, QuerystringList) ->
 				enoent -> [];
 				Value -> parse_request_querystring_defaults(T, QuerystringUser, [{NomeQuery, Value} | QuerystringList])
 			end
+	end.
+
+-spec compile_modulo_erlang(binary() | string() | undefined, binary() | string()) -> ok | {error, einvalidfilename} | {error, einvalid_dir}.
+compile_modulo_erlang(undefined, _) -> ok;
+compile_modulo_erlang(<<>>, _) -> ok;
+compile_modulo_erlang(Path, ModuleNameCanonical) when is_binary(Path) ->
+	compile_modulo_erlang(binary_to_list(Path), ModuleNameCanonical);
+compile_modulo_erlang(Path, ModuleNameCanonical) when is_binary(ModuleNameCanonical) ->
+	compile_modulo_erlang(Path, binary_to_list(ModuleNameCanonical));
+compile_modulo_erlang(Path, ModuleNameCanonical) ->
+	case filelib:is_dir(Path) of
+		true ->
+			Filename = Path ++ "/" ++ ModuleNameCanonical ++ ".erl",
+			case filelib:is_regular(Filename) of
+				true ->
+					ems_logger:info("Compile file ~p ", [Filename]),
+					code:add_path(Path), 
+					case compile:file(Filename, [{outdir, Path ++ "/"}]) of
+						error -> ems_logger:error("[ ERROR ]\n");
+						{error, Errors, _Warnings} -> 
+							ems_logger:error("[ ERROR ]\n"),
+							ems_logger:error("~p\n", [Errors]);
+						_ -> 
+							ems_logger:error("[ OK ]\n"),
+							ok
+					end;
+				_ -> {error, einvalid_filename}
+			end;
+		false -> {error, einvalid_dir}
 	end.

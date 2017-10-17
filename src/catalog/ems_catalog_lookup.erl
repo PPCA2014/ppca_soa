@@ -59,19 +59,29 @@ lookup(Request = #request{type = Type, rowid = Rowid, params_url = ParamsMap}, F
 	case FindWithRE of
 		false ->
 			case find(Table, Rowid) of
-				{ok, Service} -> 
-					Querystring = ems_util:parse_request_querystring(Service, Request),
-					{Service, ParamsMap, Querystring};
+				{ok, Service = #service{enable = Enable}} -> 
+					case Enable of
+						true -> 
+							Querystring = ems_util:parse_request_querystring(Service, Request),
+							{Service, ParamsMap, Querystring};
+						false ->
+							{error, edisabled_service}
+					end;
 				_ -> {error, enoent}
 			end;
 		true ->
 			case all(Table) of
 				{ok, Records} ->
 					case lookup_re(Request, Records) of
-						{error, enoent} = Error -> Error;
-						{Service, ParamsMapRE} -> 
-							Querystring = ems_util:parse_request_querystring(Service, Request),
-							{Service, ParamsMapRE, Querystring}
+						{error, enoent} -> {error, enoent};
+						{Service = #service{enable = Enable}, ParamsMapRE} -> 
+							case Enable of
+								true -> 
+									Querystring = ems_util:parse_request_querystring(Service, Request),
+									{Service, ParamsMapRE, Querystring};
+								false ->
+									{error, edisabled_service}
+							end
 					end;
 				_ -> {error, enoent}
 			end

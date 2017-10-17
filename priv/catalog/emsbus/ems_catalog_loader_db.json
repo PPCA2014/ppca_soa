@@ -44,6 +44,7 @@
 				   CSEExpireMinute,
 				   CSEPublic,
 				   CSEPath,
+				   CSEFilename,
 				   CSERedirectUrl,
 				   CSETcpListenAddress,
 				   CSETcpAllowedAddress,
@@ -85,6 +86,7 @@
 				   CSEExpireMinute,
 				   CSEPublic,
 				   CSEPath,
+				   CSEFilename,
 				   CSERedirectUrl,
 				   CSETcpListenAddress,
 				   CSETcpAllowedAddress,
@@ -103,9 +105,9 @@
 				"authorization", "lang", "timeout", "enable",
 				"content_type", "async", "host", "node", "debug",
 				"schema_in", "schema_out", "middleware", "cache_control",
-				"expires", "public", "path", "redirect_url","tcp_listen_address",
-				"tcp_allowed_address", "tcp_max_connections","tcp_port",
-				"tcp_is_ssl","tcp_ssl_cacertfile","tcp_ssl_certfile",
+				"expires", "public", "path", "filename", "redirect_url",
+				"tcp_listen_address","tcp_allowed_address", "tcp_max_connections",
+				"tcp_port","tcp_is_ssl","tcp_ssl_cacertfile","tcp_ssl_certfile",
 				"tcp_ssl_keyfile","oauth2_with_check_constraint"]
 	
 }

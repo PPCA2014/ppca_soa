@@ -186,7 +186,8 @@
 				 https_port_offset :: non_neg_integer(),
 				 http_enable :: boolean(),
 				 https_enable :: boolean(),
-				 params :: map()
+				 params :: map(),
+				 client_path_search
 		 }). 	
 
 

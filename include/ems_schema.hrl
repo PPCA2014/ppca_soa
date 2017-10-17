@@ -84,8 +84,12 @@
 				 redirect_uri :: binary(),
 				 active :: boolean(),
 				 scope :: binary(),
-				 ctrl_insert,
-				 ctrl_update 
+				 ctrl_path :: string(),
+				 ctrl_file :: string(),
+				 ctrl_insert,								%% Data que o serviço foi inserido no banco mnesia
+				 ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
+				 ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+				 ctrl_hash									%% Hash gerado para poder comparar dois registros
 		}).
 
 
@@ -227,8 +231,6 @@
 					cache_control :: binary(),
 					enable = false :: boolean(),
 					content_type :: binary(),					%% Tipo de conteúdo (Ex.: application/json, application/pdf)
-					catalog_path :: string(),					%% Local de onde o catálogo foi carregado
-					catalog_file :: string(),					%% Nome do arquivo onde está especificado o catálogo
 					path :: string(),							%% Local para carregar arquivos estáticos
 					filename :: binary(),						%% Alguns serviços podem precisar informar um nome de arquivo
 					redirect_url :: binary(),					%% redirect url						
@@ -246,6 +248,8 @@
 					oauth2_with_check_constraint = false :: boolean(),
 					oauth2_token_encrypt = false :: boolean(),
 					properties :: map(),						%% Outros parâmetros
+					catalog_path :: string(),					%% Local de onde o catálogo foi carregado
+					catalog_file :: string(),					%% Nome do arquivo onde está especificado o catálogo
 				    ctrl_insert,								%% Data que o serviço foi inserido no banco mnesia
 					ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
 					ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)

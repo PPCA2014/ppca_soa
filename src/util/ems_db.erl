@@ -60,6 +60,16 @@ create_database(Nodes) ->
 							     {index, [#client.codigo]},
 							     {attributes, record_info(fields, client)}]),
 							     
+    mnesia:create_table(client_db, [{type, set},
+									{disc_copies, Nodes},
+									{index, [#client.codigo]},
+									{attributes, record_info(fields, client)}]),
+
+    mnesia:create_table(client_fs, [{type, set},
+									{disc_copies, Nodes},
+									{index, [#client.codigo]},
+									{attributes, record_info(fields, client)}]),
+
     mnesia:create_table(sequence, [{type, set},
 								   {disc_copies, Nodes},
 								   {attributes, record_info(fields, sequence)}]),

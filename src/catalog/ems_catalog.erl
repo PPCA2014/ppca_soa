@@ -228,24 +228,6 @@ parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
 parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
 
-compile_modulo_erlang(undefined, _) -> ok;
-compile_modulo_erlang(Path, ModuleNameCanonical) ->
-	Filename = Path ++ "/" ++ ModuleNameCanonical ++ ".erl",
-	case filelib:is_regular(Filename) of
-		true ->
-			io:format("Compile file ~p ", [Filename]),
-			code:add_path(Path), 
-			case compile:file(Filename, [{outdir, Path ++ "/"}]) of
-				error -> io:format("[ ERROR ]\n");
-				{error, Errors, _Warnings} -> 
-					io:format("[ ERROR ]\n"),
-					io:format_error("~p\n", [Errors]);
-				_ -> io:format("[ OK ]\n")
-			end;
-		_ -> ok
-	end.
-	
-
 compile_page_module(undefined, _, _) -> undefined;
 compile_page_module(Page, Rowid, Conf) -> 
 	ModuleNamePage =  "page" ++ integer_to_list(Rowid),
@@ -321,142 +303,137 @@ new_service_from_map(Map,
 			true -> Enable = false;
 			false -> Enable = Enable1
 		end,
-		case Enable of 
-			true ->
-				Id = Id,
-				Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map)),
-				Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
-				ServiceImpl = maps:get(<<"service">>, Map),
-				{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
-				Comment = maps:get(<<"comment">>, Map, <<>>),
-				Version = maps:get(<<"version">>, Map, <<"1.0.0">>),
-				Owner = maps:get(<<"owner">>, Map, <<>>),
-				Async = ems_util:parse_bool(maps:get(<<"async">>, Map, false)),
-				Rowid = ems_util:make_rowid(Url2),
-				Lang = ems_util:parse_lang(maps:get(<<"lang">>, Map, <<>>)),
-				Ds = maps:get(<<"datasource">>, Map, undefined),
-				case parse_datasource(Ds, Rowid, Conf) of
-					{error, enoent} -> 
-						{error, eundefine_datasource};
-					Datasource ->
+		Id = Id,
+		Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map)),
+		Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
+		ServiceImpl = maps:get(<<"service">>, Map),
+		{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
+		Comment = maps:get(<<"comment">>, Map, <<>>),
+		Version = maps:get(<<"version">>, Map, <<"1.0.0">>),
+		Owner = maps:get(<<"owner">>, Map, <<>>),
+		Async = ems_util:parse_bool(maps:get(<<"async">>, Map, false)),
+		Rowid = ems_util:make_rowid(Url2),
+		Lang = ems_util:parse_lang(maps:get(<<"lang">>, Map, <<>>)),
+		Ds = maps:get(<<"datasource">>, Map, undefined),
+		case parse_datasource(Ds, Rowid, Conf) of
+			{error, enoent} -> 
+				{error, eundefine_datasource};
+			Datasource ->
+				case Type of
+					<<"GET">> -> ResultCache = ems_util:parse_result_cache(maps:get(<<"result_cache">>, Map, ResultCacheDefault));
+					_ -> ResultCache = 0
+				end,
+				Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Map, AuthorizationDefault)),
+				OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Map, Oauth2WithCheckConstraintDefault)),
+				OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, Map, false)),
+				Debug = ems_util:parse_bool(maps:get(<<"debug">>, Map, false)),
+				UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
+				SchemaIn = maps:get(<<"schema_in">>, Map, null),
+				SchemaOut = maps:get(<<"schema_out">>, Map, null),
+				PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, Map, 1)),
+				PoolMax0 = ems_config:getConfig(<<"pool_max">>, Name, maps:get(<<"pool_max">>, Map, 1)),
+				% Ajusta o pool_max para o valor de pool_size se for menor
+				case PoolMax0 < PoolSize of
+					true -> PoolMax = PoolSize;
+					false -> PoolMax = PoolMax0
+				end,
+				Timeout = ems_util:parse_timeout(maps:get(<<"timeout">>, Map, ?SERVICE_TIMEOUT), ?SERVICE_MAX_TIMEOUT),
+				Middleware = parse_middleware(maps:get(<<"middleware">>, Map, undefined)),
+				CacheControl = maps:get(<<"cache_control">>, Map, ?CACHE_CONTROL_1_SECOND),
+				ExpiresMinute = maps:get(<<"expires_minute">>, Map, 1),
+				Public = ems_util:parse_bool(maps:get(<<"public">>, Map, true)),
+				ContentType = maps:get(<<"content_type">>, Map, ?CONTENT_TYPE_JSON),
+				CatalogPath = maps:get(<<"file_path">>, Map, <<>>),
+				CatalogFile = maps:get(<<"file_name">>, Map, <<>>),
+				Path = ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault, undefined),
+				Filename = ems_util:parse_file_name_path(maps:get(<<"filename">>, Map, undefined), StaticFilePathDefault, undefined),
+				RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
+				Protocol = maps:get(<<"protocol">>, Map, <<>>),
+				ListenAddress = maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault),
+				ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
+				AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
+				AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
+				MaxConnections = maps:get(<<"tcp_max_connections">>, Map, [?HTTP_MAX_CONNECTIONS]),
+				Port = ems_util:parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, Map, undefined))),
+				Ssl = maps:get(<<"tcp_ssl">>, Map, undefined),
+				case Ssl of
+					undefined ->
+						IsSsl = false,
+						SslCaCertFile = undefined,
+						SslCertFile = undefined,
+						SslKeyFile = undefined;
+					_ ->
+						IsSsl = true,
+						SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
+						SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
+						SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
+				end,
+				case Lang of
+					<<"erlang">> -> 
+						Node = <<>>,
+						Mapost = '',
+						MapostName = HostNameDefault,
+						ems_util:compile_modulo_erlang(Path, ModuleNameCanonical);
+					_ ->	
+						Node = parse_node_service(maps:get(<<"node">>, Map, CatNodeSearchDefault)),
+						{Mapost, MapostName} = parse_host_service(maps:get(<<"host">>, Map, CatHostSearchDefault), ModuleName, Node, Conf)
+				end,
+				{Querystring, QtdQuerystringRequired} = ems_util:parse_querystring_def(maps:get(<<"querystring">>, Map, [])),
+				Page = maps:get(<<"page">>, Map, undefined),
+				PageModule = compile_page_module(Page, Rowid, Conf),
+				CtrlModified = maps:get(<<"ctrl_modified">>, Map, undefined),
+				CtrlHash = erlang:phash2(Map),
+				StartTimeout = maps:get(<<"start_timeout">>, Map, undefined),
+				case UseRE of
+					true -> 
 						case Type of
-							<<"GET">> -> ResultCache = ems_util:parse_result_cache(maps:get(<<"result_cache">>, Map, ResultCacheDefault));
-							_ -> ResultCache = 0
-						end,
-						Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Map, AuthorizationDefault)),
-						OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Map, Oauth2WithCheckConstraintDefault)),
-						OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, Map, false)),
-						Debug = ems_util:parse_bool(maps:get(<<"debug">>, Map, false)),
-						UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
-						SchemaIn = maps:get(<<"schema_in">>, Map, null),
-						SchemaOut = maps:get(<<"schema_out">>, Map, null),
-						PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, Map, 1)),
- 						PoolMax0 = ems_config:getConfig(<<"pool_max">>, Name, maps:get(<<"pool_max">>, Map, 1)),
-						% Ajusta o pool_max para o valor de pool_size se for menor
-						case PoolMax0 < PoolSize of
-							true -> PoolMax = PoolSize;
-							false -> PoolMax = PoolMax0
-						end,
-						Timeout = ems_util:parse_timeout(maps:get(<<"timeout">>, Map, ?SERVICE_TIMEOUT), ?SERVICE_MAX_TIMEOUT),
-						Middleware = parse_middleware(maps:get(<<"middleware">>, Map, undefined)),
-						CacheControl = maps:get(<<"cache_control">>, Map, ?CACHE_CONTROL_1_SECOND),
-						ExpiresMinute = maps:get(<<"expires_minute">>, Map, 1),
-						Public = ems_util:parse_bool(maps:get(<<"public">>, Map, true)),
-						ContentType = maps:get(<<"content_type">>, Map, ?CONTENT_TYPE_JSON),
-						CatalogPath = maps:get(<<"file_path">>, Map, <<>>),
-						CatalogFile = maps:get(<<"file_name">>, Map, <<>>),
-						Path = ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault, undefined),
-						Filename = ems_util:parse_file_name_path(maps:get(<<"filename">>, Map, undefined), StaticFilePathDefault, undefined),
-						RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
-						Protocol = maps:get(<<"protocol">>, Map, <<>>),
-						ListenAddress = maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault),
-						ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
-						AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
-						AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
-						MaxConnections = maps:get(<<"tcp_max_connections">>, Map, [?HTTP_MAX_CONNECTIONS]),
-						Port = ems_util:parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, Map, undefined))),
-						Ssl = maps:get(<<"tcp_ssl">>, Map, undefined),
-						case Ssl of
-							undefined ->
-								IsSsl = false,
-								SslCaCertFile = undefined,
-								SslCertFile = undefined,
-								SslKeyFile = undefined;
-							_ ->
-								IsSsl = true,
-								SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
-								SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
-								SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
-						end,
-						case Lang of
-							<<"erlang">> -> 
-								Node = <<>>,
-								Mapost = '',
-								MapostName = HostNameDefault,
-								compile_modulo_erlang(Path, ModuleNameCanonical);
-							_ ->	
-								Node = parse_node_service(maps:get(<<"node">>, Map, CatNodeSearchDefault)),
-								{Mapost, MapostName} = parse_host_service(maps:get(<<"host">>, Map, CatHostSearchDefault), ModuleName, Node, Conf)
-						end,
-						{Querystring, QtdQuerystringRequired} = ems_util:parse_querystring_def(maps:get(<<"querystring">>, Map, [])),
-						Page = maps:get(<<"page">>, Map, undefined),
-						PageModule = compile_page_module(Page, Rowid, Conf),
-						CtrlModified = maps:get(<<"ctrl_modified">>, Map, undefined),
-						CtrlHash = erlang:phash2(Map),
-						StartTimeout = maps:get(<<"start_timeout">>, Map, undefined),
-						case UseRE of
-							true -> 
-								case Type of
-									<<"GET">> -> 
-										Service = new_service_re(Rowid, Id, Name, Url2, 
-																   ServiceImpl,
-																   ModuleName, 
-																   ModuleNameCanonical,
-																   FunctionName, Type, Enable, Comment, 
-																   Version, Owner, Async, 
-																   Querystring, QtdQuerystringRequired,
-																   Mapost, MapostName, ResultCache,
-																   Authorization, Node, Lang,
-																   Datasource, Debug, SchemaIn, SchemaOut, 
-																   PoolSize, PoolMax, Map, Page, 
-																   PageModule, Timeout, 
-																   Middleware, CacheControl, ExpiresMinute, 
-																   Public, ContentType, Path, Filename,
-																   RedirectUrl, ListenAddress, ListenAddress_t, AllowedAddress, 
-																   AllowedAddress_t, Port, MaxConnections,
-																   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-																   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-																   CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
-										{ok, Service};
-									_ -> 
-										erlang:error(einvalid_re_service)
-								end;
-							false -> 
-								Service = new_service(Rowid, Id, Name, Url2, 
-														ServiceImpl,
-														ModuleName,
-														ModuleNameCanonical,
-														FunctionName, Type, Enable, Comment,
-														Version, Owner, Async, 
-														Querystring, QtdQuerystringRequired,
-														Mapost, MapostName, ResultCache,
-														Authorization, Node, Lang,
-														Datasource, Debug, SchemaIn, SchemaOut, 
-														PoolSize, PoolMax, Map, Page, 
-														PageModule, Timeout, 
-														Middleware, CacheControl, 
-														ExpiresMinute, Public, 
-														ContentType, Path, Filename,
-														RedirectUrl, ListenAddress, ListenAddress_t, AllowedAddress, 
-														AllowedAddress_t, Port, MaxConnections,
-														IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
-														OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-														CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
-								{ok, Service}
-						end
-				end;
-			false -> 
-				{error, edisabled}
+							<<"GET">> -> 
+								Service = new_service_re(Rowid, Id, Name, Url2, 
+														   ServiceImpl,
+														   ModuleName, 
+														   ModuleNameCanonical,
+														   FunctionName, Type, Enable, Comment, 
+														   Version, Owner, Async, 
+														   Querystring, QtdQuerystringRequired,
+														   Mapost, MapostName, ResultCache,
+														   Authorization, Node, Lang,
+														   Datasource, Debug, SchemaIn, SchemaOut, 
+														   PoolSize, PoolMax, Map, Page, 
+														   PageModule, Timeout, 
+														   Middleware, CacheControl, ExpiresMinute, 
+														   Public, ContentType, Path, Filename,
+														   RedirectUrl, ListenAddress, ListenAddress_t, AllowedAddress, 
+														   AllowedAddress_t, Port, MaxConnections,
+														   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+														   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+														   CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
+								{ok, Service};
+							_ -> 
+								erlang:error(einvalid_re_service)
+						end;
+					false -> 
+						Service = new_service(Rowid, Id, Name, Url2, 
+												ServiceImpl,
+												ModuleName,
+												ModuleNameCanonical,
+												FunctionName, Type, Enable, Comment,
+												Version, Owner, Async, 
+												Querystring, QtdQuerystringRequired,
+												Mapost, MapostName, ResultCache,
+												Authorization, Node, Lang,
+												Datasource, Debug, SchemaIn, SchemaOut, 
+												PoolSize, PoolMax, Map, Page, 
+												PageModule, Timeout, 
+												Middleware, CacheControl, 
+												ExpiresMinute, Public, 
+												ContentType, Path, Filename,
+												RedirectUrl, ListenAddress, ListenAddress_t, AllowedAddress, 
+												AllowedAddress_t, Port, MaxConnections,
+												IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
+												OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
+												CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
+						{ok, Service}
+				end
 		end
 	catch
 		_Exception:Reason -> 

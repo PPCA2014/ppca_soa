@@ -17,7 +17,12 @@
 		 find_by_codigo/1,
 		 find_by_name/1,
 		 find_by_codigo_and_secret/2,
-		 to_json/1]).
+		 to_json/1,
+		 new_client_from_map/2,
+		 new_client_from_map/3,
+		 get_table/1,
+		 find/2,
+		 all/1]).
 
 find_by_id(Id) -> ems_db:get(client, Id).
 
@@ -78,3 +83,49 @@ to_json(Client) ->
 		]).
 
 	
+
+new_client_from_map(Map, Conf) -> new_client_from_map(Map, Conf, undefined).
+
+%-spec new_client_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+new_client_from_map(Map, _Conf, Id) ->
+	try
+		{ok, #client{id = Id,
+				codigo = maps:get(<<"codigo">>, Map, undefined),
+				name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
+				secret = ?UTF8_STRING(maps:get(<<"secret">>, Map, <<>>)),
+				redirect_uri = ?UTF8_STRING(maps:get(<<"redirect_uri">>, Map, <<>>)),
+				description = ?UTF8_STRING(maps:get(<<"description">>, Map, <<>>)),
+				scope = ?UTF8_STRING(maps:get(<<"scope">>, Map, <<>>)),
+				active = ?UTF8_STRING(maps:get(<<"active">>, Map, <<>>)),
+				ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
+				ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
+				ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
+				ctrl_hash = erlang:phash2(Map)
+			}
+		}
+	catch
+		_Exception:Reason -> 
+			ems_logger:format_warn("ems_client parse invalid client specification: ~p\n\t~p.\n", [Reason, Map]),
+			{error, Reason}
+	end.
+
+
+-spec get_table(fs | db) -> client_db | client_fs.
+get_table(db) -> client_db;
+get_table(fs) -> client_fs.
+
+-spec find(client_fs | client_db, non_neg_integer()) -> {ok, #client{}} | {error, atom()}.
+find(Table, Codigo) ->
+	case ems_db:find_first(Table, [{codigo, "==", Codigo}]) of
+		{error, Reason} -> {error, Reason};
+		Record -> {ok, setelement(1, Record, client)}
+	end.
+
+-spec all(client_fs | client_db) -> list() | {error, atom()}.
+all(Table) ->
+	case ems_db:all(Table) of
+		{ok, Records} -> 
+			Records2 = [setelement(1, R, client) || R <- Records],
+			{ok, Records2};
+		Error -> Error
+	end.
