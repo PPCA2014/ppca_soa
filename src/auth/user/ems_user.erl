@@ -30,48 +30,49 @@
 		 all/1]).
 
 
-find_by_id(Id) -> ems_db:get(user, Id).
-
-insert(User) -> 
-	case valida(User, insert) of
-		ok -> ems_db:insert(User);
-		Error -> 
-			Error
+-spec find_by_id(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
+find_by_id(Id) -> 
+	case ems_db:get(user_db, Id) of
+		{ok, Record} -> {ok, setelement(1, Record, user)};
+		_ -> case ems_db:get(user_fs, Id) of
+				{ok, Record} -> {ok, setelement(1, Record, user)};
+				_ -> {error, enoent}
+			 end
 	end.
 
-update(User) -> 
-	case valida(User, update) of
-		ok -> ems_db:update(User);
-		Error -> Error
-	end.
+-spec all() -> {ok, list()}.
+all() -> 
+	{ok, ListaUserDb} = ems_db:all(user_db),
+	{ok, ListaUserFs} = ems_db:all(user_fs),
+	{ok, ListaUserDb ++ ListaUserFs}.
+	
 
-all() -> ems_db:all(user).
-
-delete(Id) -> ems_db:delete(user, Id).
-
-valida(_User, _Operation) -> ok.
 
 -spec authenticate_login_password(binary(), binary()) -> ok | {error, invalidCredentials}.
 authenticate_login_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
+			io:format("achou user\n"),
 			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of
-				true -> ok;
-				_ -> {error, invalidCredentials}
+				true -> io:format("ok\n"), ok;
+				_ -> io:format("invalid crede ~p = ~p\n", [PasswordUser, Password]), {error, invalidCredentials}
 			end;
 		_ -> {error, invalidCredentials}
 	end.
 
 
--spec find_by_codigo(integer()) -> #user{} | {error, enoent}.
+-spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
 find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(user, Codigo, #user.codigo) of
-		[] -> {error, enoent};
-		[Record|_] -> {ok, Record}
+	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
+		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
+				[] -> {error, enoent};
+				[Record|_] -> {ok, setelement(1, Record, user)}
+			  end;
+		[Record|_] -> {ok, setelement(1, Record, user)}
 	end.
 
 
--spec find_by_login(binary()) -> #user{} | {error, enoent}.
+-spec find_by_login(binary() | string()) -> #user{} | {error, enoent}.
 find_by_login(<<>>) -> {error, enoent};	
 find_by_login("") -> {error, enoent};	
 find_by_login(undefined) -> {error, enoent};	
@@ -81,13 +82,17 @@ find_by_login(Login) ->
 		false -> LoginStr = string:to_lower(binary_to_list(Login))
 	end,
 	LoginBin = list_to_binary(LoginStr),
-	case mnesia:dirty_index_read(user, LoginBin, #user.login) of
+	case mnesia:dirty_index_read(user_db, LoginBin, #user.login) of
 		[] -> 
-			case find_by_email(LoginBin) of
-				{ok, Record} -> {ok, Record};
-				{error, enoent} -> find_by_cpf(Login)
+			case mnesia:dirty_index_read(user_fs, LoginBin, #user.login) of
+				[] -> 
+					case find_by_email(LoginBin) of
+						{ok, Record} -> {ok, Record};
+						_ -> find_by_cpf(Login)
+					end;
+				[Record|_] -> {ok, setelement(1, Record, user)}
 			end;
-		[Record|_] -> {ok, Record}
+		[Record|_] -> {ok, setelement(1, Record, user)}
 	end.
 
 
@@ -103,15 +108,19 @@ find_by_email(Email) ->
 	case string:rchr(EmailStr, $@) > 0 of
 		true -> 
 			EmailBin = list_to_binary(EmailStr),
-			case mnesia:dirty_index_read(user, EmailBin, #user.email) of
-				[] -> {error, enoent};
+			case mnesia:dirty_index_read(user_db, EmailBin, #user.email) of
+				[] -> 
+					case mnesia:dirty_index_read(user_fs, EmailBin, #user.email) of
+						[] -> {error, enoent};
+						[Record|_] -> {ok, Record}
+					end;
 				[Record|_] -> {ok, Record}
 			end;
 		false -> {error, enoent}
 	end.
 
 
--spec find_by_cpf(binary()) -> #user{} | {error, enoent}.
+-spec find_by_cpf(binary() | string()) -> #user{} | {error, enoent}.
 find_by_cpf(<<>>) -> {error, enoent};	
 find_by_cpf("") -> {error, enoent};	
 find_by_cpf(undefined) -> {error, enoent};	
@@ -128,9 +137,13 @@ find_by_cpf(Cpf) ->
 	case (LenCpf =:= 11 andalso ems_util:is_cpf_valid(CpfStr)) orelse
 		 (LenCpf =:= 14 andalso ems_util:is_cnpj_valid(CpfStr)) of
 		true ->
-			case mnesia:dirty_index_read(user, CpfBin, #user.cpf) of
-				[] -> {error, enoent};
-				[Record|_] -> {ok, Record}
+			case mnesia:dirty_index_read(user_db, CpfBin, #user.cpf) of
+				[] -> 
+					case mnesia:dirty_index_read(user_fs, CpfBin, #user.cpf) of
+						[] -> {error, enoent};
+						[Record|_] -> {ok, setelement(1, Record, user)}
+					end;
+				[Record|_] -> {ok, setelement(1, Record, user)}
 			end;
 		false -> 
 			% tenta inserir zeros na frente e refaz a pesquisa
@@ -140,35 +153,46 @@ find_by_cpf(Cpf) ->
 				 _ -> Cpf2 = CpfStr
 			end,
 			LenCpf2 = string:len(Cpf2),
+			Cpf2Bin = list_to_binary(Cpf2),
 			case (LenCpf2 =:= 11 orelse LenCpf2 =:= 14) of  % deve ser CPF ou CNPJ
 				true ->
-					case mnesia:dirty_index_read(user, list_to_binary(Cpf2), #user.cpf) of
+					case mnesia:dirty_index_read(user_db, Cpf2Bin, #user.cpf) of
+						[] -> 
+							case mnesia:dirty_index_read(user_fs, Cpf2Bin, #user.cpf) of
 								[] -> {error, enoent};
-								[Record|_] -> {ok, Record}
+								[Record|_] -> {ok, setelement(1, Record, user)}
+							end;
+						[Record|_] -> {ok, setelement(1, Record, user)}
 					end;
 				false -> {error, enoent}
 			end
 	end.
 
+-spec find_by_name(binary() | string()) -> {ok, #user{}} | {error, enoent}.
+find_by_name(<<>>) -> {error, enoent};
+find_by_name("") -> {error, enoent};
+find_by_name(undefined) -> {error, enoent};
+find_by_name(Name) when is_list(Name) -> 
+	find_by_name(list_to_binary(Name));
+find_by_name(Name) -> 
+	case ems_db:find_first(user_db, [{name, "==", Name}]) of
+		{error, Reason} ->
+			case ems_db:find_first(user_fs, [{name, "==", Name}]) of
+				{error, Reason} -> {error, enoent};
+				Record -> {ok, setelement(1, Record, user)}
+			end;
+		Record -> {ok, setelement(1, Record, user)}
+	end.
 
-find_by_name(Name) -> ems_db:find_first(user, [{"name", "==", Name}]).
-
--spec find_by_login_and_password(binary() | list(), binary() | list()) -> {ok, #user{}} | {error, atom()}.	
+-spec find_by_login_and_password(binary() | list(), binary() | list()) -> {ok, #user{}} | {error, enoent}.	
 find_by_login_and_password(Login, Password)  ->
-	LoginBin = case is_list(Login) of
-					true -> list_to_binary(Login);
-					_ -> Login
-				end,
-	PasswordBin = case is_list(Password) of
-					true -> list_to_binary(Password);
-					_ -> Password
-				end,
-	find_by_login_and_password_(LoginBin, PasswordBin).				
-				
-find_by_login_and_password_(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, User = #user{password = PasswordUser}} -> 
-			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of
+			PasswordBin = case is_list(Password) of
+							true -> list_to_binary(Password);
+							_ -> Password
+						  end,
+			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= PasswordBin of
 				true -> {ok, User};
 				false -> {error, enoent}
 			end;
@@ -177,16 +201,15 @@ find_by_login_and_password_(Login, Password) ->
 
 
 -spec to_resource_owner(#user{} | undefined) -> binary().
+to_resource_owner(undefined) -> <<"{}"/utf8>>;
 to_resource_owner(User) ->
-	case User of
-		undefined -> <<"{}"/utf8>>;
-		_ -> ems_schema:to_json({<<"id">>, User#user.id,
-								 <<"codigo">>, User#user.codigo,
-								 <<"login">>, User#user.login, 
-								 <<"name">>, User#user.name,
-								 <<"email">>, User#user.email,
-								 <<"type">>, User#user.type})
-	end.
+	ems_schema:to_json({<<"id">>, User#user.id,
+						 <<"codigo">>, User#user.codigo,
+						 <<"login">>, User#user.login, 
+						 <<"name">>, User#user.name,
+						 <<"email">>, User#user.email,
+						 <<"type">>, User#user.type}).
+
 
 -spec add_user(binary(), binary()) -> {ok, #user{}} | {error, atom()}.
 add_user(Login, Password) ->
@@ -257,3 +280,22 @@ all(Table) ->
 		Error -> Error
 	end.
 
+
+%% middleware functions
+
+insert(User) -> 
+	case valida(User, insert) of
+		ok -> ems_db:insert(User);
+		Error -> 
+			Error
+	end.
+
+update(User) -> 
+	case valida(User, update) of
+		ok -> ems_db:update(User);
+		Error -> Error
+	end.
+
+delete(Id) -> ems_db:delete(user, Id).
+
+valida(_User, _Operation) -> ok.

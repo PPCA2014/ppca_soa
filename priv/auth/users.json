@@ -1,13 +1,26 @@
 [
 	{
 		"codigo" : 1,
-		"name": "geral",
-		"login" : "erlangms",
-		"password": "123456",
-		"passwd_crypto" : "",
+		"name": "erlangms",
+		"login" : "erlangms@unb.br",
+		"password": "fEqNCco3Yq9h5ZUglD3CZJT4lBs=",
+		"passwd_crypto" : "SHA1",
 		"active": true,
 		"type" : 0,
 		"email" : "erlangms@unb.br",
 		"type_email" : 0
+	},
+	
+	{
+		"codigo" : 2,
+		"name": "geral",
+		"login" : "geral",
+		"password": "fEqNCco3Yq9h5ZUglD3CZJT4lBs=",
+		"passwd_crypto" : "SHA1",
+		"active": true,
+		"type" : 0,
+		"email" : "geral@unb.br",
+		"type_email" : 0
 	}
+	
 ]
