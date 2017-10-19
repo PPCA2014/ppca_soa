@@ -66,7 +66,7 @@ get_filename() ->
 -spec prepare_insert_or_update(map() | tuple(), tuple(), #config{}, atom()) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
 prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 	try
-		case ems_user:new_user_from_map(Map, Conf) of
+		case ems_user:new_from_map(Map, Conf) of
 			{ok, NewUser = #user{codigo = Codigo, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user:get_table(SourceType),
 				case ems_user:find(Table, Codigo) of

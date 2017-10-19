@@ -88,8 +88,8 @@ scan_file_entry([Map|MapTail], CurrentDir, CurrentFilenameMap, Result, RootPath,
 				true ->
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, Result, RootPath, Conf, FilterKey, FilterValue);
 				false ->
-					Map2 = Map#{<<"file_path">> => CurrentDir,
-								<<"file_name">> => CurrentFilenameMap,
+					Map2 = Map#{<<"ctrl_path">> => CurrentDir,
+								<<"ctrl_file">> => CurrentFilenameMap,
 								<<"ctrl_modified">> => ems_util:timestamp_str(ems_util:file_last_modified(CurrentFilenameMap))},
 					scan_file_entry(MapTail, CurrentDir, CurrentFilenameMap, [Map2 | Result], RootPath, Conf, FilterKey, FilterValue)
 			end

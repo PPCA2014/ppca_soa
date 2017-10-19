@@ -18,8 +18,8 @@
 		 find_by_name/1,
 		 find_by_codigo_and_secret/2,
 		 to_json/1,
-		 new_client_from_map/2,
-		 new_client_from_map/3,
+		 new_from_map/2,
+		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1]).
@@ -84,10 +84,10 @@ to_json(Client) ->
 
 	
 
-new_client_from_map(Map, Conf) -> new_client_from_map(Map, Conf, undefined).
+new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
 
-%-spec new_client_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
-new_client_from_map(Map, _Conf, Id) ->
+%-spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+new_from_map(Map, _Conf, Id) ->
 	try
 		{ok, #client{id = Id,
 				codigo = maps:get(<<"codigo">>, Map, undefined),

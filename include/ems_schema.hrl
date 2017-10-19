@@ -276,8 +276,8 @@
 					oauth2_with_check_constraint = false :: boolean(),
 					oauth2_token_encrypt = false :: boolean(),
 					properties :: map(),						%% Outros parâmetros
-					catalog_path :: string(),					%% Local de onde o catálogo foi carregado
-					catalog_file :: string(),					%% Nome do arquivo onde está especificado o catálogo
+					ctrl_path :: string(),						%% Local de onde o catálogo foi carregado
+					ctrl_file :: string(),						%% Nome do arquivo onde está especificado o catálogo
 				    ctrl_insert,								%% Data que o serviço foi inserido no banco mnesia
 					ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
 					ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)

@@ -31,8 +31,8 @@ get_metadata_json(#service{id = Id,
 						  result_cache = ResultCache,
 						  authorization = Authorization,
 						  timeout = Timeout,
-						  catalog_path = CatalogPath,
-						  catalog_file = CatalogFile,
+						  ctrl_path = CtrlPath,
+						  ctrl_file = CtrlFile,
 						  path = Path,
 						  lang = Lang,
 						  querystring = Querystring,
@@ -50,13 +50,13 @@ get_metadata_json(#service{id = Id,
 					   <<"\"result_cache\""/utf8>>, <<":"/utf8>>, integer_to_binary(ResultCache), <<","/utf8>>,
 					   <<"\"timeout\""/utf8>>, <<":"/utf8>>, integer_to_binary(Timeout), <<","/utf8>>,
 					   <<"\"cache_control\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, CacheControl, <<"\""/utf8>>, <<","/utf8>>,
-					   <<"\"catalog_path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CatalogPath of
+					   <<"\"ctrl_path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CtrlPath of
 																			undefined -> <<>>;
-																			_ -> CatalogPath
+																			_ -> CtrlPath
 																		 end, <<"\""/utf8>>, <<","/utf8>>,
-					   <<"\"catalog_file\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CatalogFile of
+					   <<"\"catalog_file\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case CtrlFile of
 																			undefined -> <<>>;
-																			_ -> CatalogFile
+																			_ -> CtrlFile
 																		 end, <<"\""/utf8>>, <<","/utf8>>,
 					   <<"\"path\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case Path of
 																			undefined -> <<>>;
@@ -80,7 +80,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			   CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash) ->
+			   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -124,8 +124,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
-			    catalog_path = CatalogPath,
-			    catalog_file = CatalogFile,
+			    ctrl_path = CtrlPath,
+			    ctrl_file = CtrlFile,
 			    path = Path,
 			    filename = Filename,
 			    redirect_url = RedirectUrl,
@@ -157,7 +157,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			RedirectUrl, ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
 			Port, MaxConnections, IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash) ->
+			CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -197,8 +197,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			    cache_control = CacheControl,
 			    expires = ExpiresMinute,
 			    content_type = ContentType,
-			    catalog_path = CatalogPath,
-			    catalog_file = CatalogFile,
+			    ctrl_path = CtrlPath,
+			    ctrl_file = CtrlFile,
 			    path = Path,
 			    filename = Filename,
 			    redirect_url = RedirectUrl,
@@ -336,9 +336,9 @@ new_service_from_map(Map,
 		ExpiresMinute = maps:get(<<"expires_minute">>, Map, 1),
 		Public = ems_util:parse_bool(maps:get(<<"public">>, Map, true)),
 		ContentType = maps:get(<<"content_type">>, Map, ?CONTENT_TYPE_JSON),
-		CatalogPath = maps:get(<<"file_path">>, Map, <<>>),
-		CatalogFile = maps:get(<<"file_name">>, Map, <<>>),
-		Path = ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CatalogPath), StaticFilePathDefault, undefined),
+		CtrlPath = maps:get(<<"ctrl_path">>, Map, <<>>),
+		CtrlFile = maps:get(<<"ctrl_file">>, Map, <<>>),
+		Path = ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CtrlPath), StaticFilePathDefault, undefined),
 		Filename = ems_util:parse_file_name_path(maps:get(<<"filename">>, Map, undefined), StaticFilePathDefault, undefined),
 		RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
 		Protocol = maps:get(<<"protocol">>, Map, <<>>),
@@ -399,7 +399,7 @@ new_service_from_map(Map,
 												   AllowedAddress_t, Port, MaxConnections,
 												   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 												   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-												   CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
+												   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash),
 						{ok, Service};
 					_ -> 
 						erlang:error(einvalid_re_service)
@@ -424,7 +424,7 @@ new_service_from_map(Map,
 										AllowedAddress_t, Port, MaxConnections,
 										IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 										OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-										CatalogPath, CatalogFile, CtrlModified, StartTimeout, CtrlHash),
+										CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash),
 				{ok, Service}
 		end
 	catch

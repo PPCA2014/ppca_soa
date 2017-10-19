@@ -76,7 +76,6 @@ prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 											ctrl_insert = CtrlDate},
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_dados_funcionais{ctrl_modified = CurrentCtrlModified, ctrl_hash = CurrentCtrlHash}} ->
-						io:format("is update... ~p\n", [Map]),
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								case CtrlModified == undefined orelse CtrlModified > CurrentCtrlModified of

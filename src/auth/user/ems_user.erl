@@ -23,8 +23,8 @@
 		 find_by_login_and_password/2,
 		 to_resource_owner/1,
 		 add_user/2,
- 		 new_user_from_map/2,
-		 new_user_from_map/3,
+ 		 new_from_map/2,
+		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1]).
@@ -194,10 +194,10 @@ add_user(Login, Password) ->
 	insert(User).
 
 
-new_user_from_map(Map, Conf) -> new_user_from_map(Map, Conf, undefined).
+new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
 
-%-spec new_user_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
-new_user_from_map(Map, _Conf, Id) ->
+%-spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+new_from_map(Map, _Conf, Id) ->
 	try
 		PasswdCrypto = maps:get(<<"passwd_crypto">>, Map, <<>>),
 		Password = maps:get(<<"password">>, Map, <<>>),
