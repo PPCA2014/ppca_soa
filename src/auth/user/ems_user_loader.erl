@@ -201,11 +201,13 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 				?DEBUG("ems_user_loader load_users_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadUsersTipoPessoa, []) of
 					{_,_,[]} -> 
+						ems_odbc_pool:release_connection(Datasource2),
 						?DEBUG("ems_user_loader did not load any users tipo pessoa."),
 						ok;
 					{_, _, RecordsPessoa} ->
 						case mnesia:clear_table(user) of
 							{atomic, ok} ->
+								ems_odbc_pool:release_connection(Datasource2),
 								ems_db:init_sequence(user, 0),
 								InsertUserPessoaFunc = fun() ->
 									CountPessoa = insert_users(RecordsPessoa, 0, CtrlInsert),
@@ -237,10 +239,10 @@ load_users_from_datasource(Datasource, CtrlInsert, #state{allow_load_aluno = All
 								{error, efail_load_users}
 						end;
 					{error, Reason2} = Error -> 
+						ems_odbc_pool:release_connection(Datasource2),
 						ems_logger:error("ems_user_loader load users tipo pessoa query error: ~p.", [Reason2]),
 						Error
 				end,
-				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_loader has no connection to load users from database."),
@@ -267,10 +269,12 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 						  {sql_timestamp, [DateInitial]}],
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdateUsersTipoPessoa, Params) of
 					{_,_,[]} -> 
-						?DEBUG("ems_user_loader did not update any users tipo pessoa."),
+						ems_odbc_pool:release_connection(Datasource2),
+							?DEBUG("ems_user_loader did not update any users tipo pessoa."),
 						ok;
 					{_, _, RecordsPessoa} ->
-						%?DEBUG("Update users ~p.", [Records]),
+						ems_odbc_pool:release_connection(Datasource2),
+							%?DEBUG("Update users ~p.", [Records]),
 						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
 						UpdatePessoaFunc = fun() ->
 							CountPessoa = update_users(RecordsPessoa, 0, CtrlUpdate),
@@ -297,10 +301,10 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 							false -> ok
 						end;
 					{error, Reason} = Error -> 
-						ems_logger:error("ems_user_loader update users tipo pessoa error: ~p.", [Reason]),
+							ems_odbc_pool:release_connection(Datasource2),
+							ems_logger:error("ems_user_loader update users tipo pessoa error: ~p.", [Reason]),
 						Error
 				end,
-				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_loader has no connection to update users from database."),
@@ -314,63 +318,107 @@ update_users_from_datasource(Datasource, LastUpdate, CtrlUpdate, #state{allow_lo
 
 
 insert_users([], Count, _CtrlInsert) -> Count;
-insert_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, 
+insert_users([R={Codigo, Login, Name, Cpf, Email, Password, Type, SubTipoPessoa, PasswdCrypto, 
 			   TypeEmail, Active, Endereco, ComplementoEndereco, Bairro, 
 			   Cidade, Uf, Cep, Rg, DataNascimento, Sexo, 
 			   Telefone, Celular, DDD, Matricula, Lotacao, LotacaoSigla,
 			   LotacaoCentro, LotacaoCodigoFuncao, LotacaoFuncao,
 			   LotacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T], Count, CtrlInsert) ->
-	User = #user{id = ems_db:sequence(user),
-				 codigo = Codigo,
-				 login = ?UTF8_STRING(Login),
-				 name = ?UTF8_STRING(Name),
-				 cpf = ?UTF8_STRING(Cpf),
-				 email = ?UTF8_STRING(Email),
-				 password = case PasswdCrypto of
-								"SHA1" -> ?UTF8_STRING(Password);
-								_ -> ems_util:criptografia_sha1(Password)
-							end,
-				 type = Type,
-				 passwd_crypto = <<"SHA1">>,
-				 type_email = TypeEmail,
-				 endereco = ?UTF8_STRING(Endereco),
-				 complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
-				 bairro = ?UTF8_STRING(Bairro),
-				 cidade = ?UTF8_STRING(Cidade),
-				 uf = ?UTF8_STRING(Uf),
-				 cep = ?UTF8_STRING(Cep),
-				 rg = ?UTF8_STRING(Rg),
-				 data_nascimento = ems_util:date_to_binary(DataNascimento),
-				 sexo = Sexo,
-				 telefone = ?UTF8_STRING(Telefone),
-				 celular = ?UTF8_STRING(Celular),
-				 ddd = ?UTF8_STRING(DDD),
-				 matricula = Matricula,
-				 lotacao = ?UTF8_STRING(Lotacao),
-				 lotacao_sigla = ?UTF8_STRING(LotacaoSigla),
-				 lotacao_centro = ?UTF8_STRING(LotacaoCentro),
-				 lotacao_codigo_funcao = LotacaoCodigoFuncao,
-				 lotacao_funcao = ?UTF8_STRING(LotacaoFuncao),
-				 lotacao_orgao = ?UTF8_STRING(LotacaoOrgao),
-				 lotacao_codigo_cargo = LotacaoCodigoCargo,
-				 lotacao_cargo = ?UTF8_STRING(LotacaoCargo),
-				 active = Active == 1,
-				 ctrl_insert = CtrlInsert},
-	%?DEBUG("User  ~p\n", [User]),
-	mnesia:write(User),
-	insert_users(T, Count+1, CtrlInsert).
+	try
+		User = #user{id = ems_db:sequence(user),
+					 codigo = Codigo,
+					 login = ?UTF8_STRING(Login),
+					 name = ?UTF8_STRING(Name),
+					 cpf = ?UTF8_STRING(Cpf),
+					 email = ?UTF8_STRING(Email),
+					 password = case PasswdCrypto of
+									"SHA1" -> ?UTF8_STRING(Password);
+									_ -> ems_util:criptografia_sha1(Password)
+								end,
+					 type = Type,
+					 passwd_crypto = <<"SHA1">>,
+					 type_email = TypeEmail,
+					 endereco = ?UTF8_STRING(Endereco),
+					 complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
+					 bairro = ?UTF8_STRING(Bairro),
+					 cidade = ?UTF8_STRING(Cidade),
+					 uf = ?UTF8_STRING(Uf),
+					 cep = ?UTF8_STRING(Cep),
+					 rg = ?UTF8_STRING(Rg),
+					 data_nascimento = ems_util:date_to_binary(DataNascimento),
+					 sexo = Sexo,
+					 telefone = ?UTF8_STRING(Telefone),
+					 celular = ?UTF8_STRING(Celular),
+					 ddd = ?UTF8_STRING(DDD),
+					 matricula = Matricula,
+					 lotacao = ?UTF8_STRING(Lotacao),
+					 lotacao_sigla = ?UTF8_STRING(LotacaoSigla),
+					 lotacao_centro = ?UTF8_STRING(LotacaoCentro),
+					 lotacao_codigo_funcao = LotacaoCodigoFuncao,
+					 lotacao_funcao = ?UTF8_STRING(LotacaoFuncao),
+					 lotacao_orgao = ?UTF8_STRING(LotacaoOrgao),
+					 lotacao_codigo_cargo = LotacaoCodigoCargo,
+					 lotacao_cargo = ?UTF8_STRING(LotacaoCargo),
+					 active = Active == 1,
+					 ctrl_insert = CtrlInsert},
+		%?DEBUG("User  ~p\n", [User]),
+		mnesia:write(User),
+		insert_users(T, Count+1, CtrlInsert)
+	catch 
+		Exception:Reason -> 
+			io:format("erro ~p: ~p\n", [Reason, R]),
+			insert_users(T, Count+1, CtrlInsert)
+	end.
 
 
 update_users([], Count, _CtrlUpdate) -> Count;
-update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto, 
+update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, SubTipoPessoa, PasswdCrypto, 
 			   TypeEmail, Active, Endereco, ComplementoEndereco, Bairro, 
 			   Cidade, Uf, Cep, Rg, DataNascimento, Sexo, 
 			   Telefone, Celular, DDD, Matricula, Lotacao, LotacaoSigla,
 			   LotacaoCentro, LotacaoCodigoFuncao, LotacaoFuncao,
-			   LotacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T], Count, CtrlUpdate) ->
-	case ems_user:find_by_codigo(Codigo) of
-		{ok, User} ->
-			User2 = User#user{codigo = Codigo,
+			   LotacaoOrgao, LotacaoCodigoCargo, LotacaoCargo}|T] = R, Count, CtrlUpdate) ->
+	try
+		case ems_user:find_by_codigo(Codigo) of
+			{ok, User} ->
+				User2 = User#user{codigo = Codigo,
+								  login = ?UTF8_STRING(Login),
+								  name = ?UTF8_STRING(Name),
+								  cpf = ?UTF8_STRING(Cpf),
+								  email = ?UTF8_STRING(Email),
+								  password = case PasswdCrypto of
+												"SHA1" -> ?UTF8_STRING(Password);
+												_ -> ems_util:criptografia_sha1(Password)
+											 end,
+								  type = Type,
+								  passwd_crypto = <<"SHA1">>,
+								  type_email = TypeEmail,
+								  endereco = ?UTF8_STRING(Endereco),
+								  complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
+								  bairro = ?UTF8_STRING(Bairro),
+								  cidade = ?UTF8_STRING(Cidade),
+								  uf = ?UTF8_STRING(Uf),
+								  cep = ?UTF8_STRING(Cep),
+								  rg = ?UTF8_STRING(Rg),
+								  data_nascimento = ems_util:date_to_binary(DataNascimento),
+								  sexo = Sexo,
+								  telefone = ?UTF8_STRING(Telefone),
+								  celular = ?UTF8_STRING(Celular),
+								  ddd = ?UTF8_STRING(DDD),
+								  matricula = Matricula,
+								  lotacao = ?UTF8_STRING(Lotacao),
+								  lotacao_sigla = ?UTF8_STRING(LotacaoSigla),
+								  lotacao_centro = ?UTF8_STRING(LotacaoCentro),
+								  lotacao_codigo_funcao = LotacaoCodigoFuncao,
+								  lotacao_funcao = ?UTF8_STRING(LotacaoFuncao),
+								  lotacao_orgao = ?UTF8_STRING(LotacaoOrgao),
+								  lotacao_codigo_cargo = LotacaoCodigoCargo,
+								  lotacao_cargo = ?UTF8_STRING(LotacaoCargo),
+								  active = Active == 1,
+								  ctrl_update = CtrlUpdate};
+			{error, enoent} -> 
+				User2 = #user{id = ems_db:sequence(user),
+							  codigo = Codigo,
 							  login = ?UTF8_STRING(Login),
 							  name = ?UTF8_STRING(Name),
 							  cpf = ?UTF8_STRING(Cpf),
@@ -404,47 +452,14 @@ update_users([{Codigo, Login, Name, Cpf, Email, Password, Type, PasswdCrypto,
 							  lotacao_codigo_cargo = LotacaoCodigoCargo,
 							  lotacao_cargo = ?UTF8_STRING(LotacaoCargo),
 							  active = Active == 1,
-							  ctrl_update = CtrlUpdate};
-		{error, enoent} -> 
-			User2 = #user{id = ems_db:sequence(user),
-						  codigo = Codigo,
-						  login = ?UTF8_STRING(Login),
-						  name = ?UTF8_STRING(Name),
-						  cpf = ?UTF8_STRING(Cpf),
-						  email = ?UTF8_STRING(Email),
-						  password = case PasswdCrypto of
-										"SHA1" -> ?UTF8_STRING(Password);
-										_ -> ems_util:criptografia_sha1(Password)
-									 end,
-						  type = Type,
-						  passwd_crypto = <<"SHA1">>,
-						  type_email = TypeEmail,
-						  endereco = ?UTF8_STRING(Endereco),
-						  complemento_endereco = ?UTF8_STRING(ComplementoEndereco),
-						  bairro = ?UTF8_STRING(Bairro),
-						  cidade = ?UTF8_STRING(Cidade),
-						  uf = ?UTF8_STRING(Uf),
-						  cep = ?UTF8_STRING(Cep),
-						  rg = ?UTF8_STRING(Rg),
-						  data_nascimento = ems_util:date_to_binary(DataNascimento),
-						  sexo = Sexo,
-						  telefone = ?UTF8_STRING(Telefone),
-						  celular = ?UTF8_STRING(Celular),
-						  ddd = ?UTF8_STRING(DDD),
-						  matricula = Matricula,
-						  lotacao = ?UTF8_STRING(Lotacao),
-						  lotacao_sigla = ?UTF8_STRING(LotacaoSigla),
-						  lotacao_centro = ?UTF8_STRING(LotacaoCentro),
-						  lotacao_codigo_funcao = LotacaoCodigoFuncao,
-						  lotacao_funcao = ?UTF8_STRING(LotacaoFuncao),
-						  lotacao_orgao = ?UTF8_STRING(LotacaoOrgao),
-						  lotacao_codigo_cargo = LotacaoCodigoCargo,
-						  lotacao_cargo = ?UTF8_STRING(LotacaoCargo),
-						  active = Active == 1,
-						  ctrl_insert = CtrlUpdate}
-	end,
-	mnesia:write(User2),
-	?DEBUG("ems_user_loader update user: ~p.\n", [User2]),
-	update_users(T, Count+1, CtrlUpdate).
-
+							  ctrl_insert = CtrlUpdate}
+		end,
+		mnesia:write(User2),
+		?DEBUG("ems_user_loader update user: ~p.\n", [User2]),
+		update_users(T, Count+1, CtrlUpdate)
+	catch 
+		Exception:Reason -> 
+			io:format("erro ~p: ~p\n", [Reason, R]),
+			update_users(T, Count+1, CtrlUpdate)
+	end.
 

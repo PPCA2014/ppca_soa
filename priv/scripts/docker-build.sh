@@ -45,6 +45,8 @@ help() {
 	echo "  --cache_node_modules         -> cache node_modules for speed (development use only!)"
 	echo "  --keep_stage                 -> does not delete stage area after build"
 	echo "  --mode_build                 -> build npm project in mode pass in variable"
+	echo "  --http_port                  -> change port http frontend. Default is 3000"
+	echo "  --https_port                 -> change port https frontend. Default is 4000"
 	echo
 	echo "Obs.: Use only com root or sudo!"
 	cd $CURRENT_DIR

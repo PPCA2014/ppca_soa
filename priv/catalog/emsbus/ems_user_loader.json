@@ -180,33 +180,34 @@
 							rtrim(NomePessoa) as NomePessoa, 
 							rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
 							lower(rtrim(EmailPessoa)) as EmailPessoa, 
-							rtrim(SenhaPessoa) as SenhaPessoa,
-							TipoPessoa,
-							PasswdCryptoPessoa,
-							TipoEmailPessoa,
-							ActivePessoa,
-							rtrim(Endereco) as Endereco,
-							rtrim(ComplementoEndereco) as ComplementoEndereco,
-							rtrim(Bairro) as Bairro,
-							rtrim(Cidade) as Cidade,
-							Uf,
-							Cep,
-							Rg,
-							DataNascimento,
-							Sexo,
-							Telefone,
-							Celular,
-							DDD,
-							Matricula,
-							rtrim(Lotacao) as Lotacao,
-							LotacaoSigla,
-							rtrim(LotacaoCentro) as LotacaoCentro,
-							LotacaoCodigoFuncao,
-							rtrim(LotacaoFuncao) as LotacaoFuncao,
-							rtrim(LotacaoOrgao) as LotacaoOrgao,
-							LotacaoCodigoCargo,
-							rtrim(LotacaoCargo) as LotacaoCargo 
-			from ( 
+							rtrim(SenhaPessoa) as SenhaPessoa, 
+							TipoPessoa, 
+							SubTipoPessoa, 
+							PasswdCryptoPessoa, 
+							TipoEmailPessoa, 
+							ActivePessoa, 
+							rtrim(Endereco) as Endereco,  
+							rtrim(ComplementoEndereco) as ComplementoEndereco,  
+							rtrim(Bairro) as Bairro,  
+							rtrim(Cidade) as Cidade,  
+							Uf,  
+							Cep,  
+							Rg,  
+							DataNascimento,  
+							Sexo,  
+							Telefone,  
+							Celular,  
+							DDD,  
+							Matricula,  
+							rtrim(Lotacao) as Lotacao,   
+							LotacaoSigla,   
+							rtrim(LotacaoCentro) as LotacaoCentro,   
+							LotacaoCodigoFuncao,   
+							rtrim(LotacaoFuncao) as LotacaoFuncao,  
+							rtrim(LotacaoOrgao) as LotacaoOrgao,  
+							LotacaoCodigoCargo,  
+							rtrim(LotacaoCargo) as LotacaoCargo    
+			from (   
 					select p.PesCodigoPessoa as CodigoPessoa, 
 						   u.UsuLogin as LoginPessoa,
 						   p.PesNome as NomePessoa, 
@@ -214,7 +215,7 @@
 						   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as EmailPessoa, 
 						   cast(u.UsuSenha as varchar(60)) as SenhaPessoa,
 						   isnull(ca.CategoCargo, 4) as TipoPessoa,
-						   0 as SubTipoPessoa, 
+						   0 as SubTipoPessoa,
 						   case when c.DtDesliga < GETDATE() then 0 else 1 end as ActivePessoa,
 						   'SHA1' as PasswdCryptoPessoa,
 						   em.EmaTipo as TipoEmailPessoa,
@@ -247,90 +248,92 @@
 								 on pfe.PFmEmaCodigo = em.EmaCodigo 
 						 left join Sipes.dbo.DadosFuncionais df 
 								 on p.PesCodigoPessoa = df.PesCodigoPessoa 
+						 left join Sipes.dbo.Contratos c 
+								 on df.MatSipes = c.MatSipes 
 						 left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf 
-								 on df.MatSipes = lf.Sipes 
+								 on df.MatSipes = lf.Sipes
 						 left join Sipes.dbo.Cargos ca
-						 		 on c.CodCargo = ca.CodCargo 
-					where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
-			) as t_users 
-			order by t_users.TipoPessoa, t_users.TipoEmailPessoa
-			",
+								 on c.CodCargo = ca.CodCargo    
+					where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?  
+			) as t_users   
+			order by t_users.TipoPessoa, t_users.TipoEmailPessoa  
+			",    
 			
 	"sql_update_users_tipo_aluno" : 
 			"select 		CodigoPessoa, 
-							lower(rtrim(LoginPessoa)) as LoginPessoa, 
-							rtrim(NomePessoa) as NomePessoa, 
-							rtrim(CpfCnpjPessoa) as CpfCnpjPessoa, 
-							lower(rtrim(EmailPessoa)) as EmailPessoa, 
-							rtrim(SenhaPessoa) as SenhaPessoa,
-							TipoPessoa,
-							SubTipoPessoa,
-							PasswdCryptoPessoa,
-							TipoEmailPessoa,
-							ActivePessoa,
-							rtrim(Endereco) as Endereco,
-							rtrim(ComplementoEndereco) as ComplementoEndereco,
-							rtrim(Bairro) as Bairro,
-							rtrim(Cidade) as Cidade,
-							Uf,
-							Cep,
-							Rg,
-							DataNascimento,
-							Sexo,
-							Telefone,
-							Celular,
-							DDD,
-							Matricula,
-							rtrim(Lotacao) as Lotacao,
-							LotacaoSigla,
-							rtrim(LotacaoCentro) as LotacaoCentro,
-							LotacaoCodigoFuncao,
-							rtrim(LotacaoFuncao) as LotacaoFuncao,
-							rtrim(LotacaoOrgao) as LotacaoOrgao,
-							LotacaoCodigoCargo,
-							rtrim(LotacaoCargo) as LotacaoCargo 
-			from ( 
-					select p.PesCodigoPessoa as CodigoPessoa,  
-						   cast(al.AluRA as varchar(100)) as LoginPessoa,
-						   p.PesNome as NomePessoa, 
-						   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa, 
-						   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa, 
-						   cast(al.AluSenha as varchar(60)) as SenhaPessoa,
-						   3 as TipoPessoa,  
-						   al.AluNivel as SubTipoPessoa,	
-						   case when al.AluPerSaiUnB = 99999 then 1 else 0 end as ActivePessoa,
-						   null as PasswdCryptoPessoa,
-						   em.EmaTipo as TipoEmailPessoa,
-						   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,
-						   p.PesComplementoEndereco as ComplementoEndereco,
-						   p.PesBairro as Bairro,
-						   coalesce(p.PesCidade, al.AluEndCidade) as Cidade,
-						   coalesce(p.PesUf, al.AluEndUf) as Uf,
-						   p.PesCep as Cep,
-						   p.PesRg as Rg,
-						   coalesce(p.PesDataNascimento, al.AluDtNasc) as DataNascimento,
-						   p.PesSexo as Sexo,
-						   coalesce(p.PesTelefone, al.AluTelefone) as Telefone,
-						   coalesce(p.PesCelular, al.AluCelular) as Celular,
-						   p.PesDDD as DDD,
-						   al.AluMatricula as Matricula,
-						   null as Lotacao,
-						   null as LotacaoSigla,
-						   null as LotacaoCentro,
-						   null as LotacaoCodigoFuncao,
-						   null as LotacaoFuncao,
-						   null as LotacaoOrgao,
-						   null as LotacaoCodigoCargo,
-						   null as LotacaoCargo 
-					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p 
-								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa 
-						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe 
-								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
-						 join BDPessoa.dbo.TB_Email em 
-								 on pfe.PFmEmaCodigo = em.EmaCodigo  
-					where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?
-			) as t_users 
-			order by t_users.TipoPessoa, t_users.TipoEmailPessoa
-			"
+							lower(rtrim(LoginPessoa)) as LoginPessoa,    
+							rtrim(NomePessoa) as NomePessoa,   
+							rtrim(CpfCnpjPessoa) as CpfCnpjPessoa,    
+							lower(rtrim(EmailPessoa)) as EmailPessoa,    
+							rtrim(SenhaPessoa) as SenhaPessoa,   
+							TipoPessoa,   
+							SubTipoPessoa,   
+							PasswdCryptoPessoa,   
+							TipoEmailPessoa,   
+							ActivePessoa,   
+							rtrim(Endereco) as Endereco,   
+							rtrim(ComplementoEndereco) as ComplementoEndereco,  
+							rtrim(Bairro) as Bairro,   
+							rtrim(Cidade) as Cidade,   
+							Uf,   
+							Cep,   
+							Rg,   
+							DataNascimento,   
+							Sexo,   
+							Telefone,   
+							Celular,   
+							DDD,   
+							Matricula,  
+							rtrim(Lotacao) as Lotacao,   
+							LotacaoSigla,   
+							rtrim(LotacaoCentro) as LotacaoCentro,   
+							LotacaoCodigoFuncao,   
+							rtrim(LotacaoFuncao) as LotacaoFuncao,   
+							rtrim(LotacaoOrgao) as LotacaoOrgao,   
+							LotacaoCodigoCargo,   
+							rtrim(LotacaoCargo) as LotacaoCargo    
+			from (   
+					select p.PesCodigoPessoa as CodigoPessoa,     
+						   cast(al.AluRA as varchar(100)) as LoginPessoa,   
+						   p.PesNome as NomePessoa,    
+						   cast(coalesce(p.PesCpf, cast(al.AluCPF as varchar(11))) as varchar(14)) as CpfCnpjPessoa,    
+						   cast(coalesce(em.EmaEmail, al.AluEmail) as varchar(60)) as EmailPessoa,    
+						   cast(al.AluSenha as varchar(60)) as SenhaPessoa,   
+						   3 as TipoPessoa,     
+						   al.AluNivel as SubTipoPessoa,   	
+						   case when al.AluPerSaiUnB = 99999 then 1 else 0 end as ActivePessoa,   
+						   null as PasswdCryptoPessoa,   
+						   em.EmaTipo as TipoEmailPessoa,   
+						   coalesce(p.PesEndereco, al.AluEndereco) as Endereco,   
+						   p.PesComplementoEndereco as ComplementoEndereco,   
+						   p.PesBairro as Bairro,   
+						   coalesce(p.PesCidade, al.AluEndCidade) as Cidade,   
+						   coalesce(p.PesUf, al.AluEndUf) as Uf,   
+						   p.PesCep as Cep,   
+						   p.PesRg as Rg,   
+						   coalesce(p.PesDataNascimento, al.AluDtNasc) as DataNascimento,   
+						   p.PesSexo as Sexo,   
+						   coalesce(p.PesTelefone, al.AluTelefone) as Telefone,   
+						   coalesce(p.PesCelular, al.AluCelular) as Celular,   
+						   p.PesDDD as DDD,   
+						   al.AluMatricula as Matricula,   
+						   null as Lotacao,   
+						   null as LotacaoSigla,   
+						   null as LotacaoCentro,   
+						   null as LotacaoCodigoFuncao,   
+						   null as LotacaoFuncao,   
+						   null as LotacaoOrgao,    
+						   null as LotacaoCodigoCargo,   
+						   null as LotacaoCargo    
+					from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p    
+								 on al.AluPesCodigoPessoa = p.PesCodigoPessoa    
+						 left join BDPessoa.dbo.TB_PessoaFisicaEmail pfe    
+								 on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa   
+						 join BDPessoa.dbo.TB_Email em    
+								 on pfe.PFmEmaCodigo = em.EmaCodigo     
+					where al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or em.EmaDataAlteracao >= ?    
+			) as t_users     
+			order by t_users.TipoPessoa, t_users.TipoEmailPessoa    
+			"  
 	
 }

@@ -20,6 +20,7 @@
 			   email :: binary(), 
 			   password :: binary(),
 			   type :: non_neg_integer(),					%% 0 = pessoa física  1 = pessoa jurídica  2 = aluno
+			   sub_type :: non_neg_integer(),			
 			   passwd_crypto :: binary(),					%% Algoritmo criptografia: SHA1
 			   type_email :: non_neg_integer(),				%% 1 = Institucional  2 = Pessoal
 			   active :: boolean(),

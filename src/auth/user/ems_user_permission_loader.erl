@@ -145,9 +145,11 @@ load_permissions_from_datasource(Datasource, CtrlInsert, #state{sql_load_permiss
 				?DEBUG("ems_user_permission_loader load_permissions_from_datasource use datasource ~p.", [Datasource2#service_datasource.id]),
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoadPermissions, []) of
 					{_,_,[]} -> 
+						ems_odbc_pool:release_connection(Datasource2),
 						?DEBUG("ems_user_permission_loader did not load any user permissions."),
 						ok;
 					{_, _, Records} ->
+						ems_odbc_pool:release_connection(Datasource2),
 						case mnesia:clear_table(user_permission) of
 							{atomic, ok} ->
 								ems_db:init_sequence(user_permission, 0),
@@ -162,10 +164,10 @@ load_permissions_from_datasource(Datasource, CtrlInsert, #state{sql_load_permiss
 								{error, efail_load_permissions}
 						end;
 					{error, Reason} = Error -> 
+						ems_odbc_pool:release_connection(Datasource2),
 						ems_logger:error("ems_user_permission_loader load user permissions query error: ~p.", [Reason]),
 						Error
 				end,
-				ems_odbc_pool:release_connection(Datasource2),
 				Result;
 			Error2 -> 
 				ems_logger:warn("ems_user_permission_loader has no connection to load user permissions from database."),
