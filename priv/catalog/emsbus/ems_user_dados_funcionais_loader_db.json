@@ -1,0 +1,86 @@
+{
+    "name": "ems_user_dados_funcionais_loader_db",
+	"comment": "Catalog for ems_user_dados_funcionais_loader_db",
+	"owner": "emsbus",
+	"version": "1.0.0",
+	"service" : "ems_data_loader:start",
+	"url": "/emsbus/ems_user_dados_funcionais_loader_db",
+	"async": "false",
+	"type": "KERNEL",
+	"lang" : "erlang",
+	"update_checkpoint" : 60000,
+	"datasource" : "ds_ems_user_loader",
+	"start_timeout" : 3000,
+	"middleware" : "ems_user_dados_funcionais_loader_middleware",
+	"pool_size" : 1,
+	"pool_max" : 1,
+	"enable" : false,
+	"sql_load" : 
+				"select 
+				   df.MatSipes as Codigo,
+				   isnull(ca.CategoCargo, 4) as TipoPessoa,
+				   0 as SubTipoPessoa,
+				   case 
+						when c.DtDesliga < GETDATE() then 0 
+						else 1 
+				   end as ActivePessoa, 
+				   df.MatSipes as Matricula, 
+				   lf.CC as Lotacao, 
+				   lf.Sigla as LotacaoSigla, 
+				   lf.Centro as LotacaoCentro, 
+				   lf.Codigo as LotacaoCodigoFuncao, 
+				   lf.Funcao as LotacaoFuncao, 
+				   '' as LotacaoOrgao, 
+				   lf.Cod as LotacaoCodigoCargo, 
+				   lf.Cargo as LotacaoCargo 
+                from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
+                                         on u.UsuPesIdPessoa = p.PesCodigoPessoa 
+                         left join Sipes.dbo.DadosFuncionais df 
+                                         on p.PesCodigoPessoa = df.PesCodigoPessoa 
+                         left join Sipes.dbo.Contratos c 
+                                         on df.MatSipes = c.MatSipes 
+                         left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf  
+                                         on df.MatSipes = lf.Sipes 
+                         left join Sipes.dbo.Cargos ca 
+                                         on c.CodCargo = ca.CodCargo 
+                where c.DtDesliga is null or c.DtDesliga >= getdate()  
+               ",
+
+	"sql_update" :
+				"select 
+				   df.MatSipes as Codigo,
+				   isnull(ca.CategoCargo, 4) as TipoPessoa,
+				   0 as SubTipoPessoa,
+				   case 
+						when c.DtDesliga < GETDATE() then 0 
+						else 1 
+				   end as ActivePessoa, 
+				   df.MatSipes as Matricula, 
+				   lf.CC as Lotacao, 
+				   lf.Sigla as LotacaoSigla, 
+				   lf.Centro as LotacaoCentro, 
+				   lf.Codigo as LotacaoCodigoFuncao, 
+				   lf.Funcao as LotacaoFuncao, 
+				   '' as LotacaoOrgao, 
+				   lf.Cod as LotacaoCodigoCargo, 
+				   lf.Cargo as LotacaoCargo 
+                from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
+                                         on u.UsuPesIdPessoa = p.PesCodigoPessoa 
+                         left join Sipes.dbo.DadosFuncionais df 
+                                         on p.PesCodigoPessoa = df.PesCodigoPessoa 
+                         left join Sipes.dbo.Contratos c 
+                                         on df.MatSipes = c.MatSipes 
+                         left join Sipes.dbo.vw_Genericos_LotacaoFuncao lf  
+                                         on df.MatSipes = lf.Sipes 
+                         left join Sipes.dbo.Cargos ca 
+                                         on c.CodCargo = ca.CodCargo 
+                where (c.DtDesliga is null or c.DtDesliga >= getdate())  and 
+					 p.PesDataAlteracao >= ? or p.PesDataCadastramento >= ?
+               ",
+			
+	"fields" : ["codigo", "type", "subtype", "active", "matricula", 
+				"lotacao", "lotacao_sigla",	"lotacao_centro", 
+				"lotacao_codigo_funcao", "lotacao_funcao",
+				"lotacao_orgao", "lotacao_codigo_cargo", "lotacao_cargo"]
+				
+}

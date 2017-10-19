@@ -101,13 +101,16 @@ list_kernel_catalog() ->
 			case ems_json_scan:scan_with_filter(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>) of
 				{ok, CatKernel} -> 
 					CatKernel2 = [ems_catalog:new_service_from_map(Map, Conf) || Map <- CatKernel],
-					CatKernel3 = [Cat || {Reason, Cat} <- CatKernel2, Reason == ok],
+					CatKernel3 = [Cat || {Reason, Cat} <- CatKernel2, Reason == ok, Cat#service.enable == true],
 					CatKernel3;
 				Error -> Error
 			end;
 		false ->
 			case ems_db:all(catalog_kernel_fs) of
-				{ok, CatKernel} -> [setelement(1, Cat, service) || Cat <- CatKernel];
+				{ok, CatKernel} -> 
+					CatKernel2 = [setelement(1, Cat, service) || Cat <- CatKernel],
+					CatKernel3 = [Cat || Cat <- CatKernel2, Cat#service.enable == true],
+					CatKernel3;
 				Error -> Error
 			end
 	end.
@@ -120,7 +123,7 @@ list_re_catalog() ->
     
     
 %%====================================================================
-%% Funções internas
+%% Internal functions
 %%====================================================================
 
 lookup_re(_, []) -> {error, enoent};

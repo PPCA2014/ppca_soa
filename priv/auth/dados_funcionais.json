@@ -1,0 +1,10 @@
+[
+	{
+		"codigo" : 1,
+		"type": 0,
+		"subtype" : 0,
+		"active": 1,
+		"passwd_crypto" : "",
+		"active": true
+	}
+]

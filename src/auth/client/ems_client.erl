@@ -96,7 +96,7 @@ new_client_from_map(Map, _Conf, Id) ->
 				redirect_uri = ?UTF8_STRING(maps:get(<<"redirect_uri">>, Map, <<>>)),
 				description = ?UTF8_STRING(maps:get(<<"description">>, Map, <<>>)),
 				scope = ?UTF8_STRING(maps:get(<<"scope">>, Map, <<>>)),
-				active = ?UTF8_STRING(maps:get(<<"active">>, Map, <<>>)),
+				active = ems_util:parse_bool(maps:get(<<"active">>, Map, true)),
 				ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 				ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 				ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),

@@ -22,7 +22,13 @@
 		 find_by_cpf/1, 
 		 find_by_login_and_password/2,
 		 to_resource_owner/1,
-		 add_user/2]).
+		 add_user/2,
+ 		 new_user_from_map/2,
+		 new_user_from_map/3,
+		 get_table/1,
+		 find/2,
+		 all/1]).
+
 
 find_by_id(Id) -> ems_db:get(user, Id).
 
@@ -186,3 +192,68 @@ to_resource_owner(User) ->
 add_user(Login, Password) ->
 	User = #user{login = Login, password = Password},
 	insert(User).
+
+
+new_user_from_map(Map, Conf) -> new_user_from_map(Map, Conf, undefined).
+
+%-spec new_user_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+new_user_from_map(Map, _Conf, Id) ->
+	try
+		PasswdCrypto = maps:get(<<"passwd_crypto">>, Map, <<>>),
+		Password = maps:get(<<"password">>, Map, <<>>),
+		{ok, #user{id = Id,
+					codigo = maps:get(<<"codigo">>, Map, undefined),
+					codigo_pessoa = maps:get(<<"codigo_pessoa">>, Map, undefined),
+					login = ?UTF8_STRING(maps:get(<<"login">>, Map, <<>>)),
+					name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
+					cpf = ?UTF8_STRING(maps:get(<<"cpf">>, Map, <<>>)),
+					password = case PasswdCrypto of
+									<<"SHA1">> -> ?UTF8_STRING(Password);
+									_ -> ems_util:criptografia_sha1(Password)
+							   end,
+					passwd_crypto = <<"SHA1">>,
+					endereco = ?UTF8_STRING(maps:get(<<"endereco">>, Map, <<>>)),
+					complemento_endereco = ?UTF8_STRING(maps:get(<<"complemento_endereco">>, Map, <<>>)),
+					bairro = ?UTF8_STRING(maps:get(<<"bairro">>, Map, <<>>)),
+					cidade = ?UTF8_STRING(maps:get(<<"cidade">>, Map, <<>>)),
+					uf = ?UTF8_STRING(maps:get(<<"uf">>, Map, <<>>)),
+					cep = ?UTF8_STRING(maps:get(<<"cep">>, Map, <<>>)),
+					rg = ?UTF8_STRING(maps:get(<<"rg">>, Map, <<>>)),
+					data_nascimento = ems_util:date_to_binary(maps:get(<<"data_nascimento">>, Map, <<>>)),
+					sexo = maps:get(<<"sexo">>, Map, <<>>),
+					telefone = ?UTF8_STRING(maps:get(<<"telefone">>, Map, <<>>)),
+					celular = ?UTF8_STRING(maps:get(<<"celular">>, Map, <<>>)),
+					ddd = ?UTF8_STRING(maps:get(<<"ddd">>, Map, <<>>)),
+					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
+					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
+					ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
+					ctrl_hash = erlang:phash2(Map)
+			}
+		}
+	catch
+		_Exception:Reason -> 
+			ems_logger:format_warn("ems_user parse invalid user specification: ~p\n\t~p.\n", [Reason, Map]),
+			{error, Reason}
+	end.
+
+
+-spec get_table(fs | db) -> user_db | user_fs.
+get_table(db) -> user_db;
+get_table(fs) -> user_fs.
+
+-spec find(user_fs | user_db, non_neg_integer()) -> {ok, #user{}} | {error, atom()}.
+find(Table, Codigo) ->
+	case ems_db:find_first(Table, [{codigo, "==", Codigo}]) of
+		{error, Reason} -> {error, Reason};
+		Record -> {ok, setelement(1, Record, user)}
+	end.
+
+-spec all(user_fs | user_db) -> list() | {error, atom()}.
+all(Table) ->
+	case ems_db:all(Table) of
+		{ok, Records} -> 
+			Records2 = [setelement(1, R, user) || R <- Records],
+			{ok, Records2};
+		Error -> Error
+	end.
+

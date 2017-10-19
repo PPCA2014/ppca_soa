@@ -35,14 +35,34 @@ create_database(Nodes) ->
 	% Define a pasta de armazenamento dos databases
 	filelib:ensure_dir(?DATABASE_PATH ++ "/"),
 	application:set_env(mnesia, dir, ?DATABASE_PATH),
-
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
-	
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
 							   {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
 							   {attributes, record_info(fields, user)}]),
+
+    mnesia:create_table(user_fs, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
+								  {attributes, record_info(fields, user)}]),
+
+    mnesia:create_table(user_db, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user.codigo, #user.login]},
+								  {attributes, record_info(fields, user)}]),
+
+
+    mnesia:create_table(user_dados_funcionais_fs, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user.codigo]},
+								  {attributes, record_info(fields, user_dados_funcionais)}]),
+
+    mnesia:create_table(user_dados_funcionais_db, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user.codigo]},
+								  {attributes, record_info(fields, user_dados_funcionais)}]),
+
 
 	mnesia:create_table(user_permission, [{type, set},
 										   {disc_copies, Nodes},
@@ -54,6 +74,7 @@ create_database(Nodes) ->
 									   {disc_copies, Nodes},
 									   {index, [#user_perfil.user_id]},
 									   {attributes, record_info(fields, user_perfil)}]),
+
 
     mnesia:create_table(client, [{type, set},
 							     {disc_copies, Nodes},
@@ -184,7 +205,7 @@ create_database(Nodes) ->
 										  {attributes, record_info(fields, service)}]),
 
 	% foi preciso aguardar um pouco a inicialização do banco
-	ems_util:sleep(2500),
+	ems_util:sleep(1000),
 
 	ok.
 

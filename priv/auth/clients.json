@@ -1,0 +1,11 @@
+[
+	{
+		"codigo" : 1,
+		"name": "geral",
+		"description": "erlangms",
+		"secret": "CPD",
+		"redirect_uri" : "",
+		"active": true,
+		"scope": ""
+	}
+]

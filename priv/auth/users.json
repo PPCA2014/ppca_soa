@@ -1,0 +1,13 @@
+[
+	{
+		"codigo" : 1,
+		"name": "geral",
+		"login" : "erlangms",
+		"password": "123456",
+		"passwd_crypto" : "",
+		"active": true,
+		"type" : 0,
+		"email" : "erlangms@unb.br",
+		"type_email" : 0
+	}
+]

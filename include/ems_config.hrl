@@ -58,6 +58,15 @@
 % Caminho inicial para os arquivos estáticos
 -define(STATIC_FILE_PATH, ?PRIV_PATH ++ "/www").
 
+% Caminho do arquivo de clientes
+-define(CLIENT_PATH, ?PRIV_PATH ++ "/auth/clients.json").
+
+% Caminho do arquivo de usuários
+-define(USER_PATH, ?PRIV_PATH ++ "/auth/users.json").
+
+% Caminho do arquivo de dados funcionais dos usuários
+-define(USER_DADOS_FUNCIONAIS_PATH, ?PRIV_PATH ++ "/auth/dados_funcionais.json").
+
 % Caminho inicial para os arquivos estáticos
 -define(WEBAPPS_PATH, ?PRIV_PATH ++ "/www").
 
@@ -187,7 +196,9 @@
 				 http_enable :: boolean(),
 				 https_enable :: boolean(),
 				 params :: map(),
-				 client_path_search
+				 client_path_search :: string(),
+				 user_path_search :: string(),
+				 user_dados_funcionais_path_search :: string()
 		 }). 	
 
 

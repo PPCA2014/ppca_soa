@@ -185,7 +185,7 @@ parse_cat_path_search(Json) ->
 						false -> [{<<"ems-bus">>, list_to_binary(?CATALOGO_ESB_PATH)} | maps:to_list(CatPathSearch)]
 					end,
 	[{K, binary_to_list(V)} || {K,V} <- CatPathSearch2].
-	
+
 
 -spec parse_static_file_path(map()) -> list().
 parse_static_file_path(Json) ->
@@ -212,7 +212,7 @@ parse_tcp_allowed_address(undefined) -> all;
 parse_tcp_allowed_address([<<"*.*.*.*">>]) -> all;
 parse_tcp_allowed_address(V) -> V.
 
-
+-spec parse_config(map(), string()) -> #config{}.
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
@@ -234,10 +234,14 @@ parse_config(Json, NomeArqConfig) ->
 			 authorization			    = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
 			 oauth2_with_check_constraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
 			 config_file			    = NomeArqConfig,
-			 params						= Json
+			 params						= Json,
+			 client_path_search			= maps:get(<<"client_path_search">>, Json, ?CLIENT_PATH),
+			 user_path_search			= maps:get(<<"user_path_search">>, Json, ?USER_PATH),
+			 user_dados_funcionais_path_search			= maps:get(<<"user_path_search">>, Json, ?USER_DADOS_FUNCIONAIS_PATH)
 		}.
 
 % It generates a default configuration if there is no configuration file
+-spec get_default_config() -> #config{}.
 get_default_config() ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
@@ -259,7 +263,10 @@ get_default_config() ->
 			 authorization				= oauth2,
 			 oauth2_with_check_constraint = false,
 			 config_file			    = undefined,
-			 params						= #{}
+			 params						= #{},
+			 client_path_search			= ?CLIENT_PATH,
+			 user_path_search			= ?USER_PATH,
+			 user_dados_funcionais_path_search			= ?USER_DADOS_FUNCIONAIS_PATH
 		}.
 
 

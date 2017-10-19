@@ -56,9 +56,9 @@ do_insert_record(Record, CtrlInsert, Conf, Name, Middleware, SourceType, Fields)
 	do_insert_record(Map, CtrlInsert, Conf, Name, Middleware, SourceType, Fields);
 do_insert_record(Map, CtrlInsert, Conf, Name, Middleware, SourceType, _Fields) ->
 	case apply(Middleware, insert, [Map, CtrlInsert, Conf, SourceType]) of
-		{ok, NewMap, Table, insert} ->
-			NewMap2 = setelement(1, NewMap, Table),
-			mnesia:write(NewMap2),
+		{ok, Record, Table, insert} ->
+			Record2 = setelement(1, Record, Table),
+			mnesia:write(Record2),
 			{ok, insert};
 		{ok, skip} -> {ok, skip};
 		{error, edisabled} -> {error, edisabled};

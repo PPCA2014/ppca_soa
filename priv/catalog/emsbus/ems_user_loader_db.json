@@ -1,0 +1,73 @@
+{
+    "name": "ems_user_loader_db",
+	"comment": "Catalog for ems_user_loader_db",
+	"owner": "emsbus",
+	"version": "1.0.0",
+	"service" : "ems_data_loader:start",
+	"url": "/emsbus/ems_user_loader_db",
+	"async": "false",
+	"type": "KERNEL",
+	"lang" : "erlang",
+	"update_checkpoint" : 60000,
+	"datasource" : "ds_ems_user_loader",
+	"start_timeout" : 5000,
+	"middleware" : "ems_user_loader_middleware",
+	"pool_size" : 1,
+	"pool_max" : 1,
+	"enable" : false,
+	"sql_load" : 
+				"select u.UsuId as Codigo,   
+					   p.PesCodigoPessoa as CodigoPessoa, 
+					   lower(rtrim(u.UsuLogin)) as Login, 
+					   rtrim(p.PesNome) as Nome,  
+					   rtrim(cast(p.PesCpf as varchar(14))) as Cpf, 
+					   rtrim(cast(u.UsuSenha as varchar(60))) as Password, 
+					   'SHA1' as PasswdCryptoPessoa, 
+					   rtrim(p.PesEndereco) as Endereco, 
+					   rtrim(p.PesComplementoEndereco) as ComplementoEndereco, 
+					   rtrim(p.PesBairro) as Bairro, 
+					   rtrim(p.PesCidade) as Cidade, 
+					   p.PesUf as Uf, 
+					   p.PesCep as Cep, 
+					   p.PesRg as Rg, 
+					   p.PesDataNascimento as DataNascimento, 
+					   p.PesSexo as Sexo, 
+					   p.PesTelefone as Telefone, 
+					   p.PesCelular as Celular, 
+					   rtrim(p.PesDDD) as DDD 
+				from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
+					 on u.UsuPesIdPessoa = p.PesCodigoPessoa 
+				",
+
+	"sql_update" :
+			"select u.UsuId as Codigo, 
+				   p.PesCodigoPessoa as CodigoPessoa, 
+				   lower(rtrim(u.UsuLogin)) as Login, 
+				   rtrim(p.PesNome) as Nome, 
+				   rtrim(cast(p.PesCpf as varchar(14))) as Cpf, 
+				   rtrim(cast(u.UsuSenha as varchar(60))) as Password, 
+				   'SHA1' as PasswdCryptoPessoa, 
+				   rtrim(p.PesEndereco) as Endereco, 
+				   rtrim(p.PesComplementoEndereco) as ComplementoEndereco, 
+				   rtrim(p.PesBairro) as Bairro, 
+				   rtrim(p.PesCidade) as Cidade, 
+				   p.PesUf as Uf, 
+				   p.PesCep as Cep, 
+				   p.PesRg as Rg, 
+				   p.PesDataNascimento as DataNascimento, 
+				   p.PesSexo as Sexo, 
+				   p.PesTelefone as Telefone, 
+				   p.PesCelular as Celular, 
+				   rtrim(p.PesDDD) as DDD 
+			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
+				 on u.UsuPesIdPessoa = p.PesCodigoPessoa  
+			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or 
+			      u.UsuDataCadastramento >= ? or p.PesDataCadastramento >= ?
+			",
+			
+	"fields" : ["codigo", "codigo_pessoa", "login", "name", "cpf", "password", 
+				"passwd_crypto", "endereco", "complemento_endereco", 
+				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
+				"sexo", "telefone", "celular", "ddd"]
+				
+}

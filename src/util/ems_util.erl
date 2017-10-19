@@ -242,27 +242,26 @@ timestamp_str() ->
 	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
 	lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
-timestamp_str(null) -> "";
-timestamp_str(undefined) -> "";
+-spec timestamp_str(tuple()) -> string().
 timestamp_str({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
-  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
+  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg]));
+timestamp_str(_) -> "".  
 
-timestamp_binary(null) -> <<>>;
-timestamp_binary(undefined) -> <<>>;
+-spec timestamp_binary(tuple()) -> binary().
 timestamp_binary({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
-  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
+  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg]));
+timestamp_binary(_) ->  <<>>.
 
-
-date_to_string(null) -> "";
-date_to_string(undefined) -> "";
+-spec date_to_string(tuple()) -> string().
 date_to_string({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
-    lists:flatten(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
+    lists:flatten(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano]));
+date_to_string(_) -> "".    
 
-
-date_to_binary(null) -> <<>>;
-date_to_binary(undefined) -> <<>>;
+-spec date_to_binary(tuple()) -> binary().
 date_to_binary({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
-    iolist_to_binary(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano])).
+    iolist_to_binary(io_lib:format("~2..0B/~2..0B/~4..0B", [Dia, Mes, Ano]));
+date_to_binary(_) -> <<>>.
+    
 
 
 tuple_to_binlist(T) ->
