@@ -100,7 +100,7 @@ list_kernel_catalog() ->
 			Conf = ems_config:getConfig(),
 			case ems_json_scan:scan_with_filter(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>) of
 				{ok, CatKernel} -> 
-					CatKernel2 = [ems_catalog:new_service_from_map(Map, Conf) || Map <- CatKernel],
+					CatKernel2 = [ems_catalog:new_from_map(Map, Conf) || Map <- CatKernel],
 					CatKernel3 = [Cat || {Reason, Cat} <- CatKernel2, Reason == ok, Cat#service.enable == true],
 					CatKernel3;
 				Error -> Error

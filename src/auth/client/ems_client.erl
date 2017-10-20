@@ -88,6 +88,7 @@ find_by_name(Name) ->
 	end.
 
 
+-spec to_json(binary() | undefined) -> binary().
 to_json(undefined) -> <<"{}"/utf8>>;
 to_json(Client) ->
 	iolist_to_binary([

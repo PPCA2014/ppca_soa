@@ -142,7 +142,7 @@ get_filename() ->
 -spec prepare_insert_or_update(map() | tuple(), tuple(), #config{}, atom()) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
 prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 	try
-		case ems_catalog:new_service_from_map(Map, Conf) of
+		case ems_catalog:new_from_map(Map, Conf) of
 			{ok, NewCatalog = #service{type = ServiceType, use_re = UseRE, rowid = Rowid, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash}} -> 
 				Table = ems_catalog:get_table(ServiceType, UseRE, SourceType),
 				case ems_catalog_lookup:find(Table, Rowid) of

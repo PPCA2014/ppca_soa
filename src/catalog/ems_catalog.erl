@@ -13,7 +13,7 @@
 
 -export([new_service/58, 
 		 new_service_re/58,
-		 new_service_from_map/2, new_service_from_map/3,
+		 new_from_map/2, new_from_map/3,
 		 get_metadata_json/1,
 		 get_table/3]).
 		 
@@ -272,22 +272,20 @@ parse_host_service(_Host, ModuleName, Node, Conf) ->
 	{ClusterNode, ClusterName}.
 
 
-new_service_from_map(Map, Conf) -> new_service_from_map(Map, Conf, undefined).
-
--spec new_service_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
-new_service_from_map(Map, 
-					 Conf = #config{cat_enable_services = EnableServices,
-								    cat_disable_services = DisableServices,
-								    ems_result_cache = ResultCacheDefault,
-								    authorization = AuthorizationDefault,
-								    oauth2_with_check_constraint = Oauth2WithCheckConstraintDefault,
-								    static_file_path = StaticFilePathDefault,
-								    tcp_listen_address = TcpListenAddressDefault,
-								    tcp_allowed_address = TcpAllowedAddressDefault,
-								    cat_node_search = CatNodeSearchDefault,
-								    cat_host_search = CatHostSearchDefault,
-								    ems_hostname = HostNameDefault}, 
- 				     Id) ->
+-spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
+new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
+								 cat_disable_services = DisableServices,
+								 ems_result_cache = ResultCacheDefault,
+								 authorization = AuthorizationDefault,
+								 oauth2_with_check_constraint = Oauth2WithCheckConstraintDefault,
+								 static_file_path = StaticFilePathDefault,
+								 tcp_listen_address = TcpListenAddressDefault,
+								 tcp_allowed_address = TcpAllowedAddressDefault,
+								 cat_node_search = CatNodeSearchDefault,
+								 cat_host_search = CatHostSearchDefault,
+								 ems_hostname = HostNameDefault}, 
+				 Id) ->
 	try
 		Name = ems_util:parse_name_service(maps:get(<<"name">>, Map)),
 		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, Map, true)),
