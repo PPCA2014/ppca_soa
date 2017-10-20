@@ -54,7 +54,7 @@ get_connection(Datasource = #service_datasource{id = Id}) ->
 		end
 	catch
 		_ : Reason2 ->
-			ems_logger:error("ems_odbc_pool get_connection catch exception from datasource ~p. Reason: ~p.", [Id, Reason2]),
+			?DEBUG("ems_odbc_pool get_connection catch exception from datasource ~p. Reason: ~p.", [Id, Reason2]),
 			{error, eunavailable_odbc_connection}
 	end.
 
@@ -63,9 +63,9 @@ release_connection(Datasource = #service_datasource{id = Id}) ->
 	try
 		gen_server:call(?SERVER, {release_connection, Datasource})
 	catch 
-		_: Reason -> 
-			% não retorna erro para o processo que liberou ou tentou liberar uma conexão
-			ems_logger:error("ems_odbc_pool release_connection catch exception from datasource ~p. Reason: ~p.", [Id, Reason]),
+		_: _Reason -> 
+			% does not return error for the process that released or attempted to release a connection
+			?DEBUG("ems_odbc_pool release_connection catch exception from datasource ~p. Reason: ~p.", [Id, _Reason]),
 			ok
 	end.
 
@@ -81,7 +81,7 @@ param_query(#service_datasource{id = Id,
 		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool param_query catch timeout exception from datasource ~p.", [Id]),
+			?DEBUG("ems_odbc_pool param_query catch timeout exception from datasource ~p.", [Id]),
 			{error, eunavailable_odbc_connection}
 	end.
 
@@ -90,7 +90,7 @@ param_query(#service_datasource{id = Id, owner = Owner}, Sql, Params, Timeout) -
 		gen_server:call(Owner, {param_query, Sql, Params}, Timeout)
 	catch
 		_ : _ ->
-			ems_logger:error("ems_odbc_pool param_query catch timeout exception from datasource ~p.", [Id]),
+			?DEBUG("ems_odbc_pool param_query catch timeout exception from datasource ~p.", [Id]),
 			{error, eunavailable_odbc_connection}
 	end.
 

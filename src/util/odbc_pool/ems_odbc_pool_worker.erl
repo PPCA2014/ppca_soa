@@ -51,9 +51,7 @@ notify_return_pool(Worker) ->
 	try
 		gen_server:call(Worker, notify_return_pool)
 	catch 
-		_:Reason -> 
-			ems_logger:warn("ems_odbc_pool_worker notify_return_pool exception. Reason: ~p.", [Reason]),
-			{error, eunavailable_odbc_connection}
+		_:_ -> {error, eunavailable_odbc_connection}
 	end.
 
 last_error(Worker) -> gen_server:call(Worker, last_error).
@@ -195,30 +193,29 @@ do_connect(Datasource = #service_datasource{connection = Connection}) ->
 				Datasource2 = Datasource#service_datasource{owner = self(), 
 															conn_ref = ConnRef},
 				{ok, Datasource2};
-			{error, {PosixError, _}} -> 
-				ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_util:posix_error_description(PosixError)]),
-				{error, PosixError};
-			{error, Reason} -> 
-				ems_logger:error("ems_odbc_pool_worker invalid odbc connection: ~s. Reason: ~p.", [Connection, Reason]),
-				{error, Reason}
+			{error, {PosixError, _}} -> {error, PosixError};
+			{error, Reason} -> {error, Reason}
 		end
 	catch 
-		_Exception:{PosixError2, _} -> 
-			ems_logger:error("ems_odbc_pool_worker invalid posix odbc connection: ~s. Reason: ~p.", [Connection, ems_util:posix_error_description(PosixError2)]),
-			{error, PosixError2}
+		_Exception:{PosixError2, _} -> {error, PosixError2};
+		_Exception2:Reason2 -> {error, Reason2}
 	end.
 
 do_disconnect(#state{datasource = #service_datasource{id =Id, conn_ref = ConnRef, type = sqlite, driver = <<"sqlite3">>}}) -> 
 	try
 		esqlite3:close(ConnRef)
 	catch
-		_:Reason ->	ems_logger:error("ems_odbc_pool_worker do_disconnect datasource ~p exception: Reason: ~p.", [Id, Reason])
+		_:Reason ->	
+			?DEBUG("ems_odbc_pool_worker do_disconnect datasource ~p exception: Reason: ~p.", [Id, Reason]),
+			ok
 	end;
 do_disconnect(#state{datasource = #service_datasource{id = Id, conn_ref = ConnRef}}) -> 
 	try
 		odbc:disconnect(ConnRef)
 	catch
-		_:Reason ->	ems_logger:error("ems_odbc_pool_worker do_disconnect datasource ~p exception: Reason: ~p.", [Id, Reason])
+		_:Reason ->	
+			?DEBUG("ems_odbc_pool_worker do_disconnect datasource ~p exception: Reason: ~p.", [Id, Reason]),
+			ok
 	end.
 
 do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
@@ -235,13 +232,13 @@ do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource
 			{ok, {selected, Fields2, Records}, Datasource};
         Error -> Error
     end;
-do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
-																				 connection = Connection,
+do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{id = Id,
+																				 conn_ref = ConnRef,
 																				 timeout = Timeout}}) ->
 	try
 		case odbc:param_query(ConnRef, Sql, Params, Timeout) of
 			{error, Reason} ->
-				ems_logger:error("ems_odbc_pool_worker param_query error: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason]),
+				ems_logger:error("ems_odbc_pool_worker param_query error datasource ~p: \n\tSQL: ~s \n\t.Reason: ~p.", [Id, Sql, Reason]),
 				{error, eodbc_connection_closed};
 			{selected, Fields1, Result1} -> 
 				%?DEBUG("Odbc resultset query: ~p.", [Result1]),
@@ -249,10 +246,10 @@ do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource
 		end
 	catch
 		_:timeout -> 
-			ems_logger:error("ems_odbc_pool_worker param_query catch connection timeout: \n\tSQL: ~s \n\tConnection: ~s.", [Sql, Connection]),
+			ems_logger:error("ems_odbc_pool_worker param_query catch connection timeout datasource ~p: \n\tSQL: ~s..", [Id, Sql]),
 			{error, eodbc_connection_timeout};
 		_:Reason6 -> 
-			ems_logger:error("ems_odbc_pool_worker param_query catch exception: \n\tSQL: ~s \n\tConnection: ~s \n\tReason: ~p.", [Sql, Connection, Reason6]),
+			ems_logger:error("ems_odbc_pool_worker param_query catch exception datasource ~p: \n\tSQL: ~s.\n\tReason: ~p.", [Id, Sql, Reason6]),
 			{error, eodbc_invalid_connection}
 	end.
 

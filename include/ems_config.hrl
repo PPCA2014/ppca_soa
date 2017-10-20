@@ -122,14 +122,18 @@
 % Limits of API query
 -define(MAX_LIMIT_API_QUERY, 99999).
 -define(MAX_OFFSET_API_QUERY, 99999).
--define(MAX_TIME_ODBC_QUERY, 30000).
+-define(MAX_TIME_ODBC_QUERY, 360000). % 6 minutos
 -define(MAX_ID_RECORD_QUERY, 9999999999).  
 
 % Timeout in ms to expire cache of get request (ems_dispatcher_cache)
--define(TIMEOUT_DISPATCHER_CACHE, 8000).
+-define(TIMEOUT_DISPATCHER_CACHE, 12000).
 
 % Number of datasource entries by odbc connection pool
--define(MAX_CONNECTION_BY_POOL, 5).
+-define(MAX_CONNECTION_BY_POOL, 300).
+
+
+% Timeout to close idle odbc connection (Não dá para colocar um valor alto pois o ems_odbc_pool não verifica se a conexão ainda é válida)
+-define(CLOSE_IDLE_CONNECTION_TIMEOUT, 30000). % 30 segundos
 
 
 % Define the checkpoint to update user for ems_user_loader process
@@ -165,10 +169,6 @@
 
 -define(TCP_PORT_MIN, 1024).
 -define(TCP_PORT_MAX, 99999).
-
-% Timeout to close idle odbc connection
--define(CLOSE_IDLE_CONNECTION_TIMEOUT, 60000 * 3).
-
 
 
 

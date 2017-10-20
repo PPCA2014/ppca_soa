@@ -238,6 +238,7 @@ compile_page_module(Page, Rowid, Conf) ->
 	end.
 
 	
+-spec parse_datasource(map(), non_neg_integer(), #config{}) -> #service_datasource{} | undefined.
 parse_datasource(undefined, _, _) -> undefined;
 parse_datasource(M, Rowid, _) when erlang:is_map(M) -> ems_db:create_datasource_from_map(M, Rowid);
 parse_datasource(DsName, _Rowid, Conf) -> maps:get(DsName, Conf#config.ems_datasources, undefined).

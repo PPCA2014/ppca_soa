@@ -11,64 +11,8 @@
 		"authorization" : "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "client"
-		},
-		"schema_in" : "client",
-		"schema_out" : "client",
-		"lang" : "erlang"
-	},
-
-	{
-		"name": "/auth/client/:id",
-		"comment": "Delete a client by id",
-		"owner": "auth_client",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:delete",
-		"service" : "ems_client_service:delete",
-		"middleware" : "client_service",
-		"url": "/auth/client/:id",
-		"type": "DELETE",
-		"authorization" : "basic",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "client"
-		},
-		"schema_in" : "client",
-		"schema_out" : "client",
-		"lang" : "erlang"
-	},
-
-	{
-		"name": "/auth/client",
-		"comment": "Enter a new client",
-		"owner": "auth_client",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:insert",
-		"middleware" : "client_service",
-		"url": "/auth/client",
-		"type": "POST",
-		"authorization" : "basic",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "client"
-		},
-		"schema_in" : "client",
-		"schema_out" : "client",
-		"lang" : "erlang"
-	},
-
-	{
-		"name": "/auth/client/:id",
-		"comment": "Update an existing client",
-		"owner": "auth_client",
-		"service" : "ems_api_query_service:update",
-		"middleware" : "client_service",
-		"url": "/auth/client/:id",
-		"type": "PUT",
-		"authorization" : "basic",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "client"
+			"table_name" : "client_db",
+			"table_name2" : "client_fs"
 		},
 		"schema_in" : "client",
 		"schema_out" : "client",

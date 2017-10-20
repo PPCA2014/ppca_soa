@@ -103,6 +103,7 @@
 		 parse_allowed_address/1,
 		 parse_tcp_port/1,
 		 parse_request_querystring/2,
+		 parse_range/3,
 		 match_ip_address/2,
  		 allow_ip_address/2,
 		 mask_ipaddress_to_tuple/1,
@@ -1963,10 +1964,14 @@ tuple_to_maps_with_keys([FldH|FldT], [KeyH|KeyT], Result) ->
 	
 %% *********** Functions for data validation ************
 
--spec is_range_valido(integer(), integer(), integer()) -> boolean().
+-spec is_range_valido(non_neg_integer(), integer(), integer()) -> boolean().
 is_range_valido(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> true;
 is_range_valido(_Number, _RangeIni, _RangeFim) -> false.
 
+-spec parse_range(non_neg_integer(), integer(), integer()) -> non_neg_integer.
+parse_range(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> Number;
+parse_range(_, _, _) -> erlang:error(erange_not_allowed).
+	
 
 -spec is_email_valido(string()) -> boolean().
 is_email_valido(Value) -> 

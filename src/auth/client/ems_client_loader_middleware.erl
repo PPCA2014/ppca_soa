@@ -11,17 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([insert/4, update/4, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0]).
-
--spec insert(map(), tuple(), #config{}, fs | db) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-insert(Map, CtrlInsert, Conf, SourceType) ->
-	prepare_insert_or_update(Map, CtrlInsert, Conf, SourceType).
-
-
--spec update(tuple(), tuple(), #config{}, fs | db) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-update(Map, CtrlUpdate, Conf, SourceType) ->
-	prepare_insert_or_update(Map, CtrlUpdate, Conf, SourceType).
-
+-export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0]).
 
 -spec is_empty(fs | db) -> boolean().
 is_empty(db) ->	mnesia:table_info(client_db, size) == 0;
@@ -63,11 +53,11 @@ get_filename() ->
 	Conf#config.client_path_search.
 	
 	
--spec prepare_insert_or_update(map() | tuple(), tuple(), #config{}, atom()) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
+-spec insert_or_update(map() | tuple(), tuple(), #config{}, atom(), insert | update) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
+insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_client:new_from_map(Map, Conf) of
-			{ok, NewClient = #client{codigo = Codigo, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash}} -> 
+			{ok, NewClient = #client{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
 				Table = ems_client:get_table(SourceType),
 				case ems_client:find(Table, Codigo) of
 					{error, enoent} -> 
@@ -75,29 +65,25 @@ prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
 						Client = NewClient#client{id = Id,
 											      ctrl_insert = CtrlDate},
 						{ok, Client, Table, insert};
-					{ok, CurrentClient = #client{ctrl_modified = CurrentCtrlModified, ctrl_hash = CurrentCtrlHash}} ->
+					{ok, CurrentClient = #client{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
-								case CtrlModified == undefined orelse CtrlModified > CurrentCtrlModified of
-									true ->
-										?DEBUG("ems_client_loader_middleware update ~p from ~p.", [Map, SourceType]),
-										Client = CurrentClient#client{
-														 codigo = Codigo,
-														 name = NewClient#client.name,
-														 secret = NewClient#client.secret,
-														 redirect_uri = NewClient#client.redirect_uri,
-														 description = NewClient#client.description,
-														 scope = NewClient#client.scope,
-														 active = NewClient#client.active,
-														 ctrl_path = NewClient#client.ctrl_path,
-														 ctrl_file = NewClient#client.ctrl_file,
-														 ctrl_update = CtrlDate,
-														 ctrl_modified = CtrlModified,
-														 ctrl_hash = CtrlHash
-													},
-										{ok, Client, Table, update};
-									false -> {ok, skip}
-								end;
+								?DEBUG("ems_client_loader_middleware update ~p from ~p.", [Map, SourceType]),
+								Client = CurrentClient#client{
+												 codigo = Codigo,
+												 name = NewClient#client.name,
+												 secret = NewClient#client.secret,
+												 redirect_uri = NewClient#client.redirect_uri,
+												 description = NewClient#client.description,
+												 scope = NewClient#client.scope,
+												 active = NewClient#client.active,
+												 ctrl_path = NewClient#client.ctrl_path,
+												 ctrl_file = NewClient#client.ctrl_file,
+												 ctrl_update = CtrlDate,
+												 ctrl_modified = NewClient#client.ctrl_modified,
+												 ctrl_hash = NewClient#client.ctrl_hash
+											},
+								{ok, Client, Table, update};
 							false -> {ok, skip}
 						end
 				end;

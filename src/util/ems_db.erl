@@ -31,6 +31,7 @@ start() ->
 	ems_cache:new(ems_db_odbc_connection_cache),
 	ems_cache:new(ems_db_parsed_query_cache).
 	
+-spec create_database(list()) -> ok.	
 create_database(Nodes) ->
 	% Define a pasta de armazenamento dos databases
 	filelib:ensure_dir(?DATABASE_PATH ++ "/"),
@@ -622,45 +623,66 @@ set_param(ParamName, ParamValue) ->
 	mnesia:dirty_write(ctrl_params, P).
 	
 
--spec create_datasource_from_map(map()) -> #service_datasource{}.
-create_datasource_from_map(M) ->
-	create_datasource_from_map(M, undefined).
+-spec parse_data_source_driver(binary()) -> binary().
+parse_data_source_driver(<<>>) -> <<>>;
+parse_data_source_driver(undefined) -> <<>>;
+parse_data_source_driver(<<"sqlite3">>) -> <<"sqlite3">>;
+parse_data_source_driver(<<"odbc">>) -> <<"odbc">>;
+parse_data_source_driver(_) -> erlang:error(einvalid_datasource_driver).
 
--spec create_datasource_from_map(map(), non_neg_integer()) -> #service_datasource{}.
+
+-spec parse_datasource_csvdelimiter(string()) -> ok.
+parse_datasource_csvdelimiter(";") -> ";";
+parse_datasource_csvdelimiter("|") -> "|";
+parse_datasource_csvdelimiter(",") -> ",";
+parse_datasource_csvdelimiter("@") -> "@";
+parse_datasource_csvdelimiter(_) -> erlang:error(einvalid_datasource_csvdelimiter).
+
+
+-spec create_datasource_from_map(map()) -> #service_datasource{} | undefined.
+create_datasource_from_map(M) -> create_datasource_from_map(M, undefined).
+
+-spec create_datasource_from_map(map(), non_neg_integer()) -> #service_datasource{} | undefined.
 create_datasource_from_map(M, Rowid) ->
-	Type = list_to_atom(binary_to_list(maps:get(<<"type">>, M))),
-	Driver = maps:get(<<"driver">>, M, <<>>),
-	Connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
-	TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
-	PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
-	CsvDelimiter = binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>)),
-	Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
-	Timeout = maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY),
-	MaxPoolSize = maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL),
-	Ds = case ems_db:find(service_datasource, [{type, "==", Type}, 
-												{driver, "==", Driver}, 
-												{connection, "==", Connection}, 
-												{table_name, "==", TableName}, 
-												{csv_delimiter, "==", CsvDelimiter}, 
-												{sql, "==", Sql}, 
-												{timeout, "==", Timeout}, 
-												{max_pool_size, "==", MaxPoolSize}]) of
-			  [] ->										
-					NewDs = #service_datasource{id = ems_db:inc_counter(service_datasource),
-												rowid = Rowid,
-												type = Type,
-												driver = Driver,
-												connection = Connection,
-												table_name = TableName,
-												primary_key = PrimaryKey,
-												csv_delimiter = CsvDelimiter,
-												sql = Sql,
-												timeout = Timeout,
-												max_pool_size = MaxPoolSize},
-					ems_db:insert(NewDs),
-					NewDs;
-			  [Record] -> Record
-		 end,										
-	Ds.
+	try
+		Type = erlang:binary_to_atom(maps:get(<<"type">>, M), utf8),
+		Driver = parse_data_source_driver(maps:get(<<"driver">>, M, <<>>)),
+		Connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
+		TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
+		PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
+		CsvDelimiter = parse_datasource_csvdelimiter(binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))),
+		Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
+		Timeout = ems_util:parse_range(maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY), 1, ?MAX_TIME_ODBC_QUERY),
+		MaxPoolSize = ems_util:parse_range(maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL), 1, ?MAX_CONNECTION_BY_POOL),
+		Ds = case ems_db:find(service_datasource, [{type, "==", Type}, 
+													{driver, "==", Driver}, 
+													{connection, "==", Connection}, 
+													{table_name, "==", TableName}, 
+													{csv_delimiter, "==", CsvDelimiter}, 
+													{sql, "==", Sql}, 
+													{timeout, "==", Timeout}, 
+													{max_pool_size, "==", MaxPoolSize}]) of
+				  [] ->										
+						NewDs = #service_datasource{id = ems_db:inc_counter(service_datasource),
+													rowid = Rowid,
+													type = Type,
+													driver = Driver,
+													connection = Connection,
+													table_name = TableName,
+													primary_key = PrimaryKey,
+													csv_delimiter = CsvDelimiter,
+													sql = Sql,
+													timeout = Timeout,
+													max_pool_size = MaxPoolSize},
+						ems_db:insert(NewDs),
+						NewDs;
+				  [Record] -> Record
+			 end,										
+		Ds
+	catch
+		_:Reason-> 
+			ems_logger:format_error("ems_db parse invalid datasource ~p. Reason: ~p.\n", [M, Reason]),
+			undefined
+	end.
 	
 

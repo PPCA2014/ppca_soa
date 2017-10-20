@@ -11,16 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([insert/4, update/4, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0]).
-
--spec insert(map(), tuple(), #config{}, fs | db) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-insert(Map, CtrlInsert, Conf, SourceType) ->
-	prepare_insert_or_update(Map, CtrlInsert, Conf, SourceType).
-
-
--spec update(tuple(), tuple(), #config{}, fs | db) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-update(Map, CtrlUpdate, Conf, SourceType) ->
-	prepare_insert_or_update(Map, CtrlUpdate, Conf, SourceType).
+-export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0]).
 
 
 -spec is_empty(fs | db) -> boolean().
@@ -63,56 +54,51 @@ get_filename() ->
 	Conf#config.user_path_search.
 	
 	
--spec prepare_insert_or_update(map() | tuple(), tuple(), #config{}, atom()) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
-prepare_insert_or_update(Map, CtrlDate, Conf, SourceType) ->
+-spec insert_or_update(map() | tuple(), tuple(), #config{}, atom(), insert | update) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
+insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user:new_from_map(Map, Conf) of
-			{ok, NewUser = #user{codigo = Codigo, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash}} -> 
+			{ok, NewUser = #user{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user:get_table(SourceType),
 				case ems_user:find(Table, Codigo) of
 					{error, enoent} -> 
 						Id = ems_db:sequence(Table),
 						User = NewUser#user{id = Id,
-											      ctrl_insert = CtrlDate},
+											ctrl_insert = CtrlDate},
 						{ok, User, Table, insert};
-					{ok, CurrentUser = #user{ctrl_modified = CurrentCtrlModified, ctrl_hash = CurrentCtrlHash}} ->
+					{ok, CurrentUser = #user{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
-								case CtrlModified == undefined orelse CtrlModified > CurrentCtrlModified of
-									true ->
-										?DEBUG("ems_user_loader_middleware update ~p from ~p.", [Map, SourceType]),
-										User = CurrentUser#user{
-														 codigo = Codigo,
-														 codigo_pessoa = NewUser#user.codigo_pessoa,
-														 login = NewUser#user.login,
-														 name = NewUser#user.name,
-														 cpf = NewUser#user.cpf,
-														 password = NewUser#user.password,
-														 passwd_crypto = NewUser#user.passwd_crypto,
-														 endereco = NewUser#user.endereco,
-														 complemento_endereco = NewUser#user.complemento_endereco,
-														 bairro = NewUser#user.bairro,
-														 cidade = NewUser#user.cidade,
-														 uf = NewUser#user.uf,
-														 cep = NewUser#user.cep,
-														 rg = NewUser#user.rg,
-														 data_nascimento = NewUser#user.data_nascimento,
-														 sexo = NewUser#user.sexo,
-														 telefone = NewUser#user.telefone,
-														 celular = NewUser#user.celular,
-														 ddd = NewUser#user.ddd,
-														 ctrl_path = NewUser#user.ctrl_path,
-														 ctrl_file = NewUser#user.ctrl_file,
-														 ctrl_update = CtrlDate,
-														 ctrl_modified = CtrlModified,
-														 ctrl_hash = CtrlHash
-													},
-										{ok, User, Table, update};
-									false -> {ok, skip}
-								end;
+								?DEBUG("ems_user_loader_middleware update ~p from ~p.", [Map, SourceType]),
+								User = CurrentUser#user{
+												 codigo = Codigo,
+												 codigo_pessoa = NewUser#user.codigo_pessoa,
+												 login = NewUser#user.login,
+												 name = NewUser#user.name,
+												 cpf = NewUser#user.cpf,
+												 password = NewUser#user.password,
+												 passwd_crypto = NewUser#user.passwd_crypto,
+												 endereco = NewUser#user.endereco,
+												 complemento_endereco = NewUser#user.complemento_endereco,
+												 bairro = NewUser#user.bairro,
+												 cidade = NewUser#user.cidade,
+												 uf = NewUser#user.uf,
+												 cep = NewUser#user.cep,
+												 rg = NewUser#user.rg,
+												 data_nascimento = NewUser#user.data_nascimento,
+												 sexo = NewUser#user.sexo,
+												 telefone = NewUser#user.telefone,
+												 celular = NewUser#user.celular,
+												 ddd = NewUser#user.ddd,
+												 ctrl_path = NewUser#user.ctrl_path,
+												 ctrl_file = NewUser#user.ctrl_file,
+												 ctrl_update = CtrlDate,
+												 ctrl_modified = NewUser#user.ctrl_modified,
+												 ctrl_hash = NewUser#user.ctrl_hash
+											},
+								{ok, User, Table, update};
 							false -> {ok, skip}
-						end;
-					X -> io:format("erro find ~p\n", [X])
+						end
 				end;
 			Error -> Error
 		end

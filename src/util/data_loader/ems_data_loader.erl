@@ -19,12 +19,13 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, 
-		 last_update/1, is_empty/1, size_table/1, sync/1, sync_full/1, pause/1, resume/1]).
+		 last_update/1, is_empty/1, size_table/1, sync/1, sync_full/1, pause/1, resume/1, handle_event/2]).
 
 % estado do servidor
 -record(state, {name,
 			    datasource,
 				update_checkpoint,
+				timeout_on_error,
 				last_update,
 				last_update_param_name,
 				sql_load,
@@ -81,9 +82,10 @@ init(#service{name = Name,
 	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
-	SqlLoad = binary_to_list(maps:get(<<"sql_load">>, Props, <<>>)),
-	SqlUpdate = binary_to_list(maps:get(<<"sql_update">>, Props, <<>>)),
+	SqlLoad = string:trim(binary_to_list(maps:get(<<"sql_load">>, Props, <<>>))),
+	SqlUpdate = string:trim(binary_to_list(maps:get(<<"sql_update">>, Props, <<>>))),
 	Fields = maps:get(<<"fields">>, Props, <<>>),
+	TimeoutOnError = maps:get(<<"timeout_on_error">>, Props, 60000 * 6),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
 	State = #state{name = binary_to_list(Name),
 				   datasource = Datasource, 
@@ -93,7 +95,8 @@ init(#service{name = Name,
 				   sql_load = SqlLoad,
 				   sql_update = SqlUpdate,
 				   middleware = Middleware,
-				   fields = Fields},
+				   fields = Fields,
+				   timeout_on_error = TimeoutOnError},
 	{ok, State, StartTimeout}.
     
 handle_cast(shutdown, State) ->
@@ -134,7 +137,9 @@ handle_info(State = #state{update_checkpoint = UpdateCheckpoint}) ->
    {noreply, State, UpdateCheckpoint}.
 
 handle_info(check_sync_full, State = #state{name = Name,
-													  update_checkpoint = UpdateCheckpoint}) ->
+											update_checkpoint = UpdateCheckpoint,
+											timeout_on_error = TimeoutOnError
+										}) ->
 	{{_, _, _}, {Hour, _, _}} = calendar:local_time(),
 	case Hour >= 4 andalso Hour =< 6 of
 		true ->
@@ -144,9 +149,10 @@ handle_info(check_sync_full, State = #state{name = Name,
 				{ok, State3} ->
 					erlang:send_after(86400 * 1000, self(), check_sync_full),
 					{noreply, State3, UpdateCheckpoint};
-				{error, _Reason} -> 
+				_Error -> 
 					erlang:send_after(86400 * 1000, self(), check_sync_full),
-					{noreply, State, UpdateCheckpoint}
+					ems_logger:warn("~s wait ~p minutes for next checkpoint while has database connection error.", [Name, trunc(TimeoutOnError / 60000)]),
+					{noreply, State, TimeoutOnError}
 			end;
 		_ -> 
 			erlang:send_after(60000 * 60, self(), check_sync_full),
@@ -155,15 +161,16 @@ handle_info(check_sync_full, State = #state{name = Name,
 
 handle_info(timeout, State) -> handle_do_check_load_or_update(State);
 
-handle_info({_Pid, {error, Reason}}, State = #state{name = Name,
-													update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:warn("~s is unable to load or update data. Reason: ~p.", [Name, Reason]),
-	{noreply, State, UpdateCheckpoint};
+handle_info({_Pid, {error, _Reason}}, State = #state{timeout_on_error = TimeoutOnError}) ->
+	{noreply, State, TimeoutOnError};
 			
-handle_info(Msg, State = #state{name = Name, update_checkpoint = UpdateCheckpoint}) ->
-	ems_logger:warn("~s unknown message: ~p.", [Name, Msg]),
-	{noreply, State, UpdateCheckpoint}.
-			
+handle_info(_Msg, State = #state{timeout_on_error = TimeoutOnError}) ->
+	{noreply, State, TimeoutOnError}.
+		
+handle_event(_Event, State) ->
+      io:format("aqui1\n"),
+      {ok, State}.
+      			
 terminate(Reason, #service{name = Name}) ->
     ems_logger:warn("~s was terminated. Reason: ~p.", [Name, Reason]),
     ok.
@@ -172,13 +179,13 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 handle_do_check_load_or_update(State = #state{name = Name,
-									 update_checkpoint = UpdateCheckpoint}) ->
+									 update_checkpoint = UpdateCheckpoint,
+									 timeout_on_error = TimeoutOnError}) ->
 	case do_check_load_or_update(State) of
 		{ok, State2} ->	{noreply, State2, UpdateCheckpoint};
-		{error, eunavailable_odbc_connection} -> 
-			ems_logger:warn("~s wait 5 minutes for next checkpoint while has no database connection.", [Name]),
-			{noreply, State};
-		_Error -> {noreply, State, UpdateCheckpoint}
+		_Error -> 
+			ems_logger:warn("~s wait ~p minutes for next checkpoint while has database connection error.", [Name, trunc(TimeoutOnError / 60000)]),
+			{noreply, State, TimeoutOnError}
 	end.
 	
 
@@ -242,14 +249,13 @@ do_load(Datasource, CtrlInsert, Conf, State = #state{name = Name,
 								ems_logger:error("~s could not clear table before load data.", [Name]),
 								Error
 						end;
-					{error, Reason2} = Error3 -> 
+					Error3 -> 
 						ems_odbc_pool:release_connection(Datasource2),
-						ems_logger:error("~s load data query error: ~p.", [Name, Reason2]),
 						Error3
 				end,
 				Result;
 			Error4 -> 
-				ems_logger:warn("~s has no connection to load data from database.", [Name]),
+				?DEBUG("~s has no connection to load data from database.", [Name]),
 				Error4
 		end
 	catch
@@ -264,40 +270,44 @@ do_update(Datasource, LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 														   sql_update = SqlUpdate,
 														   fields = Fields}) -> 
 	try
-		case ems_odbc_pool:get_connection(Datasource) of
-			{ok, Datasource2} -> 
-				{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
-				% Zera os segundos
-				DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
-				Params = [{sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]},
-						  {sql_timestamp, [DateInitial]}],
-				Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdate, Params) of
-					{_,_,[]} -> 
-						ems_odbc_pool:release_connection(Datasource2),
-						?DEBUG("~s did not load any record.", [Name]),
-						ok;
-					{_, _, Records} ->
-						ems_odbc_pool:release_connection(Datasource2),
-						{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
-						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
-						ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]),
-						ok;
-					{error, Reason} = Error -> 
-						ems_odbc_pool:release_connection(Datasource2),
-						ems_logger:error("~s update data error: ~p.", [Name, Reason]),
-						Error
-				end,
-				Result;
-			Error2 -> 
-				ems_logger:warn("~s has no connection to update data from database.", [Name]),
-				Error2
+		% do_update is optional
+		case SqlUpdate =/= "" of
+			true ->
+				case ems_odbc_pool:get_connection(Datasource) of
+					{ok, Datasource2} -> 
+						{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
+						% Zera os segundos
+						DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
+						Params = [{sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]},
+								  {sql_timestamp, [DateInitial]}],
+						Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdate, Params) of
+							{_,_,[]} -> 
+								ems_odbc_pool:release_connection(Datasource2),
+								?DEBUG("~s did not load any record.", [Name]),
+								ok;
+							{_, _, Records} ->
+								ems_odbc_pool:release_connection(Datasource2),
+								{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
+								LastUpdateStr = ems_util:timestamp_str(LastUpdate),
+								ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]),
+								ok;
+							Error -> 
+								ems_odbc_pool:release_connection(Datasource2),
+								Error
+						end,
+						Result;
+					Error2 -> 
+						?DEBUG("~s has no connection to update data from database.", [Name]),
+						Error2
+				end;
+			_ -> ok
 		end
 	catch
 		_Exception:Reason3 -> 
@@ -323,3 +333,4 @@ do_clear_table(#state{middleware = Middleware}) ->
 -spec do_reset_sequence(#state{}) -> ok.
 do_reset_sequence(#state{middleware = Middleware}) ->
 	apply(Middleware, reset_sequence, [db]).
+
