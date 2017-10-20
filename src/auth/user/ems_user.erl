@@ -47,21 +47,23 @@ all() ->
 	{ok, ListaUserDb ++ ListaUserFs}.
 	
 
-
 -spec authenticate_login_password(binary(), binary()) -> ok | {error, invalidCredentials}.
 authenticate_login_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
-			io:format("achou user\n"),
 			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of
 				true -> io:format("ok\n"), ok;
-				_ -> io:format("invalid crede ~p = ~p\n", [PasswordUser, Password]), {error, invalidCredentials}
+				_ -> {error, invalidCredentials}
 			end;
 		_ -> {error, invalidCredentials}
 	end.
 
 
 -spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
+find_by_codigo(Codigo) when is_binary(Codigo) ->
+	find_by_codigo(ems_util:binary_to_integer(Codigo));
+find_by_codigo(Codigo) when is_list(Codigo) ->
+	find_by_codigo(list_to_integer(Codigo));
 find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
 		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
@@ -217,9 +219,8 @@ add_user(Login, Password) ->
 	insert(User).
 
 
+-spec new_from_map(map(), #config{}) -> {ok, #user{}} | {error, atom()}.
 new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-
-%-spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
 new_from_map(Map, _Conf, Id) ->
 	try
 		PasswdCrypto = maps:get(<<"passwd_crypto">>, Map, <<>>),

@@ -274,7 +274,7 @@ parse_host_service(_Host, ModuleName, Node, Conf) ->
 
 new_service_from_map(Map, Conf) -> new_service_from_map(Map, Conf, undefined).
 
-%-spec new_service_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
+-spec new_service_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
 new_service_from_map(Map, 
 					 Conf = #config{cat_enable_services = EnableServices,
 								    cat_disable_services = DisableServices,

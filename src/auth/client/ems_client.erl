@@ -24,40 +24,41 @@
 		 find/2,
 		 all/1]).
 
-find_by_id(Id) -> ems_db:get(client, Id).
 
-insert(Client) -> 
-	case valida(Client, insert) of
-		ok -> ems_db:insert(Client);
-		Error -> 
-			Error
+-spec find_by_id(non_neg_integer()) -> {ok, #client{}} | {error, enoent}.
+find_by_id(Id) -> 
+	case ems_db:get(client_db, Id) of
+		{ok, Record} -> {ok, setelement(1, Record, client)};
+		_ -> case ems_db:get(client_fs, Id) of
+				{ok, Record} -> {ok, setelement(1, Record, client)};
+				_ -> {error, enoent}
+			 end
 	end.
 
-update(Client) -> 
-	case valida(Client, update) of
-		ok -> ems_db:update(Client);
-		Error -> Error
-	end.
 
-all() -> ems_db:all(client).
-
-delete(Id) -> ems_db:delete(client, Id).
-
-valida(_Client, _Operation) -> ok.
+-spec all() -> {ok, list()}.
+all() -> 
+	{ok, ListaUserDb} = ems_db:all(client_db),
+	{ok, ListaUserFs} = ems_db:all(client_fs),
+	{ok, ListaUserDb ++ ListaUserFs}.
 
 
--spec find_by_codigo(binary() | list() | integer()) -> #client{} | {error, enoent}.
+-spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
 find_by_codigo(Codigo) when is_binary(Codigo) ->
 	find_by_codigo(ems_util:binary_to_integer(Codigo));
 find_by_codigo(Codigo) when is_list(Codigo) ->
 	find_by_codigo(list_to_integer(Codigo));
 find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(client, Codigo, #client.codigo) of
-		[] -> {error, enoent};
-		[Record|_] -> {ok, Record}
+	case mnesia:dirty_index_read(client_db, Codigo, #client.codigo) of
+		[] -> case mnesia:dirty_index_read(client_fs, Codigo, #client.codigo) of
+				[] -> {error, enoent};
+				[Record|_] -> {ok, setelement(1, Record, client)}
+			  end;
+		[Record|_] -> {ok, setelement(1, Record, client)}
 	end.
-	
 
+	
+-spec find_by_codigo_and_secret(non_neg_integer(), binary()) -> {ok, #client{}} | {error, enoent}.
 find_by_codigo_and_secret(Codigo, Secret) ->
 	case find_by_codigo(Codigo) of
 		{ok, Client = #client{secret = CliSecret}} -> 
@@ -70,7 +71,22 @@ find_by_codigo_and_secret(Codigo, Secret) ->
 
 
 
-find_by_name(Name) -> ems_db:find_first(client, [{"name", "==", Name}]).
+-spec find_by_name(binary() | string()) -> {ok, #client{}} | {error, enoent}.
+find_by_name(<<>>) -> {error, enoent};
+find_by_name("") -> {error, enoent};
+find_by_name(undefined) -> {error, enoent};
+find_by_name(Name) when is_list(Name) -> 
+	find_by_name(list_to_binary(Name));
+find_by_name(Name) -> 
+	case ems_db:find_first(client_db, [{name, "==", Name}]) of
+		{error, Reason} ->
+			case ems_db:find_first(client_fs, [{name, "==", Name}]) of
+				{error, Reason} -> {error, enoent};
+				Record -> {ok, setelement(1, Record, client)}
+			end;
+		Record -> {ok, setelement(1, Record, client)}
+	end.
+
 
 to_json(undefined) -> <<"{}"/utf8>>;
 to_json(Client) ->
@@ -83,10 +99,8 @@ to_json(Client) ->
 		]).
 
 	
-
+-spec new_from_map(map(), #config{}) -> {ok, #client{}} | {error, atom()}.
 new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-
-%-spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
 new_from_map(Map, _Conf, Id) ->
 	try
 		{ok, #client{id = Id,
@@ -129,3 +143,24 @@ all(Table) ->
 			{ok, Records2};
 		Error -> Error
 	end.
+
+
+%% middleware functions
+
+insert(Client) -> 
+	case valida(Client, insert) of
+		ok -> ems_db:insert(Client);
+		Error -> 
+			Error
+	end.
+
+update(Client) -> 
+	case valida(Client, update) of
+		ok -> ems_db:update(Client);
+		Error -> Error
+	end.
+
+delete(Id) -> ems_db:delete(client, Id).
+
+valida(_Client, _Operation) -> ok.
+
