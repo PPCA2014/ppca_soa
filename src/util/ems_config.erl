@@ -179,7 +179,7 @@ load_config() ->
 % parse path_search and return a list
 -spec parse_cat_path_search(map()) -> list().
 parse_cat_path_search(Json) ->
-	CatPathSearch = maps:get(<<"ctrl_path">>, Json, #{}),
+	CatPathSearch = maps:get(<<"catalog_path">>, Json, #{}),
 	CatPathSearch2 = case maps:is_key(<<"ems-bus">>, CatPathSearch) of
 						true -> maps:to_list(CatPathSearch);
 						false -> [{<<"ems-bus">>, list_to_binary(?CATALOGO_ESB_PATH)} | maps:to_list(CatPathSearch)]
@@ -237,7 +237,7 @@ parse_config(Json, NomeArqConfig) ->
 			 params						= Json,
 			 client_path_search			= maps:get(<<"client_path_search">>, Json, ?CLIENT_PATH),
 			 user_path_search			= maps:get(<<"user_path_search">>, Json, ?USER_PATH),
-			 user_dados_funcionais_path_search			= maps:get(<<"user_path_search">>, Json, ?USER_DADOS_FUNCIONAIS_PATH)
+			 user_dados_funcionais_path_search	= maps:get(<<"user_path_search">>, Json, ?USER_DADOS_FUNCIONAIS_PATH)
 		}.
 
 % It generates a default configuration if there is no configuration file

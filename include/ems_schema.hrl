@@ -190,15 +190,23 @@
 							 primary_key = <<>> :: binary(),
 							 csv_delimiter = <<";">> :: binary(),
 							 sql = <<>> :: binary(),
-							 timeout = 30000 :: non_neg_integer(),
-							 max_pool_size = 1 :: non_neg_integer(),
+							 timeout :: non_neg_integer(),
+							 max_pool_size :: non_neg_integer(),
 							 conn_ref,
 							 pid_module,
 							 pid_module_ref,
 							 owner,
 							 owner_ref,
-							 pool_name :: string(),
-							 parent = undefined :: string()
+							 connection_count_metric_name :: atom(),		%% Quantas conexões alocadas
+							 connection_created_metric_name :: atom(),		%% Quantas conexões criadas
+							 connection_closed_metric_name :: atom(),   	%% Quantas conexões foram fechadas de forma normal
+							 connection_shutdown_metric_name :: atom(), 	%% Quantas conexões foram fechadas devido algum erro
+							 connection_reuse_metric_name :: atom(), 		%% Quantas conexões foram reutilizadas
+							 connection_unavailable_metric_name :: atom(), 	%% Quantas vezes não houve conexão
+							 connection_max_pool_size_exceeded_metric_name :: atom(), 	%% Quantas vezes não houve conexão
+							 sql_check_valid_connection :: string(),
+							 check_valid_connection_timeout :: non_neg_integer(),
+							 close_idle_connection_timeout :: non_neg_integer()
 							}).
 
 
@@ -274,7 +282,14 @@
 					ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
 					ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
 					ctrl_hash,									%% Hash gerado para poder comparar dois registros
-					start_timeout :: non_neg_integer()			%% Define um timeout inicial para o processo
+					start_timeout :: non_neg_integer(),			%% Define um timeout inicial para o processo
+					service_exec_metric_name :: atom(),
+					service_result_cache_hit_metric_name :: atom(),
+					service_host_denied_metric_name :: atom(),
+					service_auth_denied_metric_name :: atom(),
+					service_error_metric_name :: atom(),
+					service_unavailable_metric_name :: atom(),
+					service_timeout_metric_name :: atom()
 				}).
 
 

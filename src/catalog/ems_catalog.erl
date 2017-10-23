@@ -11,9 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([new_service/58, 
-		 new_service_re/58,
-		 new_from_map/2, new_from_map/3,
+-export([new_from_map/2, new_from_map/3,
 		 get_metadata_json/1,
 		 get_table/3]).
 		 
@@ -80,7 +78,11 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   AllowedAddress_t, Port, MaxConnections,
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash) ->
+			   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash,
+			   ServiceExecMetricName, ServiceResultCacheHitMetricName, 
+			   ServiceHostDeniedMetricName,	ServiceAuthDeniedMetricName, 
+			   ServiceErrorMetricName, ServiceUnavailableMetricName,
+			   ServiceTimeoutMetricName) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -145,7 +147,14 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				protocol = Protocol,
 				ctrl_modified = CtrlModified,
 				ctrl_hash = CtrlHash,
-				start_timeout = StartTimeout
+				start_timeout = StartTimeout,
+				service_exec_metric_name = ServiceExecMetricName,
+				service_result_cache_hit_metric_name = ServiceResultCacheHitMetricName,
+				service_host_denied_metric_name = ServiceHostDeniedMetricName,
+				service_auth_denied_metric_name = ServiceAuthDeniedMetricName,
+				service_error_metric_name = ServiceErrorMetricName,
+				service_unavailable_metric_name = ServiceUnavailableMetricName,
+				service_timeout_metric_name = ServiceTimeoutMetricName
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
@@ -157,7 +166,11 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			RedirectUrl, ListenAddress, ListenAddress_t, AllowedAddress, AllowedAddress_t, 
 			Port, MaxConnections, IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-			CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash) ->
+			CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash,
+			ServiceExecMetricName, ServiceResultCacheHitMetricName, 
+			ServiceHostDeniedMetricName, ServiceAuthDeniedMetricName, 
+			ServiceErrorMetricName, ServiceUnavailableMetricName,
+			ServiceTimeoutMetricName) ->
 	#service{
 				rowid = Rowid,
 				id = Id,
@@ -218,7 +231,14 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				protocol = Protocol,
 				ctrl_modified = CtrlModified,
 				ctrl_hash = CtrlHash,
-				start_timeout = StartTimeout
+				start_timeout = StartTimeout,
+				service_exec_metric_name = ServiceExecMetricName,
+				service_result_cache_hit_metric_name = ServiceResultCacheHitMetricName,
+				service_host_denied_metric_name = ServiceHostDeniedMetricName,
+				service_auth_denied_metric_name = ServiceAuthDeniedMetricName,
+				service_error_metric_name = ServiceErrorMetricName,
+				service_unavailable_metric_name = ServiceUnavailableMetricName,
+				service_timeout_metric_name = ServiceTimeoutMetricName
 			}.
 
 parse_middleware(null) -> undefined;
@@ -376,6 +396,13 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		CtrlModified = maps:get(<<"ctrl_modified">>, Map, undefined),
 		CtrlHash = erlang:phash2(Map),
 		StartTimeout = maps:get(<<"start_timeout">>, Map, undefined),
+		ServiceExecMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_exec"),
+		ServiceResultCacheHitMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_result_cache_hit"),
+		ServiceHostDeniedMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_host_denied"),
+		ServiceAuthDeniedMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_auth_denied"),
+		ServiceErrorMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_error"),
+		ServiceUnavailableMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_unavailable"),
+		ServiceTimeoutMetricName = list_to_atom("service_" ++ integer_to_list(Rowid) ++ "_timeout"),
 		case UseRE of
 			true -> 
 				case Type of
@@ -398,7 +425,11 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 												   AllowedAddress_t, Port, MaxConnections,
 												   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 												   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-												   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash),
+												   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash,
+												   ServiceExecMetricName, ServiceResultCacheHitMetricName, 
+												   ServiceHostDeniedMetricName,	ServiceAuthDeniedMetricName, 
+												   ServiceErrorMetricName, ServiceUnavailableMetricName, 
+												   ServiceTimeoutMetricName),
 						{ok, Service};
 					_ -> 
 						erlang:error(einvalid_re_service)
@@ -423,7 +454,11 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 										AllowedAddress_t, Port, MaxConnections,
 										IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 										OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
-										CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash),
+										CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash,
+										ServiceExecMetricName, ServiceResultCacheHitMetricName, 
+										ServiceHostDeniedMetricName, ServiceAuthDeniedMetricName, 
+										ServiceErrorMetricName, ServiceUnavailableMetricName, 
+										ServiceTimeoutMetricName),
 				{ok, Service}
 		end
 	catch

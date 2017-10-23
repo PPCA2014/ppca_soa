@@ -29,22 +29,41 @@ check_result_cache(ReqHash, Timestamp2) ->
 
 dispatch_request(Request = #request{req_hash = ReqHash, 
 								    ip = Ip,
-								    ip_bin = IpBin,
 								    content_type = ContentTypeReq,
 								    type = Type,
 								    t1 = T1}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	RequestLookup = case Type of
-						<<"OPTIONS">> -> Request#request{type = <<"GET">>};
-						"HEAD" -> Request#request{type = <<"GET">>};
-						_ -> Request
-				  end,
+						<<"OPTIONS">> -> 
+							ems_db:inc_counter(service_options_exec),
+							Request#request{type = <<"GET">>};
+						<<"HEAD">> -> 
+							ems_db:inc_counter(service_head_exec),
+							Request#request{type = <<"GET">>};
+						<<"GET">> -> 
+							ems_db:inc_counter(service_get_exec),
+							Request;
+						<<"POST">> -> 
+							ems_db:inc_counter(service_post_exec),
+							Request;
+						<<"PUT">> -> 
+							ems_db:inc_counter(service_put_exec),
+							Request;
+						<<"DELETE">> -> 
+							ems_db:inc_counter(service_delete_exec),
+							Request
+				   end,
 	case ems_catalog_lookup:lookup(RequestLookup) of
 		{Service = #service{content_type = ContentTypeService,
 							tcp_allowed_address_t = AllowedAddress,
-							result_cache = ResultCache}, 
+							result_cache = ResultCache,
+							service_exec_metric_name = ServiceExecMetricName,
+							service_result_cache_hit_metric_name = ServiceResultCacheHitMetricName,
+							service_host_denied_metric_name = ServiceHostDeniedMetricName,
+							service_auth_denied_metric_name = ServiceAuthDeniedMetricName}, 
 		 ParamsMap, 
 		 QuerystringMap} -> 
+			ems_db:inc_counter(ServiceExecMetricName),								
 			case ems_util:allow_ip_address(Ip, AllowedAddress) of
 				true ->
 					case ems_auth_user:authenticate(Service, Request) of
@@ -79,6 +98,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 										true ->
 											case check_result_cache(ReqHash, T1) of
 												{true, RequestCache} -> 
+													ems_db:inc_counter(ServiceResultCacheHitMetricName),								
 													{ok, request, Request2#request{result_cache = true,
 																				   code = RequestCache#request.code,
 																				   reason = RequestCache#request.reason,
@@ -114,6 +134,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 																	   latency = ems_util:get_milliseconds() - T1}
 										};
 								 _ -> 
+									ems_db:inc_counter(ServiceAuthDeniedMetricName),								
 									{error, request, Request2#request{code = 400, 
 																	  content_type = ?CONTENT_TYPE_JSON,
 					 											      reason = Reason, 
@@ -124,18 +145,19 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 							end
 					end;
 				false -> 
-					ems_logger:warn("ems_dispatcher does not grant access to IP ~p. Reason: IP denied.", [IpBin]),
+					ems_db:inc_counter(ServiceHostDeniedMetricName),								
 					{error, host_denied}
 			end;
-		{error, Reason} = Error2 -> 
+		Error2 -> 
 			if 
 				Type =:= <<"OPTIONS">> orelse Type =:= "HEAD" ->
-						{error, request, Request#request{code = 200, 
-													     reason = Reason, 
-													     response_header = #{<<"ems-node">> => ems_util:node_binary()},
-													     latency = ems_util:get_milliseconds() - T1}
+						{ok, request, Request#request{code = 200, 
+													  reason = ok, 
+													  response_header = #{<<"ems-node">> => ems_util:node_binary()},
+													  latency = ems_util:get_milliseconds() - T1}
 						};
 				true ->
+					ems_db:inc_counter(service_lookup_enoent),								
 					Error2
 			end
 	end.
@@ -176,7 +198,9 @@ dispatch_service_work(Request = #request{rid = Rid,
 										 module_name = ModuleName,
 										 module = Module,
 										 function_name = FunctionName, 
-										 timeout = Timeout}) ->
+										 timeout = Timeout,
+										 service_timeout_metric_name = ServiceTimeoutMetricName,
+										 service_unavailable_metric_name = ServiceUnavailableMetricName}) ->
 	case get_work_node(Host, Host, HostName, ModuleName, 1) of
 		{ok, Node} ->
 			case erlang:is_tuple(Client) of
@@ -238,6 +262,7 @@ dispatch_service_work(Request = #request{rid = Rid,
 													 latency = ems_util:get_milliseconds() - T1}}
 				after Timeout + 3000 ->
 					?DEBUG("ems_dispatcher received a timeout while waiting ~pms for the result of a service from ~p.", [Timeout, {Module, Node}]),
+					ems_db:inc_counter(ServiceTimeoutMetricName),
 					{error, request, Request#request{code = 503,
 													 reason = etimeout_service,
 													 content_type = ?CONTENT_TYPE_JSON,
@@ -250,7 +275,9 @@ dispatch_service_work(Request = #request{rid = Rid,
 													 response_data = ems_schema:to_json({error, etimeout_service}),
 													 latency = ems_util:get_milliseconds() - T1}}
 			end;
-		Error ->  Error
+		Error ->  
+			ems_db:inc_counter(ServiceUnavailableMetricName),
+			Error
 	end.
 		
 
@@ -288,9 +315,7 @@ get_work_node([_|T], HostList, HostNames, ModuleName, Tentativa) ->
 	Ping = net_adm:ping(Node),
 	case Ping of
 		pong -> {ok, Node};
-		pang -> 
-			?DEBUG("ems_dispatcher pang ~p.", [Node]),
-			get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
+		pang -> get_work_node(T, HostList, HostNames, ModuleName, Tentativa)
 	end.
 		
 
@@ -301,7 +326,8 @@ dispatch_middleware_function(Request = #request{reason = ok,
 												t1 = T1,
 												type = Type,
 												service = Service = #service{middleware = Middleware,
-																			 result_cache = ResultCache}}) ->
+																			 result_cache = ResultCache,
+																			 service_error_metric_name = ServiceErrorMetricName}}) ->
 	try
 		case Middleware of 
 			undefined -> Result = {ok, Request};
@@ -334,6 +360,7 @@ dispatch_middleware_function(Request = #request{reason = ok,
 						{ok, request, Request2#request{latency = ems_util:get_milliseconds() - T1}}
 				end;
 			{error, Reason2} = Error ->
+				ems_db:inc_counter(ServiceErrorMetricName),	
 				{error, request, Request#request{code = 500,
 											     reason = Reason2,
 												 content_type = ?CONTENT_TYPE_JSON,
@@ -343,6 +370,7 @@ dispatch_middleware_function(Request = #request{reason = ok,
 		end
 	catch 
 		_Exception:Error2 -> 
+			ems_db:inc_counter(ServiceErrorMetricName),
 			{error, request, Request#request{code = 500,
 											 reason = Error2,
 											 content_type = ?CONTENT_TYPE_JSON,
@@ -350,7 +378,10 @@ dispatch_middleware_function(Request = #request{reason = ok,
 											 response_data = ems_schema:to_json(Error2),
 											 latency = ems_util:get_milliseconds() - T1}}
 	end;
-dispatch_middleware_function(Request = #request{code = Code, t1 = T1}) ->
+dispatch_middleware_function(Request = #request{code = Code, 
+												t1 = T1, 
+											    service = #service{service_error_metric_name = ServiceErrorMetricName}}) ->
+	ems_db:inc_counter(ServiceErrorMetricName),								
 	{error, request, Request#request{code = Code,
 									 content_type = ?CONTENT_TYPE_JSON,
 									 latency = ems_util:get_milliseconds() - T1}}.

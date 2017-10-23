@@ -26,8 +26,8 @@
 -record(state, {datasource, 
 			    last_error, 
 			    query_count = 0,
-			    check_close_idle_ref,
-			    close_idle_ref}). 
+			    check_valid_connection_ref,
+			    close_idle_connection_ref}). 
 
 
 %%====================================================================
@@ -68,8 +68,8 @@ init(Datasource) ->
 			{ok, #state{datasource = Datasource2,
 						last_error = undefined,
 						query_count = 0,
-						check_close_idle_ref = undefined,
-						close_idle_ref = undefined}};
+						check_valid_connection_ref = undefined,
+						close_idle_connection_ref = undefined}};
 		_Error -> ignore
 	end.
 	
@@ -99,37 +99,39 @@ handle_call({notify_use, #service_datasource{pid_module = PidModule,
 											 pid_module_ref = PidModuleRef}}, 
 			_From,  
 		    State = #state{datasource = InternalDatasource,
-						   check_close_idle_ref = CheckCloseIdleRef,
-						   close_idle_ref = CloseIdleRef}) ->
-	% verifica se a timer para verificar conexão ociosa
-	case CheckCloseIdleRef of
-		undefined -> 
-			% verifica se um timer para fechar a conexão ociosa está em andamento
-			case CloseIdleRef of
-				undefined -> ok;
-				_ -> erlang:cancel_timer(CloseIdleRef)
-			end;
-		_ -> erlang:cancel_timer(CheckCloseIdleRef)
+						   check_valid_connection_ref = CheckValidConnectionRef,
+						   close_idle_connection_ref = CloseIdleConnectionRef}) ->
+	case CheckValidConnectionRef of
+		undefined -> ok;
+		_ -> erlang:cancel_timer(CheckValidConnectionRef)
+	end,
+	case CloseIdleConnectionRef of
+		undefined -> ok;
+		_ -> erlang:cancel_timer(CloseIdleConnectionRef)
 	end,
 	Datasource2 = InternalDatasource#service_datasource{pid_module = PidModule,
 														pid_module_ref = PidModuleRef},
 	{reply, ok, State#state{datasource = Datasource2,
 							last_error = undefined,
-							check_close_idle_ref = undefined,
-							close_idle_ref = undefined}};
+							check_valid_connection_ref = undefined,
+							close_idle_connection_ref = undefined}};
 
-handle_call(notify_return_pool, _From, State = #state{datasource = InternalDatasource = #service_datasource{id = Id}, 
+handle_call(notify_return_pool, _From, State = #state{datasource = InternalDatasource = #service_datasource{id = Id,
+																											check_valid_connection_timeout = CheckValidConnectionTimeout,
+																											close_idle_connection_timeout = CloseIdleConnectionTimeout}, 
 													  query_count = QueryCount, 
 													  last_error = LastError}) ->
 	% volta ao pool somente se nenhum erro ocorreu
 	case LastError of
 		undefined ->
 			?DEBUG("ems_odbc_pool_worker notify_return_pool datasource ~p.", [Id]),
-			CheckCloseIdleRef = erlang:send_after(?CLOSE_IDLE_CONNECTION_TIMEOUT, self(), {check_close_idle_connection, QueryCount}),
+			CheckValidConnectionRef = erlang:send_after(CheckValidConnectionTimeout, self(), {check_valid_connection, QueryCount}),
+			CloseIdleConnectionRef = erlang:send_after(CloseIdleConnectionTimeout, self(), close_idle_connection),
 			{reply, ok, State#state{datasource = InternalDatasource#service_datasource{pid_module = undefined,
 																					   pid_module_ref = undefined},
 									last_error = undefined,
-									check_close_idle_ref = CheckCloseIdleRef}};
+									check_valid_connection_ref = CheckValidConnectionRef,
+									close_idle_connection_ref = CloseIdleConnectionRef}};
 		_ ->
 			?DEBUG("ems_odbc_pool_worker notify_return_pool skip datasource ~p.", [Id]),
 			{reply, LastError, State}
@@ -146,22 +148,46 @@ handle_call(last_error, _From, State) ->
 handle_info(State) ->
 	{noreply, State}.
 
-handle_info({check_close_idle_connection, QueryCount}, State = #state{datasource = #service_datasource{id = Id, 
-																									   pid_module = undefined}, 
-																	  query_count = QueryCountNow}) ->
+handle_info({check_valid_connection, QueryCount}, State = #state{datasource = #service_datasource{id = Id, 
+																								  pid_module = undefined,
+																								  conn_ref = ConnRef,
+																								  sql_check_valid_connection = SqlCheckValidConnection,
+																								  check_valid_connection_timeout = CheckValidConnectionTimeout}, 
+																 query_count = QueryCountNow,
+																 close_idle_connection_ref = CloseIdleConnectionRef}) ->
 	case QueryCountNow > QueryCount of
 		true -> 
-			?DEBUG("ems_odbc_pool_worker check_close_idle_connection skip wait ~pms to close datasource ~p in use.", [?CLOSE_IDLE_CONNECTION_TIMEOUT, Id]),
 			{noreply, State};
 		false ->
-			?DEBUG("ems_odbc_pool_worker check_close_idle_connection wait ~pms to close idle datasource ~p.", [?CLOSE_IDLE_CONNECTION_TIMEOUT, Id]),
-			CloseIdleRef = erlang:send_after(?CLOSE_IDLE_CONNECTION_TIMEOUT, self(), close_idle_connection),
-			{noreply, State#state{close_idle_ref = CloseIdleRef}}
+			?DEBUG("ems_odbc_pool_worker check_valid_connection datasource ~p.", [Id]),
+			case SqlCheckValidConnection =/= "" of
+				true ->
+					try
+						case odbc:param_query(ConnRef, SqlCheckValidConnection, [], 2500) of
+							{error, _} ->
+								erlang:cancel_timer(CloseIdleConnectionRef),
+								{stop, shutdown, State#state{close_idle_connection_ref = undefined}};
+							_ -> 
+								CheckValidConnectionRef = erlang:send_after(CheckValidConnectionTimeout, self(), {check_valid_connection, QueryCount}),
+								{noreply, State#state{check_valid_connection_ref = CheckValidConnectionRef}}
+						end
+					catch
+						_:_ -> 
+							erlang:cancel_timer(CloseIdleConnectionRef),
+							{stop, shutdown, State#state{close_idle_connection_ref = undefined}}
+					end;
+				false ->
+					CheckValidConnectionRef = erlang:send_after(CheckValidConnectionTimeout, self(), {check_valid_connection, QueryCount}),
+					{noreply, State#state{check_valid_connection_ref = CheckValidConnectionRef}}
+			end
 	end;
 
-handle_info(close_idle_connection, State = #state{datasource = #service_datasource{id = Id}}) ->
+handle_info(close_idle_connection, State = #state{datasource = #service_datasource{id = Id},
+												  check_valid_connection_ref = CheckValidConnectionRef}) ->
    ?DEBUG("ems_odbc_pool_worker close_idle_connection ~p normal.", [Id]),
-   {stop, normal, State};
+   erlang:cancel_timer(CheckValidConnectionRef),
+   {stop, normal, State#state{close_idle_connection_ref = undefined, 
+							  check_valid_connection_ref = undefined}};
 
 handle_info(Msg, State) ->
    ?DEBUG("ems_odbc_pool_worker handle_info unknow message ~p.", [Msg]),
