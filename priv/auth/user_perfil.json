@@ -1,0 +1,14 @@
+[
+	{
+		"codigo" : 1,
+		"name": "admin",
+		"user_id" : 1
+	},
+	
+	{
+		"codigo" : 2,
+		"name": "admin",
+		"user_id" : 2
+	}
+	
+]
