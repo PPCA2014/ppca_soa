@@ -57,8 +57,7 @@ do_insert_record(Record, CtrlInsert, Conf, Name, Middleware, SourceType, Fields)
 do_insert_record(Map, CtrlInsert, Conf, Name, Middleware, SourceType, _Fields) ->
 	case apply(Middleware, insert_or_update, [Map, CtrlInsert, Conf, SourceType, insert]) of
 		{ok, Record, Table, insert} ->
-			Record2 = setelement(1, Record, Table),
-			mnesia:write(Record2),
+			mnesia:write(Table, Record, write),
 			{ok, insert};
 		{ok, Record, _, update} ->
 			ems_logger:warn("~s skips data with duplicate key: ~p.", [Name, Record]),
@@ -77,9 +76,8 @@ do_update_record(Record, CtrlUpdate, Conf, Name, Middleware, SourceType, Fields)
 	do_update_record(Map, CtrlUpdate, Conf, Name, Middleware, SourceType, Fields);
 do_update_record(Map, CtrlUpdate, Conf, Name, Middleware, SourceType, _Fields) ->
 	case apply(Middleware, insert_or_update, [Map, CtrlUpdate, Conf, SourceType, update]) of
-		{ok, UpdatedMap, Table, Operation} ->
-			UpdatedMap2 = setelement(1, UpdatedMap, Table),
-			mnesia:write(UpdatedMap2),
+		{ok, Record, Table, Operation} ->
+			mnesia:write(Table, Record, write),
 			{ok, Operation};
 		{ok, skip} -> {ok, skip};
 		{error, edisabled} -> {error, edisabled};

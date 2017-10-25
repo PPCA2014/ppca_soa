@@ -33,9 +33,9 @@
 -spec find_by_id(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
 find_by_id(Id) -> 
 	case ems_db:get(user_db, Id) of
-		{ok, Record} -> {ok, setelement(1, Record, user)};
+		{ok, Record} -> {ok, Record};
 		_ -> case ems_db:get(user_fs, Id) of
-				{ok, Record} -> {ok, setelement(1, Record, user)};
+				{ok, Record} -> {ok, Record};
 				_ -> {error, enoent}
 			 end
 	end.
@@ -52,7 +52,7 @@ authenticate_login_password(Login, Password) ->
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
 			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of
-				true -> io:format("ok\n"), ok;
+				true -> ok;
 				_ -> {error, invalidCredentials}
 			end;
 		_ -> {error, invalidCredentials}
@@ -68,9 +68,9 @@ find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
 		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
 				[] -> {error, enoent};
-				[Record|_] -> {ok, setelement(1, Record, user)}
+				[Record|_] -> {ok, Record}
 			  end;
-		[Record|_] -> {ok, setelement(1, Record, user)}
+		[Record|_] -> {ok, Record}
 	end.
 
 
@@ -92,9 +92,9 @@ find_by_login(Login) ->
 						{ok, Record} -> {ok, Record};
 						_ -> find_by_cpf(Login)
 					end;
-				[Record|_] -> {ok, setelement(1, Record, user)}
+				[Record|_] -> {ok, Record}
 			end;
-		[Record|_] -> {ok, setelement(1, Record, user)}
+		[Record|_] -> {ok, Record}
 	end.
 
 
@@ -143,9 +143,9 @@ find_by_cpf(Cpf) ->
 				[] -> 
 					case mnesia:dirty_index_read(user_fs, CpfBin, #user.cpf) of
 						[] -> {error, enoent};
-						[Record|_] -> {ok, setelement(1, Record, user)}
+						[Record|_] -> {ok, Record}
 					end;
-				[Record|_] -> {ok, setelement(1, Record, user)}
+				[Record|_] -> {ok, Record}
 			end;
 		false -> 
 			% tenta inserir zeros na frente e refaz a pesquisa
@@ -162,9 +162,9 @@ find_by_cpf(Cpf) ->
 						[] -> 
 							case mnesia:dirty_index_read(user_fs, Cpf2Bin, #user.cpf) of
 								[] -> {error, enoent};
-								[Record|_] -> {ok, setelement(1, Record, user)}
+								[Record|_] -> {ok, Record}
 							end;
-						[Record|_] -> {ok, setelement(1, Record, user)}
+						[Record|_] -> {ok, Record}
 					end;
 				false -> {error, enoent}
 			end
@@ -181,9 +181,9 @@ find_by_name(Name) ->
 		{error, Reason} ->
 			case ems_db:find_first(user_fs, [{name, "==", Name}]) of
 				{error, Reason} -> {error, enoent};
-				Record -> {ok, setelement(1, Record, user)}
+				Record -> {ok, Record}
 			end;
-		Record -> {ok, setelement(1, Record, user)}
+		Record -> {ok, Record}
 	end.
 
 -spec find_by_login_and_password(binary() | list(), binary() | list()) -> {ok, #user{}} | {error, enoent}.	
@@ -267,20 +267,14 @@ get_table(fs) -> user_fs.
 
 -spec find(user_fs | user_db, non_neg_integer()) -> {ok, #user{}} | {error, atom()}.
 find(Table, Codigo) ->
-	case ems_db:find_first(Table, [{codigo, "==", Codigo}]) of
-		{error, Reason} -> {error, Reason};
-		Record -> {ok, setelement(1, Record, user)}
+	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end.
 
 -spec all(user_fs | user_db) -> list() | {error, atom()}.
-all(Table) ->
-	case ems_db:all(Table) of
-		{ok, Records} -> 
-			Records2 = [setelement(1, R, user) || R <- Records],
-			{ok, Records2};
-		Error -> Error
-	end.
-
+all(Table) -> ems_db:all(Table).
+	
 
 %% middleware functions
 

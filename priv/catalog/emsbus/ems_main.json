@@ -152,11 +152,6 @@
 	},
 
 	{
-		"catalog": "/emsbus/ems_user_permission_loader", 
-		"file": "ems_user_permission_loader.json"
-	},
-	
-	{
 		"catalog": "/emsbus/ems_client_loader_fs", 
 		"file": "ems_client_loader_fs.json"
 	},
@@ -184,6 +179,16 @@
 	{
 		"catalog": "/emsbus/ems_user_dados_funcionais_loader_db", 
 		"file": "ems_user_dados_funcionais_loader_db.json"
+	},
+
+	{
+		"catalog": "/emsbus/ems_user_permission_loader_fs", 
+		"file": "ems_user_permission_loader_fs.json"
+	},
+
+	{
+		"catalog": "/emsbus/ems_user_permission_loader_db", 
+		"file": "ems_user_permission_loader_db.json"
 	},
 
 	{

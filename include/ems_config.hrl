@@ -67,8 +67,11 @@
 % Caminho do arquivo de dados funcionais dos usuários
 -define(USER_DADOS_FUNCIONAIS_PATH, ?PRIV_PATH ++ "/auth/dados_funcionais.json").
 
-% Caminho do arquivo de dados funcionais dos usuários
+% Caminho do arquivo de perfis dos usuários
 -define(USER_PERFIL_PATH, ?PRIV_PATH ++ "/auth/user_perfil.json").
+
+% Caminho do arquivo de permissões dos usuários
+-define(USER_PERMISSION_PATH, ?PRIV_PATH ++ "/auth/user_permission.json").
 
 % Caminho inicial para os arquivos estáticos
 -define(WEBAPPS_PATH, ?PRIV_PATH ++ "/www").
@@ -141,9 +144,8 @@
 -define(CLOSE_IDLE_CONNECTION_TIMEOUT, 300000). % 5 minutos
 
 
-% Define the checkpoint to update user for ems_user_loader process
--define(USER_LOADER_UPDATE_CHECKPOINT, 60000).
--define(CLIENT_LOADER_UPDATE_CHECKPOINT, 60000).
+% Define the default checkpoint to ems_data_loader and ems_json_loader
+-define(DATA_LOADER_UPDATE_CHECKPOINT, 90000).
 
 
 %Define the checkpoint to update permission for ems_user_permission_loader process
@@ -204,7 +206,8 @@
 				 client_path_search :: string(),
 				 user_path_search :: string(),
 				 user_dados_funcionais_path_search :: string(),
-				 user_perfil_path_search :: string()
+				 user_perfil_path_search :: string(),
+				 user_permission_path_search :: string()
 		 }). 	
 
 

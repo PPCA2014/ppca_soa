@@ -10,6 +10,8 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
+-include_lib("stdlib/include/qlc.hrl").
+
 
 -export([lookup/1, 
 		 lookup/2,
@@ -20,22 +22,16 @@
 
 -spec find(catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs | catalog_kernel_fs |
 		   catalog_get_db | catalog_post_db | catalog_put_db | catalog_delete_db | catalog_options_db | catalog_kernel_db,
-		   non_neg_integer()) -> {ok, #service{}} | {error, atom()}.
+		   non_neg_integer()) -> {ok, #service{}} | {error, enoent}.
 find(Table, Rowid) ->
-	case ems_db:find_first(Table, [{rowid, "==", Rowid}]) of
-		{error, Reason} -> {error, Reason};
-		Record -> {ok, setelement(1, Record, service)}
+	case mnesia:dirty_index_read(Table, Rowid, #service.rowid) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end.
 
 -spec all(catalog_get_fs | catalog_post_fs | catalog_put_fs | catalog_delete_fs | catalog_options_fs | catalog_kernel_fs |
 		   catalog_get_db | catalog_post_db | catalog_put_db | catalog_delete_db | catalog_options_db | catalog_kernel_db) -> list() | {error, atom()}.
-all(Table) ->
-	case ems_db:all(Table) of
-		{ok, Records} -> 
-			Records2 = [setelement(1, R, service) || R <- Records],
-			{ok, Records2};
-		Error -> Error
-	end.
+all(Table) -> ems_db:all(Table).
 
 -spec lookup(#request{}) -> {error, enoent} | {#service{}, map(), map()}.
 lookup(Request) ->	
@@ -106,13 +102,13 @@ list_kernel_catalog() ->
 				Error -> Error
 			end;
 		false ->
-			case ems_db:all(catalog_kernel_fs) of
-				{ok, CatKernel} -> 
-					CatKernel2 = [setelement(1, Cat, service) || Cat <- CatKernel],
-					CatKernel3 = [Cat || Cat <- CatKernel2, Cat#service.enable == true],
-					CatKernel3;
-				Error -> Error
-			end
+			F = fun() -> 
+						Q1 = qlc:q([R || R <- mnesia:table(catalog_kernel_fs), R#service.enable == true]),
+						Q2 = qlc:sort(Q1,  {order, fun(R1, R2) -> R1#service.id < R2#service.id end}),
+						qlc:e(Q2)
+			    end,
+			{atomic, CatKernel} = mnesia:transaction(F),
+			CatKernel
 	end.
 
 list_re_catalog() ->

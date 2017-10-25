@@ -74,9 +74,9 @@ init(#service{name = Name,
 			  middleware = Middleware, 
 			  start_timeout = StartTimeout,
 			  properties = Props}) ->
-	LastUpdateParamName = erlang:binary_to_atom(maps:get(<<"last_update_param_name">>, Props, <<>>), utf8),
+	LastUpdateParamName = erlang:binary_to_atom(iolist_to_binary([Name, <<"last_update_param_name">>]), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
-	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?USER_LOADER_UPDATE_CHECKPOINT),
+	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT),
 	Filename = do_get_filename(Middleware),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
 	State = #state{name = binary_to_list(Name),
@@ -247,8 +247,13 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 				ok;
 			{ok, Records} ->
 				{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, fs, []),
-				LastUpdateStr = ems_util:timestamp_str(LastUpdate),
-				ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]),
+				% Para não gerar muito log, apenas imprime no log se algum registro foi modificado
+				case InsertCount > 0 orelse UpdateCount > 0 orelse ErrorCount > 0 orelse DisabledCount > 0 of
+					true ->
+						LastUpdateStr = ems_util:timestamp_str(LastUpdate),
+						ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]);
+					false -> ok
+				end,
 				ok;
 			{error, Reason} = Error -> 
 				ems_logger:error("~s update data error: ~p.", [Name, Reason]),

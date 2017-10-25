@@ -1,0 +1,62 @@
+{
+    "name": "ems_user_permission_loader_db",
+	"comment": "Catalog for ems_user_permission_loader_db",
+	"owner": "emsbus",
+	"version": "1.0.0",
+	"service" : "ems_data_loader:start",
+	"url": "/emsbus/ems_user_permission_loader_db",
+	"async": "false",
+	"type": "KERNEL",
+	"lang" : "erlang",
+	"update_checkpoint" : 60000,
+	"datasource" : "ds_ems_user_loader",
+	"start_timeout" : 5000,
+	"middleware" : "ems_user_permission_loader_middleware",
+	"pool_size" : 1,
+	"pool_max" : 1,
+	"enable" : false,
+	"sql_load" :
+			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as codigo,
+					u.UsuId as codigo_usuario,
+					s.SisId as codigo_cliente,
+					pt.PTrVisualizar as GrantGet,
+					pt.PTrIncluir as GrantPost, 
+					pt.PTrAlterar as UpdateGrant, 
+					pt.PTrExcluir as GrantDelete,
+					t.TraNomeFrm as url,
+					t.TraNomeMenu as name 
+			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
+							  on u.UsuId = up.APeUsuId 
+					join BDAcesso.dbo.TB_Perfil_Transacao pt 
+							  on up.APePerId = pt.PTrPerId 
+					join BDAcesso.dbo.TB_Transacao t 
+							  on pt.PTrTraId = t.TraId 
+					join BDAcesso.dbo.TB_Sistemas s 
+							  on s.SisId = t.TraSisId 
+			where t.TraNomeFrm is not null and t.TraNomeFrm <> '' 	
+			order by codigo  desc					  
+			",
+	"sql_update" :
+			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as codigo,
+					u.UsuId as codigo_usuario, 
+					s.SisId as codigo_cliente, 
+					pt.PTrVisualizar as GrantGet, 
+					pt.PTrIncluir as GrantPost,  
+					pt.PTrAlterar as UpdateGrant,  
+					pt.PTrExcluir as GrantDelete, 
+					t.TraNomeFrm as url, 
+					t.TraNomeMenu as name  
+			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
+							  on u.UsuId = up.APeUsuId 
+					join BDAcesso.dbo.TB_Perfil_Transacao pt 
+							  on up.APePerId = pt.PTrPerId 
+					join BDAcesso.dbo.TB_Transacao t 
+							  on pt.PTrTraId = t.TraId 
+					join BDAcesso.dbo.TB_Sistemas s 
+							  on s.SisId = t.TraSisId 
+			where up.APeDataAlteracao >= ? or up.APeDataCadastramento >= ? or 
+				  pt.PTrDataAlteracao >= ? or pt.PTrDataCadastramento >= ? or 
+				  t.TraDataAlteracao >= ? or t.TraDataCadastramento >= ?
+			",
+	"fields" : ["codigo", "codigo_usuario", "codigo_cliente", "grant_get", "grant_post", "grant_put", "grant_delete", "url", "name"]
+}

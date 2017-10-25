@@ -11,7 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0]).
+-export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/1]).
 
 
 -spec is_empty(fs | db) -> boolean().
@@ -120,6 +120,10 @@ reset_sequence(fs) ->
 	ems_db:init_sequence(catalog_options_fs, 0),
 	ems_db:init_sequence(catalog_kernel_fs, 0),
 	ok.
+	
+	
+-spec check_remove_records(list()) -> ok.	
+check_remove_records(_Ids) ->  ok.
 	
 
 %% internal functions

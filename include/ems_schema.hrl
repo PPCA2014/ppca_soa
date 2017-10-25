@@ -70,6 +70,11 @@
 		}).
 
 -record(user_permission, {id :: non_neg_integer(),	
+						  codigo :: non_neg_integer(),			%% identificador externo do perfil (required) (Na UnB é o campo TB_Perfil_Transacao.PTrid)
+						  codigo_usuario :: non_neg_integer(),	%% identificador externo do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
+						  codigo_cliente :: non_neg_integer(),	%% identificador externo do usuário (required) (Na UnB é o campo Tb_Sistemas.PerSisId)
+						  user_id :: non_neg_integer(),			%% identificador interno do usuário (required)
+						  client_id :: non_neg_integer(),		%% identificador interno do client (required)
 						  hash :: non_neg_integer(),
 						  hash2 :: non_neg_integer(),
 						  name :: binary(),
@@ -78,11 +83,12 @@
 						  grant_post :: boolean(),
 						  grant_put :: boolean(),
 						  grant_delete :: boolean(),
-						  user_id :: non_neg_integer(),
-						  sis_id :: non_neg_integer(),
-						  perfil_id :: non_neg_integer(),
-						  ctrl_insert,
-						  ctrl_update
+						  ctrl_path :: string(),
+						  ctrl_file :: string(),
+						  ctrl_insert,							%% Data que o serviço foi inserido no banco mnesia
+						  ctrl_update, 							%% Data que o serviço foi atualiado no banco mnesia			
+						  ctrl_modified,						%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+						  ctrl_hash								%% Hash gerado para poder comparar dois registros
           }).
 
 

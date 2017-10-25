@@ -1895,7 +1895,6 @@ load_from_file_req(Request = #request{url = Url,
 														 expires = ExpiresMinute,
 														 path = Path}}) ->
 	Filename = Path ++ string:substr(Url, string:len(hd(string:tokens(Url, "/")))+2),
-	io:format("filename is~p\n", [Filename]),
 	case file:read_file_info(Filename, [{time, universal}]) of
 		{ok,{file_info, FSize, _Type, _Access, _ATime, MTime, _CTime, _Mode,_,_,_,_,_,_}} -> 
 			?DEBUG("ems_static_file_service loading file ~p.", [Filename]),

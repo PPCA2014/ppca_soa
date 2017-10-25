@@ -26,9 +26,9 @@
 -spec find_by_id(non_neg_integer()) -> {ok, #user_perfil{}} | {error, enoent}.
 find_by_id(Id) -> 
 	case ems_db:get(user_perfil_db, Id) of
-		{ok, Record} -> {ok, setelement(1, Record, user_perfil)};
+		{ok, Record} -> {ok, Record};
 		_ -> case ems_db:get(user_perfil_fs, Id) of
-				{ok, Record} -> {ok, setelement(1, Record, user_perfil)};
+				{ok, Record} -> {ok, Record};
 				_ -> {error, enoent}
 			 end
 	end.
@@ -50,9 +50,9 @@ find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(user_perfil_db, Codigo, #user_perfil.codigo) of
 		[] -> case mnesia:dirty_index_read(user_perfil_fs, Codigo, #user_perfil.codigo) of
 				[] -> {error, enoent};
-				[Record|_] -> {ok, setelement(1, Record, user_perfil)}
+				[Record|_] -> {ok, Record}
 			  end;
-		[Record|_] -> {ok, setelement(1, Record, user_perfil)}
+		[Record|_] -> {ok, Record}
 	end.
 
 
@@ -68,9 +68,9 @@ find_by_name(Name) ->
 		{error, Reason} ->
 			case ems_db:find_first(user_perfil_fs, [{name, "==", Name}]) of
 				{error, Reason} -> {error, enoent};
-				Record -> {ok, setelement(1, Record, user_perfil)}
+				Record -> {ok, Record}
 			end;
-		Record -> {ok, setelement(1, Record, user_perfil)}
+		Record -> {ok, Record}
 	end.
 
 
@@ -102,17 +102,11 @@ get_table(fs) -> user_perfil_fs.
 
 -spec find(user_perfil_fs | user_perfil_db, non_neg_integer()) -> {ok, #user_perfil{}} | {error, atom()}.
 find(Table, Codigo) ->
-	case ems_db:find_first(Table, [{codigo, "==", Codigo}]) of
-		{error, Reason} -> {error, Reason};
-		Record -> {ok, setelement(1, Record, user_perfil)}
+	case mnesia:dirty_index_read(Table, Codigo, #user_perfil.codigo) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end.
 
 -spec all(user_perfil_fs | user_perfil_db) -> list() | {error, atom()}.
-all(Table) ->
-	case ems_db:all(Table) of
-		{ok, Records} -> 
-			Records2 = [setelement(1, R, user_perfil) || R <- Records],
-			{ok, Records2};
-		Error -> Error
-	end.
+all(Table) -> ems_db:all(Table).
 

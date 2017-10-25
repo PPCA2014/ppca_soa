@@ -50,17 +50,11 @@ get_table(fs) -> user_dados_funcionais_fs.
 
 -spec find(user_dados_funcionais_fs | user_dados_funcionais_db, non_neg_integer()) -> {ok, #user{}} | {error, atom()}.
 find(Table, Codigo) ->
-	case ems_db:find_first(Table, [{codigo, "==", Codigo}]) of
-		{error, Reason} -> {error, Reason};
-		Record -> {ok, setelement(1, Record, user_dados_funcionais)}
+	case mnesia:dirty_index_read(Table, Codigo, #user_dados_funcionais.codigo) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
 	end.
 
 -spec all(user_dados_funcionais_fs | user_dados_funcionais_db) -> list() | {error, atom()}.
-all(Table) ->
-	case ems_db:all(Table) of
-		{ok, Records} -> 
-			Records2 = [setelement(1, R, user_dados_funcionais) || R <- Records],
-			{ok, Records2};
-		Error -> Error
-	end.
+all(Table) -> ems_db:all(Table).
 
