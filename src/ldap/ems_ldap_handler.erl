@@ -14,12 +14,25 @@
 -include("../include/ems_schema.hrl").
 -include("../include/LDAP.hrl").
 
-%  Stores the state of the service.
--record(state, {datasource,		 	%% datasource
-				middleware,		 	%% middleware to service logic
+-record(state, {listener_name,
+				server_name,
 				admin,		 		%% admin ldap
 				password_admin,     %% Password of admin ldap
-				tcp_allowed_address_t}).   
+				tcp_allowed_address_t,
+				bind_cn_success_metric_name,
+				bind_uid_success_metric_name,
+				bind_success_metric_name,
+				bind_cn_invalid_credential_metric_name,
+				bind_uid_invalid_credential_metric_name,
+				bind_invalid_credential_metric_name,
+				search_invalid_credential_metric_name,
+				search_unavailable_metric_name,
+				search_success_metric_name,
+				host_denied_metric_name,
+				error_metric_name,
+				request_capabilities_metric_name	
+			}).   
+
 
 -export([start_link/4]).
 -export([init/4]).
@@ -28,22 +41,13 @@ start_link(Ref, Socket, Transport, Service) ->
 	Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Service]),
 	{ok, Pid}.
 
-init(Ref, Socket, Transport, [#service{datasource = Datasource,
-										middleware = Middleware,
-										tcp_allowed_address_t = AllowedAddress,
-										properties = Props}]) ->
+init(Ref, Socket, Transport, [State]) ->
 	ranch:accept_ack(Ref),
-	LdapAdmin = maps:get(<<"ldap_admin">>, Props),
-	LdapPasswdAdmin = maps:get(<<"ldap_password_admin">>, Props),
-    State = #state{datasource = Datasource,
-				   middleware = Middleware,
-				   admin = LdapAdmin,
-				   password_admin = LdapPasswdAdmin,
-				   tcp_allowed_address_t = AllowedAddress
-			   },
 	loop(Socket, Transport, State).
 
-loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress}) ->
+loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress,
+									   host_denied_metric_name = HostDeniedMetricName,
+									   error_metric_name = ErrorMetricName}) ->
 	case Transport:recv(Socket, 0, 5000) of
 		{ok, Data} ->
 			case inet:peername(Socket) of
@@ -65,6 +69,7 @@ loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress}) 
 											Transport:send(Socket, Response)
 									end;
 								{error, Reason} ->
+									ems_db:inc_counter(ErrorMetricName),
 									ems_logger:error("ems_ldap_handler decode invalid message. Reason: ~p.", [Reason]),
 									ResultDone = make_result_done(inappropriateMatching),
 									Response = [ encode_response(1, ResultDone) ],
@@ -72,6 +77,7 @@ loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress}) 
 									Transport:close(Socket)
 							end;
 						false ->
+							ems_db:inc_counter(HostDeniedMetricName),
 							ems_logger:warn("ems_ldap_handler does not grant access to IP ~p. Reason: IP denied.", [Ip]),
 							ResultDone = make_result_done(insufficientAccessRights),
 							Response = [ encode_response(1, ResultDone) ],
@@ -79,6 +85,7 @@ loop(Socket, Transport, State = #state{tcp_allowed_address_t = AllowedAddress}) 
 							Transport:close(Socket)
 					end;
 				Error -> 
+					ems_db:inc_counter(ErrorMetricName),
 					ems_logger:error("ems_ldap_handler peername error. Reason: ~p.", [Error]),
 					Transport:close(Socket)
 			end,
@@ -111,16 +118,24 @@ handle_request({'LDAPMessage', _,
 												 name = Name, 
 												 authentication = {_, Password}}},
 				 _}, #state{admin = AdminLdap, 
-							password_admin = PasswordAdminLdap}) ->
+							password_admin = PasswordAdminLdap,
+							bind_cn_success_metric_name = BindCnSuccessMetricName,
+						    bind_uid_success_metric_name = BindUidSuccessMetricName,
+						    bind_success_metric_name = BindSuccessMetricName,
+						    bind_cn_invalid_credential_metric_name = BindCnInvalidCredentialMetricName,
+						    bind_uid_invalid_credential_metric_name = BindUidInvalidCredentialMetricName,
+						    bind_invalid_credential_metric_name = BindInvalidCredentialMetricName}) ->
 	case Name of
 		<<Cn:3/binary, _/binary>> ->
 			case Cn of
 				<<"cn=">> ->
 					BindResponse = case Name =:= AdminLdap andalso Password =:= PasswordAdminLdap of
 						true -> 
+							ems_db:inc_counter(BindCnSuccessMetricName),
 							ems_logger:info("ems_ldap_handler bind_cn ~p success.", [Name]),
 							make_bind_response(success, Name);
 						_-> 
+							ems_db:inc_counter(BindCnInvalidCredentialMetricName),
 							ems_logger:error("ems_ldap_handler bind_cn ~p invalid credential.", [Name]),
 							make_bind_response(invalidCredentials, Name)
 					end;
@@ -128,23 +143,30 @@ handle_request({'LDAPMessage', _,
 					<<_:4/binary, UserLogin/binary>> = hd(binary:split(Name, <<",">>)),
 					BindResponse = case do_authenticate(UserLogin, Password) of
 						ok -> 
+							ems_db:inc_counter(BindUidSuccessMetricName),
 							ems_logger:info("ems_ldap_handler bind_uid ~p success.", [Name]),
 							make_bind_response(success, Name);
 						{error, _Reason} ->	
+							ems_db:inc_counter(BindUidInvalidCredentialMetricName),
 							ems_logger:error("ems_ldap_handler bind_uid ~p invalid credential.", [Name]),
 							make_bind_response(invalidCredentials, Name)
 					end;
 				_ -> 
 					BindResponse = case do_authenticate(Name, Password) of
 						ok -> 
+							ems_db:inc_counter(BindSuccessMetricName),
 							ems_logger:info("ems_ldap_handler bind ~p success.", [Name]),
 							make_bind_response(success, Name);
 						{error, _Reason} ->	
+							ems_db:inc_counter(BindInvalidCredentialMetricName),
 							ems_logger:error("ems_ldap_handler bind ~p invalid credential.", [Name]),
 							make_bind_response(invalidCredentials, Name)
 					end
 			end;
-		_ -> BindResponse = make_bind_response(invalidCredentials, Name)
+		_ -> 
+			ems_db:inc_counter(BindInvalidCredentialMetricName),
+			ems_logger:error("ems_ldap_handler bind ~p invalid credential.", [Name]),
+			BindResponse = make_bind_response(invalidCredentials, Name)
 	end,
 	{ok, [BindResponse]};
 handle_request({'LDAPMessage', _,
@@ -167,7 +189,8 @@ handle_request({'LDAPMessage', _,
 													typesOnly = _TypesOnly, 
 													filter =  {present, ObjectClass},
 													attributes = _Attributes}},
-				 _}, _State) ->
+				 _}, #state{request_capabilities_metric_name = RequestCapabilitiesMetricName}) ->
+	ems_db:inc_counter(RequestCapabilitiesMetricName),	
 	ObjectName = make_object_name(ObjectClass),
 	ResultEntry = {searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"supportedCapabilities">>, vals = [<<"yes">>]},
@@ -238,7 +261,6 @@ make_result_entry(#user{codigo = UsuId,
 					    ctrl_insert = UsuCtrlInsert, 
 						ctrl_update = UsuCtrlUpdate,
 					    matricula = Matricula,
-	
 						active = Active,
 						endereco = Endereco,
 						complemento_endereco = ComplementoEndereco,
@@ -265,7 +287,6 @@ make_result_entry(#user{codigo = UsuId,
 	UsuTypeEmail2 = format_user_field(UsuTypeEmail),
 	UsuCtrlInsert2 = format_user_field(UsuCtrlInsert),
 	UsuCtrlUpdate2 = format_user_field(UsuCtrlUpdate),
-	
 	Active2 = format_user_field(Active),
 	Endereco2 = format_user_field(Endereco),
 	ComplementoEndereco2 = format_user_field(ComplementoEndereco),
@@ -278,13 +299,10 @@ make_result_entry(#user{codigo = UsuId,
 	Telefone2 = format_user_field(Telefone),
 	Celular2 = format_user_field(Celular),
 	DDD2 = format_user_field(DDD),
-
 	Matricula2 = format_user_field(Matricula),
-
 	Names = binary:split(UsuName, <<" ">>),
 	SN = format_user_field(lists:last(Names)),
 	GivenName = format_user_field(hd(Names)),
-
 
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId2]},
@@ -351,17 +369,23 @@ make_result_done(ResultCode) ->
 	
 
 -spec handle_request_search_login(binary(), #state{}) -> {ok, tuple()}.
-handle_request_search_login(UserLogin, #state{admin = AdminLdap}) ->	
+handle_request_search_login(UserLogin, #state{admin = AdminLdap,
+										      search_invalid_credential_metric_name = SearchInvalidCredentialMetricName,
+											  search_unavailable_metric_name = SearchUnavailableMetricName,
+											  search_success_metric_name = SearchSuccessMetricName}) ->	
 	case do_find_user_by_login(UserLogin) of
 		{error, enoent} ->
+			ems_db:inc_counter(SearchInvalidCredentialMetricName),
 			ems_logger:error("ems_ldap_handler search ~p does not exist.", [UserLogin]),
 			ResultDone = make_result_done(invalidCredentials),
 			{ok, [ResultDone]};
 		{error, Reason} ->
+			ems_db:inc_counter(SearchUnavailableMetricName),
 			ems_logger:error("ems_ldap_handler search ~p fail. Reason: ~p.", [UserLogin, Reason]),
 			ResultDone = make_result_done(unavailable),
 			{ok, [ResultDone]};
 		{ok, User} ->
+			ems_db:inc_counter(SearchSuccessMetricName),
 			ems_logger:info("ems_ldap_handler search ~p ~p success.", [UserLogin, User#user.name]),
 			ResultEntry = make_result_entry(User, AdminLdap),
 			ResultDone = make_result_done(success),

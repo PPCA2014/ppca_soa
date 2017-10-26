@@ -84,13 +84,13 @@ code_change(_OldVsn, State, _Extra) ->
 start_listeners([], _Service, _ServerName, _Service, _ListenerNo, State) -> {ok, State};
 start_listeners([H|T], Service, ServerName, Service, ListenerNo, State) ->
 	ListenerName = list_to_atom(ServerName ++ "_listener_" ++ integer_to_list(ListenerNo)),
-	case do_start_listener(H, Service, ListenerName, Service, State) of
+	case do_start_listener(H, Service, ListenerName, ServerName, Service, State) of
 		{ok, NewState} -> start_listeners(T, Service, ServerName, Service, ListenerNo+1, NewState);
 		{{error, Reason}, NewState} -> {error, Reason, NewState}
 	end.
 
-do_start_listener(IpAddress, Service = #service{tcp_port = Port}, ListenerName, Service, State) ->
-	case ems_ldap_listener:start(IpAddress, Service, ListenerName) of
+do_start_listener(IpAddress, Service = #service{tcp_port = Port}, ListenerName, ServerName, Service, State) ->
+	case ems_ldap_listener:start(IpAddress, Service, ListenerName, ServerName) of
 		{ok, PidListener} ->
 			NewState = State#state{listener=[{PidListener, Port, IpAddress}|State#state.listener]},
 			{ok, NewState};
