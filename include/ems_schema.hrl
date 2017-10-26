@@ -38,14 +38,6 @@
 			   celular :: binary(),
 			   ddd :: binary(),
 			   matricula :: non_neg_integer(),				%% se o usuário tem alguma matrícula proveniente de dados funcionais
-			   lotacao :: binary(),
-			   lotacao_sigla :: binary(),
-			   lotacao_centro :: binary(),
-			   lotacao_codigo_funcao :: non_neg_integer(),
-			   lotacao_funcao :: binary(),
-			   lotacao_orgao :: binary(),
-			   lotacao_codigo_cargo :: non_neg_integer(),
-			   lotacao_cargo :: binary(),
 			   ctrl_path :: string(),
 			   ctrl_file :: string(),
 			   ctrl_insert,									%% Data que o serviço foi inserido no banco mnesia
@@ -56,7 +48,7 @@
 		
 -record(user_dados_funcionais, {
 			   id :: non_neg_integer(), 					%% id (required)
-			   codigo :: non_neg_integer(),					%% código identificador externo dos dos dados funcionais (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
+			   codigo :: non_neg_integer(),					%% código identificador externo dos dos dados funcionais (Na UnB é o campo Tb_Usuario.UsuId)
 			   type :: non_neg_integer(),					%% 0 = interno  1 = tecnico  2 = docente  3 = discente
 			   subtype :: non_neg_integer(),				%% se aluno,  1 = extensao 2 = graduacao 3 = aperfeicoamento 4 = especializacao 5 = mestrado 6 = doutorado 7 = pos-doutorado 8 = residencia 9 = aluno especial - graduacao 10 = aluno especial - pos-graduacao 11 = estagio em pos-graduacao
 			   active :: boolean(),

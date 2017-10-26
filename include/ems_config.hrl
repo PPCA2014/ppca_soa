@@ -135,7 +135,7 @@
 -define(TIMEOUT_DISPATCHER_CACHE, 12000).
 
 % Number of datasource entries by odbc connection pool
--define(MAX_CONNECTION_BY_POOL, 5).
+-define(MAX_CONNECTION_BY_POOL, 100).
 
 
 % Timeout to close idle odbc connection (Não dá para colocar um valor alto pois o ems_odbc_pool não verifica se a conexão ainda é válida)

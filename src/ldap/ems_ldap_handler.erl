@@ -250,16 +250,7 @@ make_result_entry(#user{codigo = UsuId,
 						sexo = Sexo,
 						telefone = Telefone,
 						celular = Celular,
-						ddd = DDD,
-		
-					    lotacao = Lotacao,
-					    lotacao_sigla = LotacaoSigla,
-					    lotacao_centro = LotacaoCentro,
-					    lotacao_codigo_funcao = LotacaoCodigoFuncao,
-					    lotacao_funcao = LotacaoFuncao,
-					    lotacao_orgao = LotacaoOrgao,
-					    lotacao_codigo_cargo = LotacaoCodigoCargo,
-					    lotacao_cargo = LotacaoCargo
+						ddd = DDD
 }, 
 				  AdminLdap) ->
 	ObjectName = make_object_name(UsuLogin),
@@ -289,14 +280,6 @@ make_result_entry(#user{codigo = UsuId,
 	DDD2 = format_user_field(DDD),
 
 	Matricula2 = format_user_field(Matricula),
-	Lotacao2 = format_user_field(Lotacao),
-	LotacaoSigla2 = format_user_field(LotacaoSigla),
-	LotacaoCentro2 = format_user_field(LotacaoCentro),
-	LotacaoCodigoFuncao2 = format_user_field(LotacaoCodigoFuncao),
-	LotacaoFuncao2 = format_user_field(LotacaoFuncao),
-	LotacaoOrgao2 = format_user_field(LotacaoOrgao),
-	LotacaoCodigoCargo2 = format_user_field(LotacaoCodigoCargo),
-	LotacaoCargo2 = format_user_field(LotacaoCargo),
 
 	Names = binary:split(UsuName, <<" ">>),
 	SN = format_user_field(lists:last(Names)),
@@ -344,17 +327,7 @@ make_result_entry(#user{codigo = UsuId,
 														#'PartialAttribute'{type = <<"celular">>, vals = [Celular2]},
 														#'PartialAttribute'{type = <<"ddd">>, vals = [DDD2]},
 														
-														#'PartialAttribute'{type = <<"matsipes">>, vals = [Matricula2]},
 														#'PartialAttribute'{type = <<"matricula">>, vals = [Matricula2]},
-
-														#'PartialAttribute'{type = <<"lotacao">>, vals = [Lotacao2]},
-														#'PartialAttribute'{type = <<"lotacaoSigla">>, vals = [LotacaoSigla2]},
-														#'PartialAttribute'{type = <<"lotacaoCentro">>, vals = [LotacaoCentro2]},
-														#'PartialAttribute'{type = <<"lotacaoCodigoFuncao">>, vals = [LotacaoCodigoFuncao2]},
-														#'PartialAttribute'{type = <<"lotacaoFuncao">>, vals = [LotacaoFuncao2]},
-														#'PartialAttribute'{type = <<"lotacaoOrgao">>, vals = [LotacaoOrgao2]},
-														#'PartialAttribute'{type = <<"lotacaoCodigoCargo">>, vals = [LotacaoCodigoCargo2]},
-														#'PartialAttribute'{type = <<"lotacaoCargo">>, vals = [LotacaoCargo2]}
 
 														#'PartialAttribute'{type = <<"type">>, vals = [UsuType2]},
 														#'PartialAttribute'{type = <<"subtype">>, vals = [UsuSubType2]},

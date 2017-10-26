@@ -1,0 +1,33 @@
+[
+
+	{
+		"catalog": "/emsbus/auth/auth_user", 
+		"file": "ems_auth_user.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth/auth_client", 
+		"file": "ems_auth_client.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth/auth_user_perfil", 
+		"file": "ems_auth_user_perfil.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth/auth_user_permission", 
+		"file": "ems_auth_user_permission.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth/auth_oauth2", 
+		"file": "ems_oauth2.json"
+	},
+
+	{
+		"catalog": "/emsbus/auth/ems_auth_login", 
+		"file": "ems_auth_login.json"
+	}	
+	
+]

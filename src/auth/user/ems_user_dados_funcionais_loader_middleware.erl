@@ -72,6 +72,17 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 					{ok, CurrentRecord = #user_dados_funcionais{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
+								% Sincroniza alguns campos que estão na tabela user por conveniência
+								case ems_user:find(SourceType, Codigo) of
+									{ok, User} ->
+										User2 = User#user{type = User#user.type,
+														  subtype = User#user.subtype,
+														  active = User#user.active},
+										UserTable = ems_user:get_table(SourceType),
+										mnesia:write(UserTable, User2, write);
+									_ -> ok
+								end,
+								
 								?DEBUG("ems_user_dados_funcionais_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								Record = CurrentRecord#user_dados_funcionais{
 												 codigo = Codigo,
