@@ -62,7 +62,8 @@
 				log_file_max_size,						% Max file size in KB
 				sync_buffer_error_count = 0,			% Attempts to unload buffer
 				level = info,							% level of errors
-				show_response = false					% show response of request
+				show_response = false,					% show response of request
+				ult_msg									% last print message
  			   }). 
 
 
@@ -222,8 +223,8 @@ handle_cast({write_msg, Tipo, Msg, Params}, State) ->
 	{noreply, NewState};
 
 handle_cast({log_request, Request}, State) ->
-	do_log_request(Request, State),
-	{noreply, State};
+	NewState = do_log_request(Request, State),
+	{noreply, NewState};
 
 handle_cast({set_level, Level}, State) ->
 	{noreply, State#state{level = Level}};
@@ -375,42 +376,43 @@ set_timeout_archive_log_checkpoint() ->
 write_msg(Tipo, Msg, State) when is_binary(Msg) ->
 	Msg1 = binary_to_list(Msg),
     write_msg(Tipo, Msg1, State);
-write_msg(Tipo, Msg, State = #state{level = Level})  ->
-	case Tipo of
-		info  -> Msg1 = lists:concat(["INFO ", ems_clock:local_time_str(), "  ", Msg]);
-		error -> Msg1 = lists:concat(["\033[0;31mERROR ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]);
-		warn  -> Msg1 = lists:concat(["\033[0;33mWARN ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]);
-		debug -> Msg1 = lists:concat(["\033[1;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"])
-	end,
-	UltMsg = erlang:get(ult_msg),
-	case UltMsg == undefined orelse UltMsg =/= Msg1 of
+write_msg(Tipo, Msg, State = #state{level = Level, ult_msg = UltMsg})  ->
+	%% test overflow duplicated messages
+	case UltMsg == undefined orelse lists:sublist(UltMsg, 1, 30) =/= lists:sublist(Msg, 1, 30) of
 		true ->
-			erlang:put(ult_msg, Msg1),
+			case Tipo of
+				info  -> Msg1 = ["INFO ", ems_clock:local_time_str(), "  ", Msg];
+				error -> Msg1 = ["\033[0;31mERROR ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"];
+				warn  -> Msg1 = ["\033[0;33mWARN ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"];
+				debug -> Msg1 = ["\033[1;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]
+			end,
 			case (Level == error andalso Tipo /= error) andalso (Tipo /= debug) of
 				true ->
 					set_timeout_for_sync_buffer(State),
 					State#state{buffer = [Msg1|State#state.buffer], 
-								flag_checkpoint_sync_buffer = true};
+								flag_checkpoint_sync_buffer = true,
+								ult_msg = Msg};
 				false ->
 					set_timeout_for_sync_buffer(State),
 					set_timeout_for_sync_tela(State),
 					State#state{buffer = [Msg1|State#state.buffer], 
 								buffer_tela = [Msg1|State#state.buffer_tela], 
 								flag_checkpoint_sync_buffer = true, 
-								flag_checkpoint_tela = true}
+								flag_checkpoint_tela = true,
+								ult_msg = Msg}
 			end;
 		false -> State
 	end.
-		
 	
 write_msg(Tipo, Msg, Params, State) ->
 	Msg1 = io_lib:format(Msg, Params),
 	write_msg(Tipo, Msg1, State).
+	
 sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
 sync_buffer_tela(State) ->
 	Msg = [ [L | ["\n"]] || L <- lists:reverse(State#state.buffer_tela)],
 	io:format(Msg),
-	State#state{buffer_tela = [], flag_checkpoint_tela = false}.
+	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined}.
 
 
 sync_buffer(State = #state{buffer = []}) -> State;
@@ -491,148 +493,149 @@ do_log_request(#request{rid = RID,
 						oauth2_access_token = AccessToken,
 						oauth2_refresh_token = RefreshToken
 			  }, 
-			  #state{show_response = ShowResponse}) ->
+			  State = #state{show_response = ShowResponse}) ->
 			  
-	Texto =  "~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~s~sCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFilename: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
-	Texto1 = io_lib:format(Texto, [Metodo, 
-								   Uri, 
-								   Version, 
-								   RID,
-								   ReqHash,
-								   Accept,
-								   case ContentTypeIn of
-										undefined -> <<>>;
-										_ -> ContentTypeIn
-								   end, 
-								   case ContentType of
-										undefined -> <<>>;
-										_ -> ContentType 
-								   end,
-								   IpBin, 
-								   case Referer of
-										undefined -> <<>>;
-										_ -> Referer
-								   end,
-								   UserAgent,
-								   case Service of 
-										undefined -> <<>>; 
-										_ -> Service#service.service 
-								   end,
-								   Params,
-								   Query, 
-								   Payload, 
-								   case ShowResponse of 
+	Texto1 = lists:flatten(io_lib:format("~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~s~sCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFilename: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
+		  [Metodo, 
+		   Uri, 
+		   Version, 
+		   RID,
+		   ReqHash,
+		   Accept,
+		   case ContentTypeIn of
+				undefined -> <<>>;
+				_ -> ContentTypeIn
+		   end, 
+		   case ContentType of
+				undefined -> <<>>;
+				_ -> ContentType 
+		   end,
+		   IpBin, 
+		   case Referer of
+				undefined -> <<>>;
+				_ -> Referer
+		   end,
+		   UserAgent,
+		   case Service of 
+				undefined -> <<>>; 
+				_ -> Service#service.service 
+		   end,
+		   Params,
+		   Query, 
+		   Payload, 
+		   case ShowResponse of 
+				true -> 
+					io_lib:format("Header Response: ~p\n\tResponse: ~p\n\t", [ResponseHeader, ResponseData]); 
+				false -> <<>> 
+		   end,
+		   case Service =/= undefined of
+				true ->
+				   case Service#service.result_cache > 0 of
+						true ->
+						   ResultCacheSec = trunc(Service#service.result_cache / 1000),
+						   case ResultCacheSec > 0 of 
+								true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
+								false -> ResultCacheMin = 0
+						   end,
+						   case ResultCacheMin > 0 of
+								true -> 
+								   case ResultCache of 
+										true ->  io_lib:format("Result-Cache: ~sms (~smin)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																											   integer_to_list(ResultCacheMin), 
+																											   integer_to_list(ResultCacheRid)]);
+										false -> io_lib:format("Result-Cache: ~sms (~smin)\n\t", [integer_to_list(Service#service.result_cache), 
+																								  integer_to_list(ResultCacheMin)])
+									end;
+								false ->
+								   case ResultCacheSec > 0 of
 										true -> 
-											io_lib:format("Header Response: ~p\n\tResponse: ~p\n\t", [ResponseHeader, ResponseData]); 
-										false -> <<>> 
-								   end,
-								   case Service =/= undefined of
-										true ->
-										   case Service#service.result_cache > 0 of
-												true ->
-												   ResultCacheSec = trunc(Service#service.result_cache / 1000),
-												   case ResultCacheSec > 0 of 
-														true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
-														false -> ResultCacheMin = 0
-												   end,
-												   case ResultCacheMin > 0 of
-														true -> 
-														   case ResultCache of 
-																true ->  io_lib:format("Result-Cache: ~sms (~smin)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																																	   integer_to_list(ResultCacheMin), 
-																																	   integer_to_list(ResultCacheRid)]);
-																false -> io_lib:format("Result-Cache: ~sms (~smin)\n\t", [integer_to_list(Service#service.result_cache), 
-																														  integer_to_list(ResultCacheMin)])
-															end;
-														false ->
-														   case ResultCacheSec > 0 of
-																true -> 
-																   case ResultCache of 
-																		true ->  io_lib:format("Result-Cache: ~sms (~ssec)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																																			   integer_to_list(ResultCacheSec), 
-																																			   integer_to_list(ResultCacheRid)]);
-																		false -> io_lib:format("Result-Cache: ~sms (~ssec)\n\t", [integer_to_list(Service#service.result_cache), 
-																																  integer_to_list(ResultCacheSec)])
-																	end;
-																false ->
-																   case ResultCache of 
-																		true ->  io_lib:format("Result-Cache: ~sms <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																																	  integer_to_list(ResultCacheRid)]);
-																		false -> io_lib:format("Result-Cache: ~sms\n\t", [integer_to_list(Service#service.result_cache)])
-																	end
-															end
-													end;
-												false -> ""
+										   case ResultCache of 
+												true ->  io_lib:format("Result-Cache: ~sms (~ssec)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																													   integer_to_list(ResultCacheSec), 
+																													   integer_to_list(ResultCacheRid)]);
+												false -> io_lib:format("Result-Cache: ~sms (~ssec)\n\t", [integer_to_list(Service#service.result_cache), 
+																										  integer_to_list(ResultCacheSec)])
 											end;
-										false -> ""
-								   end,
-								   case CacheControl of
-										undefined -> <<>>;
-										_ -> CacheControl
-								   end,
-								   case Etag of
-										undefined -> <<>>;
-										_ -> Etag
-								   end,
-								   case IfModifiedSince of
-										undefined -> <<>>;
-										_ -> IfModifiedSince
-								   end,
-								   case IfNoneMatch of
-										undefined -> <<>>;
-										_ -> IfNoneMatch
-								   end,
-								   case Service of 
-										undefined -> <<>>; 
-										_ -> 
-											case Service#service.authorization of
-												basic -> <<"basic, oauth2">>;
-												_ -> Service#service.authorization
+										false ->
+										   case ResultCache of 
+												true ->  io_lib:format("Result-Cache: ~sms <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
+																											  integer_to_list(ResultCacheRid)]);
+												false -> io_lib:format("Result-Cache: ~sms\n\t", [integer_to_list(Service#service.result_cache)])
 											end
-								   end,
-								   case Authorization of
-										undefined -> <<>>;
-										_ -> Authorization
-								   end,
-								   case GrantType of
-										undefined -> "";
-										_ ->  lists:flatten(io_lib:format("OAuth2 grant type: ~p\n\t", [GrantType]))
-								   end,
-								   case AccessToken of
-										undefined -> "";
-										_ ->  lists:flatten(io_lib:format("OAuth2 access token: ~p\n\t", [AccessToken]))
-								   end,
-								   case RefreshToken of
-										undefined -> "";
-										_ ->  lists:flatten(io_lib:format("OAuth2 refresh token: ~p\n\t", [RefreshToken]))
-								   end,
-								   case Scope of
-										undefined -> "";
-										_ -> lists:flatten(io_lib:format("OAuth2 scope: ~p\n\t", [Scope]))
-								   end,
-								   case Client of
-										public -> <<"public">>;
-										undefined -> <<>>;
-										_ -> iolist_to_binary([integer_to_binary(Client#client.id), <<" ">>, Client#client.name])
-								   end,
-								   case User of
-										public -> <<"public">>;
-																						undefined -> <<>>;
-										_ ->  iolist_to_binary([integer_to_binary(User#user.id), <<" ">>,  User#user.login])
-								   end,
-								   case Node of
-										undefined -> <<>>;
-										_ -> Node
-								   end,
-								   case Filename of
-										undefined -> <<>>;
-										_ -> Filename
-								   end,
-								   Code, 
-								   Reason, 
-								   Latency]),
-	case Code >= 400 of
-		true  -> ems_logger:error(Texto1);
-		false -> ems_logger:info(Texto1)
-	end.
+									end
+							end;
+						false -> ""
+					end;
+				false -> ""
+		   end,
+		   case CacheControl of
+				undefined -> <<>>;
+				_ -> CacheControl
+		   end,
+		   case Etag of
+				undefined -> <<>>;
+				_ -> Etag
+		   end,
+		   case IfModifiedSince of
+				undefined -> <<>>;
+				_ -> IfModifiedSince
+		   end,
+		   case IfNoneMatch of
+				undefined -> <<>>;
+				_ -> IfNoneMatch
+		   end,
+		   case Service of 
+				undefined -> <<>>; 
+				_ -> 
+					case Service#service.authorization of
+						basic -> <<"basic, oauth2">>;
+						_ -> Service#service.authorization
+					end
+		   end,
+		   case Authorization of
+				undefined -> <<>>;
+				_ -> Authorization
+		   end,
+		   case GrantType of
+				undefined -> "";
+				_ ->  lists:flatten(io_lib:format("OAuth2 grant type: ~p\n\t", [GrantType]))
+		   end,
+		   case AccessToken of
+				undefined -> "";
+				_ ->  lists:flatten(io_lib:format("OAuth2 access token: ~p\n\t", [AccessToken]))
+		   end,
+		   case RefreshToken of
+				undefined -> "";
+				_ ->  lists:flatten(io_lib:format("OAuth2 refresh token: ~p\n\t", [RefreshToken]))
+		   end,
+		   case Scope of
+				undefined -> "";
+				_ -> lists:flatten(io_lib:format("OAuth2 scope: ~p\n\t", [Scope]))
+		   end,
+		   case Client of
+				public -> <<"public">>;
+				undefined -> <<>>;
+				_ -> iolist_to_binary([integer_to_binary(Client#client.id), <<" ">>, Client#client.name])
+		   end,
+		   case User of
+				public -> <<"public">>;
+																undefined -> <<>>;
+				_ ->  iolist_to_binary([integer_to_binary(User#user.id), <<" ">>,  User#user.login])
+		   end,
+		   case Node of
+				undefined -> <<>>;
+				_ -> Node
+		   end,
+		   case Filename of
+				undefined -> <<>>;
+				_ -> Filename
+		   end,
+		   Code, 
+		   Reason, 
+		   Latency])),
+	NewState = case Code >= 400 of
+					true  -> write_msg(error, Texto1, State);
+					false -> write_msg(info, Texto1, State)
+				end,
+	NewState.
 
