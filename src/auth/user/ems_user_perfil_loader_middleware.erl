@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_user_perfil_loader_middleware
 %% @version 1.0.0
-%% @doc Module responsible for load user from filesystem or db
+%% @doc Module responsible for load user_perfil
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -10,8 +10,10 @@
 
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
+-include_lib("stdlib/include/qlc.hrl").
 
--export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/1]).
+
+-export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
 
 -spec is_empty(fs | db) -> boolean().
@@ -46,8 +48,23 @@ reset_sequence(fs) ->
 	ok.
 	
 	
--spec check_remove_records(list()) -> ok.	
-check_remove_records(_Ids) ->  ok.
+-spec check_remove_records(list(), fs | db) -> non_neg_integer().	
+check_remove_records(Codigos, SourceType) -> 
+	Table = ems_user_perfil:get_table(SourceType),
+	F = fun() -> 
+				Q1 = qlc:q([R || R <- mnesia:table(Table), not lists:member(R#user_perfil.codigo, Codigos)]),
+				qlc:e(Q1)
+		end,
+	{atomic, Records} = mnesia:transaction(F),
+	F2 = fun() -> remove_records_(Table, Records) end,
+	mnesia:activity(transaction, F2),
+	length(Records).
+
+remove_records_(_, []) -> ok;
+remove_records_(Table, [#user_perfil{id = Id}|T]) ->
+	mnesia:delete({Table, Id}),
+	remove_records_(Table, T).
+
 
 %% internal functions
 

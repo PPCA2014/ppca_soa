@@ -42,6 +42,7 @@
 				error_checkpoint_metric_name,
 				insert_metric_name,
 				update_metric_name,
+				update_miss_metric_name,
 				error_metric_name,
 				disable_metric_name,
 				skip_metric_name
@@ -94,6 +95,8 @@ init(#service{name = Name,
 			  properties = Props}) ->
 	LastUpdateParamName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_last_update_param_name">>]), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
+	CheckRemoveRecords = ems_util:parse_bool(maps:get(<<"check_remove_records">>, Props, false)),
+	CheckRemoveRecordsCheckpoint = maps:get(<<"check_remove_records_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT + 15000),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT),
 	SqlLoad = string:trim(binary_to_list(maps:get(<<"sql_load">>, Props, <<>>))),
 	SqlUpdate = string:trim(binary_to_list(maps:get(<<"sql_update">>, Props, <<>>))),
@@ -101,7 +104,7 @@ init(#service{name = Name,
 	SqlCodigos = re:replace(SqlLoad, "select ([^,]+),(.+)( from.+)( order by.+)", "select \\1 \\3", [{return,list}]),
 	Fields = maps:get(<<"fields">>, Props, <<>>),
 	TimeoutOnError = maps:get(<<"timeout_on_error">>, Props, 60000 * 6),
-	SyncFullCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_sync_full_checkpoint">>]), utf8),
+	SyncFullCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_full_checkpoint">>]), utf8),
 	CheckCountCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_check_count_checkpoint">>]), utf8),
 	CheckRemoveCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_check_remove_checkpoint">>]), utf8),
 	LoadCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_load_checkpoint">>]), utf8),
@@ -109,11 +112,15 @@ init(#service{name = Name,
 	ErrorCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_error_checkpoint">>]), utf8),
 	InsertMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_inserts">>]), utf8),
 	UpdateMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_updates">>]), utf8),
+	UpdateMissMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_update_miss">>]), utf8),
 	ErrorsMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_errors">>]), utf8),
 	DisabledMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_disabled">>]), utf8),
 	SkipMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_skip">>]), utf8),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
-	erlang:send_after(6000, self(), check_loader_count),
+	case CheckRemoveRecords of
+		true -> erlang:send_after(CheckRemoveRecordsCheckpoint, self(), check_count_records);
+		false -> ok
+	end,
 	State = #state{name = binary_to_list(Name),
 				   datasource = Datasource, 
 				   update_checkpoint = UpdateCheckpoint,
@@ -134,6 +141,7 @@ init(#service{name = Name,
 				   error_checkpoint_metric_name = ErrorCheckpointMetricName,
 				   insert_metric_name = InsertMetricName,
 				   update_metric_name = UpdateMetricName,
+				   update_miss_metric_name = UpdateMissMetricName,
 				   error_metric_name = ErrorsMetricName,
 				   disable_metric_name = DisabledMetricName,
 				   skip_metric_name = SkipMetricName
@@ -208,14 +216,14 @@ handle_info(check_sync_full, State = #state{name = Name,
 
 handle_info(timeout, State) -> handle_do_check_load_or_update_checkpoint(State);
 
-handle_info(check_loader_count, State = #state{update_checkpoint = UpdateCheckpoint,
-											   timeout_on_error = TimeoutOnError}) ->
+handle_info(check_count_records, State = #state{update_checkpoint = UpdateCheckpoint,
+											    timeout_on_error = TimeoutOnError}) ->
 	case do_check_count_checkpoint(State) of
 		ok -> 
-			erlang:send_after(60000, self(), check_loader_count),
+			erlang:send_after(60000, self(), check_count_records),
 			{noreply, State, UpdateCheckpoint};
 		_ -> 
-			erlang:send_after(60000, self(), check_loader_count),
+			erlang:send_after(60000, self(), check_count_records),
 			{noreply, State, TimeoutOnError}
 	end;
 
@@ -266,16 +274,18 @@ do_check_count_checkpoint(State = #state{name = Name,
 			{ok, Datasource2} -> 
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlCount, []) of
 					{_, _, [{Count}]} ->
-						io:format("count ~p = ~p\n", [Count, do_size_table(State)]),
 						case Count < do_size_table(State) of
 							true -> 
 								ems_db:inc_counter(CheckRemoveCheckpointMetricName),
-								io:format("foram apagados registros...\n"),
 								case ems_odbc_pool:param_query(Datasource2, SqlCodigos, []) of
 									{_, _, Result2} ->
 										ems_odbc_pool:release_connection(Datasource2),
 										Codigos = [N || {N} <- Result2],
-										do_check_remove_records(Codigos, State);
+										RemoveCount = do_check_remove_records(Codigos, State),
+										case RemoveCount > 0 of
+											true -> ems_logger:info("~s sync ~p deletes.", [Name, RemoveCount]);
+											false -> ok
+										end;
 									Error3 -> 
 										ems_odbc_pool:release_connection(Datasource2),
 										Error3
@@ -295,7 +305,7 @@ do_check_count_checkpoint(State = #state{name = Name,
 		end
 	catch
 		_Exception:Reason3 -> 
-			ems_logger:error("~s check loader count exception error: ~p.", [Name, Reason3]),
+			ems_logger:error("~s check count exception error: ~p.", [Name, Reason3]),
 			{error, Reason3}
 	end.
 
@@ -345,10 +355,6 @@ do_load(CtrlInsert, Conf, State = #state{datasource = Datasource,
 		case ems_odbc_pool:get_connection(Datasource) of
 			{ok, Datasource2} -> 
 				Result = case ems_odbc_pool:param_query(Datasource2, SqlLoad, []) of
-					{_,_,[]} -> 
-						ems_odbc_pool:release_connection(Datasource2),
-						?DEBUG("~s did not load any record.", [Name]),
-						ok;
 					{_, _, Records} ->
 						ems_odbc_pool:release_connection(Datasource2),
 						case do_clear_table(State) of
@@ -389,6 +395,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 											   update_checkpoint_metric_name = UpdateCheckpointMetricName,
 											   insert_metric_name = InsertMetricName,
 											   update_metric_name = UpdateMetricName,
+											   update_miss_metric_name = UpdateMissMetricName,
 											   error_metric_name = ErrorsMetricName,
 											   disable_metric_name = DisabledMetricName,
 											   skip_metric_name = SkipMetricName}) -> 
@@ -399,9 +406,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 				ems_db:inc_counter(UpdateCheckpointMetricName),
 				case ems_odbc_pool:get_connection(Datasource) of
 					{ok, Datasource2} -> 
-						io:format("last update ~p\n", [LastUpdate]),
 						{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
-						% Zera os segundos
 						DateInitial = {{Year, Month, Day}, {Hour, Min, 0}},
 						Params = [{sql_timestamp, [DateInitial]},
 								  {sql_timestamp, [DateInitial]},
@@ -414,25 +419,23 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 								  {sql_timestamp, [DateInitial]}],
 						Result = case ems_odbc_pool:param_query(Datasource2, SqlUpdate, Params) of
 							{_,_,[]} -> 
-								io:format("aqui1\n"),
 								ems_odbc_pool:release_connection(Datasource2),
-								?DEBUG("~s did not load any record.", [Name]),
+								ems_db:inc_counter(UpdateMissMetricName),
 								ok;
 							{_, _, Records} ->
-								io:format("aqui2  ~p\n", [Records]),
 								ems_odbc_pool:release_connection(Datasource2),
 								{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
 								% Para não gerar muito log, apenas imprime no log se algum registro foi modificado
 								case InsertCount > 0 orelse UpdateCount > 0 orelse ErrorCount > 0 orelse DisabledCount > 0 of
 									true ->
+										ems_db:counter(InsertMetricName, InsertCount),
+										ems_db:counter(UpdateMetricName, UpdateCount),
+										ems_db:counter(ErrorsMetricName, ErrorCount),
+										ems_db:counter(DisabledMetricName, DisabledCount),
 										LastUpdateStr = ems_util:timestamp_str(LastUpdate),
 										ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]);
 									false -> ok
 								end,
-								ems_db:counter(InsertMetricName, InsertCount),
-								ems_db:counter(UpdateMetricName, UpdateCount),
-								ems_db:counter(ErrorsMetricName, ErrorCount),
-								ems_db:counter(DisabledMetricName, DisabledCount),
 								ems_db:counter(SkipMetricName, SkipCount),
 								ok;
 							Error -> 
@@ -472,6 +475,8 @@ do_reset_sequence(#state{middleware = Middleware}) ->
 	apply(Middleware, reset_sequence, [db]).
 
 
--spec do_check_remove_records(list(), #state{}) -> ok.
+-spec do_check_remove_records(list(), #state{}) -> non_neg_integer().
 do_check_remove_records(Codigos, #state{middleware = Middleware}) ->
-	apply(Middleware, check_remove_records, [Codigos]).
+	apply(Middleware, check_remove_records, [Codigos, db]).
+
+

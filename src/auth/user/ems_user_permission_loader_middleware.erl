@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_user_permission_loader_middleware
 %% @version 1.0.0
-%% @doc Module responsible for load user from filesystem or db
+%% @doc Module responsible for load user_permission
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -12,7 +12,7 @@
 -include("../include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
--export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/1]).
+-export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
 
 -spec is_empty(fs | db) -> boolean().
@@ -46,25 +46,23 @@ reset_sequence(fs) ->
 	ems_db:init_sequence(user_permission_fs, 0),
 	ok.
 
--spec check_remove_records(list()) -> ok.	
-check_remove_records(Ids) -> 
-	io:format("chamou 0 total antes: ~p\n", [mnesia:table_info(user_permission_db, size)]),
+
+-spec check_remove_records(list(), fs | db) -> non_neg_integer().	
+check_remove_records(Codigos, SourceType) -> 
+	Table = ems_user_permission:get_table(SourceType),
 	F = fun() -> 
-				Q1 = qlc:q([R || R <- mnesia:table(user_permission_db), not lists:member(R#user_permission.codigo, Ids)]),
+				Q1 = qlc:q([R || R <- mnesia:table(Table), not lists:member(R#user_permission.codigo, Codigos)]),
 				qlc:e(Q1)
 		end,
 	{atomic, Records} = mnesia:transaction(F),
-	io:format("chamou ~p\n", [Records]),
-	F2 = fun() -> check_remove_records_(Records) end,
+	F2 = fun() -> remove_records_(Table, Records) end,
 	mnesia:activity(transaction, F2),
-	io:format("excluidos total: ~p!\n", [mnesia:table_info(user_permission_db, size)]),
-	ok.
+	length(Records).
 
-
-check_remove_records_([]) -> ok;
-check_remove_records_([#user_permission{id = Id}|T]) ->
-	io:format("excluindo ~p   ~p\n", [Id, mnesia:delete({user_permission_db, Id})]),
-	check_remove_records_(T).
+remove_records_(_, []) -> ok;
+remove_records_(Table, [#user_permission{id = Id}|T]) ->
+	mnesia:delete({Table, Id}),
+	remove_records_(Table, T).
 
 
 -spec get_filename() -> list(tuple()).
@@ -76,7 +74,6 @@ get_filename() ->
 -spec insert_or_update(map() | tuple(), tuple(), #config{}, atom(), insert | update) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
-		io:format("inser or update map ~p\n", [Map]),
 		case ems_user_permission:new_from_map(Map, Conf) of
 			{ok, NewRecord = #user_permission{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user_permission:get_table(SourceType),
@@ -87,7 +84,6 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 														 ctrl_insert = CtrlDate},
 						{ok, User, Table, insert};
 					{ok, CurrentRecord = #user_permission{ctrl_hash = CurrentCtrlHash}} ->
-						io:format("aqui3  ~p=~p\n", [CtrlHash, CurrentCtrlHash]),
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								?DEBUG("ems_user_permission_perfil_loader_middleware update ~p from ~p.", [Map, SourceType]),
@@ -108,7 +104,6 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 											},
 								{ok, UserPermission, Table, update};
 							false -> 
-									io:format("aqui4\n"),
 								{ok, skip}
 						end
 				end;

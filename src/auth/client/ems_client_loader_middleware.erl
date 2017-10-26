@@ -1,7 +1,7 @@
 %%********************************************************************
 %% @title Module ems_client_loader_middleware
 %% @version 1.0.0
-%% @doc Module responsible for load client from filesystem or db
+%% @doc Module responsible for load clients
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
@@ -11,7 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/1]).
+-export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
 -spec is_empty(fs | db) -> boolean().
 is_empty(db) ->	mnesia:table_info(client_db, size) == 0;
@@ -45,8 +45,8 @@ reset_sequence(fs) ->
 	ok.
 	
 
--spec check_remove_records(list()) -> ok.	
-check_remove_records(_Ids) ->  ok.
+-spec check_remove_records(list(), fs | db) -> non_neg_integer().	
+check_remove_records(_Codigos, _SourceType) -> 0.
 
 
 %% internal functions

@@ -9,6 +9,7 @@
 	"type": "KERNEL",
 	"lang" : "erlang",
 	"update_checkpoint" : 60000,
+	"check_remove_records" : true,
 	"datasource" : "ds_ems_user_loader",
 	"start_timeout" : 5000,
 	"middleware" : "ems_user_perfil_loader_middleware",
