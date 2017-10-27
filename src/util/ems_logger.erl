@@ -60,7 +60,6 @@
 				log_file_name,		      				% log file name
 				log_file_handle,						% IODevice of file
 				log_file_max_size,						% Max file size in KB
-				sync_buffer_error_count = 0,			% Attempts to unload buffer
 				level = info,							% level of errors
 				show_response = false,					% show response of request
 				ult_msg,								% last print message
@@ -292,17 +291,21 @@ code_change(_OldVsn, State, _Extra) ->
 checkpoint_arquive_log(State = #state{log_file_handle = CurrentIODevice, 
 									  log_file_name = CurrentLogFilename}, Immediate) ->
 	case Immediate of
-		true -> ems_logger:info("ems_logger immediate archive log file checkpoint.");
-		false -> ems_logger:info("ems_logger archive log file checkpoint.")
+		true -> 
+			ems_db:inc_counter(ems_logger_immediate_archive_log_checkpoint),
+			ems_logger:info("ems_logger immediate archive log file checkpoint.");
+		false -> 
+			ems_db:inc_counter(ems_logger_archive_log_checkpoint),
+			ems_logger:info("ems_logger archive log file checkpoint.")
 	end,
 	close_filename_device(CurrentIODevice, CurrentLogFilename),
 	case open_filename_device() of
 		{ok, LogFilename, IODevice2} ->
 			ems_logger:info("ems_logger open ~p for append.", [LogFilename]),
 			State2 = State#state{log_file_name = LogFilename, 
-								 log_file_handle = IODevice2,
-								 sync_buffer_error_count = 0};
+								 log_file_handle = IODevice2};
 		{error, Reason} ->
+			ems_db:inc_counter(ems_logger_archive_log_error),
 			ems_logger:error("ems_logger archive log file checkpoint exception: ~p.", [Reason]),
 			State2 = State
 	end,
@@ -324,13 +327,16 @@ open_filename_device(LogFilename) ->
 				{ok, IODevice} -> 
 					{ok, LogFilename, IODevice};
 				{error, enospc} = Error ->
+					ems_db:inc_counter(ems_logger_open_file_enospc),
 					ems_logger:error("ems_logger open_filename_device does not have disk storage space to write to the log files."),
 					Error;
 				{error, Reason} = Error -> 
+					ems_db:inc_counter(ems_logger_open_file_error),
 					ems_logger:error("ems_logger open_filename_device failed to open log file for append. Reason: ~p.", [Reason]),
 					Error
 			end;
 		{error, Reason} = Error -> 
+			ems_db:inc_counter(ems_logger_open_file_error),
 			ems_logger:error("ems_logger open_filename_device failed to create log file dir. Reason: ~p.", [Reason]),
 			Error
 	end.
@@ -357,35 +363,37 @@ close_filename_device(IODevice, LogFilename) ->
 	file:close(IODevice).
 
 set_timeout_for_sync_buffer(#state{flag_checkpoint_sync_buffer = false, log_file_checkpoint=Timeout}) ->    
-	%?DEBUG("ems_logger set_timeout_for_sync_buffer."),
 	erlang:send_after(Timeout, self(), checkpoint);
 
 set_timeout_for_sync_buffer(_State) ->    
 	ok.
 
 set_timeout_for_sync_tela(#state{flag_checkpoint_tela = false}) ->    
-	%?DEBUG("ems_logger set_timeout_for_sync_tela."),
 	erlang:send_after(2000, self(), checkpoint_tela);
 
 set_timeout_for_sync_tela(_State) ->    
 	ok.
 
 set_timeout_archive_log_checkpoint() ->    
-	%?DEBUG("ems_logger set_timeout_archive_log_checkpoint."),
 	erlang:send_after(?LOG_ARCHIVE_CHECKPOINT, self(), checkpoint_archive_log).
 
-write_msg(Tipo, Msg, State) when is_binary(Msg) ->
-	Msg1 = binary_to_list(Msg),
-    write_msg(Tipo, Msg1, State);
 write_msg(Tipo, Msg, State = #state{level = Level, ult_msg = UltMsg})  ->
 	%% test overflow duplicated messages
 	case UltMsg == undefined orelse UltMsg =/= Msg of
 		true ->
 			case Tipo of
-				info  -> Msg1 = iolist_to_binary([<<"INFO ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\n">>]);
-				error -> Msg1 = iolist_to_binary([<<"\033[0;31mERROR ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>]);
-				warn  -> Msg1 = iolist_to_binary([<<"\033[0;33mWARN ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>]);
-				debug -> Msg1 = iolist_to_binary([<<"\033[1;34mDEBUG ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>])
+				info  -> 
+					ems_db:inc_counter(ems_logger_write_info),
+					Msg1 = iolist_to_binary([<<"INFO ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\n">>]);
+				error -> 
+					ems_db:inc_counter(ems_logger_write_error),
+					Msg1 = iolist_to_binary([<<"\033[0;31mERROR ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>]);
+				warn  -> 
+					ems_db:inc_counter(ems_logger_write_warn),
+					Msg1 = iolist_to_binary([<<"\033[0;33mWARN ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>]);
+				debug -> 
+					ems_db:inc_counter(ems_logger_write_debug),
+					Msg1 = iolist_to_binary([<<"\033[1;34mDEBUG ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>])
 			end,
 			case (Level == error andalso Tipo /= error) andalso (Tipo /= debug) of
 				true ->
@@ -402,58 +410,57 @@ write_msg(Tipo, Msg, State = #state{level = Level, ult_msg = UltMsg})  ->
 								flag_checkpoint_tela = true,
 								ult_msg = Msg}
 			end;
-		false -> State
+		false -> 
+			ems_db:inc_counter(ems_logger_write_dup),
+			State
 	end.
 	
 write_msg(Tipo, Msg, Params, State) ->
 	Msg1 = io_lib:format(Msg, Params),
 	write_msg(Tipo, Msg1, State).
 	
+	
 sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
 sync_buffer_tela(State) ->
+	ems_db:inc_counter(ems_logger_sync_buffer_tela),
 	Msg = lists:reverse(State#state.buffer_tela),
 	io:format(Msg),
 	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined, ult_reqhash = undefined}.
 
 
-sync_buffer(State = #state{buffer = []}) -> State;
-sync_buffer(State = #state{sync_buffer_error_count = 10}) ->
-	ems_logger:error("ems_logger tried to unload cache buffer 10 times without success. Clear log buffer cache."),
-	State#state{buffer = [], flag_checkpoint_sync_buffer = false, sync_buffer_error_count = 0};
 sync_buffer(State = #state{buffer = Buffer,
 						   log_file_name = CurrentLogFilename,
 						   log_file_max_size = LogFileMaxSize,
 						   log_file_handle = IODevice}) ->
-	%?DEBUG("ems_logger sync_buffer to log file ~p. Buffer count: ~p, FileSize: ~p.", [CurrentLogFilename, string:len(Buffer), filelib:file_size(CurrentLogFilename)]),
+	ems_db:inc_counter(ems_logger_sync_buffer),
 	% check limit log file max size
 	case filelib:file_size(CurrentLogFilename) > LogFileMaxSize of
 		true -> 
+			ems_db:inc_counter(ems_logger_sync_buffer_file_size_exceeded),
 			ems_logger:info("ems_logger is writing to a log file that has already exceeded the allowed limit."),
 			State2 = checkpoint_arquive_log(State, true),
-			State2#state{flag_checkpoint_sync_buffer = false, 
-						 sync_buffer_error_count = 0};
+			State2#state{flag_checkpoint_sync_buffer = false};
 		false ->
 			Msg = lists:reverse(Buffer),
 			case file:write(IODevice, Msg) of
 				ok -> 
 					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false, 
-								sync_buffer_error_count = 0};
+								flag_checkpoint_sync_buffer = false};
 				{error, enospc} -> 
+					ems_db:inc_counter(ems_logger_sync_buffer_enospc),
 					ems_logger:error("ems_logger does not have disk storage space to write to the log files. Clear log buffer cache."),
 					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false, 
-								sync_buffer_error_count = 0};
+								flag_checkpoint_sync_buffer = false};
 				{error, ebadf} ->
+					ems_db:inc_counter(ems_logger_sync_buffer_ebadf),
 					ems_logger:error("ems_logger does no have log file descriptor valid. Clear log buffer cache."),
 					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false, 
-								sync_buffer_error_count = 0};
+								flag_checkpoint_sync_buffer = false};
 				{error, Reason} ->
+					ems_db:inc_counter(ems_logger_sync_buffer_error),
 					ems_logger:error("ems_logger was unable to unload the log buffer cache. Reason: ~p. Clear log buffer cache.", [Reason]),
 					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false, 
-								sync_buffer_error_count = 0}
+								flag_checkpoint_sync_buffer = false}
 			end
 	end.
 
@@ -632,7 +639,9 @@ do_log_request(#request{rid = RID,
 							false -> write_msg(info, Texto1, State#state{ult_reqhash = ReqHash})
 						end,
 			NewState;
-		false -> State
+		false -> 
+			ems_db:inc_counter(ems_logger_write_dup),
+			State
 	end.
 	
 
