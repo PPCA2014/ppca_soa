@@ -63,7 +63,8 @@
 				sync_buffer_error_count = 0,			% Attempts to unload buffer
 				level = info,							% level of errors
 				show_response = false,					% show response of request
-				ult_msg									% last print message
+				ult_msg,								% last print message
+				ult_reqhash
  			   }). 
 
 
@@ -378,7 +379,7 @@ write_msg(Tipo, Msg, State) when is_binary(Msg) ->
     write_msg(Tipo, Msg1, State);
 write_msg(Tipo, Msg, State = #state{level = Level, ult_msg = UltMsg})  ->
 	%% test overflow duplicated messages
-	case UltMsg == undefined orelse lists:sublist(UltMsg, 1, 30) =/= lists:sublist(Msg, 1, 30) of
+	case UltMsg == undefined orelse UltMsg =/= Msg of
 		true ->
 			case Tipo of
 				info  -> Msg1 = ["INFO ", ems_clock:local_time_str(), "  ", Msg];
@@ -412,7 +413,7 @@ sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
 sync_buffer_tela(State) ->
 	Msg = [ [L | ["\n"]] || L <- lists:reverse(State#state.buffer_tela)],
 	io:format(Msg),
-	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined}.
+	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined, ult_reqhash = undefined}.
 
 
 sync_buffer(State = #state{buffer = []}) -> State;
@@ -475,7 +476,6 @@ do_log_request(#request{rid = RID,
 						latency = Latency,
 						result_cache = ResultCache,
 						result_cache_rid = ResultCacheRid,
-						response_header = ResponseHeader,
 						response_data = ResponseData,
 						authorization = Authorization,
 						cache_control = CacheControl,
@@ -493,149 +493,146 @@ do_log_request(#request{rid = RID,
 						oauth2_access_token = AccessToken,
 						oauth2_refresh_token = RefreshToken
 			  }, 
-			  State = #state{show_response = ShowResponse}) ->
-			  
-	Texto1 = lists:flatten(io_lib:format("~s ~s ~s {\n\tRID: ~p  (ReqHash: ~p)\n\tAccept: ~p\n\tContent-Type in: ~p\n\tContent-Type out: ~p\n\tPeer: ~p  Referer: ~p\n\tUser-Agent: ~p\n\tService: ~p\n\tParams: ~p\n\tQuery: ~p\n\tPayload: ~p\n\t~s~sCache-Control: ~p  ETag: ~p\n\tIf-Modified-Since: ~p  If-None-Match: ~p\n\tAuthorization mode: ~p\n\tAuthorization header: ~p\n\t~s~s~s~sClient: ~p\n\tUser: ~p\n\tNode: ~p\n\tFilename: ~p\n\tStatus: ~p <<~p>> (~pms)\n}",
-		  [Metodo, 
-		   Uri, 
-		   Version, 
-		   RID,
-		   ReqHash,
-		   Accept,
-		   case ContentTypeIn of
-				undefined -> <<>>;
-				_ -> ContentTypeIn
-		   end, 
-		   case ContentType of
-				undefined -> <<>>;
-				_ -> ContentType 
-		   end,
-		   IpBin, 
-		   case Referer of
-				undefined -> <<>>;
-				_ -> Referer
-		   end,
-		   UserAgent,
-		   case Service of 
-				undefined -> <<>>; 
-				_ -> Service#service.service 
-		   end,
-		   Params,
-		   Query, 
-		   Payload, 
-		   case ShowResponse of 
-				true -> 
-					io_lib:format("Header Response: ~p\n\tResponse: ~p\n\t", [ResponseHeader, ResponseData]); 
-				false -> <<>> 
-		   end,
-		   case Service =/= undefined of
-				true ->
-				   case Service#service.result_cache > 0 of
+			  State = #state{show_response = ShowResponse, ult_reqhash = UltReqHash}) ->
+	case UltReqHash == undefined orelse UltReqHash =/= ReqHash of
+		true ->
+			Texto1 = 
+				  iolist_to_binary([
+				   Metodo, <<" ">>,
+				   Uri, <<" ">>,
+				   atom_to_binary(Version, utf8), <<" ">>,
+				   <<" {\n\tRID: ">>,  integer_to_binary(RID),
+				   <<"  (ReqHash: ">>, integer_to_binary(ReqHash), <<")">>, 
+				   <<"\n\tAccept: ">>, Accept,
+				   <<"\n\tContent-Type in: ">>, case ContentTypeIn of
+													undefined -> <<>>;
+													_ -> ContentTypeIn
+												end, 
+					<<"\n\tContent-Type out: ">>,  case ContentType of
+														undefined -> <<>>;
+														_ -> ContentType 
+												   end,
+					<<"\n\tPeer: ">>, IpBin, <<"  Referer: ">>, case Referer of
+																	undefined -> <<>>;
+																	_ -> Referer
+																end,
+					<<"\n\tUser-Agent: ">>, UserAgent,
+					<<"\n\tService: ">>, case Service of 
+										undefined -> <<>>; 
+										_ -> Service#service.service 
+									 end,
+					<<"\n\tParams: ">>, [iolist_to_binary([Key, <<"=">>, integer_to_binary(maps:get(Key, Params)), <<" ">>]) || Key <- maps:keys(Params)], 
+					<<"\n\tQuery: ">>, [iolist_to_binary([Key, <<"=\"">>, maps:get(Key, Query), <<"\" ">>]) || Key <- maps:keys(Query)], 
+					<<"\n\tPayload: ">>, io_lib:format("~p", [Payload]),
+					 case ShowResponse of 
+						true -> iolist_to_binary([<<"Response: ">>, ResponseData]); 
+						false -> <<>> 
+					end,
+					case Service =/= undefined of
 						true ->
-						   ResultCacheSec = trunc(Service#service.result_cache / 1000),
-						   case ResultCacheSec > 0 of 
-								true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
-								false -> ResultCacheMin = 0
-						   end,
-						   case ResultCacheMin > 0 of
-								true -> 
-								   case ResultCache of 
-										true ->  io_lib:format("Result-Cache: ~sms (~smin)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																											   integer_to_list(ResultCacheMin), 
-																											   integer_to_list(ResultCacheRid)]);
-										false -> io_lib:format("Result-Cache: ~sms (~smin)\n\t", [integer_to_list(Service#service.result_cache), 
-																								  integer_to_list(ResultCacheMin)])
-									end;
-								false ->
-								   case ResultCacheSec > 0 of
+						   case Service#service.result_cache > 0 of
+								true ->
+								   ResultCacheSec = trunc(Service#service.result_cache / 1000),
+								   case ResultCacheSec > 0 of 
+										true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
+										false -> ResultCacheMin = 0
+								   end,
+								   case ResultCacheMin > 0 of
 										true -> 
 										   case ResultCache of 
-												true ->  io_lib:format("Result-Cache: ~sms (~ssec)  <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																													   integer_to_list(ResultCacheSec), 
-																													   integer_to_list(ResultCacheRid)]);
-												false -> io_lib:format("Result-Cache: ~sms (~ssec)\n\t", [integer_to_list(Service#service.result_cache), 
-																										  integer_to_list(ResultCacheSec)])
+												true ->  iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>]);
+												false -> iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"sms (">>, integer_to_binary(ResultCacheMin), <<"min)">>]) 
 											end;
 										false ->
-										   case ResultCache of 
-												true ->  io_lib:format("Result-Cache: ~sms <<RID: ~s>>\n\t", [integer_to_list(Service#service.result_cache), 
-																											  integer_to_list(ResultCacheRid)]);
-												false -> io_lib:format("Result-Cache: ~sms\n\t", [integer_to_list(Service#service.result_cache)])
+										   case ResultCacheSec > 0 of
+												true -> 
+												   case ResultCache of 
+														true ->  iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>]);
+														false -> iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)">>]) 
+													end;
+												false ->
+												   case ResultCache of 
+														true ->  iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>]);
+														false -> iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms">>])
+													end
 											end
-									end
+									end;
+								false -> <<>>
 							end;
-						false -> ""
-					end;
-				false -> ""
-		   end,
-		   case CacheControl of
-				undefined -> <<>>;
-				_ -> CacheControl
-		   end,
-		   case Etag of
-				undefined -> <<>>;
-				_ -> Etag
-		   end,
-		   case IfModifiedSince of
-				undefined -> <<>>;
-				_ -> IfModifiedSince
-		   end,
-		   case IfNoneMatch of
-				undefined -> <<>>;
-				_ -> IfNoneMatch
-		   end,
-		   case Service of 
-				undefined -> <<>>; 
-				_ -> 
-					case Service#service.authorization of
-						basic -> <<"basic, oauth2">>;
-						_ -> Service#service.authorization
-					end
-		   end,
-		   case Authorization of
-				undefined -> <<>>;
-				_ -> Authorization
-		   end,
-		   case GrantType of
-				undefined -> "";
-				_ ->  lists:flatten(io_lib:format("OAuth2 grant type: ~p\n\t", [GrantType]))
-		   end,
-		   case AccessToken of
-				undefined -> "";
-				_ ->  lists:flatten(io_lib:format("OAuth2 access token: ~p\n\t", [AccessToken]))
-		   end,
-		   case RefreshToken of
-				undefined -> "";
-				_ ->  lists:flatten(io_lib:format("OAuth2 refresh token: ~p\n\t", [RefreshToken]))
-		   end,
-		   case Scope of
-				undefined -> "";
-				_ -> lists:flatten(io_lib:format("OAuth2 scope: ~p\n\t", [Scope]))
-		   end,
-		   case Client of
-				public -> <<"public">>;
-				undefined -> <<>>;
-				_ -> iolist_to_binary([integer_to_binary(Client#client.id), <<" ">>, Client#client.name])
-		   end,
-		   case User of
-				public -> <<"public">>;
-																undefined -> <<>>;
-				_ ->  iolist_to_binary([integer_to_binary(User#user.id), <<" ">>,  User#user.login])
-		   end,
-		   case Node of
-				undefined -> <<>>;
-				_ -> Node
-		   end,
-		   case Filename of
-				undefined -> <<>>;
-				_ -> Filename
-		   end,
-		   Code, 
-		   Reason, 
-		   Latency])),
-	NewState = case Code >= 400 of
-					true  -> write_msg(error, Texto1, State);
-					false -> write_msg(info, Texto1, State)
-				end,
-	NewState.
+						false -> <<>>
+					end,
+				   <<"\n\tCache-Control: ">>, case CacheControl of
+												undefined -> <<>>;
+												_ -> CacheControl
+										  end,  
+					<<"  ETag: ">>, case Etag of
+									undefined -> <<>>;
+									_ -> Etag
+								end,
+					<<"\n\tIf-Modified-Since: ">>, case IfModifiedSince of
+													undefined -> <<>>;
+													_ -> IfModifiedSince
+											   end,
+				   <<"  If-None-Match: ">>, case IfNoneMatch of
+											undefined -> <<>>;
+											_ -> IfNoneMatch
+									   end,
+				   <<"\n\tAuthorization mode: ">>, case Service of 
+													undefined -> <<>>; 
+													_ -> 
+														case Service#service.authorization of
+															basic -> <<"basic, oauth2">>;
+															oauth2 -> <<"oauth2">>;
+															_ -> <<"public">>
+														end
+											   end,
+				   <<"\n\tAuthorization header: <<">>, case Authorization of
+														undefined -> <<>>;
+														_ -> Authorization
+													 end, <<">>">>,
+				   case GrantType of
+								undefined -> <<>>;
+								_ ->  iolist_to_binary([<<"\n\tOAuth2 grant type: ">>, GrantType])
+				   end,
+				   case AccessToken of
+						undefined -> <<>>;
+						_ ->  iolist_to_binary([<<"\n\tOAuth2 access token: ">>, AccessToken])
+				   end,
+				   case RefreshToken of
+						undefined -> <<>>;
+						_ ->  iolist_to_binary([<<"\n\tOAuth2 refresh token: ">>, RefreshToken])
+				   end,
+				   case Scope of
+						undefined -> <<>>;
+						_ -> iolist_to_binary([<<"\n\tOAuth2 scope: ">>, Scope])
+				   end,
+				  <<"\n\tClient: ">>, case Client of
+										public -> <<"public">>;
+										undefined -> <<>>;
+										_ -> iolist_to_binary([integer_to_binary(Client#client.id), <<" ">>, Client#client.name])
+								   end,
+				   <<"\n\tUser: ">>, case User of
+									public -> <<"public">>;
+									undefined -> <<>>;
+									_ ->  iolist_to_binary([integer_to_binary(User#user.id), <<" ">>,  User#user.login])
+								 end,
+				   <<"\n\tNode: ">>, case Node of
+									undefined -> <<>>;
+									_ -> Node
+								 end,
+				   <<"\n\tFilename: ">>, case Filename of
+										undefined -> <<>>;
+										_ -> Filename
+									 end,
+				   <<"\n\tStatus: ">>, integer_to_binary(Code), 
+				   <<" <<">>, atom_to_binary(Reason, utf8), <<">> (">>, integer_to_binary(Latency), <<"ms)\n}">>]),
+				   
+			NewState = case Code >= 400 of
+							true  -> write_msg(error, Texto1, State#state{ult_reqhash = ReqHash});
+							false -> write_msg(info, Texto1, State#state{ult_reqhash = ReqHash})
+						end,
+			NewState;
+		false -> State
+	end.
+	
 
