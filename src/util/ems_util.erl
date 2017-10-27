@@ -148,7 +148,9 @@
 		 decode_http_request/1,
 		 format_header_value/2,
 		 tuple_to_maps_with_keys/2,
-		 compile_modulo_erlang/2
+		 compile_modulo_erlang/2,
+		 print_int_map/1,
+		 print_str_map/1
 		]).
 
 -spec version() -> string().
@@ -2078,3 +2080,20 @@ compile_modulo_erlang(Path, ModuleNameCanonical) ->
 			end;
 		false -> {error, einvalid_dir}
 	end.
+
+-spec print_int_map(map()) -> binary().
+print_int_map(Map) -> print_int_map(Map, maps:keys(Map), maps:values(Map), <<>>, []).
+
+-spec print_int_map(map(), list(), list(), binary(), list()) -> binary().
+print_int_map(_, [], _, _, Result) -> iolist_to_binary(lists:reverse(Result));
+print_int_map(Map, [Key|TKey], [Value|TValue], Sep, Result) ->
+	print_int_map(Map, TKey, TValue, <<", ">>, [[Sep, Key, <<"=">>, integer_to_binary(Value)] | Result]).
+	
+
+-spec print_str_map(map()) -> binary().
+print_str_map(Map) -> print_str_map(Map, maps:keys(Map), maps:values(Map), <<>>, []).
+
+-spec print_str_map(map(), list(), list(), binary(), list()) -> binary().
+print_str_map(_, [], _, _, Result) -> iolist_to_binary(lists:reverse(Result));
+print_str_map(Map, [Key|TKey], [Value|TValue], Sep, Result) ->
+	print_str_map(Map, TKey, TValue, <<", ">>, [[Sep, Key, <<"=\"">>, Value, <<"\"">>] | Result]).

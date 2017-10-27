@@ -382,10 +382,10 @@ write_msg(Tipo, Msg, State = #state{level = Level, ult_msg = UltMsg})  ->
 	case UltMsg == undefined orelse UltMsg =/= Msg of
 		true ->
 			case Tipo of
-				info  -> Msg1 = ["INFO ", ems_clock:local_time_str(), "  ", Msg];
-				error -> Msg1 = ["\033[0;31mERROR ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"];
-				warn  -> Msg1 = ["\033[0;33mWARN ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"];
-				debug -> Msg1 = ["\033[1;34mDEBUG ", ems_clock:local_time_str(), "  ", Msg, "\033[0m"]
+				info  -> Msg1 = iolist_to_binary([<<"INFO ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\n">>]);
+				error -> Msg1 = iolist_to_binary([<<"\033[0;31mERROR ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>]);
+				warn  -> Msg1 = iolist_to_binary([<<"\033[0;33mWARN ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>]);
+				debug -> Msg1 = iolist_to_binary([<<"\033[1;34mDEBUG ">>, ems_clock:local_time_str(), <<"  ">>, Msg, <<"\033[0m\n">>])
 			end,
 			case (Level == error andalso Tipo /= error) andalso (Tipo /= debug) of
 				true ->
@@ -411,7 +411,7 @@ write_msg(Tipo, Msg, Params, State) ->
 	
 sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
 sync_buffer_tela(State) ->
-	Msg = [ [L | ["\n"]] || L <- lists:reverse(State#state.buffer_tela)],
+	Msg = lists:reverse(State#state.buffer_tela),
 	io:format(Msg),
 	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined, ult_reqhash = undefined}.
 
@@ -433,7 +433,7 @@ sync_buffer(State = #state{buffer = Buffer,
 			State2#state{flag_checkpoint_sync_buffer = false, 
 						 sync_buffer_error_count = 0};
 		false ->
-			Msg = [ [L | ["\n"]] || L <- lists:reverse(Buffer)],
+			Msg = lists:reverse(Buffer),
 			case file:write(IODevice, Msg) of
 				ok -> 
 					State#state{buffer = [], 
@@ -521,8 +521,8 @@ do_log_request(#request{rid = RID,
 										undefined -> <<>>; 
 										_ -> Service#service.service 
 									 end,
-					<<"\n\tParams: ">>, [iolist_to_binary([Key, <<"=">>, integer_to_binary(maps:get(Key, Params)), <<" ">>]) || Key <- maps:keys(Params)], 
-					<<"\n\tQuery: ">>, [iolist_to_binary([Key, <<"=\"">>, maps:get(Key, Query), <<"\" ">>]) || Key <- maps:keys(Query)], 
+					<<"\n\tParams: ">>, ems_util:print_int_map(Params), 
+					<<"\n\tQuery: ">>, ems_util:print_str_map(Query), 
 					<<"\n\tPayload: ">>, io_lib:format("~p", [Payload]),
 					 case ShowResponse of 
 						true -> iolist_to_binary([<<"Response: ">>, ResponseData]); 
