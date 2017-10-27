@@ -1315,26 +1315,31 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 					true ->
 						case ContentType of
 							<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
+								ems_db:inc_counter(http_content_type_in_form_urlencode),
 								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
 								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
 								PayloadMap = maps:from_list(Payload),
 								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
 							<<"application/x-www-form-urlencoded">> ->
+								ems_db:inc_counter(http_content_type_in_form_urlencode),
 								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
 								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
 								PayloadMap = maps:from_list(Payload),
 								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
 							<<"application/json">> ->
+								ems_db:inc_counter(http_content_type_in_application_json),
 								ContentType2 = <<"application/json">>,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_json(Payload),
 								QuerystringMap2 = QuerystringMap;
 							<<"application/xml">> ->
+								ems_db:inc_counter(http_content_type_in_application_xml),
 								ContentType2 = <<"application/xml">>,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_xml(Payload),
 								QuerystringMap2 = QuerystringMap;
 							_ -> 
+								ems_db:inc_counter(http_content_type_in_other),
 								ContentType2 = ContentType,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = #{},
@@ -1392,10 +1397,13 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 					referer = Referer
 				},	
 				{ok, Request};
-			false -> erlang:error(ehttp_unsupported_verb)
+			false -> 
+				ems_db:inc_counter(http_unsupported_verb),
+				erlang:error(ehttp_unsupported_verb)
 		end
 	catch
 		_Exception:Reason -> 
+			ems_db:inc_counter(http_invalid_encode_request),
 			ems_logger:error("ems_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.

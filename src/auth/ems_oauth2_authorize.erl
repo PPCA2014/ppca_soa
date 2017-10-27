@@ -15,16 +15,22 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 	end,
     Result = case GrantType of
 			<<"password">> -> 
+				ems_db:inc_counter(ems_oauth2_grant_type_password),
 				password_grant(Request);
 			<<"client_credentials">> ->
+				ems_db:inc_counter(ems_oauth2_grant_type_client_credentials),
 				client_credentials_grant(Request);
 			<<"token">> -> 
+				ems_db:inc_counter(ems_oauth2_grant_type_token),
 				authorization_request(Request);
 			<<"code">> ->	
+				ems_db:inc_counter(ems_oauth2_grant_type_code),
 				authorization_request(Request);	
 			<<"authorization_code">> ->	
+				ems_db:inc_counter(ems_oauth2_grant_type_authorization_code),
 				access_token_request(Request);
 			<<"refresh_token">> ->	
+				ems_db:inc_counter(ems_oauth2_grant_type_refresh_token),
 				refresh_token_request(Request);	
 			 _ -> {error, access_denied}
 	end,  

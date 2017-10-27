@@ -35,22 +35,22 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
 	RequestLookup = case Type of
 						<<"OPTIONS">> -> 
-							ems_db:inc_counter(service_options_exec),
+							ems_db:inc_counter(ems_dispatcher_options),
 							Request#request{type = <<"GET">>};
 						<<"HEAD">> -> 
-							ems_db:inc_counter(service_head_exec),
+							ems_db:inc_counter(ems_dispatcher_head),
 							Request#request{type = <<"GET">>};
 						<<"GET">> -> 
-							ems_db:inc_counter(service_get_exec),
+							ems_db:inc_counter(ems_dispatcher_get),
 							Request;
 						<<"POST">> -> 
-							ems_db:inc_counter(service_post_exec),
+							ems_db:inc_counter(ems_dispatcher_post),
 							Request;
 						<<"PUT">> -> 
-							ems_db:inc_counter(service_put_exec),
+							ems_db:inc_counter(ems_dispatcher_put),
 							Request;
 						<<"DELETE">> -> 
-							ems_db:inc_counter(service_delete_exec),
+							ems_db:inc_counter(ems_dispatcher_delete),
 							Request
 				   end,
 	case ems_catalog_lookup:lookup(RequestLookup) of
@@ -157,7 +157,7 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 													  latency = ems_util:get_milliseconds() - T1}
 						};
 				true ->
-					ems_db:inc_counter(service_lookup_enoent),								
+					ems_db:inc_counter(ems_dispatcher_lookup_enoent),								
 					Error2
 			end
 	end.

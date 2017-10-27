@@ -13,11 +13,16 @@
     
 -export([authenticate/2]).
 
+-spec authenticate(#service{}, #request{}) -> {ok, #client{} | public, #user{} | public, binary(), binary()} | {error, access_denied}.
 authenticate(Service = #service{authorization = AuthorizationMode}, 
 			 Request = #request{type = Method}) ->
 	case Method of
-		<<"OPTIONS">> -> {ok, public, public, <<>>, <<>>};
-		"HEAD" -> {ok, public, public, <<>>, <<>>};
+		<<"OPTIONS">> -> 
+			ems_db:inc_counter(ems_auth_user_public_success),
+			{ok, public, public, <<>>, <<>>};
+		"HEAD" -> 
+			ems_db:inc_counter(ems_auth_user_public_success),
+			{ok, public, public, <<>>, <<>>};
 		_ -> 
 			% mesmo sendo público, faz o parser dos cabeçalhos e tenta autenticação com as credenciais informadas
 			% se for acesso negado, deixa passar pois o serviço é público
@@ -39,31 +44,38 @@ authenticate(Service = #service{authorization = AuthorizationMode},
 %% Internal functions
 %%====================================================================
 
-
+-spec do_basic_authorization(#service{}, #request{}) -> {ok, #client{} | public, #user{} | public, binary(), binary()} | {error, access_denied}.
 do_basic_authorization(Service, Request = #request{authorization = undefined}) -> do_bearer_authorization(Service, Request);
 do_basic_authorization(Service, Request = #request{authorization = <<>>}) -> do_bearer_authorization(Service, Request);
 do_basic_authorization(Service, Request = #request{authorization = Authorization}) ->
 	case ems_util:parse_basic_authorization_header(Authorization) of
 		{ok, Login, Password} ->
 			case ems_user:find_by_login_and_password(Login, Password) of
-				{ok, User} -> do_check_grant_permission(Service, Request, public, User, <<>>, <<>>);
+				{ok, User} -> do_check_grant_permission(Service, Request, public, User, <<>>, <<>>, basic);
 				_Error -> {error, access_denied}
 			end;
 		_ -> do_bearer_authorization(Service, Request) % Quando ocorrer erro, tenta fazer via oauth2
 	end.
 
-	
-do_bearer_authorization(_, #request{authorization = <<>>}) -> {error, access_denied};
+
+-spec do_bearer_authorization(#service{}, #request{}) -> {ok, #client{} | public, #user{} | public, binary(), binary()} | {error, access_denied}.
+do_bearer_authorization(_, #request{authorization = <<>>}) -> 
+	ems_db:inc_counter(ems_auth_user_oauth2_denied),
+	{error, access_denied};
 do_bearer_authorization(Service, Request = #request{authorization = undefined}) ->
 	AccessToken = ems_util:get_querystring(<<"token">>, <<"access_token">>, <<>>, Request), % a querystring pode ser token ou access_token
 	do_oauth2_check_access_token(AccessToken, Service, Request);
 do_bearer_authorization(Service, Request = #request{authorization = Authorization}) ->	
 	case ems_util:parse_bearer_authorization_header(Authorization) of
 		{ok, AccessToken} -> do_oauth2_check_access_token(AccessToken, Service, Request);
-		Error -> Error
+		_ -> 
+			ems_db:inc_counter(ems_auth_user_oauth2_denied),
+			{error, access_denied}
 	end.
 
+-spec do_oauth2_check_access_token(binary(), #service{}, #request{}) -> {ok, #client{} | public, #user{} | public, binary(), binary()} | {error, access_denied}.
 do_oauth2_check_access_token(<<>>, _, _) -> 
+	ems_db:inc_counter(ems_auth_user_oauth2_denied),
 	{error, access_denied};
 do_oauth2_check_access_token(AccessToken, Service, Req) ->
 	case oauth2:verify_access_token(AccessToken, undefined) of
@@ -71,16 +83,30 @@ do_oauth2_check_access_token(AccessToken, Service, Req) ->
 				   {<<"resource_owner">>, User}, 
 				   {<<"expiry_time">>, _ExpityTime}, 
 				   {<<"scope">>, Scope}]}} -> 
-			do_check_grant_permission(Service, Req, Client, User, AccessToken, Scope);
-		Error -> Error
+			do_check_grant_permission(Service, Req, Client, User, AccessToken, Scope, oauth2);
+		_ -> 
+			ems_db:inc_counter(ems_auth_user_oauth2_denied),
+			{error, access_denied}
 	end.
 	
 
--spec do_check_grant_permission(#service{}, #request{}, #client{} | public, #user{}, binary(), binary()) -> {ok, #client{}, #user{}, binary(), binary()} | {error, access_denied}.
-do_check_grant_permission(Service, Req, Client, User, AccessToken, Scope) ->
+-spec do_check_grant_permission(#service{}, #request{}, #client{} | public, #user{}, binary(), binary(), atom()) -> {ok, #client{}, #user{}, binary(), binary()} | {error, access_denied}.
+do_check_grant_permission(Service, Req, Client, User, AccessToken, Scope, AuthorizationMode) ->
 	case ems_user_permission:has_grant_permission(Service, Req, User) of
-		true -> {ok, Client, User, AccessToken, Scope};
-		false -> {error, access_denied}
+		true -> 
+			case AuthorizationMode of
+				basic -> ems_db:inc_counter(ems_auth_user_basic_success);
+				oauth2 -> ems_db:inc_counter(ems_auth_user_oauth2_success);
+				_ -> ems_db:inc_counter(ems_auth_user_public_success)
+			end,
+			{ok, Client, User, AccessToken, Scope};
+		false -> 
+			case AuthorizationMode of
+				basic -> ems_db:inc_counter(ems_auth_user_basic_denied);
+				oauth2 -> ems_db:inc_counter(ems_auth_user_oauth2_denied);
+				_ -> ems_db:inc_counter(ems_auth_user_public_denied)
+			end,
+			{error, access_denied}
 	end.
 
 
