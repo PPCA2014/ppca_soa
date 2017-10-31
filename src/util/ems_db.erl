@@ -45,29 +45,40 @@ create_database(Nodes) ->
 
     mnesia:create_table(user_fs, [{type, set},
 								  {disc_copies, Nodes},
-								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
+								  {index, [#user.codigo, #user.codigo_pessoa, #user.login, #user.cpf, #user.email]},
 								  {attributes, record_info(fields, user)},
 								  {record_name, user}]),
 
     mnesia:create_table(user_db, [{type, set},
 								  {disc_copies, Nodes},
-								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
+								  {index, [#user.codigo, #user.codigo_pessoa, #user.login, #user.cpf, #user.email]},
 								  {attributes, record_info(fields, user)},
 								  {record_name, user}]),
 
 
     mnesia:create_table(user_dados_funcionais_fs, [{type, set},
 								  {disc_copies, Nodes},
-								  {index, [#user.codigo]},
+								  {index, [#user_dados_funcionais.codigo]},
 								  {attributes, record_info(fields, user_dados_funcionais)},
 								  {record_name, user_dados_funcionais}]),
 
     mnesia:create_table(user_dados_funcionais_db, [{type, set},
 								  {disc_copies, Nodes},
-								  {index, [#user.codigo]},
+								  {index, [#user_dados_funcionais.codigo]},
 								  {attributes, record_info(fields, user_dados_funcionais)},
 								  {record_name, user_dados_funcionais}]),
 
+    mnesia:create_table(user_email_fs, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user_email.codigo]},
+								  {attributes, record_info(fields, user_email)},
+								  {record_name, user_email}]),
+
+    mnesia:create_table(user_email_db, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user_email.codigo]},
+								  {attributes, record_info(fields, user_email)},
+								  {record_name, user_email}]),
 
 	mnesia:create_table(user_permission, [{type, set},
 										   {disc_copies, Nodes},

@@ -26,6 +26,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/loaders/ems_user_email_loader_fs", 
+		"file": "ems_user_email_loader_fs.json"
+	},
+
+	{
 		"catalog": "/emsbus/loaders/ems_user_permission_loader_fs", 
 		"file": "ems_user_permission_loader_fs.json"
 	},
@@ -53,6 +58,11 @@
 	{
 		"catalog": "/emsbus/loaders/ems_user_dados_funcionais_loader_db", 
 		"file": "ems_user_dados_funcionais_loader_db.json"
+	},
+
+	{
+		"catalog": "/emsbus/loaders/ems_user_email_loader_db", 
+		"file": "ems_user_email_loader_db.json"
 	},
 
 	{

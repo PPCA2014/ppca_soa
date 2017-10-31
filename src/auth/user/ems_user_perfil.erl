@@ -42,10 +42,6 @@ all() ->
 
 
 -spec find_by_codigo(non_neg_integer()) -> {ok, #user_perfil{}} | {error, enoent}.
-find_by_codigo(Codigo) when is_binary(Codigo) ->
-	find_by_codigo(ems_util:binary_to_integer(Codigo));
-find_by_codigo(Codigo) when is_list(Codigo) ->
-	find_by_codigo(list_to_integer(Codigo));
 find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(user_perfil_db, Codigo, #user_perfil.codigo) of
 		[] -> case mnesia:dirty_index_read(user_perfil_fs, Codigo, #user_perfil.codigo) of
@@ -82,7 +78,7 @@ new_from_map(Map, _Conf, Id) ->
 						  codigo = maps:get(<<"codigo">>, Map, undefined),
 						  codigo_usuario = maps:get(<<"codigo_usuario">>, Map, undefined),
 						  codigo_cliente = maps:get(<<"codigo_cliente">>, Map, undefined),
-						  name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
+						  name = maps:get(<<"name">>, Map, <<>>),
 						  ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 						  ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 						  ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
@@ -100,7 +96,7 @@ new_from_map(Map, _Conf, Id) ->
 get_table(db) -> user_perfil_db;
 get_table(fs) -> user_perfil_fs.
 
--spec find(user_perfil_fs | user_perfil_db, non_neg_integer()) -> {ok, #user_perfil{}} | {error, atom()}.
+-spec find(user_perfil_fs | user_perfil_db, non_neg_integer()) -> {ok, #user_perfil{}} | {error, enoent}.
 find(Table, Codigo) ->
 	case mnesia:dirty_index_read(Table, Codigo, #user_perfil.codigo) of
 		[] -> {error, enoent};

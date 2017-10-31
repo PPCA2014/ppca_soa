@@ -21,6 +21,7 @@
 		 find_by_email/1, 
 		 find_by_cpf/1, 
 		 find_by_login_and_password/2,
+		 find_by_codigo_pessoa/1, find_by_codigo_pessoa/2,
 		 to_resource_owner/1,
 		 add_user/2,
  		 new_from_map/2,
@@ -60,10 +61,6 @@ authenticate_login_password(Login, Password) ->
 
 
 -spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
-find_by_codigo(Codigo) when is_binary(Codigo) ->
-	find_by_codigo(ems_util:binary_to_integer(Codigo));
-find_by_codigo(Codigo) when is_list(Codigo) ->
-	find_by_codigo(list_to_integer(Codigo));
 find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
 		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
@@ -71,6 +68,25 @@ find_by_codigo(Codigo) ->
 				[Record|_] -> {ok, Record}
 			  end;
 		[Record|_] -> {ok, Record}
+	end.
+
+
+-spec find_by_codigo_pessoa(non_neg_integer()) -> {ok, list(#user{})} | {error, enoent}.
+find_by_codigo_pessoa(Codigo) ->
+	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo_pessoa) of
+		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo_pessoa) of
+				[] -> {error, enoent};
+				Records -> {ok, Records}
+			  end;
+		Records -> {ok, Records}
+	end.
+
+
+-spec find_by_codigo_pessoa(atom(), non_neg_integer()) -> {ok, list(#user{})} | {error, enoent}.
+find_by_codigo_pessoa(Table, Codigo) ->
+	case mnesia:dirty_index_read(Table, Codigo, #user.codigo_pessoa) of
+		[] -> {error, enoent};
+		Records -> {ok, Records}
 	end.
 
 
@@ -230,7 +246,7 @@ new_from_map(Map, _Conf, Id) ->
 					codigo_pessoa = maps:get(<<"codigo_pessoa">>, Map, undefined),
 					login = ?UTF8_STRING(maps:get(<<"login">>, Map, <<>>)),
 					name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
-					cpf = ?UTF8_STRING(maps:get(<<"cpf">>, Map, <<>>)),
+					cpf = maps:get(<<"cpf">>, Map, <<>>),
 					password = case PasswdCrypto of
 									<<"SHA1">> -> ?UTF8_STRING(Password);
 									_ -> ems_util:criptografia_sha1(Password)
@@ -265,7 +281,7 @@ new_from_map(Map, _Conf, Id) ->
 get_table(db) -> user_db;
 get_table(fs) -> user_fs.
 
--spec find(user_fs | user_db, non_neg_integer()) -> {ok, #user{}} | {error, atom()}.
+-spec find(user_fs | user_db, non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
 find(Table, Codigo) ->
 	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
 		[] -> {error, enoent};

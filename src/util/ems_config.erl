@@ -239,7 +239,8 @@ parse_config(Json, NomeArqConfig) ->
 			 user_path_search			= maps:get(<<"user_path_search">>, Json, ?USER_PATH),
 			 user_dados_funcionais_path_search	= maps:get(<<"user_path_search">>, Json, ?USER_DADOS_FUNCIONAIS_PATH),
 			 user_perfil_path_search	= maps:get(<<"user_perfil_path_search">>, Json, ?USER_PERFIL_PATH),
-			 user_permission_path_search	= maps:get(<<"user_permission_path_search">>, Json, ?USER_PERMISSION_PATH)
+			 user_permission_path_search	= maps:get(<<"user_permission_path_search">>, Json, ?USER_PERMISSION_PATH),
+			 user_email_path_search	= maps:get(<<"user_email_path_search">>, Json, ?USER_EMAIL_PATH)
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -270,7 +271,8 @@ get_default_config() ->
 			 user_path_search			= ?USER_PATH,
 			 user_dados_funcionais_path_search			= ?USER_DADOS_FUNCIONAIS_PATH,
 			 user_perfil_path_search	= ?USER_PERFIL_PATH,
-			 user_permission_path_search	= ?USER_PERMISSION_PATH
+			 user_permission_path_search	= ?USER_PERMISSION_PATH,
+			 user_email_path_search	= ?USER_EMAIL_PATH
 		}.
 
 

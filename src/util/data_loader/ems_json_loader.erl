@@ -216,7 +216,7 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 				case do_clear_table(State) of
 					ok ->
 						do_reset_sequence(State),
-						{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, fs, []),
+						{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, fs, []),
 						ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
 						ok;
 					Error ->
@@ -246,7 +246,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 				?DEBUG("~s did not load any record.", [Name]),
 				ok;
 			{ok, Records} ->
-				{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, fs, []),
+				{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, fs, []),
 				% Para não gerar muito log, apenas imprime no log se algum registro foi modificado
 				case InsertCount > 0 orelse UpdateCount > 0 orelse ErrorCount > 0 orelse DisabledCount > 0 of
 					true ->

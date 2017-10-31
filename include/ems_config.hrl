@@ -67,6 +67,9 @@
 % Caminho do arquivo de dados funcionais dos usuários
 -define(USER_DADOS_FUNCIONAIS_PATH, ?PRIV_PATH ++ "/auth/dados_funcionais.json").
 
+% Caminho do arquivo de dados funcionais dos usuários
+-define(USER_EMAIL_PATH, ?PRIV_PATH ++ "/auth/user_email.json").
+
 % Caminho do arquivo de perfis dos usuários
 -define(USER_PERFIL_PATH, ?PRIV_PATH ++ "/auth/user_perfil.json").
 
@@ -207,7 +210,8 @@
 				 user_path_search :: string(),
 				 user_dados_funcionais_path_search :: string(),
 				 user_perfil_path_search :: string(),
-				 user_permission_path_search :: string()
+				 user_permission_path_search :: string(),
+				 user_email_path_search :: string()
 		 }). 	
 
 

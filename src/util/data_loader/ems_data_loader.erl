@@ -96,7 +96,7 @@ init(#service{name = Name,
 	LastUpdateParamName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_last_update_param_name">>]), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	CheckRemoveRecords = ems_util:parse_bool(maps:get(<<"check_remove_records">>, Props, false)),
-	CheckRemoveRecordsCheckpoint = maps:get(<<"check_remove_records_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT + 15000),
+	CheckRemoveRecordsCheckpoint = maps:get(<<"check_remove_records_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT + 120000),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT),
 	SqlLoad = string:trim(binary_to_list(maps:get(<<"sql_load">>, Props, <<>>))),
 	SqlUpdate = string:trim(binary_to_list(maps:get(<<"sql_update">>, Props, <<>>))),
@@ -360,7 +360,7 @@ do_load(CtrlInsert, Conf, State = #state{datasource = Datasource,
 						case do_clear_table(State) of
 							ok ->
 								do_reset_sequence(State),
-								{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, db, Fields),
+								{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, db, Fields),
 								ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
 								ems_db:counter(InsertMetricName, InsertCount),
 								ems_db:counter(ErrorsMetricName, ErrorCount),
@@ -424,7 +424,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 								ok;
 							{_, _, Records} ->
 								ems_odbc_pool:release_connection(Datasource2),
-								{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, [], 1, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
+								{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
 								% Para não gerar muito log, apenas imprime no log se algum registro foi modificado
 								case InsertCount > 0 orelse UpdateCount > 0 orelse ErrorCount > 0 orelse DisabledCount > 0 of
 									true ->

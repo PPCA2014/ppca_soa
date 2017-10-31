@@ -43,10 +43,6 @@ all() ->
 
 
 -spec find_by_codigo(non_neg_integer()) -> {ok, #user_permission{}} | {error, enoent}.
-find_by_codigo(Codigo) when is_binary(Codigo) ->
-	find_by_codigo(ems_util:binary_to_integer(Codigo));
-find_by_codigo(Codigo) when is_list(Codigo) ->
-	find_by_codigo(list_to_integer(Codigo));
 find_by_codigo(Codigo) ->
 	case mnesia:dirty_index_read(user_permission_db, Codigo, #user_permission.codigo) of
 		[] -> case mnesia:dirty_index_read(user_permission_fs, Codigo, #user_permission.codigo) of
@@ -83,8 +79,8 @@ new_from_map(Map, _Conf, Id) ->
 							  codigo = maps:get(<<"codigo">>, Map, undefined),
 							  codigo_usuario = maps:get(<<"codigo_usuario">>, Map, undefined),
 							  codigo_cliente = maps:get(<<"codigo_cliente">>, Map, undefined),
-							  url = ?UTF8_STRING(maps:get(<<"url">>, Map, <<>>)),
-							  name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
+							  url = maps:get(<<"url">>, Map, <<>>),
+							  name = maps:get(<<"name">>, Map, <<>>),
 							  grant_get = ems_util:parse_bool(maps:get(<<"grant_get">>, Map, true)),
 							  grant_post = ems_util:parse_bool(maps:get(<<"grant_post">>, Map, true)),
 							  grant_put = ems_util:parse_bool(maps:get(<<"grant_put">>, Map, true)),
