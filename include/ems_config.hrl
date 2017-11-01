@@ -59,22 +59,22 @@
 -define(STATIC_FILE_PATH, ?PRIV_PATH ++ "/www").
 
 % Caminho do arquivo de clientes
--define(CLIENT_PATH, ?PRIV_PATH ++ "/auth/clients.json").
+-define(CLIENT_PATH, ?CONF_PATH ++ "/auth/clients.json").
 
 % Caminho do arquivo de usuários
--define(USER_PATH, ?PRIV_PATH ++ "/auth/users.json").
+-define(USER_PATH, ?CONF_PATH ++ "/auth/users.json").
 
 % Caminho do arquivo de dados funcionais dos usuários
--define(USER_DADOS_FUNCIONAIS_PATH, ?PRIV_PATH ++ "/auth/dados_funcionais.json").
+-define(USER_DADOS_FUNCIONAIS_PATH, ?CONF_PATH ++ "/auth/user_dados_funcionais.json").
 
 % Caminho do arquivo de dados funcionais dos usuários
--define(USER_EMAIL_PATH, ?PRIV_PATH ++ "/auth/user_email.json").
+-define(USER_EMAIL_PATH, ?CONF_PATH ++ "/auth/user_email.json").
 
 % Caminho do arquivo de perfis dos usuários
--define(USER_PERFIL_PATH, ?PRIV_PATH ++ "/auth/user_perfil.json").
+-define(USER_PERFIL_PATH, ?CONF_PATH ++ "/auth/user_perfil.json").
 
 % Caminho do arquivo de permissões dos usuários
--define(USER_PERMISSION_PATH, ?PRIV_PATH ++ "/auth/user_permission.json").
+-define(USER_PERMISSION_PATH, ?CONF_PATH ++ "/auth/user_permission.json").
 
 % Caminho inicial para os arquivos estáticos
 -define(WEBAPPS_PATH, ?PRIV_PATH ++ "/www").

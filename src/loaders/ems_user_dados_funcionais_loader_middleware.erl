@@ -79,7 +79,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 										User2 = User#user{type = User#user.type,
 														  subtype = User#user.subtype,
 														  active = User#user.active},
-										mnesia:write(UserTable, User2, write);
+										mnesia:dirty_write(UserTable, User2);
 									_ -> ok
 								end,
 								
