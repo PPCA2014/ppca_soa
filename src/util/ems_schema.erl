@@ -95,13 +95,15 @@ to_list([H|T], FieldList, Result) ->
 
 
 % to_json
-to_json(Record) when is_tuple(Record)-> 
-	ListTuple = to_list(Record),
+-spec to_json(tuple() | map() | list(map()) | list() | binary()) -> binary().
+to_json(Value) when is_tuple(Value)-> 
+	ListTuple = to_list(Value),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
-to_json([Map|_] = L) when is_map(Map) -> ems_util:json_encode(L);
-to_json(List) when is_list(List) -> 
-	iolist_to_binary([<<"["/utf8>>, to_json_list(List, []), <<"]"/utf8>>]);
-to_json(List) when is_binary(List) -> List.
+to_json(Value) when is_map(Value) -> ems_util:json_encode(Value);
+to_json([Map|_] = Value) when is_map(Map) -> ems_util:json_encode(Value);
+to_json(Value) when is_list(Value) -> 
+	iolist_to_binary([<<"["/utf8>>, to_json_list(Value, []), <<"]"/utf8>>]);
+to_json(Value) -> Value.
 
 	
 to_json_rec([], L) -> lists:reverse(L);
@@ -118,13 +120,13 @@ to_json_list([H|T], L) ->
 	to_json_list(T, [[to_json(H), <<","/utf8>>] | L]).
 
 
-to_value(<<"undefined">>) -> <<"null"/utf8>>;
 to_value(<<>>) -> <<"null"/utf8>>;
 to_value([]) -> <<"null"/utf8>>;
 to_value(null) -> <<"null"/utf8>>;
 to_value("0.0") -> <<"0.0"/utf8>>;
 to_value(true) -> <<"true"/utf8>>;
 to_value(false) -> <<"false"/utf8>>;
+to_value(<<"undefined">>) -> <<"null"/utf8>>;
 to_value(Data = {{_,_,_},{_,_,_}}) -> 
 	ems_util:date_to_string(Data);
 to_value(Value) when is_float(Value) -> list_to_binary(mochinum:digits(Value));

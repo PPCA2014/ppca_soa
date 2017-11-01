@@ -169,6 +169,7 @@
 -define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public">>).
 -define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public">>).
 -define(OK_JSON, <<"{\"ok\": true}">>).
+-define(ENOENT_JSON, <<"{\"error\": \"enoent\"}">>).
 
 % Default ports
 -define(LDAP_SERVER_PORT, 2389).

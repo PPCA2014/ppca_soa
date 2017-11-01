@@ -9,8 +9,8 @@
 -module(ems_db).
 
 -export([start/0]).
--export([get/2, all/1, insert/1, insert/2, update/1, delete/2, existe/1, match_object/1, 
-		 match/2, find/2, find/3, find/5, find_by_id/3, filter/2, 
+-export([get/2, all/1, insert/1, insert/2, update/1, delete/2, 
+		 match/2, find/2, find/3, find/5, find_by_id/2, find_by_id/3, filter/2, 
 		 filter_with_limit/4, select_fields/2, 
 		 find_first/2, find_first/3, find_first/4]).
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
@@ -18,8 +18,8 @@
 -export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1, create_datasource_from_map/1, create_datasource_from_map/2]).
 -export([get_param/1, set_param/2]).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 
@@ -263,26 +263,6 @@ create_database(Nodes) ->
 
 %% *********** Functions for CRUD ************
 
-get(RecordType, Id) when is_list(Id) ->
-	Id2 = list_to_integer(Id),
-	get(RecordType, Id2);
-get(RecordType, Id) when is_number(Id) ->
-	case mnesia:dirty_read(RecordType, Id) of
-		[] -> {error, enoent};
-		[Record|_] -> {ok, Record}
-	end;
-get(_RecordType, _) -> {error, enoent}.
-
-
-all(RecordType) ->
-	Query = fun() ->
-		  qlc:e(
-			 qlc:q([X || X <- mnesia:table(RecordType)])
-		  )
-	   end,
-	Records = mnesia:activity(async_dirty, Query),
-	{ok, Records}.
-
 insert(RecordType, Record) ->
 	F = fun() ->
 		case element(2, Record) of
@@ -321,24 +301,6 @@ delete(RecordType, Id) ->
 	Delete = fun() -> mnesia:delete({RecordType, Id}) end,
 	mnesia:transaction(Delete),
 	ok.
-
-%% @doc Verifica se um registro existe
-match_object(Pattern) ->	
-	{atomic, Records} = mnesia:transaction(fun() -> 
-												mnesia:match_object(Pattern) 
-										   end),
-	Records.
-
-
-    
-
-
-%% @doc Verifica se um registro existe
-existe(Pattern) ->	
-	case match_object(Pattern) of
-		[] -> false;
-		_ -> true
-	end.
 
 	
 
@@ -442,16 +404,51 @@ get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Dr
 %	{ok, Conn}.
 
 
+%% ************* Funções para pesquisa *************
+
+-spec get(atom(), non_neg_integer()) -> {ok, tuple()} | {error, enoent}.
+get(Tab, Id) when is_number(Id) ->
+	case mnesia:dirty_read(Tab, Id) of
+		[] -> {error, enoent};
+		[Record|_] -> {ok, Record}
+	end.
+
+
+-spec all(atom()) -> {ok, list(tuple())}.
+all(Tab) ->
+	F = fun() ->
+		  qlc:e(
+			 qlc:q([X || X <- mnesia:table(Tab)])
+		  )
+	   end,
+	Records = mnesia:activity(async_dirty, F),
+	{ok, Records}.
+
+
+%
+% Find object by id. Return all fields.
+% Ex.: ems_db:find_by_id(catalog_schema, 1).
+% Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
+%
+-spec find_by_id(atom(), non_neg_integer()) -> {ok, tuple()} | {error, enoent}.
+find_by_id(Tab, Id) ->
+	case get(Tab, Id) of
+		{ok, Record} -> {ok, Record};
+		Error -> Error
+	end.
+
 %
 % Find object by id
 % Ex.: ems_db:find_by_id(catalog_schema, 1, [id, name]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
+-spec find_by_id(atom(), non_neg_integer(), list()) -> {ok, tuple()} | {error, enoent}.
 find_by_id(Tab, Id, FieldList) ->
 	case get(Tab, Id) of
-		{ok, Record} -> select_fields([Record], FieldList);
+		{ok, Record} -> select_fields(Record, FieldList);
 		Error -> Error
 	end.
+
 
 %
 % Find objects
@@ -639,13 +636,19 @@ match(Tab, [{F, V}|T], FieldsTable, Record) ->
 % select fields of object or list objects
 % Ex.: ems_db:select_fields(#user{id = 1, name = "agilar", email = "evertonagilar@gmail.com"}, [name]).
 % Sample result is [{<<"name">>,"agilar"}]
-select_fields(ListRecord, []) -> ListRecord;
+-spec select_fields(list(tuple()) | tuple(), list()) -> {ok, list(map())}.
+select_fields(ListRecord, []) -> {ok, ListRecord};
+select_fields(Tuple, FieldList) when is_tuple(Tuple) -> 
+    FieldList2 = ems_util:list_to_binlist(FieldList),
+	List = ems_schema:to_list([Tuple], FieldList2),
+	{ok, [Map]} = select_fields_agregate(List, []),
+	{ok, Map};
 select_fields(ListRecord, FieldList) -> 
     FieldList2 = ems_util:list_to_binlist(FieldList),
 	List = ems_schema:to_list(ListRecord, FieldList2),
 	select_fields_agregate(List, []).
 	
-select_fields_agregate([], Result) -> lists:reverse(Result);
+select_fields_agregate([], Result) -> {ok, lists:reverse(Result)};
 select_fields_agregate([H|T], Result) -> 
 	select_fields_agregate(T, [maps:from_list(H)|Result]).
 	
@@ -714,46 +717,45 @@ create_datasource_from_map(M, Rowid) ->
 		CloseIdleConnectionTimeout = ems_util:parse_range(maps:get(<<"close_idle_connection_timeout">>, M, ?CLOSE_IDLE_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CheckValidConnectionTimeout = ems_util:parse_range(maps:get(<<"check_valid_connection_timeout">>, M, ?CHECK_VALID_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, TableName2, PrimaryKey, CsvDelimiter, Sql, Timeout, MaxPoolSize, SqlCheckValidConnection, CloseIdleConnectionTimeout, CheckValidConnectionTimeout]),
-		Ds = case ems_db:find(service_datasource, [{ctrl_hash, "==", CtrlHash}]) of
-				  [] ->										
-						Id = ems_db:inc_counter(service_datasource),
-						IdStr = integer_to_list(Id),
-						ConnectionCountMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_conn_count"),
-						ConnectionCreatedMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_created_count"),
-						ConnectionClosedMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_closed_count"),
-						ConnectionShutdownMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_shutdown_count"),
-						ConnectionReuseMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_reuse_count"),
-						ConnectionUnavailableMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_unavailable_count"),
-						ConnectionMaxPoolSizeExceededMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_max_pool_size_exceeded_count"),
-						NewDs = #service_datasource{id = Id,
-													rowid = Rowid,
-													type = Type,
-													driver = Driver,
-													connection = Connection,
-													table_name = TableName,
-													table_name2 = TableName2,
-													primary_key = PrimaryKey,
-													csv_delimiter = CsvDelimiter,
-													sql = Sql,
-													timeout = Timeout,
-													max_pool_size = MaxPoolSize,
-													connection_count_metric_name = ConnectionCountMetricName,
-													connection_created_metric_name = ConnectionCreatedMetricName,
-													connection_closed_metric_name = ConnectionClosedMetricName,
-													connection_shutdown_metric_name = ConnectionShutdownMetricName,
-													connection_reuse_metric_name = ConnectionReuseMetricName,
-													connection_unavailable_metric_name = ConnectionUnavailableMetricName,
-													connection_max_pool_size_exceeded_metric_name = ConnectionMaxPoolSizeExceededMetricName,
-													sql_check_valid_connection = SqlCheckValidConnection,
-													check_valid_connection_timeout = CheckValidConnectionTimeout,
-													close_idle_connection_timeout = CloseIdleConnectionTimeout,
-													ctrl_hash = CtrlHash
-												},
-						ems_db:insert(NewDs),
-						NewDs;
-				  [Record] -> Record
-			 end,										
-		Ds
+		case ems_db:find_first(service_datasource, [{ctrl_hash, "==", CtrlHash}]) of
+			  {error, enoent} ->										
+					Id = ems_db:inc_counter(service_datasource),
+					IdStr = integer_to_list(Id),
+					ConnectionCountMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_conn_count"),
+					ConnectionCreatedMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_created_count"),
+					ConnectionClosedMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_closed_count"),
+					ConnectionShutdownMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_shutdown_count"),
+					ConnectionReuseMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_reuse_count"),
+					ConnectionUnavailableMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_unavailable_count"),
+					ConnectionMaxPoolSizeExceededMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_max_pool_size_exceeded_count"),
+					NewDs = #service_datasource{id = Id,
+												rowid = Rowid,
+												type = Type,
+												driver = Driver,
+												connection = Connection,
+												table_name = TableName,
+												table_name2 = TableName2,
+												primary_key = PrimaryKey,
+												csv_delimiter = CsvDelimiter,
+												sql = Sql,
+												timeout = Timeout,
+												max_pool_size = MaxPoolSize,
+												connection_count_metric_name = ConnectionCountMetricName,
+												connection_created_metric_name = ConnectionCreatedMetricName,
+												connection_closed_metric_name = ConnectionClosedMetricName,
+												connection_shutdown_metric_name = ConnectionShutdownMetricName,
+												connection_reuse_metric_name = ConnectionReuseMetricName,
+												connection_unavailable_metric_name = ConnectionUnavailableMetricName,
+												connection_max_pool_size_exceeded_metric_name = ConnectionMaxPoolSizeExceededMetricName,
+												sql_check_valid_connection = SqlCheckValidConnection,
+												check_valid_connection_timeout = CheckValidConnectionTimeout,
+												close_idle_connection_timeout = CloseIdleConnectionTimeout,
+												ctrl_hash = CtrlHash
+											},
+					ems_db:insert(NewDs),
+					NewDs;
+			  {ok, ExistDs} -> ExistDs
+		 end										
 	catch
 		_:Reason-> 
 			ems_logger:format_error("ems_db parse invalid datasource ~p. Reason: ~p.\n", [M, Reason]),
