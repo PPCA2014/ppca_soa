@@ -50,8 +50,6 @@ reset_sequence(fs) ->
 check_remove_records(_Codigos, _SourceType) -> 0.
 	
 
-%% internal functions
-
 -spec get_filename() -> list(tuple()).
 get_filename() -> 
 	Conf = ems_config:getConfig(),
@@ -66,10 +64,15 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 				Table = ems_user:get_table(SourceType),
 				case ems_user:find(Table, Codigo) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						User = NewUser#user{id = Id,
-											ctrl_insert = CtrlDate},
-						{ok, User, Table, insert};
+						case SourceType == fs orelse (SourceType == db andalso not ems_user:exist(user_fs, Codigo)) of
+							true ->
+								Id = ems_db:sequence(Table),
+								User = NewUser#user{id = Id,
+													ctrl_insert = CtrlDate},
+								{ok, User, Table, insert};
+							false ->
+								{ok, skip}
+						end;
 					{ok, CurrentUser = #user{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
@@ -101,7 +104,8 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												 ctrl_hash = NewUser#user.ctrl_hash
 											},
 								{ok, User, Table, update};
-							false -> {ok, skip}
+							false -> 
+								{ok, skip}
 						end
 				end;
 			Error -> Error

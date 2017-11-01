@@ -449,7 +449,7 @@ get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Dr
 %
 find_by_id(Tab, Id, FieldList) ->
 	case get(Tab, Id) of
-		{ok, Record} -> select_fields(Record, FieldList);
+		{ok, Record} -> select_fields([Record], FieldList);
 		Error -> Error
 	end.
 
@@ -642,7 +642,13 @@ match(Tab, [{F, V}|T], FieldsTable, Record) ->
 select_fields(ListRecord, []) -> ListRecord;
 select_fields(ListRecord, FieldList) -> 
     FieldList2 = ems_util:list_to_binlist(FieldList),
-	ems_schema:to_list(ListRecord, FieldList2).
+	List = ems_schema:to_list(ListRecord, FieldList2),
+	select_fields_agregate(List, []).
+	
+select_fields_agregate([], Result) -> lists:reverse(Result);
+select_fields_agregate([H|T], Result) -> 
+	select_fields_agregate(T, [maps:from_list(H)|Result]).
+	
 
 
 % Return the field position on record
@@ -698,6 +704,7 @@ create_datasource_from_map(M, Rowid) ->
 		Driver = parse_data_source_driver(maps:get(<<"driver">>, M, <<>>)),
 		Connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
 		TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
+		TableName2 = binary_to_list(maps:get(<<"table_name2">>, M, <<>>)),
 		PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
 		CsvDelimiter = parse_datasource_csvdelimiter(binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))),
 		Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
@@ -706,17 +713,8 @@ create_datasource_from_map(M, Rowid) ->
 		SqlCheckValidConnection = binary_to_list(maps:get(<<"sql_check_valid_connection">>, M, <<>>)),
 		CloseIdleConnectionTimeout = ems_util:parse_range(maps:get(<<"close_idle_connection_timeout">>, M, ?CLOSE_IDLE_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CheckValidConnectionTimeout = ems_util:parse_range(maps:get(<<"check_valid_connection_timeout">>, M, ?CHECK_VALID_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
-		Ds = case ems_db:find(service_datasource, [{type, "==", Type}, 
-													{driver, "==", Driver}, 
-													{connection, "==", Connection}, 
-													{table_name, "==", TableName}, 
-													{csv_delimiter, "==", CsvDelimiter}, 
-													{sql, "==", Sql}, 
-													{timeout, "==", Timeout}, 
-													{max_pool_size, "==", MaxPoolSize},
-													{sql_check_valid_connection, "==", SqlCheckValidConnection},
-													{close_idle_connection_timeout, "==", CloseIdleConnectionTimeout},
-													{check_valid_connection_timeout, "==", CheckValidConnectionTimeout}]) of
+		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, TableName2, PrimaryKey, CsvDelimiter, Sql, Timeout, MaxPoolSize, SqlCheckValidConnection, CloseIdleConnectionTimeout, CheckValidConnectionTimeout]),
+		Ds = case ems_db:find(service_datasource, [{ctrl_hash, "==", CtrlHash}]) of
 				  [] ->										
 						Id = ems_db:inc_counter(service_datasource),
 						IdStr = integer_to_list(Id),
@@ -733,6 +731,7 @@ create_datasource_from_map(M, Rowid) ->
 													driver = Driver,
 													connection = Connection,
 													table_name = TableName,
+													table_name2 = TableName2,
 													primary_key = PrimaryKey,
 													csv_delimiter = CsvDelimiter,
 													sql = Sql,
@@ -747,7 +746,8 @@ create_datasource_from_map(M, Rowid) ->
 													connection_max_pool_size_exceeded_metric_name = ConnectionMaxPoolSizeExceededMetricName,
 													sql_check_valid_connection = SqlCheckValidConnection,
 													check_valid_connection_timeout = CheckValidConnectionTimeout,
-													close_idle_connection_timeout = CloseIdleConnectionTimeout
+													close_idle_connection_timeout = CloseIdleConnectionTimeout,
+													ctrl_hash = CtrlHash
 												},
 						ems_db:insert(NewDs),
 						NewDs;

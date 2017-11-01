@@ -201,10 +201,11 @@
 
 -record(service_datasource, {id :: non_neg_integer(),
 							 rowid :: non_neg_integer(),
-							 type :: atom(),					%% sqlserver, csvfile, mnesia
-							 driver :: binary(),				%% sqlite3, odbc, undefined
+							 type :: atom(),								%% sqlserver, csvfile, mnesia
+							 driver :: binary(),							%% sqlite3, odbc, undefined
 							 connection = <<>> :: binary(),
 							 table_name = <<>> :: binary(),
+							 table_name2 = <<>> :: binary(),
 							 primary_key = <<>> :: binary(),
 							 csv_delimiter = <<";">> :: binary(),
 							 sql = <<>> :: binary(),
@@ -221,10 +222,16 @@
 							 connection_shutdown_metric_name :: atom(), 	%% Quantas conexões foram fechadas devido algum erro
 							 connection_reuse_metric_name :: atom(), 		%% Quantas conexões foram reutilizadas
 							 connection_unavailable_metric_name :: atom(), 	%% Quantas vezes não houve conexão
-							 connection_max_pool_size_exceeded_metric_name :: atom(), 	%% Quantas vezes não houve conexão
+							 connection_max_pool_size_exceeded_metric_name :: atom(), 	%% Quantas vezes excedeu o número de conexões permitidos
 							 sql_check_valid_connection :: string(),
 							 check_valid_connection_timeout :: non_neg_integer(),
-							 close_idle_connection_timeout :: non_neg_integer()
+							 close_idle_connection_timeout :: non_neg_integer(),
+							 ctrl_path :: string(),
+							 ctrl_file :: string(),
+							 ctrl_insert,									%% Data que o serviço foi inserido no banco mnesia
+							 ctrl_update, 									%% Data que o serviço foi atualiado no banco mnesia			
+							 ctrl_modified,									%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+							 ctrl_hash										%% Hash gerado para poder comparar dois registros
 							}).
 
 

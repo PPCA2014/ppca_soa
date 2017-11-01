@@ -28,6 +28,7 @@
 		 new_from_map/3,
 		 get_table/1,
 		 find/2,
+		 exist/2,
 		 all/1]).
 
 
@@ -286,6 +287,13 @@ find(Table, Codigo) ->
 	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
+	end.
+
+-spec exist(user_fs | user_db, non_neg_integer()) -> boolean().
+exist(Table, Codigo) ->
+	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
+		[] -> false;
+		_ -> true
 	end.
 
 -spec all(user_fs | user_db) -> list() | {error, atom()}.

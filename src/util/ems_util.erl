@@ -8,8 +8,8 @@
 
 -module(ems_util).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([version/0,
 		 server_name/0,
@@ -274,14 +274,24 @@ tuple_to_binlist(T) ->
 list_to_binlist([]) -> [];
 list_to_binlist(<<>>) -> [];
 list_to_binlist(<<V/binary>>) -> [V];
-list_to_binlist([H|T]) -> [item_to_binary(H)|list_to_binlist(T)].
+list_to_binlist(Value) -> list_to_binlist(Value, []).
+	
+list_to_binlist([], Result) -> lists:reverse(Result);	
+list_to_binlist([H|T], Result) -> 	
+	list_to_binlist(T, [item_to_binary(H) | Result]).
 
 binlist_to_list(<<>>) -> [];
 binlist_to_list([]) -> [];
-binlist_to_list([H|T]) -> [binary_to_list(H)|binlist_to_list(T)].
+binlist_to_list(Value) -> binlist_to_list(Value, []).
+
+binlist_to_list([], Result) -> Result;
+binlist_to_list([H|T], Result) ->
+	binlist_to_list(T, [binary_to_list(H)|Result]).
+
 
 join_binlist([], _) -> "";
 join_binlist(BinList, Str) -> string:join(binlist_to_list(BinList), Str).
+
 
 item_to_binary([]) -> <<>>;
 item_to_binary(<<I/binary>>) -> I;
@@ -289,19 +299,24 @@ item_to_binary(T) when is_tuple(T) ->
 	tuple_to_binlist(T);
 item_to_binary(L) when is_list(L) -> 
 	case io_lib:printable_list(L) of
-		true -> iolist_to_binary(L);
+		true -> 
+			L2 = [case Ch of 
+					34 -> "\\\""; 
+					_ -> Ch 
+				  end || Ch <- L],
+			iolist_to_binary(L2);
 		false -> list_to_binlist(L)
 	end;
-item_to_binary(I) when is_integer(I) -> 
-	I;
-item_to_binary(I) when is_float(I) -> 
-	I;
+item_to_binary(I) when is_integer(I) -> I;
+item_to_binary(I) when is_float(I) -> I;
 item_to_binary(I) when is_atom(I) -> 
 	[I2] = io_lib:format("~p", [I]),
 	iolist_to_binary(I2);
 item_to_binary(I) when is_map(I) -> I;
-item_to_binary(I) -> iolist_to_binary(I).
-
+item_to_binary(I) ->
+	iolist_to_binary(I).
+	
+	
 
 %% @doc Converte dados Erlang para JSON
 json_encode([]) -> <<"null">>;

@@ -30,7 +30,7 @@ parse_fields([]) -> [];
 parse_fields(Fields) -> 
 	case string:tokens(string:strip(Fields), ",") of
 		[] -> erlang:error(einvalid_fields);
-		Fields2 -> string:join(Fields2, ",")
+		Fields2 -> Fields2
 	end.
 
 parse_filter(<<>>) -> [];

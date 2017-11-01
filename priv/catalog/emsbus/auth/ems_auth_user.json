@@ -10,67 +10,20 @@
 		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user"
+			"table_name" : "user_db",
+			"table_name2" : "user_fs"
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",
-		"lang" : "erlang"
-	},
-
-	{
-		"name": "/auth/user/:id",
-		"comment": "Delete a user by id",
-		"owner": "auth_user",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:delete",
-		"middleware" : "user_service",
-		"url": "/auth/user/:id",
-		"type": "DELETE",
-		"authorization": "basic",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "user"
-		},
-		"schema_in" : "user",
-		"schema_out" : "user",
-		"lang" : "erlang"
-	},
-
-	{
-		"name": "/auth/user",
-		"comment": "Enter a new user",
-		"owner": "auth_user",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:insert",
-		"middleware" : "user_service",
-		"url": "/auth/user",
-		"type": "POST",
-		"authorization": "basic",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "user"
-		},
-		"schema_in" : "user",
-		"schema_out" : "user",
-		"lang" : "erlang"
-	},
-
-	{
-		"name": "/auth/user/:id",
-		"comment": "Update an existing user",
-		"owner": "auth_user",
-		"service" : "ems_api_query_service:update",
-		"middleware" : "user_service",
-		"url": "/auth/user/:id",
-		"type": "PUT",
-		"authorization": "basic",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "user"
-		},
-		"schema_in" : "user",
-		"schema_out" : "user",
-		"lang" : "erlang"
+		"lang" : "erlang",
+		"querystring": [
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				}
+			]	
 	},
 
 	{	
@@ -84,7 +37,8 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user"
+			"table_name" : "user_db",
+			"table_name2" : "user_fs"
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",

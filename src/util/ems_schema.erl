@@ -67,43 +67,12 @@ to_list(_) -> erlang:error(einvalid_to_list).
 to_list_tuple(Tuple) ->
 	case size(Tuple) rem 2 == 0 of
 		true ->  
-			T2 = tuple_to_binlist(Tuple),
+			T2 = ems_util:tuple_to_binlist(Tuple),
 			to_list_tuple(T2, []);
 		_ -> erlang:error(einvalid_to_list)
 	end.
 
 
-tuple_to_binlist(T) ->
-	L = tuple_to_list(T),
-	list_to_binlist(L).
-
-list_to_binlist([]) -> [];
-list_to_binlist(<<>>) -> [];
-list_to_binlist(<<V/binary>>) -> [V];
-list_to_binlist([H|T]) -> [item_to_binary(H)|list_to_binlist(T)].
-
-item_to_binary([]) -> <<>>;
-item_to_binary(<<I/binary>>) -> I;
-item_to_binary(T) when is_tuple(T) -> 
-	tuple_to_binlist(T);
-item_to_binary(L) when is_list(L) -> 
-	case io_lib:printable_list(L) of
-		true -> 
-			L2 = [case Ch of 
-					34 -> "\\\""; 
-					_ -> Ch 
-				  end || Ch <- L],
-			iolist_to_binary(L2);
-		false -> list_to_binlist(L)
-	end;
-item_to_binary(I) when is_integer(I) -> I;
-item_to_binary(I) when is_float(I) -> I;
-item_to_binary(I) when is_atom(I) -> 
-	[I2] = io_lib:format("~p", [I]),
-	iolist_to_binary(I2);
-item_to_binary(I) when is_map(I) -> I;
-item_to_binary(I) ->
-	iolist_to_binary(I).
 
 
 to_list_tuple([], L) ->	L;	
@@ -129,6 +98,7 @@ to_list([H|T], FieldList, Result) ->
 to_json(Record) when is_tuple(Record)-> 
 	ListTuple = to_list(Record),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
+to_json([Map|_] = L) when is_map(Map) -> ems_util:json_encode(L);
 to_json(List) when is_list(List) -> 
 	iolist_to_binary([<<"["/utf8>>, to_json_list(List, []), <<"]"/utf8>>]);
 to_json(List) when is_binary(List) -> List.
