@@ -79,12 +79,12 @@ find_by_name(Name) when is_list(Name) ->
 	find_by_name(list_to_binary(Name));
 find_by_name(Name) -> 
 	case ems_db:find_first(client_db, [{name, "==", Name}]) of
-		{error, Reason} ->
+		{error, enoent} ->
 			case ems_db:find_first(client_fs, [{name, "==", Name}]) of
-				{error, Reason} -> {error, enoent};
-				Record -> {ok, Record}
+				{error, enoent} -> {error, enoent};
+				{ok, Record2} -> {ok, Record2}
 			end;
-		Record -> {ok, Record}
+		{ok, Record} -> {ok, Record}
 	end.
 
 
@@ -129,7 +129,7 @@ new_from_map(Map, _Conf, Id) ->
 get_table(db) -> client_db;
 get_table(fs) -> client_fs.
 
--spec find(client_fs | client_db, non_neg_integer()) -> {ok, #client{}} | {error, atom()}.
+-spec find(client_fs | client_db, non_neg_integer()) -> {ok, #client{}} | {error, enoent}.
 find(Table, Codigo) ->
 	case mnesia:dirty_index_read(Table, Codigo, #client.codigo) of
 		[] -> {error, enoent};

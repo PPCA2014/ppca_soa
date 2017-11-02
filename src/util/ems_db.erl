@@ -430,7 +430,7 @@ all(Tab) ->
 % Ex.: ems_db:find_by_id(catalog_schema, 1).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
--spec find_by_id(atom(), non_neg_integer()) -> {ok, tuple()} | {error, enoent}.
+-spec find_by_id(atom(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find_by_id(Tab, Id) ->
 	case get(Tab, Id) of
 		{ok, Record} -> {ok, Record};
@@ -442,7 +442,7 @@ find_by_id(Tab, Id) ->
 % Ex.: ems_db:find_by_id(catalog_schema, 1, [id, name]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
--spec find_by_id(atom(), non_neg_integer(), list()) -> {ok, tuple()} | {error, enoent}.
+-spec find_by_id(atom(), non_neg_integer(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find_by_id(Tab, Id, FieldList) ->
 	case get(Tab, Id) of
 		{ok, Record} -> select_fields(Record, FieldList);
@@ -455,6 +455,7 @@ find_by_id(Tab, Id, FieldList) ->
 % Ex.: ems_db:find(catalog_schema, [{id, "==", 1}]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
+-spec find(atom(), list()) -> {ok, tuple()} | {error, enoent}.
 find(Tab, FilterList) -> find(Tab, [], FilterList).
 
 %
@@ -462,6 +463,7 @@ find(Tab, FilterList) -> find(Tab, [], FilterList).
 % Ex.: ems_db:find(catalog_schema, [id, name], [{id, "==", 1}]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
+-spec find(atom(), list(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find(Tab, FieldList, FilterList) ->
     Records = filter(Tab, FilterList),
 	select_fields(Records, FieldList).
@@ -472,7 +474,8 @@ find(Tab, FieldList, FilterList) ->
 % Ex.: ems_db:find(catalog_schema, [id, name], [{id, "==", 1}], 1, 1).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
-find(Tab, FieldList, FilterList, Limit, Offset) ->
+-spec find(atom(), list(), list(), non_neg_integer(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+find(Tab, FieldList, FilterList, Limit, Offset) -> 
     Records = filter_with_limit(Tab, FilterList, Limit, Offset),
 	select_fields(Records, FieldList).
 
@@ -482,6 +485,7 @@ find(Tab, FieldList, FilterList, Limit, Offset) ->
 % Ex.: ems_db:find_first(catalog_schema, [{id, "==", 1}]).
 % Sample result is [{<<"id">>,1},{<<"name">>,<<"exemplo">>}]
 %
+-spec find_first(atom(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find_first(Tab, FilterList) -> find_first(Tab, [], FilterList).
 
 
@@ -490,6 +494,7 @@ find_first(Tab, FilterList) -> find_first(Tab, [], FilterList).
 % Ex.: ems_db:find_first(catalog_schema, [id, name], [{id, "==", 1}]).
 % Sample result is [{<<"id">>,1},{<<"name">>,<<"exemplo">>}]
 %
+-spec find_first(atom(), list(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find_first(Tab, FieldList, FilterList) ->
     case filter_with_limit(Tab, FilterList, 1, 1) of
 		[] -> {error, enoent};
@@ -502,6 +507,7 @@ find_first(Tab, FieldList, FilterList) ->
 % Ex.: ems_db:find_first(catalog_schema, [id, name], [{id, "==", 1}], 1).
 % Sample result is [{<<"id">>,1},{<<"name">>,<<"exemplo">>}]
 %
+-spec find_first(atom(), list(), list(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find_first(Tab, FieldList, FilterList, Offset) ->
     case filter_with_limit(Tab, FilterList, 1, Offset) of
 		[] -> {error, enoent};
@@ -524,6 +530,7 @@ find_first(Tab, FieldList, FilterList, Offset) ->
 %                   <<"title">> => <<"Example Schema">>,
 %                   <<"type">> => <<"object">>}}]
 %
+-spec filter(atom(), list()) -> list(tuple()).
 filter(Tab, []) -> 
 	F = fun() ->
 		  qlc:e(
@@ -563,6 +570,7 @@ filter(Tab, FilterTuple) when is_tuple(FilterTuple) ->
 % Return true/false if field has index on mnesia table
 % Ex.: field_has_index(4, user). 
 % return true
+-spec field_has_index(non_neg_integer(), atom()) -> boolean().
 field_has_index(FldPos, Tab) ->
 	Indexes =  mnesia:table_info(Tab, index),
 	lists:member(FldPos, Indexes).
@@ -583,11 +591,20 @@ field_has_index(FldPos, Tab) ->
 %                   <<"title">> => <<"Example Schema">>,
 %                   <<"type">> => <<"object">>}}]
 %
+-spec filter_with_limit(atom(), list(), non_neg_integer(), non_neg_integer()) -> list(tuple()).
 filter_with_limit(Tab, [], Limit, Offset) -> 
 	F = fun() ->
-		  Q = qlc:q([R || R <- mnesia:table(Tab), element(2, R) >= Offset, element(2, R) =< Limit + Offset - 1]),
-		  qlc:info(Q, [{n_elements, Limit}]),
-		  qlc:e(Q)
+		  case Offset > 1 of
+				true ->
+					Q = qlc:q([R || R <- mnesia:table(Tab)]),
+					Records = qlc:e(Q),
+					lists:sublist(Records, Offset, Limit);
+				false ->
+					Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
+					Records = qlc:next_answers(Q, Limit),
+					qlc:delete_cursor(Q),
+					Records
+		  end
 	   end,
 	mnesia:activity(async_dirty, F);
 filter_with_limit(Tab, Filter = [{_, "==", _}], Limit, Offset) ->
@@ -635,7 +652,7 @@ match(Tab, [{F, V}|T], FieldsTable, Record) ->
 
 % select fields of object or list objects
 % Ex.: ems_db:select_fields(#user{id = 1, name = "agilar", email = "evertonagilar@gmail.com"}, [name]).
-% Sample result is [{<<"name">>,"agilar"}]
+% Sample result is [#{<<"name">> => "agilar"}]
 -spec select_fields(list(tuple()) | tuple(), list()) -> {ok, list(map())}.
 select_fields(ListRecord, []) -> {ok, ListRecord};
 select_fields(Tuple, FieldList) when is_tuple(Tuple) -> 
