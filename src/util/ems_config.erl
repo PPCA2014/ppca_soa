@@ -231,6 +231,7 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_datasources			= parse_datasources(Json),
 			 tcp_allowed_address		= parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
 			 tcp_listen_address			= maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
+			 http_max_content_length	= ems_util:parse_range(maps:get(<<"http_max_content_length">>, Json, ?HTTP_MAX_CONTENT_LENGTH), 0, ?HTTP_MAX_CONTENT_LENGTH),
 			 authorization			    = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
 			 oauth2_with_check_constraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
 			 config_file			    = NomeArqConfig,
@@ -272,7 +273,8 @@ get_default_config() ->
 			 user_dados_funcionais_path_search			= ?USER_DADOS_FUNCIONAIS_PATH,
 			 user_perfil_path_search	= ?USER_PERFIL_PATH,
 			 user_permission_path_search	= ?USER_PERMISSION_PATH,
-			 user_email_path_search	= ?USER_EMAIL_PATH
+			 user_email_path_search	= ?USER_EMAIL_PATH,
+			 http_max_content_length = ?HTTP_MAX_CONTENT_LENGTH
 		}.
 
 

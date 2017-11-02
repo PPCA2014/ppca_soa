@@ -79,7 +79,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   IsSsl, SslCaCertFile, SslCertFile, SslKeyFile,
 			   OAuth2WithCheckConstraint, OAuth2TokenEncrypt, Protocol,
 			   CtrlPath, CtrlFile, CtrlModified, StartTimeout, CtrlHash,
-			   ServiceExecMetricName, ServiceResultCacheHitMetricName, 
+			   ServiceExecMetricName, 
+			   ServiceResultCacheHitMetricName, 
 			   ServiceHostDeniedMetricName,	ServiceAuthDeniedMetricName, 
 			   ServiceErrorMetricName, ServiceUnavailableMetricName,
 			   ServiceTimeoutMetricName) ->

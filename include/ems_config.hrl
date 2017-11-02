@@ -21,9 +21,6 @@
 	-define(UTF8_STRING(Text), ems_util:utf8_string_linux(Text)).
 -endif.
 
-% Tamanho máximo do payload do POST. Por default é 1M
--define(HTTP_MAX_POST_SIZE, 1024 * 1024 * 1024).
-
 % Nome do servidor
 -define(SERVER_NAME, ems_util:server_name()).
 
@@ -177,6 +174,7 @@
 
 -define(HTTP_SERVER_PORT, 2381).
 -define(HTTP_MAX_CONNECTIONS, 100000).
+-define(HTTP_MAX_CONTENT_LENGTH, 1000000).  % Limite default do conteúdo do payload é de 1MB
 
 -define(TCP_PORT_MIN, 1024).
 -define(TCP_PORT_MAX, 99999).
@@ -206,6 +204,7 @@
 				 https_port_offset :: non_neg_integer(),
 				 http_enable :: boolean(),
 				 https_enable :: boolean(),
+				 http_max_content_length :: non_neg_integer(),
 				 params :: map(),
 				 client_path_search :: string(),
 				 user_path_search :: string(),

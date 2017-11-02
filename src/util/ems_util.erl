@@ -43,8 +43,6 @@
 		 get_priv_dir/0,
 		 get_working_dir/0,
  		 get_milliseconds/0,
-		 get_http_header_adicionais/1,
-		 get_param_header/2,
 		 get_property_request/2, 
 		 get_param_url/3,
 		 get_querystring/3,
@@ -75,7 +73,6 @@
 		 is_cnpj_valid/1, 
 		 ip_list/0,
 		 is_url_valido/1,
-		 is_content_length_valido/1,
  		 is_email_valido/1, 
  		 is_range_valido/3,
 		 is_letter/1,
@@ -146,7 +143,6 @@
 		 method_to_string/1,
 		 decode_http_header/2,
 		 decode_http_request/1,
-		 format_header_value/2,
 		 tuple_to_maps_with_keys/2,
 		 compile_modulo_erlang/2,
 		 print_int_map/1,
@@ -1127,8 +1123,8 @@ mime_type(".ico") -> <<"image/x-icon">>;
 mime_type(".gif") -> <<"image/gif">>;
 mime_type(".jpeg") -> <<"image/jpeg">>;
 mime_type(".jpg") -> <<"image/jpeg">>;
-mime_type(".bmp") -> <<"image/bmp">>;
 mime_type(".pdf") -> <<"application/pdf">>;
+mime_type(".bmp") -> <<"image/bmp">>;
 mime_type(".txt") -> <<"text/plain">>;
 mime_type(".ttf") -> <<"application/font-woff">>;
 mime_type(".stl") -> <<"application/SLA">>;
@@ -1328,6 +1324,13 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 				end,
 				case ContentLength > 0 of
 					true ->
+						% limit Content-Type header length to avoid CVE-2014-0050
+						case ContentLength > ?HTTP_MAX_CONTENT_LENGTH of
+							true ->
+								ems_db:inc_counter(http_max_content_length_error),
+								erlang:error(ehttp_max_content_length_error);
+							false -> ok
+						end,
 						case ContentType of
 							<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
 								ems_db:inc_counter(http_content_type_in_form_urlencode),
@@ -1347,11 +1350,23 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_json(Payload),
 								QuerystringMap2 = QuerystringMap;
+							<<"application/json; charset=utf-8">> ->
+								ems_db:inc_counter(http_content_type_in_application_json),
+								ContentType2 = <<"application/json">>,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = decode_payload_as_json(Payload),
+								QuerystringMap2 = QuerystringMap;
 							<<"application/xml">> ->
 								ems_db:inc_counter(http_content_type_in_application_xml),
 								ContentType2 = <<"application/xml">>,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_xml(Payload),
+								QuerystringMap2 = QuerystringMap;
+							<<"text/plain">> ->
+								ems_db:inc_counter(http_content_type_in_text_plain),
+								ContentType2 = ContentType,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = #{},
 								QuerystringMap2 = QuerystringMap;
 							_ -> 
 								ems_db:inc_counter(http_content_type_in_other),
@@ -1413,12 +1428,12 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 				},	
 				{ok, Request};
 			false -> 
-				ems_db:inc_counter(http_unsupported_verb),
+				ems_db:inc_counter(http_unsupported_verb_error),
 				erlang:error(ehttp_unsupported_verb)
 		end
 	catch
 		_Exception:Reason -> 
-			ems_db:inc_counter(http_invalid_encode_request),
+			ems_db:inc_counter(http_invalid_encode_request_error),
 			ems_logger:error("ems_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.
@@ -1547,38 +1562,6 @@ decode_payload_as_xml(undefined) -> #{};
 decode_payload_as_xml(<<>>) -> #{};
 decode_payload_as_xml(_) -> #{}.
 	
-get_http_header_adicionais(Header) ->
-	Header1 = lists:map(fun(H) -> get_param_header(H, []) end, Header),
-	maps:from_list(Header1).
-
-%% @doc Retorna uma tupla com o name do cabecalho e o seu valor
-%% Ex.: get_param_header("Host: localhost:2301", [])  =>  {"host","localhost:2301"}
-get_param_header([], Key) -> {string:to_lower(lists:reverse(Key)), []};
-get_param_header([H|T], Key) ->
-	case H of
-		$: -> 
-			P = string:to_lower(lists:reverse(Key)),
-			V = format_header_value(P, T),
-			{P, V};
-		_ -> get_param_header(T, [H|Key])
-	end.
-
-
-%% @doc formata o valor do header (String, Integer)
-format_header_value("content-length", Value) ->
-	Value1 = string:strip(Value),
-	Value2 = list_to_integer(Value1),
-	case is_content_length_valido(Value2) of
-		true -> Value2;
-		false -> 0
-	end;
-format_header_value(_, Value) -> 
-	string:strip(Value).
-
-
--spec is_content_length_valido(integer()) -> boolean().
-is_content_length_valido(N) when N < 0; N > ?HTTP_MAX_POST_SIZE -> false;
-is_content_length_valido(_) -> true.
 
 
 %% @doc Retorna booleano se o método é suportado pelo servidor
