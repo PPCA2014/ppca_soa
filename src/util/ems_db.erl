@@ -530,7 +530,7 @@ find_first(Tab, FieldList, FilterList, Offset) ->
 %                   <<"title">> => <<"Example Schema">>,
 %                   <<"type">> => <<"object">>}}]
 %
--spec filter(atom(), list()) -> list(tuple()).
+-spec filter(atom(), list(tuple())) -> list(tuple()).
 filter(Tab, []) -> 
 	F = fun() ->
 		  qlc:e(
@@ -540,24 +540,22 @@ filter(Tab, []) ->
 	mnesia:activity(async_dirty, F);
 filter(Tab, [{F1, "==", V1}]) ->
 	Fields =  mnesia:table_info(Tab, attributes),
-	Fld1 = field_position(F1, Fields, 2),
-	case field_has_index(Fld1, Tab) of
+	FieldPosition = field_position(F1, Fields, 2),
+	FieldValue = field_value(V1),
+	case field_has_index(FieldPosition, Tab) of
 		false ->
 			Fun = fun() -> 
-						qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(Fld1, R) == field_value(V1)])) 
+						qlc:e(qlc:q([R || R <- mnesia:table(Tab), element(FieldPosition, R) == FieldValue])) 
 				  end,
 			mnesia:activity(async_dirty, Fun);
 		true ->
-			mnesia:dirty_index_read(Tab, field_value(V1), Fld1)
+			mnesia:dirty_index_read(Tab, FieldValue, FieldPosition)
 	end;
 filter(Tab, FilterList) when is_list(FilterList) -> 
 	F = fun() ->
 			FieldsTable =  mnesia:table_info(Tab, attributes),
-			Where = string:join(lists:map(fun({F, Op, V}) ->
-												Fld = field_position(F, FieldsTable, 2),
-												io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
-										  end, FilterList), ","),
-			ExprQuery = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, Where])),
+			Where = string:join([io_lib:format("element(~s, R) ~s ~p", [integer_to_list(field_position(F, FieldsTable, 2)), Op,  field_value(V)]) || {F, Op, V} <- FilterList], ","),
+			ExprQuery = binary_to_list(iolist_to_binary([<<"[R || R <- mnesia:table(">>, atom_to_binary(Tab, utf8), <<"), ">>, Where, <<"].">>])),
 			ParsedQuery = qlc:string_to_handle(ExprQuery),
 			mnesia:activity(async_dirty, fun () -> qlc:eval(ParsedQuery) end)
 		end,
@@ -565,16 +563,6 @@ filter(Tab, FilterList) when is_list(FilterList) ->
 filter(Tab, FilterTuple) when is_tuple(FilterTuple) ->
 	filter(Tab, [FilterTuple]).
 
-
-%	
-% Return true/false if field has index on mnesia table
-% Ex.: field_has_index(4, user). 
-% return true
--spec field_has_index(non_neg_integer(), atom()) -> boolean().
-field_has_index(FldPos, Tab) ->
-	Indexes =  mnesia:table_info(Tab, index),
-	lists:member(FldPos, Indexes).
-	
 
 
 %	
@@ -596,9 +584,11 @@ filter_with_limit(Tab, [], Limit, Offset) ->
 	F = fun() ->
 		  case Offset > 1 of
 				true ->
-					Q = qlc:q([R || R <- mnesia:table(Tab)]),
-					Records = qlc:e(Q),
-					lists:sublist(Records, Offset, Limit);
+					Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
+					qlc:next_answers(Q, Offset-1), % discart records
+					Records = qlc:next_answers(Q, Limit),
+					qlc:delete_cursor(Q),
+					Records;
 				false ->
 					Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
 					Records = qlc:next_answers(Q, Limit),
@@ -613,11 +603,8 @@ filter_with_limit(Tab, Filter = [{_, "==", _}], Limit, Offset) ->
 filter_with_limit(Tab, FilterList, Limit, Offset) when is_list(FilterList) -> 
 	F = fun() ->
 			FieldsTable =  mnesia:table_info(Tab, attributes),
-			Where = string:join(lists:map(fun({F, Op, V}) ->
-												Fld = field_position(F, FieldsTable, 2),
-												io_lib:format("element(~s, R) ~s ~p", [integer_to_list(Fld), Op,  field_value(V)])
-										  end, FilterList), ","),
-			ExprQuery = lists:flatten(io_lib:format("[R || R <- mnesia:table(~p), ~s].", [Tab, Where])),
+			Where = string:join([io_lib:format("element(~s, R) ~s ~p", [integer_to_list(field_position(F, FieldsTable, 2)), Op,  field_value(V)]) || {F, Op, V} <- FilterList], ","),
+			ExprQuery = binary_to_list(iolist_to_binary([<<"[R || R <- mnesia:table(">>, atom_to_binary(Tab, utf8), <<"), ">>, Where, <<"].">>])),
 			ParsedQuery = qlc:string_to_handle(ExprQuery),
 			mnesia:activity(async_dirty, fun () -> 
 											Records = qlc:eval(ParsedQuery),
@@ -669,6 +656,15 @@ select_fields_agregate([], Result) -> {ok, lists:reverse(Result)};
 select_fields_agregate([H|T], Result) -> 
 	select_fields_agregate(T, [maps:from_list(H)|Result]).
 	
+
+%	
+% Return true/false if field has index on mnesia table
+% Ex.: field_has_index(4, user). 
+% return true
+-spec field_has_index(non_neg_integer(), atom()) -> boolean().
+field_has_index(FldPos, Tab) ->
+	Indexes =  mnesia:table_info(Tab, index),
+	lists:member(FldPos, Indexes).
 
 
 % Return the field position on record
