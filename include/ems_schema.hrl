@@ -207,6 +207,7 @@
 							 table_name = <<>> :: binary(),
 							 table_name2 = <<>> :: binary(),
 							 primary_key = <<>> :: binary(),
+							 foreign_key = <<>> :: binary(),
 							 csv_delimiter = <<";">> :: binary(),
 							 sql = <<>> :: binary(),
 							 timeout :: non_neg_integer(),

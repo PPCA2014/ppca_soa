@@ -13,7 +13,7 @@
 
 
 %% Client API
--export([find/1, find_by_id/1, insert/1, update/1, delete/1]).
+-export([find/1, find_by_id/1, find_by_owner/1, insert/1, update/1, delete/1]).
 
  
 %%====================================================================
@@ -23,6 +23,8 @@
 find(Request) -> execute_command(find, Request).
 
 find_by_id(Request) ->	execute_command(find_by_id, Request).
+
+find_by_owner(Request) ->	execute_command(find_by_owner, Request).
 
 insert(Request) -> execute_command(insert, Request).
 
@@ -43,6 +45,7 @@ execute_command(Command, Request = #request{service = #service{datasource = Data
 				Result = case Command of
 					find -> do_find(Request, Datasource2);
 					find_by_id -> do_find_by_id(Request, Datasource2);
+					find_by_owner -> do_find_by_owner(Request, Datasource2);
 					insert -> do_insert(Request, Datasource2);
 					update -> do_update(Request, Datasource2);
 					delete -> do_delete(Request, Datasource2)
@@ -83,8 +86,7 @@ do_find(#request{querystring_map = QuerystringMap}, Datasource) ->
 	ems_api_query:find(FilterJson, Fields, Limit, Offset, Sort, Datasource).
 	
 
-do_find_by_id(Request = #request{querystring_map = QuerystringMap}, 
-			  Datasource) ->
+do_find_by_id(Request = #request{querystring_map = QuerystringMap}, Datasource) ->
 	Id = ems_util:get_param_url(<<"id">>, 0, Request),
 	case Id > 0 of
 		true ->
@@ -92,6 +94,16 @@ do_find_by_id(Request = #request{querystring_map = QuerystringMap},
 			ems_api_query:find_by_id(Id, Fields, Datasource);
 		false -> {error, enoent}
 	end.
+
+do_find_by_owner(#request{querystring_map = QuerystringMap}, Datasource) ->
+	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
+	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
+	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
+	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
+	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
+	IdOwner = ems_util:get_param_url(<<"id">>, 0, Request),
+	ems_api_query:find(FilterJson, Fields, Limit, Offset, Sort, IdOwner, Datasource).
+
 
 
 do_insert(#request{payload_map = Payload, service = Service}, Datasource) ->

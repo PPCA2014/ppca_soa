@@ -8,7 +8,7 @@
 
 -module(ems_api_query_mnesia).
 
--export([find/6, find_by_id/3, insert/3, update/4, delete/3]).
+-export([find/6, find_by_id/3, find_by_owner/6, insert/3, update/4, delete/3]).
 
 -include("include/ems_schema.hrl").
 
@@ -47,6 +47,25 @@ find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName, 
 			{ok, ResultJson};
 		{error, Reason} -> {error, Reason}
 	end.
+
+find_by_owner(FilterJson, Fields, Limit, Offset, Sort, IdOwner, Datasource = #service_datasource{table_name = TableName, table_name2 = TableName2, foreign_key = ForeignKey}) ->
+	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
+		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
+			TableNameAtom = list_to_atom(TableName),
+			FilterList2 = [{ForeignKey, "==", IdOwner} | FilterList],
+			Result1 = ems_db:find(TableNameAtom, FieldList, FilterList2, Limit, Offset),
+			case TableName2 =/= "" of
+				true ->
+					TableName2Atom = list_to_atom(TableName2),
+					Result2 = ems_db:find(TableName2Atom, FieldList, FilterList, Limit, Offset),
+					ResultJson = ems_schema:to_json(Result1 ++ Result2);
+				false ->
+					ResultJson = ems_schema:to_json(Result1)
+			end,
+			{ok, ResultJson};
+		{error, Reason} -> {error, Reason}
+	end.
+
 
 
 insert(Payload, Service = #service{schema_in = Schema}, #service_datasource{table_name = TableName}) -> 
