@@ -21,6 +21,7 @@
 		 json_encode_table/2,
 		 json_decode_as_map_file/1,
 		 tuple_to_binlist/1, 
+		 binlist_to_atomlist/1,
 		 list_to_binlist/1,
 		 binary_to_integer/1,
 		 mes_extenso/1,
@@ -2120,3 +2121,17 @@ print_str_map(Map) -> print_str_map(Map, maps:keys(Map), maps:values(Map), <<>>,
 print_str_map(_, [], _, _, Result) -> iolist_to_binary(lists:reverse(Result));
 print_str_map(Map, [Key|TKey], [Value|TValue], Sep, Result) ->
 	print_str_map(Map, TKey, TValue, <<", ">>, [[Sep, Key, <<"=\"">>, Value, <<"\"">>] | Result]).
+
+
+-spec binlist_to_atomlist(list(binary()) | binary()) -> list(atom()) | atom().
+binlist_to_atomlist([])  -> undefined;
+binlist_to_atomlist(undefined)  -> undefined;
+binlist_to_atomlist(<<>>)  -> undefined;
+binlist_to_atomlist(Value) when is_list(Value) ->
+	binlist_to_atomlist_(Value, []);
+binlist_to_atomlist(Value)  ->
+	binary_to_atom(Value, utf8).
+
+binlist_to_atomlist_([], Result) -> Result;
+binlist_to_atomlist_([H|T], Result) ->
+	binlist_to_atomlist_(T, [binary_to_atom(H, utf8)|Result]).

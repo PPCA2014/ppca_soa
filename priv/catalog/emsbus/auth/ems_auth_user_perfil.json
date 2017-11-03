@@ -26,8 +26,7 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user_perfil_db",
-			"table_name2" : "user_perfil_fs",
+			"table_name" : ["user_perfil_db", "user_perfil_fs"],
 			"foreign_table_name" : ["user_db", "user_fs"],
 			"foreign_key" : "codigo_usuario"
 		},

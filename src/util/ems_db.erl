@@ -1,4 +1,4 @@
-	%%********************************************************************
+%%********************************************************************
 %% @title Module ems_db
 %% @version 1.0.0
 %% @doc Module that provides interface with the database.
@@ -497,11 +497,13 @@ find(TabList, FieldList, FilterList) ->
     find_(TabList, FieldList, FilterList, []).
 
 find_([], FieldList, _, Result) -> 
-	Result2 = lists:reverse(Result),
-	select_fields(Result2, FieldList);
+	select_fields(Result, FieldList);
 find_([Tab|TabT], FieldList, FilterList, Result) ->
     Records = filter(Tab, FilterList),
-	find_(TabT, FieldList, FilterList, [Records|Result]).
+	case Records =/= [] of
+		true -> find_(TabT, FieldList, FilterList, Result ++ Records);
+		false -> find_(TabT, FieldList, FilterList, Result)
+	end.
 	
 
 
@@ -518,14 +520,17 @@ find(Tab, FieldList, FilterList, Limit, Offset) ->
 	find_(Tab, FieldList, FilterList, Limit, Offset, []).
 
 find_([], FieldList, _, Limit, Offset, Result) -> 
-	{ok, Result2} = select_fields(lists:reverse(Result), FieldList),
+	{ok, Result2} = select_fields(Result, FieldList),
 	case Offset > length(Result2) of
-		true -> [];
-		false -> lists:sublist(Result2, Offset, Limit)
+		true -> {ok, []};
+		false -> {ok, lists:sublist(Result2, Offset, Limit)}
 	end;
 find_([Tab|TabT], FieldList, FilterList, Limit, Offset, Result) -> 
     Records = filter_with_limit(Tab, FilterList, Limit, Offset),
-    find_(TabT, FieldList, FilterList, Limit, Offset, [Records|Result]).
+    case Records =/= [] of 
+		true -> find_(TabT, FieldList, FilterList, Limit, Offset, Result ++ Records);
+		false -> find_(TabT, FieldList, FilterList, Limit, Offset, Result)
+	end.
 
 	
 
@@ -544,10 +549,16 @@ find_first(Tab, FilterList) -> find_first(Tab, [], FilterList).
 % Ex.: ems_db:find_first(catalog_schema, [id, name], [{id, "==", 1}]).
 % Sample result is [{<<"id">>,1},{<<"name">>,<<"exemplo">>}]
 %
--spec find_first(atom(), list(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
-find_first(Tab, FieldList, FilterList) ->
+-spec find_first(atom() | list(atom()), list(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+find_first(Tab, FieldList, FilterList) when is_atom(Tab) ->
     case filter_with_limit(Tab, FilterList, 1, 1) of
 		[] -> {error, enoent};
+		[FirstRecord|_] -> select_fields(FirstRecord, FieldList)
+	end;
+find_first([], _, _) -> {error, enoent};
+find_first([Tab|TabT], FieldList, FilterList) ->
+    case filter_with_limit(Tab, FilterList, 1, 1) of
+		[] -> find_first(TabT, FieldList, FilterList);
 		[FirstRecord|_] -> select_fields(FirstRecord, FieldList)
 	end.
 
@@ -557,10 +568,16 @@ find_first(Tab, FieldList, FilterList) ->
 % Ex.: ems_db:find_first(catalog_schema, [id, name], [{id, "==", 1}], 1).
 % Sample result is [{<<"id">>,1},{<<"name">>,<<"exemplo">>}]
 %
--spec find_first(atom(), list(), list(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
-find_first(Tab, FieldList, FilterList, Offset) ->
+-spec find_first(atom() | list(atom()), list(), list(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+find_first(Tab, FieldList, FilterList, Offset) when is_atom(Tab) ->
     case filter_with_limit(Tab, FilterList, 1, Offset) of
 		[] -> {error, enoent};
+		[FirstRecord|_] -> select_fields(FirstRecord, FieldList)
+	end;
+find_first([], _, _, _) -> {error, enoent};
+find_first([Tab|TabT], FieldList, FilterList, Offset) ->
+    case filter_with_limit(Tab, FilterList, 1, Offset) of
+		[] -> find_first(TabT, FieldList, FilterList, Offset);
 		[FirstRecord|_] -> select_fields(FirstRecord, FieldList)
 	end.
 	
@@ -783,19 +800,6 @@ parse_datasource_csvdelimiter("@") -> "@";
 parse_datasource_csvdelimiter(_) -> erlang:error(einvalid_datasource_csvdelimiter).
 
 
--spec parse_foreign_tablename(list(binary()) | binary()) -> list(atom()) | atom().
-parse_foreign_tablename(undefined)  -> undefined;
-parse_foreign_tablename(<<>>)  -> undefined;
-parse_foreign_tablename(Value) when is_list(Value) ->
-	parse_foreign_tablename_(Value, []);
-parse_foreign_tablename(Value)  ->
-	binary_to_atom(Value, utf8).
-
-parse_foreign_tablename_([], Result) -> Result;
-parse_foreign_tablename_([H|T], Result) ->
-	parse_foreign_tablename_(T, [binary_to_atom(H, utf8)|Result]).
-
-
 -spec create_datasource_from_map(map()) -> #service_datasource{} | undefined.
 create_datasource_from_map(M) -> create_datasource_from_map(M, undefined).
 
@@ -805,11 +809,13 @@ create_datasource_from_map(M, Rowid) ->
 		Type = erlang:binary_to_atom(maps:get(<<"type">>, M), utf8),
 		Driver = parse_data_source_driver(maps:get(<<"driver">>, M, <<>>)),
 		Connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
-		TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>)),
-		TableName2 = binary_to_list(maps:get(<<"table_name2">>, M, <<>>)),
+		case Type of
+			mnesia -> TableName = ems_util:binlist_to_atomlist(maps:get(<<"table_name">>, M, undefined));
+			_ -> TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>))
+		end,
 		PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
 		ForeignKey = binary_to_list(maps:get(<<"foreign_key">>, M, <<>>)),
-		ForeignTableName = parse_foreign_tablename(maps:get(<<"foreign_table_name">>, M, undefined)),
+		ForeignTableName = ems_util:binlist_to_atomlist(maps:get(<<"foreign_table_name">>, M, undefined)),
 		CsvDelimiter = parse_datasource_csvdelimiter(binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))),
 		Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
 		Timeout = ems_util:parse_range(maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY), 1, ?MAX_TIME_ODBC_QUERY),
@@ -817,7 +823,7 @@ create_datasource_from_map(M, Rowid) ->
 		SqlCheckValidConnection = binary_to_list(maps:get(<<"sql_check_valid_connection">>, M, <<>>)),
 		CloseIdleConnectionTimeout = ems_util:parse_range(maps:get(<<"close_idle_connection_timeout">>, M, ?CLOSE_IDLE_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CheckValidConnectionTimeout = ems_util:parse_range(maps:get(<<"check_valid_connection_timeout">>, M, ?CHECK_VALID_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
-		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, TableName2, PrimaryKey, 
+		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, PrimaryKey, 
 								  ForeignKey, ForeignTableName, CsvDelimiter, 
 								  Sql, Timeout, MaxPoolSize, 
 								  SqlCheckValidConnection, CloseIdleConnectionTimeout, 
@@ -839,7 +845,6 @@ create_datasource_from_map(M, Rowid) ->
 												driver = Driver,
 												connection = Connection,
 												table_name = TableName,
-												table_name2 = TableName2,
 												primary_key = PrimaryKey,
 												foreign_key = ForeignKey,
 												foreign_table_name = ForeignTableName,
