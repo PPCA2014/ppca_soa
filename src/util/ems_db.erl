@@ -9,7 +9,7 @@
 -module(ems_db).
 
 -export([start/0]).
--export([get/2, all/1, insert/1, insert/2, update/1, delete/2, 
+-export([get/2, exist/2, all/1, insert/1, insert/2, update/1, delete/2, 
 		 match/2, find/2, find/3, find/5, find_by_id/2, find_by_id/3, filter/2, 
 		 filter_with_limit/4, select_fields/2, 
 		 find_first/2, find_first/3, find_first/4]).
@@ -406,11 +406,41 @@ get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Dr
 
 %% ************* Funções para pesquisa *************
 
--spec get(atom(), non_neg_integer()) -> {ok, tuple()} | {error, enoent}.
-get(Tab, Id) when is_number(Id) ->
+%
+% Find object by id. Return all fields.
+% Ex.: ems_db:find_by_id(catalog_schema, 1).
+% Sample result is {<<"id">>,1},{<<"name">>,<<"exemplo">>}
+%
+-spec get(atom() | list(atom()), non_neg_integer()) -> {ok, tuple()} | {error, enoent}.
+get(Tab, Id) when is_atom(Tab) ->
 	case mnesia:dirty_read(Tab, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
+	end;
+get([], _) -> {error, enoent};
+get([Tab|TabT], Id) ->
+	case mnesia:dirty_read(Tab, Id) of
+		[] -> get(TabT, Id);
+		[Record|_] -> {ok, Record}
+	end.
+
+
+%
+% Check exist record by id. Return boolean.
+% Ex.: ems_db:exist(catalog_schema, 1).
+% Sample result is {<<"id">>,1},{<<"name">>,<<"exemplo">>}
+%
+-spec exist(atom() | list(atom()), non_neg_integer()) -> boolean().
+exist(Tab, Id) when is_atom(Tab) ->
+	case mnesia:dirty_read(Tab, Id) of
+		[] -> false;
+		_ -> true
+	end;
+exist([], _) -> false;
+exist([Tab|TabT], Id) ->
+	case mnesia:dirty_read(Tab, Id) of
+		[] -> exist(TabT, Id);
+		_ -> true
 	end.
 
 
@@ -426,23 +456,19 @@ all(Tab) ->
 
 
 %
-% Find object by id. Return all fields.
+% Find object by id. Return all fields. 
 % Ex.: ems_db:find_by_id(catalog_schema, 1).
-% Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
+% Sample result is {<<"id">>,1},{<<"name">>,<<"exemplo">>}
 %
--spec find_by_id(atom(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
-find_by_id(Tab, Id) ->
-	case get(Tab, Id) of
-		{ok, Record} -> {ok, Record};
-		Error -> Error
-	end.
+-spec find_by_id(atom() | list(atom()), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+find_by_id(Tab, Id) -> get(Tab, Id).
 
 %
 % Find object by id
 % Ex.: ems_db:find_by_id(catalog_schema, 1, [id, name]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
--spec find_by_id(atom(), non_neg_integer(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+-spec find_by_id(atom() | list(atom()), non_neg_integer(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
 find_by_id(Tab, Id, FieldList) ->
 	case get(Tab, Id) of
 		{ok, Record} -> select_fields(Record, FieldList);
@@ -671,6 +697,8 @@ field_has_index(FldPos, Tab) ->
 field_position(_, [], _) -> erlang:error(einvalid_field_filter);
 field_position(Field, Fields, Idx) when is_list(Field) -> 
 	field_position(list_to_atom(Field), Fields, Idx);
+field_position(Field, Fields, Idx) when is_binary(Field) -> 
+	field_position(binary_to_atom(Field, utf8), Fields, Idx);
 field_position(Field, [F|Fs], Idx) ->
 	case Field == F of
 		true -> Idx;
@@ -710,6 +738,19 @@ parse_datasource_csvdelimiter("@") -> "@";
 parse_datasource_csvdelimiter(_) -> erlang:error(einvalid_datasource_csvdelimiter).
 
 
+-spec parse_foreign_tablename(list(binary()) | binary()) -> list(atom()) | atom().
+parse_foreign_tablename(undefined)  -> undefined;
+parse_foreign_tablename(<<>>)  -> undefined;
+parse_foreign_tablename(Value) when is_list(Value) ->
+	parse_foreign_tablename_(Value, []);
+parse_foreign_tablename(Value)  ->
+	binary_to_atom(Value, utf8).
+
+parse_foreign_tablename_([], Result) -> Result;
+parse_foreign_tablename_([H|T], Result) ->
+	parse_foreign_tablename_(T, [binary_to_atom(H, utf8)|Result]).
+
+
 -spec create_datasource_from_map(map()) -> #service_datasource{} | undefined.
 create_datasource_from_map(M) -> create_datasource_from_map(M, undefined).
 
@@ -723,6 +764,7 @@ create_datasource_from_map(M, Rowid) ->
 		TableName2 = binary_to_list(maps:get(<<"table_name2">>, M, <<>>)),
 		PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
 		ForeignKey = binary_to_list(maps:get(<<"foreign_key">>, M, <<>>)),
+		ForeignTableName = parse_foreign_tablename(maps:get(<<"foreign_table_name">>, M, undefined)),
 		CsvDelimiter = parse_datasource_csvdelimiter(binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))),
 		Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
 		Timeout = ems_util:parse_range(maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY), 1, ?MAX_TIME_ODBC_QUERY),
@@ -731,7 +773,8 @@ create_datasource_from_map(M, Rowid) ->
 		CloseIdleConnectionTimeout = ems_util:parse_range(maps:get(<<"close_idle_connection_timeout">>, M, ?CLOSE_IDLE_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CheckValidConnectionTimeout = ems_util:parse_range(maps:get(<<"check_valid_connection_timeout">>, M, ?CHECK_VALID_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, TableName2, PrimaryKey, 
-								  ForeignKey, CsvDelimiter, Sql, Timeout, MaxPoolSize, 
+								  ForeignKey, ForeignTableName, CsvDelimiter, 
+								  Sql, Timeout, MaxPoolSize, 
 								  SqlCheckValidConnection, CloseIdleConnectionTimeout, 
 								  CheckValidConnectionTimeout]),
 		case ems_db:find_first(service_datasource, [{ctrl_hash, "==", CtrlHash}]) of
@@ -754,6 +797,7 @@ create_datasource_from_map(M, Rowid) ->
 												table_name2 = TableName2,
 												primary_key = PrimaryKey,
 												foreign_key = ForeignKey,
+												foreign_table_name = ForeignTableName,
 												csv_delimiter = CsvDelimiter,
 												sql = Sql,
 												timeout = Timeout,

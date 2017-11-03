@@ -102,7 +102,7 @@ do_find_by_owner(Request = #request{querystring_map = QuerystringMap}, Datasourc
 	Offset = binary_to_integer(maps:get(<<"offset">>, QuerystringMap, <<"1">>)),
 	Sort = binary_to_list(maps:get(<<"sort">>, QuerystringMap, <<>>)),
 	IdOwner = ems_util:get_param_url(<<"id">>, 0, Request),
-	ems_api_query:find(FilterJson, Fields, Limit, Offset, Sort, IdOwner, Datasource).
+	ems_api_query:find_by_owner(FilterJson, Fields, Limit, Offset, Sort, IdOwner, Datasource).
 
 
 
