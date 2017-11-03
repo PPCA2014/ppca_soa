@@ -477,7 +477,7 @@ find_by_id(Tab, Id, FieldList) ->
 
 
 %
-% Find objects
+% Find objects. Return all fields.
 % Ex.: ems_db:find(catalog_schema, [{id, "==", 1}]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
@@ -489,10 +489,20 @@ find(Tab, FilterList) -> find(Tab, [], FilterList).
 % Ex.: ems_db:find(catalog_schema, [id, name], [{id, "==", 1}]).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
--spec find(atom(), list(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
-find(Tab, FieldList, FilterList) ->
+-spec find(atom() | list(atom()), list(), list()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+find(Tab, FieldList, FilterList) when is_atom(Tab) ->
     Records = filter(Tab, FilterList),
-	select_fields(Records, FieldList).
+	select_fields(Records, FieldList);
+find(TabList, FieldList, FilterList) ->
+    find_(TabList, FieldList, FilterList, []).
+
+find_([], FieldList, _, Result) -> 
+	Result2 = lists:reverse(Result),
+	select_fields(Result2, FieldList);
+find_([Tab|TabT], FieldList, FilterList, Result) ->
+    Records = filter(Tab, FilterList),
+	find_(TabT, FieldList, FilterList, [Records|Result]).
+	
 
 
 %
@@ -500,10 +510,24 @@ find(Tab, FieldList, FilterList) ->
 % Ex.: ems_db:find(catalog_schema, [id, name], [{id, "==", 1}], 1, 1).
 % Sample result is [[{<<"id">>,1},{<<"name">>,<<"exemplo">>}]]
 %
--spec find(atom(), list(), list(), non_neg_integer(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
-find(Tab, FieldList, FilterList, Limit, Offset) -> 
+-spec find(atom() | list(atom()), list(), list(), non_neg_integer(), non_neg_integer()) -> {ok, tuple()} | {ok, map()} | {error, enoent}.
+find(Tab, FieldList, FilterList, Limit, Offset) when is_atom(Tab) -> 
     Records = filter_with_limit(Tab, FilterList, Limit, Offset),
-	select_fields(Records, FieldList).
+	select_fields(Records, FieldList);
+find(Tab, FieldList, FilterList, Limit, Offset) -> 
+	find_(Tab, FieldList, FilterList, Limit, Offset, []).
+
+find_([], FieldList, _, Limit, Offset, Result) -> 
+	{ok, Result2} = select_fields(lists:reverse(Result), FieldList),
+	case Offset > length(Result2) of
+		true -> [];
+		false -> lists:sublist(Result2, Offset, Limit)
+	end;
+find_([Tab|TabT], FieldList, FilterList, Limit, Offset, Result) -> 
+    Records = filter_with_limit(Tab, FilterList, Limit, Offset),
+    find_(TabT, FieldList, FilterList, Limit, Offset, [Records|Result]).
+
+	
 
 
 %
@@ -607,37 +631,58 @@ filter(Tab, FilterTuple) when is_tuple(FilterTuple) ->
 %
 -spec filter_with_limit(atom(), list(), non_neg_integer(), non_neg_integer()) -> list(tuple()).
 filter_with_limit(Tab, [], Limit, Offset) -> 
-	F = fun() ->
-		  case Offset > 1 of
-				true ->
-					Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
-					qlc:next_answers(Q, Offset-1), % discart records
-					Records = qlc:next_answers(Q, Limit),
-					qlc:delete_cursor(Q),
-					Records;
-				false ->
-					Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
-					Records = qlc:next_answers(Q, Limit),
-					qlc:delete_cursor(Q),
-					Records
-		  end
-	   end,
-	mnesia:activity(async_dirty, F);
+	TabSize = mnesia:table_info(Tab, size),
+	case TabSize == 0 orelse Offset > TabSize orelse Limit < 1 orelse Offset < 1 of
+		true -> [];
+		false ->
+			F = fun() ->
+				  case Offset > 1 of
+						true ->
+							Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
+							qlc:next_answers(Q, Offset-1), % discart records
+							Records = qlc:next_answers(Q, Limit),
+							qlc:delete_cursor(Q),
+							Records;
+						false ->
+							Q = qlc:cursor(qlc:q([R || R <- mnesia:table(Tab)])),
+							Records = qlc:next_answers(Q, Limit),
+							qlc:delete_cursor(Q),
+							Records
+				  end
+			   end,
+			mnesia:activity(async_dirty, F)
+	end;
 filter_with_limit(Tab, Filter = [{_, "==", _}], Limit, Offset) ->
-	Records = filter(Tab, Filter),
-	lists:sublist(Records, Offset, Limit); 
+	TabSize = mnesia:table_info(Tab, size),
+	case TabSize == 0 orelse Offset > TabSize orelse Limit < 1 orelse Offset < 1 of
+		true -> [];
+		false ->
+			Records = filter(Tab, Filter),
+			case Offset > length(Records) of
+				true -> [];
+				false -> lists:sublist(Records, Offset, Limit)
+			end
+	end;
 filter_with_limit(Tab, FilterList, Limit, Offset) when is_list(FilterList) -> 
-	F = fun() ->
-			FieldsTable =  mnesia:table_info(Tab, attributes),
-			Where = string:join([io_lib:format("element(~s, R) ~s ~p", [integer_to_list(field_position(F, FieldsTable, 2)), Op,  field_value(V)]) || {F, Op, V} <- FilterList], ","),
-			ExprQuery = binary_to_list(iolist_to_binary([<<"[R || R <- mnesia:table(">>, atom_to_binary(Tab, utf8), <<"), ">>, Where, <<"].">>])),
-			ParsedQuery = qlc:string_to_handle(ExprQuery),
-			mnesia:activity(async_dirty, fun () -> 
-											Records = qlc:eval(ParsedQuery),
-											lists:sublist(Records, Offset, Limit) 
-										 end)
-		end,
-	ems_cache:get(ems_db_parsed_query_cache, ?LIFE_TIME_PARSED_QUERY, {Tab, FilterList, Limit, Offset}, F);
+	TabSize = mnesia:table_info(Tab, size),
+	case TabSize == 0 orelse Offset > TabSize orelse Limit < 1 orelse Offset < 1 of
+		true -> [];
+		false ->
+			F = fun() ->
+					FieldsTable =  mnesia:table_info(Tab, attributes),
+					Where = string:join([io_lib:format("element(~s, R) ~s ~p", [integer_to_list(field_position(F, FieldsTable, 2)), Op,  field_value(V)]) || {F, Op, V} <- FilterList], ","),
+					ExprQuery = binary_to_list(iolist_to_binary([<<"[R || R <- mnesia:table(">>, atom_to_binary(Tab, utf8), <<"), ">>, Where, <<"].">>])),
+					ParsedQuery = qlc:string_to_handle(ExprQuery),
+					mnesia:activity(async_dirty, fun () -> 
+													Records = qlc:eval(ParsedQuery),
+													case Offset > length(Records) of
+														true -> [];
+														false -> lists:sublist(Records, Offset, Limit)
+													end
+												 end)
+				end,
+			ems_cache:get(ems_db_parsed_query_cache, ?LIFE_TIME_PARSED_QUERY, {Tab, FilterList, Limit, Offset}, F)
+	end;
 filter_with_limit(Tab, FilterTuple, Limit, Offset) when is_tuple(FilterTuple) -> 	
 	filter_with_limit(Tab, [FilterTuple], Limit, Offset).
 
