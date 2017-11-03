@@ -62,12 +62,12 @@ find_by_name(Name) when is_list(Name) ->
 	find_by_name(list_to_binary(Name));
 find_by_name(Name) -> 
 	case ems_db:find_first(user_permission_db, [{name, "==", Name}]) of
-		{error, Reason} ->
+		{error, enoent} ->
 			case ems_db:find_first(user_permission_fs, [{name, "==", Name}]) of
-				{error, Reason} -> {error, enoent};
-				Record -> {ok, Record}
+				{error, enoent} -> {error, enoent};
+				{ok, Record2} -> {ok, Record2}
 			end;
-		Record -> {ok, Record}
+		{ok, Record} -> {ok, Record}
 	end.
 
 

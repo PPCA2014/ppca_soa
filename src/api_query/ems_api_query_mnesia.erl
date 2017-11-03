@@ -1,28 +1,33 @@
 %%********************************************************************
 %% @title Module ems_api_query_mnesia
 %% @version 1.0.0
-%% @doc It provides api query functions for odbc database.
+%% @doc It provides api query functions for access mnesia data
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
 -module(ems_api_query_mnesia).
 
--export([find/6, find_by_id/3, find_by_owner/6, insert/3, update/4, delete/3]).
+-export([find/6, find_by_id/3, find_by_owner/7, insert/3, update/4, delete/3]).
 
+-include("include/ems_config.hrl").
 -include("include/ems_schema.hrl").
-
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName, table_name2 = TableName2}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
 			TableNameAtom = list_to_atom(TableName),
-			Result1 = ems_db:find(TableNameAtom, FieldList, FilterList, Limit, Offset),
+			case ems_db:find(TableNameAtom, FieldList, FilterList, Limit, Offset) of
+				{ok, Records} -> Result1 = Records;
+				_ -> Result1 = []
+			end,
 			case TableName2 =/= "" of
 				true ->
 					TableName2Atom = list_to_atom(TableName2),
-					Result2 = ems_db:find(TableName2Atom, FieldList, FilterList, Limit, Offset),
-					ResultJson = ems_schema:to_json(Result1 ++ Result2);
+					case ems_db:find(TableName2Atom, FieldList, FilterList, Limit, Offset) of
+						{ok, Result2} -> ResultJson = ems_schema:to_json(Result1 ++ Result2);
+						_ -> ResultJson = ems_schema:to_json(Result1)
+					end;
 				false ->
 					ResultJson = ems_schema:to_json(Result1)
 			end,
@@ -35,14 +40,15 @@ find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName, 
 	case ems_api_query_mnesia_parse:generate_dynamic_query(Id, Fields, Datasource) of
 		{ok, FieldList} -> 
 			TableNameAtom = list_to_atom(TableName),
-			Result1 = ems_db:find_by_id(TableNameAtom, Id, FieldList),
-			case Result1 == [] of
-				true ->
+			case ems_db:find_by_id(TableNameAtom, Id, FieldList) of
+				{error, enoent} ->
 					TableName2Atom = list_to_atom(TableName2),
-					Result2 = ems_db:find_by_id(TableName2Atom, Id, FieldList),
-					ResultJson = ems_schema:to_json(Result2);
-				false ->
-					ResultJson = ems_schema:to_json(Result1)
+					case ems_db:find_by_id(TableName2Atom, Id, FieldList) of
+						{ok, Result} -> ResultJson = ems_schema:to_json(Result);
+						_ -> ResultJson = ?ENOENT_JSON
+					end;
+				{ok, Result} ->
+					ResultJson = ems_schema:to_json(Result)
 			end,
 			{ok, ResultJson};
 		{error, Reason} -> {error, Reason}
@@ -113,7 +119,7 @@ update(Id, Payload, Service = #service{schema_in = Schema}, #service_datasource{
 delete(Id, _Service, #service_datasource{table_name = TableNameStr}) -> 
 	TableName = list_to_atom(TableNameStr),
 	case ems_db:delete(TableName, Id) of
-		ok -> {ok, <<"{\"ok\", true}">>};
+		ok -> {ok, ?OK_JSON};
 		Error -> ems_util:json_encode(Error)
 	end.
 

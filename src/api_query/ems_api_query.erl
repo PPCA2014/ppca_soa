@@ -8,9 +8,9 @@
 
 -module(ems_api_query).
 
--export([find/6, find_by_id/3, find_by_ownwer/6, insert/3, update/4, delete/3]).
+-export([find/6, find_by_id/3, find_by_ownwer/7, insert/3, update/4, delete/3]).
 
--include("../../include/ems_schema.hrl").
+-include("include/ems_schema.hrl").
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{type = ConnType}) ->

@@ -95,7 +95,7 @@ do_find_by_id(Request = #request{querystring_map = QuerystringMap}, Datasource) 
 		false -> {error, enoent}
 	end.
 
-do_find_by_owner(#request{querystring_map = QuerystringMap}, Datasource) ->
+do_find_by_owner(Request = #request{querystring_map = QuerystringMap}, Datasource) ->
 	FilterJson = maps:get(<<"filter">>, QuerystringMap, <<>>),
 	Fields = binary_to_list(maps:get(<<"fields">>, QuerystringMap, <<>>)),
 	Limit = binary_to_integer(maps:get(<<"limit">>, QuerystringMap, <<"100">>)),
