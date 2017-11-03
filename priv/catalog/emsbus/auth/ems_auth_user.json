@@ -10,8 +10,7 @@
 		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user_db",
-			"table_name2" : "user_fs"
+			"table_name" : ["user_db", "user_fs"]
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",
@@ -37,8 +36,7 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user_db",
-			"table_name2" : "user_fs"
+			"table_name" : ["user_db", "user_fs"]
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",

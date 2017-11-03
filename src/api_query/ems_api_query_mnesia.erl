@@ -13,42 +13,24 @@
 -include("include/ems_config.hrl").
 -include("include/ems_schema.hrl").
 
-find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName, table_name2 = TableName2}) ->
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
-			TableNameAtom = list_to_atom(TableName),
-			case ems_db:find(TableNameAtom, FieldList, FilterList, Limit, Offset) of
-				{ok, Records} -> Result1 = Records;
-				_ -> Result1 = []
-			end,
-			case TableName2 =/= "" of
-				true ->
-					TableName2Atom = list_to_atom(TableName2),
-					case ems_db:find(TableName2Atom, FieldList, FilterList, Limit, Offset) of
-						{ok, Result2} -> ResultJson = ems_schema:to_json(lists:sublist(Result1 ++ Result2, Limit));
-						_ -> ResultJson = ems_schema:to_json(Result1)
-					end;
-				false ->
-					ResultJson = ems_schema:to_json(Result1)
+			case ems_db:find(TableName, FieldList, FilterList, Limit, Offset) of
+				{ok, Result} -> ResultJson = ems_schema:to_json(Result);
+				_ -> ResultJson = ?EMPTY_LIST_JSON
 			end,
 			{ok, ResultJson};
 		{error, Reason} -> {error, Reason}
 	end.
 
 
-find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName, table_name2 = TableName2}) ->
+find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(Id, Fields, Datasource) of
 		{ok, FieldList} -> 
-			TableNameAtom = list_to_atom(TableName),
-			case ems_db:find_by_id(TableNameAtom, Id, FieldList) of
-				{error, enoent} ->
-					TableName2Atom = list_to_atom(TableName2),
-					case ems_db:find_by_id(TableName2Atom, Id, FieldList) of
-						{ok, Result} -> ResultJson = ems_schema:to_json(Result);
-						_ -> ResultJson = ?ENOENT_JSON
-					end;
-				{ok, Result} ->
-					ResultJson = ems_schema:to_json(Result)
+			case ems_db:find_by_id(TableName, Id, FieldList) of
+				{ok, Result} ->	ResultJson = ems_schema:to_json(Result);
+				_ -> ResultJson = ?ENOENT_JSON
 			end,
 			{ok, ResultJson};
 		{error, Reason} -> {error, Reason}
