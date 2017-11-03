@@ -25,7 +25,7 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 				true ->
 					TableName2Atom = list_to_atom(TableName2),
 					case ems_db:find(TableName2Atom, FieldList, FilterList, Limit, Offset) of
-						{ok, Result2} -> ResultJson = ems_schema:to_json(Result1 ++ Result2);
+						{ok, Result2} -> ResultJson = ems_schema:to_json(lists:sublist(Result1 ++ Result2, Limit));
 						_ -> ResultJson = ems_schema:to_json(Result1)
 					end;
 				false ->
