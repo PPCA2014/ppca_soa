@@ -10,8 +10,8 @@
 
 -behavior(gen_server). 
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 %% Server API
 -export([start/1, stop/0]).
@@ -301,7 +301,7 @@ checkpoint_arquive_log(State = #state{log_file_handle = CurrentIODevice,
 	close_filename_device(CurrentIODevice, CurrentLogFilename),
 	case open_filename_device() of
 		{ok, LogFilename, IODevice2} ->
-			ems_logger:info("ems_logger open ~p for append.", [LogFilename]),
+			ems_logger:info("ems_logger open ~p.", [LogFilename]),
 			State2 = State#state{log_file_name = LogFilename, 
 								 log_file_handle = IODevice2};
 		{error, Reason} ->
@@ -332,7 +332,7 @@ open_filename_device(LogFilename) ->
 					Error;
 				{error, Reason} = Error -> 
 					ems_db:inc_counter(ems_logger_open_file_error),
-					ems_logger:error("ems_logger open_filename_device failed to open log file for append. Reason: ~p.", [Reason]),
+					ems_logger:error("ems_logger open_filename_device failed to open log file. Reason: ~p.", [Reason]),
 					Error
 			end;
 		{error, Reason} = Error -> 

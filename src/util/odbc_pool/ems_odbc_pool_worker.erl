@@ -207,7 +207,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
     
-do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite, driver = <<"sqlite3">>}) -> 
+do_connect(Datasource = #service_datasource{connection = Connection, type = sqlite, driver = sqlite3}) -> 
 	{ok, ConnRef} = esqlite3:open(Connection),
 	Datasource2 = Datasource#service_datasource{owner = self(), 
 												conn_ref = ConnRef},
@@ -227,7 +227,7 @@ do_connect(Datasource = #service_datasource{connection = Connection}) ->
 		_Exception2:Reason2 -> {error, Reason2}
 	end.
 
-do_disconnect(#state{datasource = #service_datasource{id =Id, conn_ref = ConnRef, type = sqlite, driver = <<"sqlite3">>}}) -> 
+do_disconnect(#state{datasource = #service_datasource{id =Id, conn_ref = ConnRef, type = sqlite, driver = sqlite3}}) -> 
 	try
 		esqlite3:close(ConnRef)
 	catch
@@ -246,7 +246,7 @@ do_disconnect(#state{datasource = #service_datasource{id = Id, conn_ref = ConnRe
 
 do_param_query(Sql, Params, #state{datasource = Datasource = #service_datasource{conn_ref = ConnRef,
 																			     type = sqlite,
-																				 driver = <<"sqlite3">>}}) ->
+																				 driver = sqlite3}}) ->
 	Params2 = [hd(V) || {_, V} <- Params],
 	case esqlite3:prepare(Sql, ConnRef) of
         {ok, Statement} ->

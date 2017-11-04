@@ -1579,7 +1579,8 @@ is_service_type(_) -> false.
 is_url_valido(Url) when is_binary(Url) ->
 	is_url_valido(binary_to_list(Url));
 is_url_valido(Url) ->
-	case re:run(Url, "^((http:\/\/)|(\/))?([a-z_0-9\-]+\.)?[a-z_0-9\-.\/]+\.[a-z_0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$") of
+	REPattern = ems_db:get_re_param(check_url_valid_re, "^((http:\/\/)|(\/))?([a-z_0-9\-]+\.)?[a-z_0-9\-.\/]+\.[a-z_0-9]{2,4}(\.[a-z0-9]{2,4})?(\/.*)?$"),
+	case re:run(Url, REPattern) of
 		nomatch -> false;
 		_ -> true
 	end.
@@ -1735,7 +1736,8 @@ parse_lang(_) -> erlang:error(einvalid_lang_service).
 parse_name_service(Name) when is_list(Name) ->
 	parse_name_service(list_to_binary(Name));
 parse_name_service(Name) ->
-	case re:run(Name, "^[/_a-zA-Z-.][.:/_a-zA-Z0-9-]{0,300}$") of
+	REPattern = ems_db:get_re_param(check_name_service_valid_re, "^[/_a-zA-Z-.][.:/_a-zA-Z0-9-]{0,300}$"),
+	case re:run(Name, REPattern) of
 		nomatch -> erlang:error(einvalid_name_service);
 		_ -> Name
 	end.
@@ -1743,7 +1745,8 @@ parse_name_service(Name) ->
 parse_name_querystring(Name) when is_list(Name) ->
 	parse_name_querystring(list_to_binary(Name));
 parse_name_querystring(Name) ->
-	case re:run(Name, "^[_a-zA-Z][_a-zA-Z0-9]{0,29}$") of
+	REPattern = ems_db:get_re_param(check_name_querystring_valid_re, "^[_a-zA-Z][_a-zA-Z0-9]{0,29}$"),
+	case re:run(Name, REPattern) of
 		nomatch -> erlang:error(einvalid_name_querystring);
 		_ -> Name
 	end.
@@ -2001,7 +2004,8 @@ parse_range(_, _, _) -> erlang:error(erange_not_allowed).
 
 -spec is_email_valido(string()) -> boolean().
 is_email_valido(Value) -> 
-	case re:run(Value, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b") of
+	REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
+	case re:run(Value, REPattern) of
 		nomatch -> false;
 		_ -> true
 	end.

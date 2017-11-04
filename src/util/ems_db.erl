@@ -16,7 +16,7 @@
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
 -export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
 -export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1, create_datasource_from_map/1, create_datasource_from_map/2]).
--export([get_param/1, set_param/2]).
+-export([get_param/1, get_param/2, set_param/2, get_re_param/2]).
 
 -include("include/ems_config.hrl").
 -include("include/ems_schema.hrl").
@@ -255,7 +255,7 @@ create_database(Nodes) ->
 										  {record_name, service}]),
 
 	% foi preciso aguardar um pouco a inicialização do banco
-	ems_util:sleep(1000),
+	%ems_util:sleep(1000),
 
 	ok.
 
@@ -311,11 +311,8 @@ init_sequence(Name, Value) ->
 						mnesia:write(#sequence{key=Name, index=Value})
 					end),
      ok.
-
 sequence(Name) ->  mnesia:dirty_update_counter(sequence, Name, 1).
-
 current_sequence(Name) -> mnesia:dirty_update_counter(sequence, Name, 0).
-
 sequence(Name, Inc) -> mnesia:dirty_update_counter(sequence, Name, Inc).
 
 
@@ -326,12 +323,55 @@ init_counter(Name, Value) ->
 						mnesia:write(#counter{key=Name, index=Value})
 					end),
      ok.
-
 inc_counter(Name) ->  mnesia:dirty_update_counter(counter, Name, 1).
 dec_counter(Name) ->  mnesia:dirty_update_counter(counter, Name, -1).
 current_counter(Name) -> mnesia:dirty_update_counter(counter, Name, 0).
 counter(Name, Inc) -> mnesia:dirty_update_counter(counter, Name, Inc).
      
+
+%% ************* Funções para armazenar parâmetros em crtl_params *************
+
+% Return a param value from crtl_params table
+-spec get_param(atom()) -> any().
+get_param(ParamName) -> 
+	case mnesia:dirty_read(ctrl_params, ParamName) of
+		[] -> undefined;
+		[#ctrl_params{value = Value}] -> Value
+	end.
+
+-spec get_param(atom(), function() | any()) -> any().
+get_param(ParamName, Fun) when is_function(Fun) -> 
+	case mnesia:dirty_read(ctrl_params, ParamName) of
+		[] -> 
+			Value = Fun(),
+			set_param(ParamName, Value),
+			Value;
+		[#ctrl_params{value = Value}] -> Value
+	end;
+get_param(ParamName, DefaultValue) -> 
+	case mnesia:dirty_read(ctrl_params, ParamName) of
+		[] -> 
+			set_param(ParamName, DefaultValue),
+			DefaultValue;
+		[#ctrl_params{value = Value}] -> Value
+	end.
+	
+-spec get_re_param(atom(), string()) -> {re_pattern, term(), term(), term(), term()}.	
+get_re_param(ParamName, DefaultREPattern) -> 
+	case mnesia:dirty_read(ctrl_params, ParamName) of
+		[] -> 
+			{ok, Value} = re:compile(DefaultREPattern),
+			set_param(ParamName, Value),
+			Value;
+		[#ctrl_params{value = Value}] -> Value
+	end.
+
+	
+% Save a param value to crtl_params table
+-spec set_param(atom(), any()) -> ok.
+set_param(ParamName, ParamValue) -> 
+	P = #ctrl_params{name = ParamName, value = ParamValue},
+	mnesia:dirty_write(ctrl_params, P).
 
 
 
@@ -347,9 +387,7 @@ get_connection(Datasource = #service_datasource{type = mnesia}) ->
 release_connection(#service_datasource{type = mnesia}) -> ok;
 release_connection(Datasource) -> ems_odbc_pool:release_connection(Datasource).
 
-
 get_odbc_connection(Datasource) -> ems_odbc_pool:get_connection(Datasource).
-
 
 create_sqlite_from_csv(#service_datasource{connection = Filename,
 										   table_name = TableName,
@@ -370,7 +408,7 @@ create_sqlite_from_csv(#service_datasource{connection = Filename,
 																	  TableName, 
 																	  FilenamePath, 
 																	  Delimiter])),
-						ems_logger:info("OS command: ~p.", [Csv2SqliteCmd]),
+						ems_logger:info("ems_db execute OS command: ~p.", [Csv2SqliteCmd]),
 						os:cmd(Csv2SqliteCmd),
 						mnesia:write(#ctrl_sqlite_table{file_name = Filename, last_modified = LastModified});
 					false -> 
@@ -386,12 +424,12 @@ create_sqlite_from_csv(#service_datasource{connection = Filename,
 get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Driver}) -> 
 	SqliteFile = create_sqlite_from_csv(Datasource),
 	case Driver of
-		<<"odbc">> ->
+		odbc ->
 			StringConnection = lists:flatten(io_lib:format("DRIVER=SQLite;Version=3;Database=~s;", [SqliteFile])),
 			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = StringConnection});
-		<<"sqlite3">> ->
+		sqlite3 ->
 			ems_odbc_pool:get_connection(Datasource#service_datasource{type = sqlite, connection = SqliteFile});
-		_ -> throw({error, einvalid_driver_datasource})
+		_ -> erlang:error(einvalid_driver_datasource)
 	end.
 
 
@@ -771,34 +809,80 @@ field_position(Field, [F|Fs], Idx) ->
 field_value(V) when is_list(V) -> list_to_binary(V);
 field_value(V) -> V.
 
-% Return a param value from crtl_params table
-get_param(ParamName) -> 
-	case mnesia:dirty_read(ctrl_params, ParamName) of
-		[] -> undefined;
-		[#ctrl_params{value = Value}] -> Value
-	end.
-	
-% Save a param value to crtl_params table
-set_param(ParamName, ParamValue) -> 
-	P = #ctrl_params{name = ParamName, value = ParamValue},
-	mnesia:dirty_write(ctrl_params, P).
-	
 
--spec parse_data_source_driver(binary()) -> binary().
-parse_data_source_driver(<<>>) -> <<>>;
-parse_data_source_driver(undefined) -> <<>>;
-parse_data_source_driver(<<"sqlite3">>) -> <<"sqlite3">>;
-parse_data_source_driver(<<"odbc">>) -> <<"odbc">>;
-parse_data_source_driver(_) -> erlang:error(einvalid_datasource_driver).
+-spec parse_datasource_type(binary()) -> atom().
+parse_datasource_type(<<"mnesia">>) -> mnesia;
+parse_datasource_type(<<"sqlserver">>) -> sqlserver;
+parse_datasource_type(<<"csvfile">>) -> csvfile;
+parse_datasource_type(_) -> erlang:error(einvalid_datasource_type_property).
 
+-spec parse_data_source_driver(atom(), binary()) -> atom().
+parse_data_source_driver(csvfile, <<"sqlite3">>) -> sqlite3;
+parse_data_source_driver(csvfile, <<"odbc">>) -> odbc;
+parse_data_source_driver(csvfile, _) -> erlang:error(einvalid_datasource_driver_property);
+parse_data_source_driver(_, _) -> undefined.
 
--spec parse_datasource_csvdelimiter(string()) -> ok.
-parse_datasource_csvdelimiter(";") -> ";";
-parse_datasource_csvdelimiter("|") -> "|";
-parse_datasource_csvdelimiter(",") -> ",";
-parse_datasource_csvdelimiter("@") -> "@";
-parse_datasource_csvdelimiter(_) -> erlang:error(einvalid_datasource_csvdelimiter).
+-spec parse_datasource_csvdelimiter(atom(), binary()) -> string().
+parse_datasource_csvdelimiter(csvfile, <<";">>) -> ";";
+parse_datasource_csvdelimiter(csvfile, <<"|">>) -> "|";
+parse_datasource_csvdelimiter(csvfile, <<",">>) -> ",";
+parse_datasource_csvdelimiter(csvfile, <<"@">>) -> "@";
+parse_datasource_csvdelimiter(csvfile, undefined) ->  ";";
+parse_datasource_csvdelimiter(csvfile, <<>>) ->  ";";
+parse_datasource_csvdelimiter(csvfile, _) -> erlang:error(einvalid_datasource_csvdelimiter_property);
+parse_datasource_csvdelimiter(_, _) -> undefined.
 
+-spec parse_datasource_table_name(atom(), binary() | list()) -> string() | list(atom()) | atom().
+parse_datasource_table_name(_, undefined) -> undefined;
+parse_datasource_table_name(_, <<>>) -> undefined;
+parse_datasource_table_name(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
+parse_datasource_table_name(_, Value) -> binary_to_list(Value).
+
+-spec parse_datasource_fields(atom(), binary() | list()) -> string() | list(atom()) | atom().
+parse_datasource_fields(_, undefined) -> undefined;
+parse_datasource_fields(_, <<>>) -> undefined;
+parse_datasource_fields(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
+parse_datasource_fields(_, Value) -> binary_to_list(Value).
+
+-spec parse_datasource_primary_key(atom(), binary()) -> string() | atom().
+parse_datasource_primary_key(sqlserver, undefined) -> erlang:error(einvalid_datasource_primary_key_property);
+parse_datasource_primary_key(sqlserver, <<>>) -> erlang:error(einvalid_datasource_primary_key_property);
+parse_datasource_primary_key(_, undefined) -> undefined;
+parse_datasource_primary_key(_, <<>>) -> undefined;
+parse_datasource_primary_key(mnesia, Value) -> binary_to_atom(Value, utf8);
+parse_datasource_primary_key(_, Value) -> binary_to_list(Value).
+
+-spec parse_datasource_foreign_key(atom(), binary()) -> string() | atom().
+parse_datasource_foreign_key(_, undefined) -> undefined;
+parse_datasource_foreign_key(_, <<>>) -> undefined;
+parse_datasource_foreign_key(mnesia, Value) -> binary_to_atom(Value, utf8);
+parse_datasource_foreign_key(_, Value) -> binary_to_list(Value).
+
+-spec parse_datasource_foreign_table_name(atom(), binary() | list()) -> string() | list(atom()) | atom().
+parse_datasource_foreign_table_name(_, undefined) -> undefined;
+parse_datasource_foreign_table_name(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
+parse_datasource_foreign_table_name(_, Value) -> ems_util:binlist_to_list(Value).
+
+-spec parse_datasource_sql(atom(), binary()) -> string().
+parse_datasource_sql(_, undefined) -> undefined;
+parse_datasource_sql(_, <<>>) -> undefined;
+parse_datasource_sql(mnesia, _) -> erlang:error(einvalid_datasource_sql_property);
+parse_datasource_sql(_, Value) -> binary_to_list(Value).
+
+-spec parse_datasource_connection(atom(), binary()) -> string().
+parse_datasource_connection(mnesia, undefined) -> undefined;
+parse_datasource_connection(mnesia, <<>>) -> undefined;
+parse_datasource_connection(mnesia, _) -> erlang:error(einvalid_datasource_connection_property);
+parse_datasource_connection(_, undefined) -> erlang:error(einvalid_datasource_connection_property);
+parse_datasource_connection(_, <<>>) -> erlang:error(einvalid_datasource_connection_property);
+parse_datasource_connection(_, Value) -> binary_to_list(Value).
+
+-spec parse_datasource_sql_check_validation_connection(atom(), binary()) -> string().
+parse_datasource_sql_check_validation_connection(sqlserver, undefined) -> "select 1";
+parse_datasource_sql_check_validation_connection(sqlserver, Value) -> binary_to_list(Value);
+parse_datasource_sql_check_validation_connection(_, undefined) -> undefined;
+parse_datasource_sql_check_validation_connection(_, <<>>) -> undefined;
+parse_datasource_sql_check_validation_connection(_, _) -> erlang:error(einvalid_datasource_sql_check_validation_connection_property).
 
 -spec create_datasource_from_map(map()) -> #service_datasource{} | undefined.
 create_datasource_from_map(M) -> create_datasource_from_map(M, undefined).
@@ -806,25 +890,23 @@ create_datasource_from_map(M) -> create_datasource_from_map(M, undefined).
 -spec create_datasource_from_map(map(), non_neg_integer()) -> #service_datasource{} | undefined.
 create_datasource_from_map(M, Rowid) ->
 	try
-		Type = erlang:binary_to_atom(maps:get(<<"type">>, M), utf8),
-		Driver = parse_data_source_driver(maps:get(<<"driver">>, M, <<>>)),
-		Connection = binary_to_list(maps:get(<<"connection">>, M, <<>>)),
-		case Type of
-			mnesia -> TableName = ems_util:binlist_to_atomlist(maps:get(<<"table_name">>, M, undefined));
-			_ -> TableName = binary_to_list(maps:get(<<"table_name">>, M, <<>>))
-		end,
-		PrimaryKey = binary_to_list(maps:get(<<"primary_key">>, M, <<>>)),
-		ForeignKey = binary_to_list(maps:get(<<"foreign_key">>, M, <<>>)),
-		ForeignTableName = ems_util:binlist_to_atomlist(maps:get(<<"foreign_table_name">>, M, undefined)),
-		CsvDelimiter = parse_datasource_csvdelimiter(binary_to_list(maps:get(<<"csv_delimiter">>, M, <<";">>))),
-		Sql = binary_to_list(maps:get(<<"sql">>, M, <<>>)),
+		Type = parse_datasource_type(maps:get(<<"type">>, M, undefined)),
+		Driver = parse_data_source_driver(Type, maps:get(<<"driver">>, M, undefined)),
+		Connection = parse_datasource_connection(Type, maps:get(<<"connection">>, M, undefined)),
+		TableName = parse_datasource_table_name(Type, maps:get(<<"table_name">>, M, undefined)),
+		Fields = parse_datasource_fields(Type, maps:get(<<"fields">>, M, undefined)),
+		PrimaryKey = parse_datasource_primary_key(Type, maps:get(<<"primary_key">>, M, undefined)),
+		ForeignKey = parse_datasource_foreign_key(Type, maps:get(<<"foreign_key">>, M, undefined)),
+		ForeignTableName = parse_datasource_foreign_table_name(Type, maps:get(<<"foreign_table_name">>, M, undefined)),
+		CsvDelimiter = parse_datasource_csvdelimiter(Type, maps:get(<<"csv_delimiter">>, M, undefined)),
+		Sql = parse_datasource_sql(Type, maps:get(<<"sql">>, M, undefined)),
 		Timeout = ems_util:parse_range(maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY), 1, ?MAX_TIME_ODBC_QUERY),
 		MaxPoolSize = ems_util:parse_range(maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL), 1, ?MAX_CONNECTION_BY_POOL),
-		SqlCheckValidConnection = binary_to_list(maps:get(<<"sql_check_valid_connection">>, M, <<>>)),
+		SqlCheckValidConnection = parse_datasource_sql_check_validation_connection(Type, maps:get(<<"sql_check_valid_connection">>, M, undefined)),
 		CloseIdleConnectionTimeout = ems_util:parse_range(maps:get(<<"close_idle_connection_timeout">>, M, ?CLOSE_IDLE_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
 		CheckValidConnectionTimeout = ems_util:parse_range(maps:get(<<"check_valid_connection_timeout">>, M, ?CHECK_VALID_CONNECTION_TIMEOUT), 1, ?MAX_CLOSE_IDLE_CONNECTION_TIMEOUT),
-		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, PrimaryKey, 
-								  ForeignKey, ForeignTableName, CsvDelimiter, 
+		CtrlHash = erlang:phash2([Type, Driver, Connection, TableName, Fields, 
+								  PrimaryKey, ForeignKey, ForeignTableName, CsvDelimiter, 
 								  Sql, Timeout, MaxPoolSize, 
 								  SqlCheckValidConnection, CloseIdleConnectionTimeout, 
 								  CheckValidConnectionTimeout]),
@@ -845,6 +927,7 @@ create_datasource_from_map(M, Rowid) ->
 												driver = Driver,
 												connection = Connection,
 												table_name = TableName,
+												fields = Fields,
 												primary_key = PrimaryKey,
 												foreign_key = ForeignKey,
 												foreign_table_name = ForeignTableName,
