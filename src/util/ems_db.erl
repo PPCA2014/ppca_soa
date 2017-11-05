@@ -839,8 +839,8 @@ parse_datasource_table_name(mnesia, Value) -> ems_util:binlist_to_atomlist(Value
 parse_datasource_table_name(_, Value) -> binary_to_list(Value).
 
 -spec parse_datasource_fields(atom(), binary() | list()) -> string() | list(atom()) | atom().
-parse_datasource_fields(_, undefined) -> undefined;
-parse_datasource_fields(_, <<>>) -> undefined;
+parse_datasource_fields(_, undefined) -> [];
+parse_datasource_fields(_, <<>>) -> [];
 parse_datasource_fields(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
 parse_datasource_fields(_, Value) -> binary_to_list(Value).
 

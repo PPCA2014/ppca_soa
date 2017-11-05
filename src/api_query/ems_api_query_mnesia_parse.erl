@@ -10,27 +10,28 @@
 
 -export([generate_dynamic_query/6, generate_dynamic_query/3]).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 
-generate_dynamic_query(FilterJson, Fields, _Datasource, Limit, Offset, _Sort) ->
-	FieldList = parse_fields(Fields),
+generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, _Sort) ->
+	FieldList = parse_fields(Fields, Datasource),
 	FilterList = parse_filter(FilterJson),
 	%SortSmnt = parse_sort(Sort),
 	LimitSmnt = parse_limit(Limit, Offset),
 	{ok, {FieldList, FilterList, LimitSmnt}}.
 
-generate_dynamic_query(_Id, Fields, _Datasource) ->
-	FieldList = parse_fields(Fields),
+generate_dynamic_query(_Id, Fields, Datasource) ->
+	FieldList = parse_fields(Fields, Datasource),
 	{ok, FieldList}.
 
    
-parse_fields([]) -> [];
-parse_fields(Fields) -> 
+parse_fields([], #service_datasource{fields = TblFields}) -> 
+	TblFields;
+parse_fields(Fields, #service_datasource{fields = TblFields}) -> 
 	case string:tokens(string:strip(Fields), ",") of
-		[] -> erlang:error(einvalid_fields);
-		Fields2 -> Fields2
+		[] -> TblFields;
+		Fields2 ->  Fields2
 	end.
 
 parse_filter(<<>>) -> [];
@@ -63,7 +64,6 @@ parse_condition(Param, Value, _DataType) ->
 	{Param2, Op} = parse_name_and_operator(Param),
 	{Param2, Op, Value}.	
 
-
 parse_name_and_operator(Param) ->
 	case string:str(Param, "__") of
 		Idx when Idx > 1 ->
@@ -78,7 +78,6 @@ parse_name_and_operator(Param) ->
 		0 -> {Param, "=="};
 		_ -> throw({einvalid_condition, Param})
 	end.
-
 
 format_mnesia_operator("e") -> "==";
 format_mnesia_operator("ne") -> "=/=";
