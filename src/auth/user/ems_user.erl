@@ -15,7 +15,7 @@
 -export([insert/1, update/1, all/0, delete/1, 
 		 authenticate_login_password/2, 
 		 find_by_id/1,		 
-		 find_by_codigo/1,
+		 %find_by_codigo/1,
 		 find_by_login/1, 
 		 find_by_name/1, 
 		 find_by_email/1, 
@@ -25,7 +25,6 @@
 		 to_resource_owner/1,
 		 add_user/2,
  		 new_from_map/2,
-		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 exist/2,
@@ -61,15 +60,15 @@ authenticate_login_password(Login, Password) ->
 	end.
 
 
--spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
-find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
-		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
-				[] -> {error, enoent};
-				[Record|_] -> {ok, Record}
-			  end;
-		[Record|_] -> {ok, Record}
-	end.
+%-spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
+%find_by_codigo(Codigo) ->
+%	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
+%		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
+%				[] -> {error, enoent};
+%				[Record|_] -> {ok, Record}
+%			  end;
+%		[Record|_] -> {ok, Record}
+%	end.
 
 
 -spec find_by_codigo_pessoa(non_neg_integer()) -> {ok, list(#user{})} | {error, enoent}.
@@ -223,7 +222,6 @@ find_by_login_and_password(Login, Password)  ->
 to_resource_owner(undefined) -> <<"{}"/utf8>>;
 to_resource_owner(User) ->
 	ems_schema:to_json({<<"id">>, User#user.id,
-						 <<"codigo">>, User#user.codigo,
 						 <<"login">>, User#user.login, 
 						 <<"name">>, User#user.name,
 						 <<"email">>, User#user.email,
@@ -237,16 +235,14 @@ add_user(Login, Password) ->
 
 
 -spec new_from_map(map(), #config{}) -> {ok, #user{}} | {error, atom()}.
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-new_from_map(Map, _Conf, Id) ->
+new_from_map(Map, _Conf) ->
 	try
 		PasswdCrypto = maps:get(<<"passwd_crypto">>, Map, <<>>),
 		Password = maps:get(<<"password">>, Map, <<>>),
-		{ok, #user{id = Id,
-					codigo = maps:get(<<"codigo">>, Map, undefined),
+		{ok, #user{	id = maps:get(<<"id">>, Map),
 					codigo_pessoa = maps:get(<<"codigo_pessoa">>, Map, undefined),
-					login = ?UTF8_STRING(maps:get(<<"login">>, Map, <<>>)),
-					name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
+					login = ?UTF8_STRING(maps:get(<<"login">>, Map)),
+					name = ?UTF8_STRING(maps:get(<<"name">>, Map)),
 					cpf = maps:get(<<"cpf">>, Map, <<>>),
 					password = case PasswdCrypto of
 									<<"SHA1">> -> ?UTF8_STRING(Password);
@@ -265,6 +261,9 @@ new_from_map(Map, _Conf, Id) ->
 					telefone = ?UTF8_STRING(maps:get(<<"telefone">>, Map, <<>>)),
 					celular = ?UTF8_STRING(maps:get(<<"celular">>, Map, <<>>)),
 					ddd = ?UTF8_STRING(maps:get(<<"ddd">>, Map, <<>>)),
+					email = ?UTF8_STRING(maps:get(<<"email">>, Map, <<>>)),
+					matricula = maps:get(<<"matricula">>, Map, undefined),
+					active = maps:get(<<"matricula">>, Map, true),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 					ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
@@ -283,15 +282,15 @@ get_table(db) -> user_db;
 get_table(fs) -> user_fs.
 
 -spec find(user_fs | user_db, non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
-find(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
+find(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.
 
 -spec exist(user_fs | user_db, non_neg_integer()) -> boolean().
-exist(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
+exist(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> false;
 		_ -> true
 	end.

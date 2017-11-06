@@ -16,6 +16,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/auth/auth_user_email", 
+		"file": "ems_auth_user_email.json"
+	},
+
+	{
 		"catalog": "/emsbus/auth/auth_user_permission", 
 		"file": "ems_auth_user_permission.json"
 	},

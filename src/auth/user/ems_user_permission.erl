@@ -14,10 +14,8 @@
 
 -export([all/0, 
 		 find_by_id/1,		 
-		 find_by_codigo/1,
 		 find_by_name/1, 
  		 new_from_map/2,
-		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1,
@@ -42,18 +40,6 @@ all() ->
 	
 
 
--spec find_by_codigo(non_neg_integer()) -> {ok, #user_permission{}} | {error, enoent}.
-find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(user_permission_db, Codigo, #user_permission.codigo) of
-		[] -> case mnesia:dirty_index_read(user_permission_fs, Codigo, #user_permission.codigo) of
-				[] -> {error, enoent};
-				[Record|_] -> {ok, Record}
-			  end;
-		[Record|_] -> {ok, Record}
-	end.
-
-
-
 -spec find_by_name(binary() | string()) -> {ok, #user_permission{}} | {error, enoent}.
 find_by_name(<<>>) -> {error, enoent};
 find_by_name("") -> {error, enoent};
@@ -72,19 +58,17 @@ find_by_name(Name) ->
 
 
 -spec new_from_map(map(), #config{}) -> {ok, #user_permission{}} | {error, atom()}.
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-new_from_map(Map, _Conf, Id) ->
+new_from_map(Map, _Conf) ->
 	try
-		{ok, #user_permission{id = Id,
-							  codigo = maps:get(<<"codigo">>, Map, undefined),
-							  codigo_usuario = maps:get(<<"codigo_usuario">>, Map, undefined),
-							  codigo_cliente = maps:get(<<"codigo_cliente">>, Map, undefined),
-							  url = maps:get(<<"url">>, Map, <<>>),
-							  name = maps:get(<<"name">>, Map, <<>>),
+		{ok, #user_permission{id = trunc(maps:get(<<"id">>, Map)),
+							  user_id = maps:get(<<"user_id">>, Map),
+							  client_id = maps:get(<<"client_id">>, Map),
+							  url = ?UTF8_STRING(maps:get(<<"url">>, Map)),
+							  name = ?UTF8_STRING(maps:get(<<"name">>, Map)),
 							  grant_get = ems_util:parse_bool(maps:get(<<"grant_get">>, Map, true)),
-							  grant_post = ems_util:parse_bool(maps:get(<<"grant_post">>, Map, true)),
-							  grant_put = ems_util:parse_bool(maps:get(<<"grant_put">>, Map, true)),
-							  grant_delete = ems_util:parse_bool(maps:get(<<"grant_delete">>, Map, <<>>)),
+							  grant_post = ems_util:parse_bool(maps:get(<<"grant_post">>, Map, false)),
+							  grant_put = ems_util:parse_bool(maps:get(<<"grant_put">>, Map, false)),
+							  grant_delete = ems_util:parse_bool(maps:get(<<"grant_delete">>, Map, false)),
 							  ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 							  ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 							  ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
@@ -103,8 +87,8 @@ get_table(db) -> user_permission_db;
 get_table(fs) -> user_permission_fs.
 
 -spec find(user_permission_fs | user_permission_db, non_neg_integer()) -> {ok, #user_permission{}} | {error, enoent}.
-find(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user_permission.codigo) of
+find(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.
@@ -131,7 +115,7 @@ make_hash(Rowid, PesId) -> erlang:phash2([Rowid, PesId]).
 has_grant_permission(#service{oauth2_with_check_constraint = false}, _, _) -> true;
 has_grant_permission(#service{oauth2_with_check_constraint = true},
 					 #request{rowid = Rowid, type = Type}, 
-					 #user{codigo = Codigo}) ->
+					 #user{id = Codigo}) ->
 	Hash = make_hash(Rowid, Codigo),
 	case find_by_hash(Hash) of
 		{ok, #user_permission{grant_get = GrantGet, 

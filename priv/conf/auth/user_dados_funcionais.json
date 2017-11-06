@@ -1,10 +1,10 @@
 [
 	{
-		"codigo" : 1,
+		"id" : 1,
 		"type": 0,
 		"subtype" : 0,
 		"active": 1,
-		"passwd_crypto" : "",
+		"matricula" : 123456,
 		"active": true
 	}
 ]

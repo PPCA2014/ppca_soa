@@ -13,22 +13,18 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 -export([new_from_map/2,
-		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1]).
 
 
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-
--spec new_from_map(map(), #config{}, non_neg_integer()) -> {ok, #user_email{}} | {error, atom()}.
-new_from_map(Map, _Conf, Id) ->
+-spec new_from_map(map(), #config{}) -> {ok, #user_email{}} | {error, atom()}.
+new_from_map(Map, _Conf) ->
 	try
 		{ok, #user_email{
-					id = Id,
-					codigo = maps:get(<<"codigo">>, Map),
+					id = maps:get(<<"id">>, Map),
 					codigo_pessoa = maps:get(<<"codigo_pessoa">>, Map),
-					email = maps:get(<<"email">>, Map, <<>>),
+					email = ?UTF8_STRING(maps:get(<<"email">>, Map)),
 					type = maps:get(<<"type">>, Map, 1),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
@@ -48,8 +44,8 @@ get_table(db) -> user_email_db;
 get_table(fs) -> user_email_fs.
 
 -spec find(user_email_fs | user_email_db, non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
-find(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user_email.codigo) of
+find(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.

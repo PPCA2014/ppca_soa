@@ -16,7 +16,7 @@
 	"pool_max" : 1,
 	"enable" : false,
 	"sql_load" : 
-				"select u.UsuId as Codigo,   
+				"select u.UsuId as Id,   
 					   p.PesCodigoPessoa as CodigoPessoa, 
 					   lower(rtrim(u.UsuLogin)) as Login, 
 					   rtrim(p.PesNome) as Nome,  
@@ -40,7 +40,7 @@
 				",
 
 	"sql_update" :
-			"select u.UsuId as Codigo, 
+			"select u.UsuId as Id, 
 				   p.PesCodigoPessoa as CodigoPessoa, 
 				   lower(rtrim(u.UsuLogin)) as Login, 
 				   rtrim(p.PesNome) as Nome, 
@@ -65,7 +65,7 @@
 			      u.UsuDataCadastramento >= ? or p.PesDataCadastramento >= ?
 			",
 			
-	"fields" : ["codigo", "codigo_pessoa", "login", "name", "cpf", "password", 
+	"fields" : ["id", "codigo_pessoa", "login", "name", "cpf", "password", 
 				"passwd_crypto", "endereco", "complemento_endereco", 
 				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
 				"sexo", "telefone", "celular", "ddd"]

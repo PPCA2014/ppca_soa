@@ -17,9 +17,9 @@
 	"pool_max" : 1,
 	"enable" : false,
 	"sql_load" :
-			"select up.APeid as codigo, 
-				u.UsuPesIdPessoa as codigo_usuario, 
-					p.PerSisId as codigo_cliente, 
+			"select up.APeid as id, 
+				u.UsuPesIdPessoa as user_id, 
+					p.PerSisId as client_id, 
 					p.PerNome as name  
 			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 					 on u.UsuId = up.APeUsuId  
@@ -27,9 +27,9 @@
 					 on up.APePerId = p.PerId 
 		   ",
 	"sql_update" :
-			"select up.APeid as codigo, 
-				u.UsuPesIdPessoa as codigo_usuario, 
-				p.PerSisId as codigo_cliente, 
+			"select up.APeid as id, 
+				u.UsuPesIdPessoa as user_id, 
+				p.PerSisId as client_id, 
 				p.PerNome as name  
 			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
 					 on u.UsuId = up.APeUsuId  
@@ -37,5 +37,5 @@
 					 on up.APePerId = p.PerId  
 			where up.APeDataAlteracao >= ? or up.APeDataCadastramento >= ? 
 		   ",
-	"fields" : ["codigo", "codigo_usuario", "codigo_cliente", "name"]
+	"fields" : ["id", "user_id", "client_id", "name"]
 }

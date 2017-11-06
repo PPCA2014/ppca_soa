@@ -1,6 +1,6 @@
 [
 	{
-		"codigo" : 1,
+		"id" : 1,
 		"name": "geral",
 		"description": "erlangms",
 		"secret": "CPD",

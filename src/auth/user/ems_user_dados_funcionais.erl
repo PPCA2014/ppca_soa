@@ -13,24 +13,20 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 -export([new_from_map/2,
-		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1]).
 
 
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-
-%-spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
-new_from_map(Map, _Conf, Id) ->
+-spec new_from_map(map(), #config{}) -> {ok, #user_dados_funcionais{}} | {error, atom()}.
+new_from_map(Map, _Conf) ->
 	try
 		{ok, #user_dados_funcionais{
-					id = Id,
-					codigo = maps:get(<<"codigo">>, Map),
+					id = maps:get(<<"id">>, Map),
 					type = maps:get(<<"type">>, Map, 0),
 					subtype = maps:get(<<"subtype">>, Map, 0),
-					active = maps:get(<<"active">>, Map, 0),
-					matricula = maps:get(<<"matricula">>, Map, <<>>),
+					active = maps:get(<<"active">>, Map, true),
+					matricula = maps:get(<<"matricula">>, Map, undefined),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 					ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
@@ -49,8 +45,8 @@ get_table(db) -> user_dados_funcionais_db;
 get_table(fs) -> user_dados_funcionais_fs.
 
 -spec find(user_dados_funcionais_fs | user_dados_funcionais_db, non_neg_integer()) -> {ok, #user{}} | {error, atom()}.
-find(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user_dados_funcionais.codigo) of
+find(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.

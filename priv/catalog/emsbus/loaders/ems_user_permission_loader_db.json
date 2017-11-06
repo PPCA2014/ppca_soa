@@ -17,9 +17,9 @@
 	"pool_max" : 1,
 	"enable" : false,
 	"sql_load" :
-			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as codigo,
-					u.UsuId as codigo_usuario,
-					s.SisId as codigo_cliente,
+			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as id,
+					u.UsuId as user_id,
+					s.SisId as client_id,
 					pt.PTrVisualizar as GrantGet,
 					pt.PTrIncluir as GrantPost, 
 					pt.PTrAlterar as UpdateGrant, 
@@ -34,13 +34,12 @@
 							  on pt.PTrTraId = t.TraId 
 					join BDAcesso.dbo.TB_Sistemas s 
 							  on s.SisId = t.TraSisId 
-			where t.TraNomeFrm is not null and t.TraNomeFrm <> '' 	
-			order by codigo  desc					  
+			where t.TraNomeFrm is not null and t.TraNomeFrm <> '' 
 			",
 	"sql_update" :
-			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as codigo,
-					u.UsuId as codigo_usuario, 
-					s.SisId as codigo_cliente, 
+			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as id,
+					u.UsuId as user_id, 
+					s.SisId as client_id, 
 					pt.PTrVisualizar as GrantGet, 
 					pt.PTrIncluir as GrantPost,  
 					pt.PTrAlterar as UpdateGrant,  
@@ -59,5 +58,5 @@
 				  pt.PTrDataAlteracao >= ? or pt.PTrDataCadastramento >= ? or 
 				  t.TraDataAlteracao >= ? or t.TraDataCadastramento >= ?
 			",
-	"fields" : ["codigo", "codigo_usuario", "codigo_cliente", "grant_get", "grant_post", "grant_put", "grant_delete", "url", "name"]
+	"fields" : ["id", "user_id", "client_id", "grant_get", "grant_post", "grant_put", "grant_delete", "url", "name"]
 }

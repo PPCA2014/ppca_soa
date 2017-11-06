@@ -1,6 +1,6 @@
 [
 	{
-		"codigo" : 1,
+		"id" : 1,
 		"name": "erlangms",
 		"login" : "erlangms@unb.br",
 		"password": "fEqNCco3Yq9h5ZUglD3CZJT4lBs=",
@@ -12,7 +12,7 @@
 	},
 	
 	{
-		"codigo" : 2,
+		"id" : 2,
 		"name": "geral",
 		"login" : "geral",
 		"password": "fEqNCco3Yq9h5ZUglD3CZJT4lBs=",

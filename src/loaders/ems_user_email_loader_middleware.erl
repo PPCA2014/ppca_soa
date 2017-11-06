@@ -8,8 +8,8 @@
 
 -module(ems_user_email_loader_middleware).
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
@@ -85,13 +85,11 @@ update_email_tabela_users_([User|UserT], Email, UserTable) ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user_email:new_from_map(Map, Conf) of
-			{ok, NewRecord = #user_email{codigo = Codigo, ctrl_hash = CtrlHash, codigo_pessoa = CodigoPessoa}} -> 
+			{ok, NewRecord = #user_email{id = Id, ctrl_hash = CtrlHash, codigo_pessoa = CodigoPessoa}} -> 
 				Table = ems_user_email:get_table(SourceType),
-				case ems_user_email:find(Table, Codigo) of
+				case ems_user_email:find(Table, Id) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						Record = NewRecord#user_email{id = Id,
-													  ctrl_insert = CtrlDate},
+						Record = NewRecord#user_email{ctrl_insert = CtrlDate},
 						update_email_tabela_users(Record, SourceType, CodigoPessoa),
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_email{ctrl_hash = CurrentCtrlHash}} ->
@@ -99,7 +97,6 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 							true ->
 								?DEBUG("ems_user_email_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								Record = CurrentRecord#user_email{
-												 codigo = Codigo,
 												 codigo_pessoa = CodigoPessoa,
 												 email = NewRecord#user_email.email,
 												 type = NewRecord#user_email.type,

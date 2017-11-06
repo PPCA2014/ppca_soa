@@ -14,10 +14,8 @@
 
 -export([all/0, 
 		 find_by_id/1,		 
-		 find_by_codigo/1,
 		 find_by_name/1, 
  		 new_from_map/2,
-		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1]).
@@ -41,18 +39,6 @@ all() ->
 	
 
 
--spec find_by_codigo(non_neg_integer()) -> {ok, #user_perfil{}} | {error, enoent}.
-find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(user_perfil_db, Codigo, #user_perfil.codigo) of
-		[] -> case mnesia:dirty_index_read(user_perfil_fs, Codigo, #user_perfil.codigo) of
-				[] -> {error, enoent};
-				[Record|_] -> {ok, Record}
-			  end;
-		[Record|_] -> {ok, Record}
-	end.
-
-
-
 -spec find_by_name(binary() | string()) -> {ok, #user_perfil{}} | {error, enoent}.
 find_by_name(<<>>) -> {error, enoent};
 find_by_name("") -> {error, enoent};
@@ -71,14 +57,12 @@ find_by_name(Name) ->
 
 
 -spec new_from_map(map(), #config{}) -> {ok, #user_perfil{}} | {error, atom()}.
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-new_from_map(Map, _Conf, Id) ->
+new_from_map(Map, _Conf) ->
 	try
-		{ok, #user_perfil{id = Id,
-						  codigo = maps:get(<<"codigo">>, Map, undefined),
-						  codigo_usuario = maps:get(<<"codigo_usuario">>, Map, undefined),
-						  codigo_cliente = maps:get(<<"codigo_cliente">>, Map, undefined),
-						  name = maps:get(<<"name">>, Map, <<>>),
+		{ok, #user_perfil{id = maps:get(<<"id">>, Map, undefined),
+						  user_id = maps:get(<<"user_id">>, Map, undefined),
+						  client_id = maps:get(<<"client_id">>, Map, undefined),
+						  name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
 						  ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 						  ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 						  ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
@@ -97,8 +81,8 @@ get_table(db) -> user_perfil_db;
 get_table(fs) -> user_perfil_fs.
 
 -spec find(user_perfil_fs | user_perfil_db, non_neg_integer()) -> {ok, #user_perfil{}} | {error, enoent}.
-find(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user_perfil.codigo) of
+find(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.

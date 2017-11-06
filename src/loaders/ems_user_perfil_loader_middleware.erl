@@ -49,10 +49,10 @@ reset_sequence(fs) ->
 	
 	
 -spec check_remove_records(list(), fs | db) -> non_neg_integer().	
-check_remove_records(Codigos, SourceType) -> 
+check_remove_records(Ids, SourceType) -> 
 	Table = ems_user_perfil:get_table(SourceType),
 	F = fun() -> 
-				Q1 = qlc:q([R || R <- mnesia:table(Table), not lists:member(R#user_perfil.codigo, Codigos)]),
+				Q1 = qlc:q([R || R <- mnesia:table(Table), not lists:member(R#user_perfil.id, Ids)]),
 				qlc:e(Q1)
 		end,
 	{atomic, Records} = mnesia:transaction(F),
@@ -78,22 +78,19 @@ get_filename() ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user_perfil:new_from_map(Map, Conf) of
-			{ok, NewRecord = #user_perfil{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
+			{ok, NewRecord = #user_perfil{id = Id, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user_perfil:get_table(SourceType),
-				case ems_user_perfil:find(Table, Codigo) of
+				case ems_user_perfil:find(Table, Id) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						User = NewRecord#user_perfil{id = Id,
-													 ctrl_insert = CtrlDate},
+						User = NewRecord#user_perfil{ctrl_insert = CtrlDate},
 						{ok, User, Table, insert};
 					{ok, CurrentRecord = #user_perfil{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								?DEBUG("ems_user_perfil_perfil_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								UserPerfil = CurrentRecord#user_perfil{
-												 codigo = Codigo,
-												 codigo_usuario = NewRecord#user_perfil.codigo_usuario,
-												 codigo_cliente = NewRecord#user_perfil.codigo_cliente,
+												 user_id = NewRecord#user_perfil.user_id,
+												 client_id = NewRecord#user_perfil.client_id,
 												 name = NewRecord#user_perfil.name,
 												 ctrl_path = NewRecord#user_perfil.ctrl_path,
 												 ctrl_file = NewRecord#user_perfil.ctrl_file,

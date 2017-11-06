@@ -190,7 +190,7 @@ hashsym_and_params(_, _, _, _) -> throw(einvalid_url).
 												 
 
 hashsym_and_params_id([], P) -> 
-	case P > 0 andalso P =< 999999999999 of
+	case P > 0 andalso P =< 999999999999999999999 of
 		true -> {[], P};
 		false -> throw({einvalid_id_object, P})
 	end;

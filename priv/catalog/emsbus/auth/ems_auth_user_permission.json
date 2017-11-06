@@ -1,24 +1,38 @@
 [
-	{
+	{	
 		"name": "/auth/user/permission/:id",
-		"comment": "Returns a user permission through your Id",
+		"comment": "List permission by id",
 		"owner": "auth",
-		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/auth/user/permission/:id",
 		"type": "GET",
+		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user_permission"
+			"table_name" : ["user_permission_db", "user_permission_fs"],
+			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",
-		"lang" : "erlang"
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				}
+			]	
 	},
-	
+
 	{	
 		"name": "/auth/user/permission",
-		"comment": "List all registered user permissions",
+		"comment": "List all user permissions",
 		"owner": "auth",
 		"service" : "ems_api_query_service:find",
 		"url": "/auth/user/permission",
@@ -26,7 +40,59 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "user_permission"
+			"table_name" : ["user_permission_db", "user_permission_fs"],
+			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+		},
+		"schema_in" : "user_permission",
+		"schema_out" : "user_permission",
+		"querystring": [
+				{
+					"name": "filter",
+					"type": "string",
+					"default" : "",
+					"comment": "Filtro principal da pesquisa"
+				},
+				{
+					"name": "fields",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser retornados na pesquisa"
+				},
+				{
+					"name": "limit",
+					"type": "int",
+					"default" : "100",
+					"comment": "Quantidade máxima de registros retornados"
+				},
+				{
+					"name": "offset",
+					"type": "int",
+					"default" : "1",
+					"comment": "Offset retornado da consulta"
+				},
+				{
+					"name": "sort",
+					"type": "string",
+					"default" : "",
+					"comment": "Campos que devem ser ordenados"
+				}
+			]	
+	},
+
+	{	
+		"name": "/auth/user/:id/permission",
+		"comment": "List all user permissions",
+		"owner": "auth",
+		"service" : "ems_api_query_service:find_by_owner",
+		"url": "/auth/user/:id/permission",
+		"type": "GET",
+		"lang" : "erlang",
+		"datasource" : {
+			"type" : "mnesia",
+			"table_name" : ["user_permission_db", "user_permission_fs"],
+			"foreign_table_name" : ["user_db", "user_fs"],
+			"foreign_key" : "user_id",
+			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",

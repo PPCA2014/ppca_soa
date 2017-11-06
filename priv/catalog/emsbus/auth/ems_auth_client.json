@@ -11,8 +11,8 @@
 		"authorization" : "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "client_db",
-			"table_name2" : "client_fs"
+			"table_name" : ["client_db", "client_fs"],
+			"fields" : ["id", "name", "description", "secret", "redirect_uri", "active", "scope"]
 		},
 		"schema_in" : "client",
 		"schema_out" : "client",
@@ -30,7 +30,8 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "client"
+			"table_name" : ["client_db", "client_fs"],
+			"fields" : ["id", "name", "description", "secret", "redirect_uri", "active", "scope"]
 		},
 		"schema_in" : "client",
 		"schema_out" : "client",

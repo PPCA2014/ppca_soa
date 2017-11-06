@@ -149,8 +149,8 @@ verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
     end.
     
 
-verify_client_scope(#client{codigo = ClientID},Scope, _) ->
-	case ems_client:find_by_codigo(ClientID) of
+verify_client_scope(#client{id = ClientID}, Scope, _) ->
+	case ems_client:find_by_id(ClientID) of
         {ok, #client{scope = Scope0}} ->     
 			case Scope =:= Scope0 of
 				true -> {ok, {[],Scope0}};

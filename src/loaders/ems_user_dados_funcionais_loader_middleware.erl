@@ -8,8 +8,8 @@
 
 -module(ems_user_dados_funcionais_loader_middleware).
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
@@ -61,31 +61,29 @@ get_filename() ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user_dados_funcionais:new_from_map(Map, Conf) of
-			{ok, NewRecord = #user_dados_funcionais{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
+			{ok, NewRecord = #user_dados_funcionais{id = Id, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user_dados_funcionais:get_table(SourceType),
-				case ems_user_dados_funcionais:find(Table, Codigo) of
+				case ems_user_dados_funcionais:find(Table, Id) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						Record = NewRecord#user_dados_funcionais{id = Id,
-											ctrl_insert = CtrlDate},
+						Record = NewRecord#user_dados_funcionais{ctrl_insert = CtrlDate},
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_dados_funcionais{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								% Sincroniza alguns campos que estão na tabela user por conveniência
 								UserTable = ems_user:get_table(SourceType),
-								case ems_user:find(UserTable, Codigo) of
+								case ems_user:find(UserTable, Id) of
 									{ok, User} ->
-										User2 = User#user{type = User#user.type,
-														  subtype = User#user.subtype,
-														  active = User#user.active},
+										User2 = User#user{type = CurrentRecord#user_dados_funcionais.type,
+														  subtype = CurrentRecord#user_dados_funcionais.subtype,
+														  active = CurrentRecord#user_dados_funcionais.active,
+														  matricula = CurrentRecord#user_dados_funcionais.matricula},
 										mnesia:dirty_write(UserTable, User2);
 									_ -> ok
 								end,
 								
 								?DEBUG("ems_user_dados_funcionais_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								Record = CurrentRecord#user_dados_funcionais{
-												 codigo = Codigo,
 												 type = NewRecord#user_dados_funcionais.type,
 												 subtype = NewRecord#user_dados_funcionais.subtype,
 												 active = NewRecord#user_dados_funcionais.active,

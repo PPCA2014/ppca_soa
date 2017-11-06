@@ -61,20 +61,17 @@ get_filename() ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_client:new_from_map(Map, Conf) of
-			{ok, NewClient = #client{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
+			{ok, NewClient = #client{id = Id, ctrl_hash = CtrlHash}} -> 
 				Table = ems_client:get_table(SourceType),
-				case ems_client:find(Table, Codigo) of
+				case ems_client:find(Table, Id) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						Client = NewClient#client{id = Id,
-											      ctrl_insert = CtrlDate},
+						Client = NewClient#client{ctrl_insert = CtrlDate},
 						{ok, Client, Table, insert};
 					{ok, CurrentClient = #client{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								?DEBUG("ems_client_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								Client = CurrentClient#client{
-												 codigo = Codigo,
 												 name = NewClient#client.name,
 												 secret = NewClient#client.secret,
 												 redirect_uri = NewClient#client.redirect_uri,

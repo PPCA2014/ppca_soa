@@ -632,7 +632,10 @@ do_log_request(#request{rid = RID,
 										_ -> Filename
 									 end,
 				   <<"\n\tStatus: ">>, integer_to_binary(Code), 
-				   <<" <<">>, atom_to_binary(Reason, utf8), <<">> (">>, integer_to_binary(Latency), <<"ms)\n}">>]),
+				   <<" <<">>, case is_atom(Reason) of
+									true -> atom_to_binary(Reason, utf8);
+									false -> <<"error">>
+							  end, <<">> (">>, integer_to_binary(Latency), <<"ms)\n}">>]),
 				   
 			NewState = case Code >= 400 of
 							true  -> write_msg(error, Texto1, State#state{ult_reqhash = ReqHash});

@@ -8,8 +8,8 @@
 
 -module(ems_user_permission_loader_middleware).
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
 -export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
@@ -48,10 +48,10 @@ reset_sequence(fs) ->
 
 
 -spec check_remove_records(list(), fs | db) -> non_neg_integer().	
-check_remove_records(Codigos, SourceType) -> 
+check_remove_records(Ids, SourceType) -> 
 	Table = ems_user_permission:get_table(SourceType),
 	F = fun() -> 
-				Q1 = qlc:q([R || R <- mnesia:table(Table), not lists:member(R#user_permission.codigo, Codigos)]),
+				Q1 = qlc:q([R || R <- mnesia:table(Table), not lists:member(R#user_permission.id, Ids)]),
 				qlc:e(Q1)
 		end,
 	{atomic, Records} = mnesia:transaction(F),
@@ -75,23 +75,21 @@ get_filename() ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user_permission:new_from_map(Map, Conf) of
-			{ok, NewRecord = #user_permission{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
+			{ok, NewRecord = #user_permission{id = Id, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user_permission:get_table(SourceType),
-				case ems_user_permission:find(Table, Codigo) of
+				case ems_user_permission:find(Table, Id) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						User = NewRecord#user_permission{id = Id,
-														 ctrl_insert = CtrlDate},
+						User = NewRecord#user_permission{ctrl_insert = CtrlDate},
 						{ok, User, Table, insert};
 					{ok, CurrentRecord = #user_permission{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								?DEBUG("ems_user_permission_perfil_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								UserPermission = CurrentRecord#user_permission{
-												 codigo = Codigo,
-												 codigo_usuario = NewRecord#user_permission.codigo_usuario,
-												 codigo_cliente = NewRecord#user_permission.codigo_cliente,
+												 user_id = NewRecord#user_permission.user_id,
+												 client_id = NewRecord#user_permission.client_id,
 												 name = NewRecord#user_permission.name,
+												 url = NewRecord#user_permission.url,
 												 grant_get = NewRecord#user_permission.grant_get,
 												 grant_post = NewRecord#user_permission.grant_post,
 												 grant_put = NewRecord#user_permission.grant_put,

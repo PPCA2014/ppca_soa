@@ -10,12 +10,12 @@
 
 -compile({parse_transform, exprecs}).
 
--include("../include/ems_schema.hrl").
+-include("include/ems_schema.hrl").
 
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
--export_records([user, user_permission, user_perfil, catalog_schema, schema_type, 
-				 produto, service, service_owner, client, service_datasource]).
+-export_records([user, user_permission, user_perfil, user_email, user_dados_funcionais, 
+				 catalog_schema, schema_type, produto, service, service_owner, client, service_datasource]).
 
 
 % to_record
@@ -48,9 +48,12 @@ to_record(_, _) -> erlang:error(einvalid_to_record).
 to_list(Record) when is_tuple(Record)-> 
 	try
 		{struct, Result} = json_rec:to_json(Record, ?MODULE),
-		lists:reverse(Result)
+		Result
 	catch 
-		_Exception:_Reason -> lists:reverse(to_list_tuple(Record))
+		_Exception:invalid_string -> 
+			ems_logger:warn("ems_schema to_list invalid_string: ~p.", [Record]),
+			[];
+		_Exception:_Reason -> to_list_tuple(Record)
 	end;
 to_list(Type) when is_atom(Type)-> 
 	NewRecord = new(Type),
@@ -65,14 +68,8 @@ to_list(_) -> erlang:error(einvalid_to_list).
 
 
 to_list_tuple(Tuple) ->
-	case size(Tuple) rem 2 == 0 of
-		true ->  
-			T2 = ems_util:tuple_to_binlist(Tuple),
-			to_list_tuple(T2, []);
-		_ -> erlang:error(einvalid_to_list)
-	end.
-
-
+	T2 = ems_util:tuple_to_binlist(Tuple),
+	to_list_tuple(T2, []).
 
 
 to_list_tuple([], L) ->	L;	
@@ -123,6 +120,7 @@ to_json_list([H|T], L) ->
 to_value(<<>>) -> <<"null"/utf8>>;
 to_value([]) -> <<"null"/utf8>>;
 to_value(null) -> <<"null"/utf8>>;
+to_value(undefined) -> <<"null"/utf8>>;
 to_value("0.0") -> <<"0.0"/utf8>>;
 to_value(true) -> <<"true"/utf8>>;
 to_value(false) -> <<"false"/utf8>>;
@@ -132,7 +130,7 @@ to_value(Data = {{_,_,_},{_,_,_}}) ->
 to_value(Value) when is_float(Value) -> list_to_binary(mochinum:digits(Value));
 to_value(Value) when is_integer(Value) -> integer_to_binary(Value);
 to_value(Value) when is_atom(Value) -> 
-	[<<"\""/utf8>>, atom_to_list(Value), <<"\""/utf8>>];
+	[<<"\""/utf8>>, atom_to_binary(Value, utf8), <<"\""/utf8>>];
 to_value(Value) when is_binary(Value) -> 
 	[<<"\""/utf8>>, Value, <<"\""/utf8>>];
 to_value([<<Key/binary>>, <<Value/binary>>]) -> 
@@ -175,6 +173,8 @@ new(catalog_schema) -> #catalog_schema{};
 new(user) -> #user{};
 new(user_permission) -> #user_permission{};
 new(user_perfil) -> #user_perfil{};
+new(user_email) -> #user_email{};
+new(user_dados_funcionais) -> #user_dados_funcionais{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
 new(client) -> #client{};
@@ -187,6 +187,8 @@ new_(service_datasource) -> #service_datasource{_ = '_'};
 new_(catalog_schema) -> #catalog_schema{_ = '_'};
 new_(user) -> #user{_ = '_'};
 new_(user_permission) -> #user_permission{_ = '_'};
+new_(user_email) -> #user_email{_ = '_'};
+new_(user_dados_funcionais) -> #user_dados_funcionais{_ = '_'};
 new_(user_perfil) -> #user_perfil{_ = '_'};
 new_(client) -> #client{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).

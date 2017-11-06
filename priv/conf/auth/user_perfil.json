@@ -1,14 +1,16 @@
 [
 	{
-		"codigo" : 1,
+		"id" : 1,
 		"name": "admin",
-		"user_id" : 1
+		"user_id" : 1,
+		"client_id" : 1
 	},
 	
 	{
-		"codigo" : 2,
+		"id" : 2,
 		"name": "admin",
-		"user_id" : 2
+		"user_id" : 2,
+		"client_id" : 2
 	}
 	
 ]

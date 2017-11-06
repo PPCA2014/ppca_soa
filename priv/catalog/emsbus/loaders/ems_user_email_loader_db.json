@@ -17,7 +17,7 @@
 	"enable" : false,
 	"sql_load" : 
 				"select 
-				   em.EmaCodigo as codigo,
+				   em.EmaCodigo as id,
 				   p.PesCodigoPessoa as codigo_pessoa,
 				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as email,
 				   em.EmaTipo as type 
@@ -30,7 +30,7 @@
 
 	"sql_update" : 
 				"select 
-				   em.EmaCodigo as codigo,
+				   em.EmaCodigo as id,
 				   p.PesCodigoPessoa as codigo_pessoa,
 				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as email,
 				   em.EmaTipo as type 
@@ -43,6 +43,6 @@
                 ",
 
 			
-	"fields" : ["codigo", "codigo_pessoa", "email", "type"]
+	"fields" : ["id", "codigo_pessoa", "email", "type"]
 				
 }

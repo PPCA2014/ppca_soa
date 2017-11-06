@@ -14,12 +14,10 @@
 
 -export([insert/1, update/1, all/0, delete/1, 
 		 find_by_id/1,		 
-		 find_by_codigo/1,
 		 find_by_name/1,
 		 find_by_codigo_and_secret/2,
 		 to_json/1,
 		 new_from_map/2,
-		 new_from_map/3,
 		 get_table/1,
 		 find/2,
 		 all/1]).
@@ -43,24 +41,10 @@ all() ->
 	{ok, ListaUserDb ++ ListaUserFs}.
 
 
--spec find_by_codigo(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
-find_by_codigo(Codigo) when is_binary(Codigo) ->
-	find_by_codigo(ems_util:binary_to_integer(Codigo));
-find_by_codigo(Codigo) when is_list(Codigo) ->
-	find_by_codigo(list_to_integer(Codigo));
-find_by_codigo(Codigo) ->
-	case mnesia:dirty_index_read(client_db, Codigo, #client.codigo) of
-		[] -> case mnesia:dirty_index_read(client_fs, Codigo, #client.codigo) of
-				[] -> {error, enoent};
-				[Record|_] -> {ok, Record}
-			  end;
-		[Record|_] -> {ok, Record}
-	end.
-
 	
 -spec find_by_codigo_and_secret(non_neg_integer(), binary()) -> {ok, #client{}} | {error, enoent}.
 find_by_codigo_and_secret(Codigo, Secret) ->
-	case find_by_codigo(Codigo) of
+	case find_by_id(Codigo) of
 		{ok, Client = #client{secret = CliSecret}} -> 
 			case CliSecret =:= Secret orelse CliSecret =:= ems_util:criptografia_sha1(Secret)  of
 				true -> {ok, Client};
@@ -94,19 +78,17 @@ to_json(Client) ->
 	iolist_to_binary([
 		<<"{"/utf8>>,
 			<<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.id), <<","/utf8>>,
-			<<"\"codigo\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.codigo), <<","/utf8>>,
 			<<"\"description\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Client#client.description, <<"\""/utf8>>, 
 		<<"}"/utf8>>
 		]).
 
 	
 -spec new_from_map(map(), #config{}) -> {ok, #client{}} | {error, atom()}.
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
-new_from_map(Map, _Conf, Id) ->
+new_from_map(Map, _Conf) ->
 	try
-		{ok, #client{id = Id,
-				codigo = maps:get(<<"codigo">>, Map, undefined),
-				name = ?UTF8_STRING(maps:get(<<"name">>, Map, <<>>)),
+		{ok, #client{
+				id = maps:get(<<"id">>, Map),
+				name = ?UTF8_STRING(maps:get(<<"name">>, Map)),
 				secret = ?UTF8_STRING(maps:get(<<"secret">>, Map, <<>>)),
 				redirect_uri = ?UTF8_STRING(maps:get(<<"redirect_uri">>, Map, <<>>)),
 				description = ?UTF8_STRING(maps:get(<<"description">>, Map, <<>>)),
@@ -130,8 +112,8 @@ get_table(db) -> client_db;
 get_table(fs) -> client_fs.
 
 -spec find(client_fs | client_db, non_neg_integer()) -> {ok, #client{}} | {error, enoent}.
-find(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #client.codigo) of
+find(Table, Id) ->
+	case mnesia:dirty_read(Table, Id) of
 		[] -> {error, enoent};
 		[Record|_] -> {ok, Record}
 	end.

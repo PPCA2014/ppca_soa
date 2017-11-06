@@ -17,7 +17,8 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
 			case ems_db:find(TableName, FieldList, FilterList, Limit, Offset) of
-				{ok, Result} -> ResultJson = ems_schema:to_json(Result);
+				{ok, Result} -> 
+					ResultJson = ems_schema:to_json(Result);
 				_ -> ResultJson = ?EMPTY_LIST_JSON
 			end,
 			{ok, ResultJson};

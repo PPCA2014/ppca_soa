@@ -8,8 +8,8 @@
 
 -module(ems_user_loader_middleware).
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
@@ -60,15 +60,13 @@ get_filename() ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user:new_from_map(Map, Conf) of
-			{ok, NewUser = #user{codigo = Codigo, ctrl_hash = CtrlHash}} -> 
+			{ok, NewUser = #user{id = Id, ctrl_hash = CtrlHash}} -> 
 				Table = ems_user:get_table(SourceType),
-				case ems_user:find(Table, Codigo) of
+				case ems_user:find(Table, Id) of
 					{error, enoent} -> 
-						case SourceType == fs orelse (SourceType == db andalso not ems_user:exist(user_fs, Codigo)) of
+						case SourceType == fs orelse (SourceType == db andalso not ems_user:exist(user_fs, Id)) of
 							true ->
-								Id = ems_db:sequence(Table),
-								User = NewUser#user{id = Id,
-													ctrl_insert = CtrlDate},
+								User = NewUser#user{ctrl_insert = CtrlDate},
 								{ok, User, Table, insert};
 							false ->
 								{ok, skip}
@@ -78,7 +76,6 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 							true ->
 								?DEBUG("ems_user_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								User = CurrentUser#user{
-												 codigo = Codigo,
 												 codigo_pessoa = NewUser#user.codigo_pessoa,
 												 login = NewUser#user.login,
 												 name = NewUser#user.name,

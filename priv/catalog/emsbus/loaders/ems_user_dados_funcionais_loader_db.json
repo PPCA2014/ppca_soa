@@ -17,7 +17,7 @@
 	"enable" : false,
 	"sql_load" : 
 				"select distinct 
-					   u.UsuId as Codigo, 
+					   u.UsuId as id, 
 					   Isnull(ca.categocargo, 4) as Type, 
 					   0 as SubType, 
 					   case 
@@ -38,6 +38,6 @@
                 ",
 
 			
-	"fields" : ["codigo", "type", "subtype", "active", "matricula"]
+	"fields" : ["id", "type", "subtype", "active", "matricula"]
 				
 }

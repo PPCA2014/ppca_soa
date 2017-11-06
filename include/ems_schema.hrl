@@ -12,8 +12,7 @@
 -record(counter, {key :: atom(), 
      			  index :: non_neg_integer()}).
 
--record(user, {id :: non_neg_integer(), 					%% id (required)
-			   codigo :: non_neg_integer(),					%% identificador externo do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
+-record(user, {id :: non_neg_integer(), 					%% identificador do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
 			   codigo_pessoa :: non_neg_integer(),			%% código pessoa se o usuário possui dados pessoais em outra tabela externa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
 			   login :: binary(),							%% login do usuário (required)
 			   name :: binary(), 							%% nome do usuário (required)
@@ -47,12 +46,11 @@
 		}).
 		
 -record(user_dados_funcionais, {
-			   id :: non_neg_integer(), 					%% id (required)
-			   codigo :: non_neg_integer(),					%% código identificador externo dos dados funcionais (Na UnB é o campo Tb_Usuario.UsuId)
+			   id :: non_neg_integer(), 					%% %% identificador dos dados funcionais (Na UnB é o campo Tb_Usuario.UsuId)
 			   type :: non_neg_integer(),					%% 0 = interno  1 = tecnico  2 = docente  3 = discente
 			   subtype :: non_neg_integer(),				%% se aluno,  1 = extensao 2 = graduacao 3 = aperfeicoamento 4 = especializacao 5 = mestrado 6 = doutorado 7 = pos-doutorado 8 = residencia 9 = aluno especial - graduacao 10 = aluno especial - pos-graduacao 11 = estagio em pos-graduacao
 			   active :: boolean(),
-			   matricula :: non_neg_integer(),				%% se tem alguma matrícula proveniente de dados funcionais
+			   matricula :: non_neg_integer(),				%% matrícula proveniente de dados funcionais
 			   ctrl_path :: string(),
 			   ctrl_file :: string(),
 			   ctrl_insert,									%% Data que o serviço foi inserido no banco mnesia
@@ -62,8 +60,7 @@
 		}).
 
 -record(user_email, {
-			   id :: non_neg_integer(), 					%% id (required)
-			   codigo :: non_neg_integer(),					%% código identificador externo dos email (Na UnB é o campo TB_Email.EmaCodigo)
+			   id :: non_neg_integer(), 					%% identificador dos email (Na UnB é o campo TB_Email.EmaCodigo)
 			   codigo_pessoa :: non_neg_integer(),			%% código pessoa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
 			   email :: binary(),	
 			   type :: non_neg_integer(),					%% 1 = institucional  2 = outro
@@ -75,12 +72,9 @@
 			   ctrl_hash									%% Hash gerado para poder comparar dois registros
 		}).
 
--record(user_permission, {id :: non_neg_integer(),	
-						  codigo :: non_neg_integer(),			%% identificador externo do perfil (required) (Na UnB é o campo TB_Perfil_Transacao.PTrid)
-						  codigo_usuario :: non_neg_integer(),	%% identificador externo do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
-						  codigo_cliente :: non_neg_integer(),	%% identificador externo do usuário (required) (Na UnB é o campo Tb_Sistemas.PerSisId)
-						  user_id :: non_neg_integer(),			%% identificador interno do usuário (required)
-						  client_id :: non_neg_integer(),		%% identificador interno do client (required)
+-record(user_permission, {id :: non_neg_integer(),			%% identificador do perfil (required) (Na UnB é o campo TB_Perfil_Transacao.PTrid)
+						  user_id :: non_neg_integer(),		%% identificador do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
+						  client_id :: non_neg_integer(),	%% identificador do cliente (required) (Na UnB é o campo Tb_Sistemas.PerSisId)
 						  hash :: non_neg_integer(),
 						  hash2 :: non_neg_integer(),
 						  name :: binary(),
@@ -98,10 +92,7 @@
           }).
 
 
--record(user_perfil, {id :: non_neg_integer(), 					
-					  codigo :: non_neg_integer(),			%% identificador externo do perfil (required) (Na UnB é o campo Tb_Perfil.PerId)			
-					  codigo_usuario :: non_neg_integer(),	%% identificador externo do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
-					  codigo_cliente :: non_neg_integer(),	%% identificador externo do usuário (required) (Na UnB é o campo Tb_Sistemas.PerSisId)
+-record(user_perfil, {id :: non_neg_integer(), 				%% identificador do perfil (required) (Na UnB é o campo Tb_Perfil.PerId)				
 					  user_id :: non_neg_integer(),			%% identificador interno do usuário (required)
 					  client_id :: non_neg_integer(),		%% identificador interno do client (required)
 					  name :: binary(), 					%% nome do perfil (required)
@@ -115,7 +106,6 @@
           
 
 -record(client, {id :: non_neg_integer(), 					
-				 codigo :: non_neg_integer(),				
 				 name :: binary(), 
 			     description :: binary(),
 			     secret :: binary(),
