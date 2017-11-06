@@ -38,6 +38,11 @@ create_database(Nodes) ->
 	application:set_env(mnesia, dir, ?DATABASE_PATH),
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
+
+    mnesia:create_table(service_datasource, [{type, set},
+											 {ram_copies, Nodes},
+											 {attributes, record_info(fields, service_datasource)}]),
+
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
 							   {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
@@ -139,10 +144,6 @@ create_database(Nodes) ->
 								  {ram_copies, Nodes},
 								  {attributes, record_info(fields, request)},
 								  {index, [#request.timestamp]}]),
-
-    mnesia:create_table(service_datasource, [{type, set},
-											 {ram_copies, Nodes},
-											 {attributes, record_info(fields, service_datasource)}]),
 
     mnesia:create_table(ctrl_sqlite_table, [{type, set},
 											{disc_copies, Nodes},
@@ -255,7 +256,7 @@ create_database(Nodes) ->
 										  {record_name, service}]),
 
 	% foi preciso aguardar um pouco a inicialização do banco
-	%ems_util:sleep(1000),
+	ems_util:sleep(1000),
 
 	ok.
 
@@ -845,8 +846,6 @@ parse_datasource_fields(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
 parse_datasource_fields(_, Value) -> binary_to_list(Value).
 
 -spec parse_datasource_primary_key(atom(), binary()) -> string() | atom().
-parse_datasource_primary_key(sqlserver, undefined) -> erlang:error(einvalid_datasource_primary_key_property);
-parse_datasource_primary_key(sqlserver, <<>>) -> erlang:error(einvalid_datasource_primary_key_property);
 parse_datasource_primary_key(_, undefined) -> undefined;
 parse_datasource_primary_key(_, <<>>) -> undefined;
 parse_datasource_primary_key(mnesia, Value) -> binary_to_atom(Value, utf8);
