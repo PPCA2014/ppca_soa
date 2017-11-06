@@ -1,0 +1,1 @@
+timer:tc(fun() -> [ems_util:timestamp_str() || X <- lists:seq(1,1000)] end).

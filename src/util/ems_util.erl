@@ -48,17 +48,18 @@
 		 get_param_url/3,
 		 get_querystring/3,
 		 get_querystring/4,
-		 get_querystring/2,
-		 date_add_minute/2,
-		 date_dec_minute/2,
-		 date_add_second/2,
-		 date_dec_second/2,
+         get_querystring/2,
+         date_add_minute/2,
+         date_dec_minute/2,
+         date_add_second/2,
+         date_dec_second/2,
 		 date_add_day/2,
 		 date_to_string/1,
 		 date_to_binary/1,
  		 no_periodo/2,
  		 timestamp_str/0,
 		 timestamp_str/1,
+		 timestamp_binary/0,
 		 timestamp_binary/1,
 		 uptime_str/0,
 		 boolean_to_binary/1,
@@ -237,20 +238,185 @@ sleep(T) ->
 	    after T -> true
     end.
 
-%% @doc Retorna o timestamp em formato texto
-timestamp_str() ->
-	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
-	lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg])).
 
+-spec timestamp_str() -> string().
+timestamp_str() -> binary_to_list(timestamp_binary()).
+
+-spec timestamp_binary() -> binary().
+timestamp_binary() ->
+	Timestamp = calendar:local_time(),
+	timestamp_binary(Timestamp).
+	
 -spec timestamp_str(tuple()) -> string().
-timestamp_str({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
-  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg]));
+timestamp_str({{_Ano,_Mes,_Dia},{_Hora,_Min,_Seg}} = Timestamp) ->	binary_to_list(timestamp_binary(Timestamp));
 timestamp_str(_) -> "".  
 
 -spec timestamp_binary(tuple()) -> binary().
 timestamp_binary({{Ano,Mes,Dia},{Hora,Min,Seg}}) ->
-  lists:flatten(io_lib:format("~2..0w/~2..0w/~4..0w ~2..0w:~2..0w:~2..0w", [Dia, Mes, Ano, Hora, Min, Seg]));
+	DiaBin = integer_to_binary(Dia),
+	MesBin = integer_to_binary(Mes),
+	AnoBin = integer_to_binary(Ano),
+	HoraBin = integer_to_binary(Hora),
+	MinBin = integer_to_binary(Min),
+	SegBin = integer_to_binary(Seg),
+	case Seg < 10 of 
+		true -> 
+			case Min < 10 of 
+				true ->
+					case Hora < 10 of
+						true ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin])
+									end
+							end;
+						false ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":0">>, SegBin])
+									end
+							end
+					end;
+				false ->
+					case Hora < 10 of
+						true ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin])
+									end
+							end;
+						false ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":0">>, SegBin])
+									end
+							end
+					end
+			end;
+		false ->
+			case Min < 10 of 
+				true ->
+					case Hora < 10 of
+						true ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin])
+									end
+							end;
+						false ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":0">>, MinBin, <<":">>, SegBin])
+									end
+							end
+					end;
+				false ->
+					case Hora < 10 of
+						true ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" 0">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin])
+									end
+							end;
+						false ->
+							case Mes < 10 of
+								true -> 
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/0">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin])
+									end;
+								false ->
+									case Dia < 10 of
+										true -> 
+											iolist_to_binary([<<"0">>, DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin]);
+										false ->
+											iolist_to_binary([DiaBin, <<"/">>, MesBin, <<"/">>, AnoBin, <<" ">>, HoraBin, <<":">>, MinBin, <<":">>, SegBin])
+									end
+							end
+					end
+			end
+	end;
 timestamp_binary(_) ->  <<>>.
+
 
 -spec date_to_string(tuple()) -> string().
 date_to_string({{Ano,Mes,Dia},{_Hora,_Min,_Seg}}) ->
