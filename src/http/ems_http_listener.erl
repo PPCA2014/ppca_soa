@@ -64,9 +64,9 @@ init({IpAddress,
 			Ret = cowboy:start_tls(ListenerName, [  {ip, IpAddress},
 													{port, Port},
 													{max_connections, MaxConnections},
-													{cacertfile, SslCaCertFile},
-													{certfile, SslCertFile},
-													{keyfile, SslKeyFile}
+													{cacertfile, binary_to_list(SslCaCertFile)},
+													{certfile, binary_to_list(SslCertFile)},
+													{keyfile, binary_to_list(SslKeyFile)}
 												  ], #{compress => true, 
 													   env => #{dispatch => Dispatch}});
 		false ->

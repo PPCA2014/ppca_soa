@@ -35,6 +35,7 @@ to_record(Map, Type) when is_map(Map), is_atom(Type) ->
 	NewRecord = new(Type),
 	json_rec:to_rec(JsonStruct, ?MODULE, NewRecord);
 to_record(Map, Record) when is_map(Map), is_tuple(Record)->
+	io:format("aqui1\n"),
 	List = maps:to_list(Map),
 	JsonStruct = {struct, List},
 	json_rec:to_rec(JsonStruct, ?MODULE, Record);
@@ -95,21 +96,15 @@ to_list([H|T], FieldList, Result) ->
 % to_json
 -spec to_json(tuple() | map() | list(map()) | list() | binary()) -> binary().
 to_json(Value) when is_tuple(Value) -> 
-	io:format("aqui ~p\n", [Value]),
 	ListTuple = to_list(Value),
-	io:format("aqui ok ~p\n", [ListTuple]),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
 to_json(Value) when is_map(Value) -> 
-	io:format("aqui2\n"),
 	ems_util:json_encode(Value);
 to_json([Map|_] = Value) when is_map(Map) -> 
-	io:format("aqui3n"),
 	ems_util:json_encode(Value);
 to_json(Value) when is_list(Value) -> 
-	io:format("aqui4\n"),
 	iolist_to_binary([<<"["/utf8>>, to_json_list(Value, []), <<"]"/utf8>>]);
 to_json(Value) -> 
-	io:format("aqui5\n"),
 	Value.
 
 	
@@ -135,6 +130,7 @@ to_value("0.0") -> <<"0.0"/utf8>>;
 to_value(true) -> <<"true"/utf8>>;
 to_value(false) -> <<"false"/utf8>>;
 to_value(<<"undefined">>) -> <<"null"/utf8>>;
+to_value("undefined") -> <<"null"/utf8>>;
 to_value(Data = {{_,_,_},{_,_,_}}) -> 
 	ems_util:date_to_string(Data);
 to_value(Value) when is_float(Value) -> list_to_binary(mochinum:digits(Value));
@@ -142,25 +138,21 @@ to_value(Value) when is_integer(Value) -> integer_to_binary(Value);
 to_value(Value) when is_atom(Value) -> 
 	[<<"\""/utf8>>, atom_to_binary(Value, utf8), <<"\""/utf8>>];
 to_value(Value) when is_binary(Value) -> 
-	io:format("aqui8 ~p\n", [Value]),
 	[<<"\""/utf8>>, Value, <<"\""/utf8>>];
 to_value([<<Key/binary>>, <<Value/binary>>]) -> 
 	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
 	case io_lib:printable_list(Value) of 
 		true ->	
-			io:format("aqui5 ~p\n", [Value]),
 			ems_util:json_field_strip_and_escape(ems_util:utf8_list_to_string(Value));
 		_ -> 
-			io:format("aqui6 ~p\n", [Value]),
-			to_json(Value)
+			to_json(list_to_tuple(Value))
 	end;
 to_value(Value) when is_map(Value) ->
 	ems_util:json_encode(Value);
 to_value(Value) when is_tuple(Value) ->	
-	io:format("aqui7 ~p\n", [Value]),
 	to_json(Value);
-to_value(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
+to_value(_) -> <<"null"/utf8>>.
 
 
 prop_list_to_json(PropList) -> 

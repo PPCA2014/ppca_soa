@@ -1,18 +1,25 @@
 [
 	{
 		"name": "/catalog/put",
-		"comment": "List catalogs.",
+		"comment": "List catalogs of put type.",
 		"owner": "ems-bus",
 		"version": "1.0.0",
 		"service" : "ems_api_query_service:find",
 		"url": "/catalog/put",
-		"async": "false",
+		"async": false,
 		"type": "GET",
 		"authorization" : "basic",
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "catalog_put"
+			"table_name" : ["catalog_put_db", "catalog_put_fs"],
+			"fields" : ["id", "rowid", "name", "url", "type", "service", "lang", 
+						"use_re", "public", "comment", "version", "owner", 
+						"async", "result_cache", "authorization", "lang", 
+						"debug", "timeout", "redirect_url", "cache_control", 
+						"enable", "content_type", "tcp_is_ssl",
+						"tcp_ssl_cacertfile", "tcp_ssl_certfile",
+						"tcp_ssl_keyfile", "start_timeout"]
 		},
 		"schema_in" : "service",
 		"schema_out" : "service",
@@ -52,80 +59,29 @@
 
 	{
 		"name": "/catalog/put/:id",
-		"comment": "Find catalog.",
+		"comment": "Find catalog of put type by id.",
 		"owner": "ems-bus",
 		"version": "1.0.0",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/catalog/put/:id",
-		"async": "false",
+		"async": false,
 		"type": "GET",
 		"authorization" : "basic",
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "catalog_put"
-		},
-		"schema_in" : "service",
-		"schema_out" : "service"
-	},
+				"table_name" : ["catalog_put_db", "catalog_put_fs"],
+				"fields" : ["id", "rowid", "name", "url", "type", "service", "lang", 
+							"use_re", "public", "comment", "version", "owner", 
+							"async", "result_cache", "authorization", "lang", 
+							"debug", "timeout", "redirect_url", "cache_control", 
+							"enable", "content_type", "tcp_is_ssl",
+							"tcp_ssl_cacertfile", "tcp_ssl_certfile",
+							"tcp_ssl_keyfile", "start_timeout"]
 
-	{
-		"name": "/catalog/put",
-		"comment": "Create new catalog.",
-		"owner": "ems-bus",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:insert",
-		"middleware" : "ems_catalog_middleware",
-		"url": "/catalog/put",
-		"async": "false",
-		"type": "POST",
-		"authorization" : "basic",
-		"lang" : "erlang",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "catalog_put"
-		},
-		"schema_in" : "service",
-		"schema_out" : "service"
-	},
-
-	{
-		"name": "/catalog/put/:id",
-		"comment": "Update catalog.",
-		"owner": "ems-bus",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:update",
-		"middleware" : "ems_catalog_middleware",
-		"url": "/catalog/put/:id",
-		"async": "false",
-		"type": "PUT",
-		"authorization" : "basic",
-		"lang" : "erlang",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "catalog_put"
-		},
-		"schema_in" : "service",
-		"schema_out" : "service"
-	},
-
-	{
-		"name": "/catalog/put/:id",
-		"comment": "Delete service catalog.",
-		"owner": "ems-bus",
-		"version": "1.0.0",
-		"service" : "ems_api_query_service:delete",
-		"middleware" : "ems_catalog_middleware",
-		"url": "/catalog/put/:id",
-		"async": "false",
-		"type": "DELETE",
-		"authorization" : "basic",
-		"lang" : "erlang",
-		"datasource" : {
-			"type" : "mnesia",
-			"table_name" : "catalog_put"
 		},
 		"schema_in" : "service",
 		"schema_out" : "service"
 	}
+	
 ]

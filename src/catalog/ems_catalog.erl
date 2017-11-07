@@ -246,8 +246,8 @@ parse_middleware(null) -> undefined;
 parse_middleware(undefined) -> undefined;
 parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 
-parse_ssl_path(undefined) -> undefined;
-parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
+parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config_service);
+parse_ssl_path(P) -> iolist_to_binary([?SSL_PATH,  "/", P]).
 
 compile_page_module(undefined, _, _) -> undefined;
 compile_page_module(Page, Rowid, Conf) -> 
@@ -321,7 +321,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
 		ServiceImpl = maps:get(<<"service">>, Map),
 		{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
-		Comment = maps:get(<<"comment">>, Map, <<>>),
+		Comment = ?UTF8_STRING(maps:get(<<"comment">>, Map, <<>>)),
 		Version = maps:get(<<"version">>, Map, <<"1.0.0">>),
 		Owner = maps:get(<<"owner">>, Map, <<>>),
 		Async = ems_util:parse_bool(maps:get(<<"async">>, Map, false)),
@@ -358,7 +358,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		CtrlFile = maps:get(<<"ctrl_file">>, Map, <<>>),
 		Path = ems_util:parse_file_name_path(maps:get(<<"path">>, Map, CtrlPath), StaticFilePathDefault, undefined),
 		Filename = ems_util:parse_file_name_path(maps:get(<<"filename">>, Map, undefined), StaticFilePathDefault, undefined),
-		RedirectUrl = maps:get(<<"redirect_url">>, Map, <<>>),
+		RedirectUrl = maps:get(<<"redirect_url">>, Map, undefined),
 		Protocol = maps:get(<<"protocol">>, Map, <<>>),
 		ListenAddress = maps:get(<<"tcp_listen_address">>, Map, TcpListenAddressDefault),
 		ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
@@ -375,9 +375,9 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 				SslKeyFile = undefined;
 			_ ->
 				IsSsl = true,
-				SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, undefined)),
-				SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, undefined)),
-				SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, undefined))
+				SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl)),
+				SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl)),
+				SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl))
 		end,
 		case Lang of
 			<<"erlang">> -> 

@@ -31,6 +31,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/catalogs/ems_catalog_re", 
+		"file": "ems_catalog_re.json"
+	},
+
+	{
 		"catalog": "/emsbus/catalogs/ems_catalog_schema", 
 		"file": "ems_catalog_schema.json"
 	},
@@ -38,6 +43,11 @@
 	{
 		"catalog": "/emsbus/catalogs/ems_catalog_owner", 
 		"file": "ems_catalog_owner.json"
+	},
+	
+	{
+		"catalog": "/emsbus/catalogs/ems_catalog", 
+		"file": "ems_catalog.json"
 	}
 	
 ]

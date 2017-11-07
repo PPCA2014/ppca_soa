@@ -41,8 +41,8 @@
 	},
 
 	{
-		"catalog": "/emsbus/catalogs/ems_catalogs", 
-		"file": "catalogs/ems_catalogs.json"
+		"catalog": "/emsbus/catalogs/ems_main_catalogs", 
+		"file": "catalogs/ems_main_catalogs.json"
 	},
 
 	{
