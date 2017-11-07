@@ -196,6 +196,7 @@
 							 connection :: binary(),
 							 table_name :: binary() | atom() | list(atom()),
 							 fields :: binary() | atom() | list(atom()),
+							 remap_fields :: list(tuple()),					%% Permite expor um campo com outro nome
 							 primary_key :: binary() | atom(),
 							 foreign_key :: binary() | atom(),
 							 foreign_table_name  :: binary() | atom(),			

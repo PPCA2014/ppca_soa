@@ -1,7 +1,7 @@
 [
 	{	
 		"name": "/auth/user/permission/:id",
-		"comment": "List permission by id",
+		"comment": "List permissions by id",
 		"owner": "auth",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/auth/user/permission/:id",
@@ -10,7 +10,8 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_permission_db", "user_permission_fs"],
-			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"],
+			"remap_fields" : [{"sis_id" : "client_id"}]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",
@@ -41,7 +42,8 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_permission_db", "user_permission_fs"],
-			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"],
+			"remap_fields" : [{"sis_id" : "client_id"}]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",
@@ -81,7 +83,7 @@
 
 	{	
 		"name": "/auth/user/:id/permission",
-		"comment": "List all user permissions",
+		"comment": "List all user permissions by user",
 		"owner": "auth",
 		"service" : "ems_api_query_service:find_by_owner",
 		"url": "/auth/user/:id/permission",
@@ -92,7 +94,8 @@
 			"table_name" : ["user_permission_db", "user_permission_fs"],
 			"foreign_table_name" : ["user_db", "user_fs"],
 			"foreign_key" : "user_id",
-			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"],
+			"remap_fields" : [{"sis_id" : "client_id"}]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",

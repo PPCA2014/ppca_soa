@@ -1949,6 +1949,7 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 -spec parse_tcp_listen_address(list(string()) | string() | binary() | undefined | null) -> list(tuple()). 
 parse_tcp_listen_address(undefined) -> [];
 parse_tcp_listen_address(null) -> [];
+parse_tcp_listen_address(<<>>) -> [];
 parse_tcp_listen_address(ListenAddress) when is_binary(ListenAddress) ->
 	parse_tcp_listen_address(binary_to_list(ListenAddress));
 parse_tcp_listen_address(ListenAddress) when is_list(ListenAddress) ->
@@ -1978,8 +1979,7 @@ parse_tcp_listen_address_t([H|T], Result) ->
 				true -> parse_tcp_listen_address_t(T, Result);
 				false -> parse_tcp_listen_address_t(T, [L2|Result])
 			end;
-		{error, einval} -> 
-			parse_tcp_listen_address_t(T, Result)
+		{error, einval} -> erlang:error(einvalid_tcp_listen_address)
 	end.
 	
 -spec parse_allowed_address(all | undefined | null | binary() | string() | list()) -> list(tuple()).

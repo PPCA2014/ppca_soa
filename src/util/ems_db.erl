@@ -838,6 +838,19 @@ parse_datasource_fields(_, <<>>) -> [];
 parse_datasource_fields(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
 parse_datasource_fields(_, Value) -> binary_to_list(Value).
 
+-spec parse_datasource_remap_fields(list(map())) -> map().
+parse_datasource_remap_fields(undefined) -> undefined;
+parse_datasource_remap_fields([]) -> undefined;
+parse_datasource_remap_fields([MapH|MapT] = ListMap) when is_list(ListMap) -> 
+	parse_datasource_remap_fields(MapT, MapH);
+parse_datasource_remap_fields(_) -> 
+	erlang:error(einvalid_datasource_remap_fields_property).
+
+parse_datasource_remap_fields([], Result) -> Result;
+parse_datasource_remap_fields([MapH|MapT], Result) -> 
+	parse_datasource_remap_fields(MapT, maps:merge(MapH, Result)).
+
+
 -spec parse_datasource_primary_key(atom(), binary()) -> string() | atom().
 parse_datasource_primary_key(_, undefined) -> undefined;
 parse_datasource_primary_key(_, <<>>) -> undefined;
@@ -887,6 +900,7 @@ create_datasource_from_map(M, Rowid) ->
 		Connection = parse_datasource_connection(Type, maps:get(<<"connection">>, M, undefined)),
 		TableName = parse_datasource_table_name(Type, maps:get(<<"table_name">>, M, undefined)),
 		Fields = parse_datasource_fields(Type, maps:get(<<"fields">>, M, undefined)),
+		RemapFields = parse_datasource_remap_fields(maps:get(<<"remap_fields">>, M, undefined)),
 		PrimaryKey = parse_datasource_primary_key(Type, maps:get(<<"primary_key">>, M, undefined)),
 		ForeignKey = parse_datasource_foreign_key(Type, maps:get(<<"foreign_key">>, M, undefined)),
 		ForeignTableName = parse_datasource_foreign_table_name(Type, maps:get(<<"foreign_table_name">>, M, undefined)),
@@ -901,18 +915,18 @@ create_datasource_from_map(M, Rowid) ->
 								  PrimaryKey, ForeignKey, ForeignTableName, CsvDelimiter, 
 								  Sql, Timeout, MaxPoolSize, 
 								  SqlCheckValidConnection, CloseIdleConnectionTimeout, 
-								  CheckValidConnectionTimeout]),
+								  CheckValidConnectionTimeout, RemapFields]),
 		case ems_db:find_first(service_datasource, [{ctrl_hash, "==", CtrlHash}]) of
 			  {error, enoent} ->										
 					Id = ems_db:inc_counter(service_datasource),
 					IdStr = integer_to_list(Id),
-					ConnectionCountMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_conn_count"),
-					ConnectionCreatedMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_created_count"),
-					ConnectionClosedMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_closed_count"),
-					ConnectionShutdownMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_shutdown_count"),
-					ConnectionReuseMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_reuse_count"),
-					ConnectionUnavailableMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_unavailable_count"),
-					ConnectionMaxPoolSizeExceededMetricName = list_to_atom("ems_odbc_pool_" ++ IdStr ++ "_max_pool_size_exceeded_count"),
+					ConnectionCountMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_conn_count"])),
+					ConnectionCreatedMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_created_count"])),
+					ConnectionClosedMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_closed_count"])),
+					ConnectionShutdownMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_shutdown_count"])),
+					ConnectionReuseMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_reuse_count"])),
+					ConnectionUnavailableMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_unavailable_count"])),
+					ConnectionMaxPoolSizeExceededMetricName = list_to_atom(lists:concat(["ems_odbc_pool_", IdStr, "_max_pool_size_exceeded_count"])),
 					NewDs = #service_datasource{id = Id,
 												rowid = Rowid,
 												type = Type,
@@ -920,6 +934,7 @@ create_datasource_from_map(M, Rowid) ->
 												connection = Connection,
 												table_name = TableName,
 												fields = Fields,
+												remap_fields = RemapFields,
 												primary_key = PrimaryKey,
 												foreign_key = ForeignKey,
 												foreign_table_name = ForeignTableName,
