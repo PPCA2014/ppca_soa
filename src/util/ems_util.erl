@@ -120,7 +120,6 @@
 		 quote/1,
  		 remove_quoted_str/1,
 		 remove_ult_backslash_url/1,
-		 remove_ult_backslash_url/2,
 		 name_case/1,
 		 modernize/1,
 		 mes_abreviado/1,
@@ -560,20 +559,19 @@ no_periodo(DateTime, Periodo) ->
 %% @doc Obtém a hora atual em milisegundos
 -spec get_milliseconds() -> integer().
 get_milliseconds() ->
-   {Mega, Sec, Micro} = erlang:timestamp(),
-   (Mega*1000000 + Sec)*1000 + round(Micro/1000).
-
+	% Fórmula anterior:
+		% {Mega, Sec, Micro} = erlang:timestamp(),
+		% (Mega*1000000 + Sec)*1000 + round(Micro/1000).
+	trunc(erlang:system_time() / 1.0e6).
+	
 %% @doc Remove o último backslash da Url
+-spec remove_ult_backslash_url(string()) -> string().
 remove_ult_backslash_url("/") -> "/";
-remove_ult_backslash_url([H|T]) -> 
-	remove_ult_backslash_url(T, [H]).
-
-remove_ult_backslash_url([], Result) -> 
-	lists:reverse(Result);
-remove_ult_backslash_url("/", Result) -> 
-	lists:reverse(Result);
-remove_ult_backslash_url([H|T], Result) -> 
-	remove_ult_backslash_url(T, [H|Result]).
+remove_ult_backslash_url(Value) ->
+	case lists:reverse(Value) of
+		"/" ++ T -> lists:reverse(T);
+		_ -> Value
+	end.
 
 %% @doc Função name case
 name_case([H|T]) when H >= $a, H =< $z -> 
@@ -833,13 +831,9 @@ criptografia_sha1(Password) when is_binary(Password) ->	criptografia_sha1(binary
 criptografia_sha1(Password) -> base64:encode(sha1:binstring(Password)).
 
 boolean_to_binary(true) -> <<"true"/utf8>>;
-boolean_to_binary(false) -> <<"false"/utf8>>;
 boolean_to_binary(1) -> <<"true"/utf8>>;
-boolean_to_binary(0) -> <<"false"/utf8>>;
 boolean_to_binary(<<"true"/utf8>>) -> <<"true"/utf8>>;
-boolean_to_binary(<<"false"/utf8>>) -> <<"false"/utf8>>;
 boolean_to_binary(<<"1"/utf8>>) -> <<"true"/utf8>>;
-boolean_to_binary(<<"0"/utf8>>) -> <<"false"/utf8>>;
 boolean_to_binary(_) -> <<"false"/utf8>>.
 
 
@@ -1469,7 +1463,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 		Uri = iolist_to_binary(cowboy_req:uri(CowboyReq)),
 		RID = erlang:system_time(),
 		Timestamp = calendar:local_time(),
-		T1 = get_milliseconds(),
+		T1 = trunc(RID / 1.0e6), % optimized: same that get_milliseconds()
 		Type = cowboy_req:method(CowboyReq),
 		case is_service_type(Type) of
 			true ->
