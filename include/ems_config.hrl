@@ -113,7 +113,7 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Quanto tempo aguardar um serviço
--define(SERVICE_TIMEOUT, 18500). % 18,5 segundos segundos
+-define(SERVICE_TIMEOUT, 30000). % 30 segundos segundos
 -define(SERVICE_MAX_TIMEOUT, 604800000). % 7 dias
 
 % Caminho do utilitário que importa dados csv para um banco sqlite

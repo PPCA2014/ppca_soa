@@ -19,7 +19,8 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 			case ems_db:find(TableName, FieldList, FilterList, Limit, Offset) of
 				{ok, Result} -> 
 					ResultJson = ems_schema:to_json(Result);
-				_ -> ResultJson = ?EMPTY_LIST_JSON
+				_ -> 
+					ResultJson = ?EMPTY_LIST_JSON
 			end,
 			{ok, ResultJson};
 		{error, Reason} -> {error, Reason}

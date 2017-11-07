@@ -1791,9 +1791,7 @@ parse_basic_authorization_header(Header = <<Basic:5/binary, _:1/binary, Secret/b
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
 			case string:tokens(Secret2, ":") of
 				[Login|[Password|_]] -> {ok, Login, Password};
-				_ -> 
-					ems_logger:warn("ems_util parse invalid basic authorization header: ~p", [Header]),
-					{error, access_denied}
+				_ -> {error, access_denied}
 			end;
 		false -> {error, access_denied}
 	end;
