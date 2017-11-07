@@ -235,7 +235,6 @@
 
 
 -record(service, {  id :: non_neg_integer(), 					%% Id do serviço
-					codigo :: non_neg_integer(),				%% Id do serviço banco externo
 					rowid :: non_neg_integer(),					%% Identificador interno do contrato (utilizado para localizar o contrato)
 					name :: binary(), 							%% Nome do contrato do serviço (Por default usa-se a própria URL como name)
 					url :: string(),  							%% URL do contrato do serviço

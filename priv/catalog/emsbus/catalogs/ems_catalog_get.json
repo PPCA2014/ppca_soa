@@ -12,7 +12,7 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "catalog_get"
+			"table_name" : ["catalog_get_db", "catalog_get_fs"]
 		},
 		"schema_in" : "service",
 		"schema_out" : "service",
@@ -63,7 +63,7 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "catalog_get"
+				"table_name" : ["catalog_get_db", "catalog_get_fs"]
 		},
 		"schema_in" : "service",
 		"schema_out" : "service"

@@ -75,7 +75,7 @@ help() {
 	echo "  --skip-dep=true|false   -> Define if skip rebar deps"
 	echo "  --skip-clean=true|false -> Define if rebar clean"
 	echo "  --clean                 -> Equal to --skip-clean=true"
-	echo "  --rmdb                  -> Equal to --keep-db=false"
+	echo "  --rmdb | --cleandb      -> Equal to --keep-db=false"
 	echo "  --getdeps               -> Equal to --skip-deps=false"
 	echo
 	exit 1
@@ -162,6 +162,8 @@ for P in $*; do
 		elif [[ "$P" =~ --keep[\_-]db$ ]]; then
 			KEEP_DB="true"
 		elif [ "$P" = "--rmdb" ]; then
+			KEEP_DB="false"
+		elif [ "$P" = "--cleandb" ]; then
 			KEEP_DB="false"
 		elif [ "$P" = "--getdeps" ]; then
 			SKIP_DEPS="false"

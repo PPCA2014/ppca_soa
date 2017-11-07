@@ -99,7 +99,7 @@
 				from BDAcesso.dbo.TB_CatalogoServicoErlangms 
 				where CSECtrlUpdate >= ? or CSECtrlInsert >= ?
 				",
-	"fields" : ["codigo", "name", "url", "use_re", "type", "service", 
+	"fields" : ["id", "name", "url", "use_re", "type", "service", 
 				"comment", "version", "owner", "result_cache",
 				"authorization", "lang", "timeout", "enable",
 				"content_type", "async", "host", "node", "debug",

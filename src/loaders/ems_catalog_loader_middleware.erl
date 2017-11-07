@@ -142,9 +142,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 				Table = ems_catalog:get_table(ServiceType, UseRE, SourceType),
 				case ems_catalog_lookup:find(Table, Rowid) of
 					{error, enoent} -> 
-						Id = ems_db:sequence(Table),
-						Catalog = NewCatalog#service{id = Id,
-												     ctrl_insert = CtrlDate},
+						Catalog = NewCatalog#service{ctrl_insert = CtrlDate},
 						{ok, Catalog, Table, insert};
 					{ok, CurrentCatalog = #service{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of

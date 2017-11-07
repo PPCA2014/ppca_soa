@@ -11,7 +11,7 @@
 -include("../include/ems_config.hrl").
 -include("../include/ems_schema.hrl").
 
--export([new_from_map/2, new_from_map/3,
+-export([new_from_map/2, 
 		 get_metadata_json/1,
 		 get_table/3]).
 		 
@@ -87,8 +87,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
-				rowid = Rowid,
 				id = Id,
+				rowid = Rowid,
 				name = Name,
 				url = Url,
 				type = Type,
@@ -173,8 +173,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			ServiceErrorMetricName, ServiceUnavailableMetricName,
 			ServiceTimeoutMetricName) ->
 	#service{
-				rowid = Rowid,
 				id = Id,
+				rowid = Rowid,
 				name = Name,
 				url = Url,
 				type = Type,
@@ -246,7 +246,7 @@ parse_middleware(null) -> undefined;
 parse_middleware(undefined) -> undefined;
 parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 
-parse_ssl_path(undefined) -> erlang:error(einvalid_ssl_config);
+parse_ssl_path(undefined) -> undefined;
 parse_ssl_path(P) -> ?SSL_PATH ++  "/" ++ binary_to_list(P).
 
 compile_page_module(undefined, _, _) -> undefined;
@@ -295,7 +295,6 @@ parse_host_service(_Host, ModuleName, Node, Conf) ->
 
 
 -spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
-new_from_map(Map, Conf) -> new_from_map(Map, Conf, undefined).
 new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 								 cat_disable_services = DisableServices,
 								 ems_result_cache = ResultCacheDefault,
@@ -306,8 +305,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 								 tcp_allowed_address = TcpAllowedAddressDefault,
 								 cat_node_search = CatNodeSearchDefault,
 								 cat_host_search = CatHostSearchDefault,
-								 ems_hostname = HostNameDefault}, 
-				 Id) ->
+								 ems_hostname = HostNameDefault}) ->
 	try
 		Name = ems_util:parse_name_service(maps:get(<<"name">>, Map)),
 		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, Map, true)),
@@ -319,7 +317,6 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 			true -> Enable = false;
 			false -> Enable = Enable1
 		end,
-		Id = Id,
 		Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map)),
 		Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
 		ServiceImpl = maps:get(<<"service">>, Map),
@@ -329,6 +326,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		Owner = maps:get(<<"owner">>, Map, <<>>),
 		Async = ems_util:parse_bool(maps:get(<<"async">>, Map, false)),
 		Rowid = ems_util:make_rowid(Url2),
+		Id = maps:get(<<"id">>, Map, Rowid), % catálogos internos vão usar rowid como chave primária
 		Lang = ems_util:parse_lang(maps:get(<<"lang">>, Map, <<>>)),
 		Ds = maps:get(<<"datasource">>, Map, undefined),
 		Datasource = parse_datasource(Ds, Rowid, Conf),
@@ -366,7 +364,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		ListenAddress_t = ems_util:parse_tcp_listen_address(ListenAddress),
 		AllowedAddress = ems_util:parse_allowed_address(maps:get(<<"tcp_allowed_address">>, Map, TcpAllowedAddressDefault)),
 		AllowedAddress_t = ems_util:parse_allowed_address_t(AllowedAddress),
-		MaxConnections = maps:get(<<"tcp_max_connections">>, Map, [?HTTP_MAX_CONNECTIONS]),
+		MaxConnections = maps:get(<<"tcp_max_connections">>, Map, ?HTTP_MAX_CONNECTIONS),
 		Port = ems_util:parse_tcp_port(ems_config:getConfig(<<"tcp_port">>, Name, maps:get(<<"tcp_port">>, Map, undefined))),
 		Ssl = maps:get(<<"tcp_ssl">>, Map, undefined),
 		case Ssl of

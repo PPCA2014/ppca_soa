@@ -15,7 +15,8 @@
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
 -export_records([user, user_permission, user_perfil, user_email, user_dados_funcionais, 
-				 catalog_schema, schema_type, produto, service, service_owner, client, service_datasource]).
+				 catalog_schema, schema_type, produto, service, service_owner, 
+				 client, service_datasource]).
 
 
 % to_record
@@ -93,14 +94,23 @@ to_list([H|T], FieldList, Result) ->
 
 % to_json
 -spec to_json(tuple() | map() | list(map()) | list() | binary()) -> binary().
-to_json(Value) when is_tuple(Value)-> 
+to_json(Value) when is_tuple(Value) -> 
+	io:format("aqui ~p\n", [Value]),
 	ListTuple = to_list(Value),
+	io:format("aqui ok ~p\n", [ListTuple]),
 	iolist_to_binary([<<"{"/utf8>>, to_json_rec(ListTuple, []), <<"}"/utf8>>]);
-to_json(Value) when is_map(Value) -> ems_util:json_encode(Value);
-to_json([Map|_] = Value) when is_map(Map) -> ems_util:json_encode(Value);
+to_json(Value) when is_map(Value) -> 
+	io:format("aqui2\n"),
+	ems_util:json_encode(Value);
+to_json([Map|_] = Value) when is_map(Map) -> 
+	io:format("aqui3n"),
+	ems_util:json_encode(Value);
 to_json(Value) when is_list(Value) -> 
+	io:format("aqui4\n"),
 	iolist_to_binary([<<"["/utf8>>, to_json_list(Value, []), <<"]"/utf8>>]);
-to_json(Value) -> Value.
+to_json(Value) -> 
+	io:format("aqui5\n"),
+	Value.
 
 	
 to_json_rec([], L) -> lists:reverse(L);
@@ -132,32 +142,25 @@ to_value(Value) when is_integer(Value) -> integer_to_binary(Value);
 to_value(Value) when is_atom(Value) -> 
 	[<<"\""/utf8>>, atom_to_binary(Value, utf8), <<"\""/utf8>>];
 to_value(Value) when is_binary(Value) -> 
+	io:format("aqui8 ~p\n", [Value]),
 	[<<"\""/utf8>>, Value, <<"\""/utf8>>];
 to_value([<<Key/binary>>, <<Value/binary>>]) -> 
 	[<<"{\""/utf8>>, Key, <<"\":\""/utf8>>, Value, <<"\"}"/utf8>>];
 to_value(Value) when is_list(Value) -> 
 	case io_lib:printable_list(Value) of 
-		true ->	json_field_strip_and_escape(ems_util:utf8_list_to_string(Value));
-		_ -> to_json(list_to_tuple(Value))
+		true ->	
+			io:format("aqui5 ~p\n", [Value]),
+			ems_util:json_field_strip_and_escape(ems_util:utf8_list_to_string(Value));
+		_ -> 
+			io:format("aqui6 ~p\n", [Value]),
+			to_json(Value)
 	end;
 to_value(Value) when is_map(Value) ->
 	ems_util:json_encode(Value);
-to_value(Value) when is_tuple(Value) ->	to_json(Value);
+to_value(Value) when is_tuple(Value) ->	
+	io:format("aqui7 ~p\n", [Value]),
+	to_json(Value);
 to_value(Value) -> throw({error, {"Could not serialize the value ", [Value]}}).
-
-
-json_field_strip_and_escape([]) ->	<<"null"/utf8>>;
-json_field_strip_and_escape(<<>>) -> <<"null"/utf8>>;
-json_field_strip_and_escape(Value) -> 
-	case string:strip(Value) of
-		[] -> <<"null"/utf8>>;
-		ValueStrip -> 
-			ValueEscaped = [case Ch of 
-									34 -> "\\\""; 
-									_ -> Ch 
-							end || Ch <- ValueStrip],
-			[<<"\""/utf8>>, ValueEscaped, <<"\""/utf8>>]
-	end.
 
 
 prop_list_to_json(PropList) -> 

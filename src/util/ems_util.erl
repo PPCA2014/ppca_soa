@@ -20,6 +20,7 @@
 		 json_decode_as_map/1,
 		 json_encode_table/2,
 		 json_decode_as_map_file/1,
+		 json_field_strip_and_escape/1,
 		 tuple_to_binlist/1, 
 		 binlist_to_atomlist/1,
 		 list_to_binlist/1,
@@ -2305,3 +2306,20 @@ binlist_to_atomlist(Value)  ->
 binlist_to_atomlist_([], Result) -> Result;
 binlist_to_atomlist_([H|T], Result) ->
 	binlist_to_atomlist_(T, [binary_to_atom(H, utf8)|Result]).
+
+-spec json_field_strip_and_escape(string() | binary()) -> iolist().
+json_field_strip_and_escape([]) ->	<<"null"/utf8>>;
+json_field_strip_and_escape(<<>>) -> <<"null"/utf8>>;
+json_field_strip_and_escape(undefined) -> <<"null"/utf8>>;
+json_field_strip_and_escape(Value) when is_binary(Value) ->
+	json_field_strip_and_escape(binary_to_list(Value));
+json_field_strip_and_escape(Value) -> 
+	case string:strip(Value) of
+		[] -> <<"null"/utf8>>;
+		ValueStrip -> 
+			ValueEscaped = [case Ch of 
+									34 -> "\\\""; 
+									_ -> Ch 
+							end || Ch <- ValueStrip],
+			[<<"\""/utf8>>, ValueEscaped, <<"\""/utf8>>]
+	end.
