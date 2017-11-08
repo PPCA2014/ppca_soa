@@ -14,9 +14,10 @@
 -export([authenticate/2]).
 
 -spec authenticate(#service{}, #request{}) -> {ok, #client{} | public, #user{} | public, binary(), binary()} | {error, access_denied}.
-authenticate(Service = #service{authorization = AuthorizationMode}, 
-			 Request = #request{type = Method}) ->
-	case Method of
+authenticate(Service = #service{authorization = AuthorizationMode,
+							    authorization_public_check_credential = AuthorizationPublicCheckCredential}, 
+			 Request = #request{type = Type}) ->
+	case Type of
 		<<"OPTIONS">> -> 
 			ems_db:inc_counter(ems_auth_user_public_success),
 			{ok, public, public, <<>>, <<>>};
@@ -30,10 +31,17 @@ authenticate(Service = #service{authorization = AuthorizationMode},
 				basic -> do_basic_authorization(Service, Request);
 				oauth2 -> do_bearer_authorization(Service, Request);
 				_ -> 
-					case do_basic_authorization(Service, Request) of
-						{ok, Client, User, AccessToken, Scope} -> 
-							{ok, Client, User, AccessToken, Scope};
-						_ -> {ok, public, public, <<>>, <<>>}
+					case AuthorizationPublicCheckCredential of
+						true ->
+							case do_basic_authorization(Service, Request) of
+								{ok, Client, User, AccessToken, Scope} -> 
+									{ok, Client, User, AccessToken, Scope};
+								_ -> 
+									{ok, public, public, <<>>, <<>>}
+							end;
+						false -> 
+							ems_db:inc_counter(ems_auth_user_public_success),
+							{ok, public, public, <<>>, <<>>}
 					end
 			end
 	end.
@@ -52,7 +60,7 @@ do_basic_authorization(Service, Request = #request{authorization = Authorization
 		{ok, Login, Password} ->
 			case ems_user:find_by_login_and_password(Login, Password) of
 				{ok, User} -> do_check_grant_permission(Service, Request, public, User, <<>>, <<>>, basic);
-				_Error -> {error, access_denied}
+				_ -> {error, access_denied}
 			end;
 		_ -> do_bearer_authorization(Service, Request) % Quando ocorrer erro, tenta fazer via oauth2
 	end.
@@ -67,7 +75,8 @@ do_bearer_authorization(Service, Request = #request{authorization = undefined}) 
 	do_oauth2_check_access_token(AccessToken, Service, Request);
 do_bearer_authorization(Service, Request = #request{authorization = Authorization}) ->	
 	case ems_util:parse_bearer_authorization_header(Authorization) of
-		{ok, AccessToken} -> do_oauth2_check_access_token(AccessToken, Service, Request);
+		{ok, AccessToken} -> 
+			do_oauth2_check_access_token(AccessToken, Service, Request);
 		_ -> 
 			ems_db:inc_counter(ems_auth_user_oauth2_denied),
 			{error, access_denied}

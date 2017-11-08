@@ -202,6 +202,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												tcp_ssl_keyfile = NewCatalog#service.tcp_ssl_keyfile,
 												oauth2_with_check_constraint = NewCatalog#service.oauth2_with_check_constraint,
 												oauth2_token_encrypt = NewCatalog#service.oauth2_token_encrypt,
+												authorization_public_check_credential = NewCatalog#service.authorization_public_check_credential,
 												protocol = NewCatalog#service.protocol,
 												filename = NewCatalog#service.filename,
 												ctrl_update = CtrlDate,

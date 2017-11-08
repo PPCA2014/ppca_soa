@@ -163,11 +163,12 @@
 
 
 -define(CONTENT_TYPE_JSON, <<"application/json; charset=utf-8"/utf8>>).
--define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public">>).
--define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public">>).
--define(OK_JSON, <<"{\"ok\": true}">>).
--define(ENOENT_JSON, <<"{\"error\": \"enoent\"}">>).
--define(EMPTY_LIST_JSON, <<"[]">>).
+-define(CACHE_CONTROL_NO_CACHE, <<"no-cache, public"/utf8>>).
+-define(CACHE_CONTROL_1_SECOND, <<"max-age=1, public"/utf8>>).
+-define(OK_JSON, <<"{\"ok\": true}"/utf8>>).
+-define(ENOENT_JSON, <<"{\"error\": \"enoent\"}"/utf8>>).
+-define(EMPTY_LIST_JSON, <<"[]"/utf8>>).
+-define(ACCESS_DENIED_JSON, <<"{\"error\": \"access_denied\"}"/utf8>>).
 
 % Default ports
 -define(LDAP_SERVER_PORT, 2389).

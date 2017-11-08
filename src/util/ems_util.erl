@@ -1528,25 +1528,37 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 								ems_db:inc_counter(http_content_type_in_text_plain),
 								ContentType2 = ContentType,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-								PayloadMap = #{},
+								PayloadMap = undefined,
 								QuerystringMap2 = QuerystringMap;
 							_ -> 
 								ems_db:inc_counter(http_content_type_in_other),
 								ContentType2 = ContentType,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
-								PayloadMap = #{},
+								PayloadMap = undefined,
 								QuerystringMap2 = QuerystringMap
 						end;
 					false ->
 						ContentType2 = ContentType,						
 						Payload = <<>>,
-						PayloadMap = #{},
+						PayloadMap = undefined,
 						QuerystringMap2 = QuerystringMap
 				end,
-				Accept = cowboy_req:header(<<"accept">>, CowboyReq),
-				Accept_Encoding = cowboy_req:header(<<"accept-encoding">>, CowboyReq),
-				User_Agent = cowboy_req:header(<<"user-agent">>, CowboyReq),
-				Cache_Control = cowboy_req:header(<<"cache-control">>, CowboyReq),
+				case cowboy_req:header(<<"accept">>, CowboyReq) of
+					undefined -> Accept = <<"*/*">>;
+					AcceptValue -> Accept = AcceptValue
+				end,
+				case cowboy_req:header(<<"accept-encoding">>, CowboyReq) of
+					undefined -> Accept_Encoding = <<"*">>;
+					AcceptEncodingValue -> Accept_Encoding = AcceptEncodingValue
+				end,
+				case cowboy_req:header(<<"user-agent">>, CowboyReq) of
+					undefined -> User_Agent = <<>>;
+					UserAgentValue -> User_Agent = UserAgentValue
+				end,
+				case cowboy_req:header(<<"cache-control">>, CowboyReq) of
+					undefined -> Cache_Control = <<>>;
+					CacheControlValue -> Cache_Control = CacheControlValue
+				end,
 				Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
 				IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
 				IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),

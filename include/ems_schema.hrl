@@ -262,6 +262,9 @@
 					host_name,				  					%% Nome do host onde está o módulo do serviço que vai processar a requisição
 					result_cache :: non_neg_integer(), 			%% Indica quanto tempo em milisegundos o resultado vai ficar armazenado em cache (somente para o módulo msbus_static_file_service)
 					authorization :: atom(),					%% Forma de autenticação (public, basic, oauth2)
+					authorization_public_check_credential = false :: boolean(),		%% Faz a checagem da credencial do usuário quando o serviço é publico
+					oauth2_with_check_constraint = false :: boolean(),
+					oauth2_token_encrypt = false :: boolean(),
 					page,										%% Page django file
 					page_module,								%% Page module django file compiled
 					page_mime_type = <<"text/html">>,			%% Page mime type
@@ -292,8 +295,6 @@
 					tcp_ssl_certfile,
 					tcp_ssl_keyfile,
 					protocol :: binary(),
-					oauth2_with_check_constraint = false :: boolean(),
-					oauth2_token_encrypt = false :: boolean(),
 					properties :: map(),						%% Outros parâmetros
 					ctrl_path :: string(),						%% Local de onde o catálogo foi carregado
 					ctrl_file :: string(),						%% Nome do arquivo onde está especificado o catálogo

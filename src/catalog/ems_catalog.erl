@@ -83,7 +83,7 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 			   ServiceResultCacheHitMetricName, 
 			   ServiceHostDeniedMetricName,	ServiceAuthDeniedMetricName, 
 			   ServiceErrorMetricName, ServiceUnavailableMetricName,
-			   ServiceTimeoutMetricName) ->
+			   ServiceTimeoutMetricName, AuthorizationPublicCheckCredential) ->
 	PatternKey = ems_util:make_rowid_from_url(Url, Type),
 	{ok, Id_re_compiled} = re:compile(PatternKey),
 	#service{
@@ -155,7 +155,8 @@ new_service_re(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, F
 				service_auth_denied_metric_name = ServiceAuthDeniedMetricName,
 				service_error_metric_name = ServiceErrorMetricName,
 				service_unavailable_metric_name = ServiceUnavailableMetricName,
-				service_timeout_metric_name = ServiceTimeoutMetricName
+				service_timeout_metric_name = ServiceTimeoutMetricName,
+				authorization_public_check_credential = AuthorizationPublicCheckCredential
 			}.
 
 new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, FunctionName,
@@ -171,7 +172,7 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 			ServiceExecMetricName, ServiceResultCacheHitMetricName, 
 			ServiceHostDeniedMetricName, ServiceAuthDeniedMetricName, 
 			ServiceErrorMetricName, ServiceUnavailableMetricName,
-			ServiceTimeoutMetricName) ->
+			ServiceTimeoutMetricName, AuthorizationPublicCheckCredential) ->
 	#service{
 				id = Id,
 				rowid = Rowid,
@@ -239,7 +240,8 @@ new_service(Rowid, Id, Name, Url, Service, ModuleName, ModuleNameCanonical, Func
 				service_auth_denied_metric_name = ServiceAuthDeniedMetricName,
 				service_error_metric_name = ServiceErrorMetricName,
 				service_unavailable_metric_name = ServiceUnavailableMetricName,
-				service_timeout_metric_name = ServiceTimeoutMetricName
+				service_timeout_metric_name = ServiceTimeoutMetricName,
+				authorization_public_check_credential = AuthorizationPublicCheckCredential
 			}.
 
 parse_middleware(null) -> undefined;
@@ -337,6 +339,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		Authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Map, AuthorizationDefault)),
 		OAuth2WithCheckConstraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Map, Oauth2WithCheckConstraintDefault)),
 		OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, Map, false)),
+		AuthorizationPublicCheckCredential = ems_util:parse_bool(maps:get(<<"authorization_public_check_credential">>, Map, false)),
 		Debug = ems_util:parse_bool(maps:get(<<"debug">>, Map, false)),
 		UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
 		SchemaIn = maps:get(<<"schema_in">>, Map, null),
@@ -428,7 +431,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 												   ServiceExecMetricName, ServiceResultCacheHitMetricName, 
 												   ServiceHostDeniedMetricName,	ServiceAuthDeniedMetricName, 
 												   ServiceErrorMetricName, ServiceUnavailableMetricName, 
-												   ServiceTimeoutMetricName),
+												   ServiceTimeoutMetricName, AuthorizationPublicCheckCredential),
 						{ok, Service};
 					_ -> 
 						erlang:error(einvalid_re_service)
@@ -457,7 +460,7 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 										ServiceExecMetricName, ServiceResultCacheHitMetricName, 
 										ServiceHostDeniedMetricName, ServiceAuthDeniedMetricName, 
 										ServiceErrorMetricName, ServiceUnavailableMetricName, 
-										ServiceTimeoutMetricName),
+										ServiceTimeoutMetricName, AuthorizationPublicCheckCredential),
 				{ok, Service}
 		end
 	catch

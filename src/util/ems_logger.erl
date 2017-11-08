@@ -467,14 +467,15 @@ sync_buffer(State = #state{buffer = Buffer,
 	
 do_log_request(#request{rid = RID,
 						req_hash = ReqHash,
-						type = Metodo,
+						type = Type,
 						uri = Uri,
 						version = Version,
 						content_type_in = ContentTypeIn,
 						content_type = ContentType,
+						content_length = ContentLength,
 						accept = Accept,
 						ip_bin = IpBin,
-						payload_map = Payload,
+						payload = Payload,
 						service = Service,
 						params_url = Params,
 						querystring_map = Query,
@@ -505,7 +506,7 @@ do_log_request(#request{rid = RID,
 		true ->
 			Texto1 = 
 				  iolist_to_binary([
-				   Metodo, <<" ">>,
+				   Type, <<" ">>,
 				   Uri, <<" ">>,
 				   atom_to_binary(Version, utf8), <<" ">>,
 				   <<" {\n\tRID: ">>,  integer_to_binary(RID),
@@ -525,14 +526,17 @@ do_log_request(#request{rid = RID,
 																end,
 					<<"\n\tUser-Agent: ">>, UserAgent,
 					<<"\n\tService: ">>, case Service of 
-										undefined -> <<>>; 
-										_ -> Service#service.service 
-									 end,
+											undefined -> <<>>; 
+											_ -> Service#service.service 
+										 end,
 					<<"\n\tParams: ">>, ems_util:print_int_map(Params), 
 					<<"\n\tQuery: ">>, ems_util:print_str_map(Query), 
-					<<"\n\tPayload: ">>, io_lib:format("~p", [Payload]),
-					 case ShowResponse of 
-						true -> iolist_to_binary([<<"Response: ">>, ResponseData]); 
+					<<"\n\tPayload: ">>, case ContentLength < 90 of
+											true -> Payload;
+											false -> [binary:part(Payload, 0, 89), <<"...">>]
+										 end,
+					 case ShowResponse andalso byte_size(ResponseData) < 90 of 
+						true -> [<<"\n\tResponse: ">>, ResponseData]; 
 						false -> <<>> 
 					end,
 					case Service =/= undefined of
@@ -547,20 +551,20 @@ do_log_request(#request{rid = RID,
 								   case ResultCacheMin > 0 of
 										true -> 
 										   case ResultCache of 
-												true ->  iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>]);
-												false -> iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"sms (">>, integer_to_binary(ResultCacheMin), <<"min)">>]) 
+												true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
+												false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"sms (">>, integer_to_binary(ResultCacheMin), <<"min)">>] 
 											end;
 										false ->
 										   case ResultCacheSec > 0 of
 												true -> 
 												   case ResultCache of 
-														true ->  iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>]);
-														false -> iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)">>]) 
+														true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
+														false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)">>] 
 													end;
 												false ->
 												   case ResultCache of 
-														true ->  iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>]);
-														false -> iolist_to_binary([<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms">>])
+														true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
+														false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms">>]
 													end
 											end
 									end;
@@ -599,29 +603,29 @@ do_log_request(#request{rid = RID,
 													 end, <<">>">>,
 				   case GrantType of
 								undefined -> <<>>;
-								_ ->  iolist_to_binary([<<"\n\tOAuth2 grant type: ">>, GrantType])
+								_ -> [<<"\n\tOAuth2 grant type: ">>, GrantType]
 				   end,
 				   case AccessToken of
 						undefined -> <<>>;
-						_ ->  iolist_to_binary([<<"\n\tOAuth2 access token: ">>, AccessToken])
+						_ ->  [<<"\n\tOAuth2 access token: ">>, AccessToken]
 				   end,
 				   case RefreshToken of
 						undefined -> <<>>;
-						_ ->  iolist_to_binary([<<"\n\tOAuth2 refresh token: ">>, RefreshToken])
+						_ ->  [<<"\n\tOAuth2 refresh token: ">>, RefreshToken]
 				   end,
 				   case Scope of
 						undefined -> <<>>;
-						_ -> iolist_to_binary([<<"\n\tOAuth2 scope: ">>, Scope])
+						_ -> [<<"\n\tOAuth2 scope: ">>, Scope]
 				   end,
 				  <<"\n\tClient: ">>, case Client of
 										public -> <<"public">>;
 										undefined -> <<>>;
-										_ -> iolist_to_binary([integer_to_binary(Client#client.id), <<" ">>, Client#client.name])
+										_ -> [integer_to_binary(Client#client.id), <<" ">>, Client#client.name]
 								   end,
 				   <<"\n\tUser: ">>, case User of
 									public -> <<"public">>;
 									undefined -> <<>>;
-									_ ->  iolist_to_binary([integer_to_binary(User#user.id), <<" ">>,  User#user.login])
+									_ ->  [integer_to_binary(User#user.id), <<" ">>,  User#user.login]
 								 end,
 				   <<"\n\tNode: ">>, case Node of
 									undefined -> <<>>;
