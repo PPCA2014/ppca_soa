@@ -502,152 +502,158 @@ do_log_request(#request{rid = RID,
 						oauth2_refresh_token = RefreshToken
 			  }, 
 			  State = #state{show_response = ShowResponse, ult_reqhash = UltReqHash}) ->
-	case UltReqHash == undefined orelse UltReqHash =/= ReqHash of
-		true ->
-			Texto1 = 
-				  iolist_to_binary([
-				   Type, <<" ">>,
-				   Uri, <<" ">>,
-				   atom_to_binary(Version, utf8), <<" ">>,
-				   <<" {\n\tRID: ">>,  integer_to_binary(RID),
-				   <<"  (ReqHash: ">>, integer_to_binary(ReqHash), <<")">>, 
-				   <<"\n\tAccept: ">>, Accept,
-				   <<"\n\tContent-Type in: ">>, case ContentTypeIn of
-													undefined -> <<>>;
-													_ -> ContentTypeIn
-												end, 
-					<<"\n\tContent-Type out: ">>,  case ContentType of
+	try
+		case UltReqHash == undefined orelse UltReqHash =/= ReqHash of
+			true ->
+				Texto1 = 
+					  iolist_to_binary([
+					   Type, <<" ">>,
+					   Uri, <<" ">>,
+					   atom_to_binary(Version, utf8), <<" ">>,
+					   <<" {\n\tRID: ">>,  integer_to_binary(RID),
+					   <<"  (ReqHash: ">>, integer_to_binary(ReqHash), <<")">>, 
+					   <<"\n\tAccept: ">>, Accept,
+					   <<"\n\tContent-Type in: ">>, case ContentTypeIn of
 														undefined -> <<>>;
-														_ -> ContentType 
-												   end,
-					<<"\n\tPeer: ">>, IpBin, <<"  Referer: ">>, case Referer of
-																	undefined -> <<>>;
-																	_ -> Referer
-																end,
-					<<"\n\tUser-Agent: ">>, UserAgent,
-					<<"\n\tService: ">>, case Service of 
-											undefined -> <<>>; 
-											_ -> Service#service.service 
-										 end,
-					<<"\n\tParams: ">>, ems_util:print_int_map(Params), 
-					<<"\n\tQuery: ">>, ems_util:print_str_map(Query), 
-					<<"\n\tPayload: ">>, case ContentLength < 90 of
-											true -> Payload;
-											false -> [binary:part(Payload, 0, 89), <<"...">>]
-										 end,
-					 case ShowResponse andalso byte_size(ResponseData) < 90 of 
-						true -> [<<"\n\tResponse: ">>, ResponseData]; 
-						false -> <<>> 
-					end,
-					case Service =/= undefined of
-						true ->
-						   case Service#service.result_cache > 0 of
-								true ->
-								   ResultCacheSec = trunc(Service#service.result_cache / 1000),
-								   case ResultCacheSec > 0 of 
-										true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
-										false -> ResultCacheMin = 0
-								   end,
-								   case ResultCacheMin > 0 of
-										true -> 
-										   case ResultCache of 
-												true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
-												false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"sms (">>, integer_to_binary(ResultCacheMin), <<"min)">>] 
-											end;
-										false ->
-										   case ResultCacheSec > 0 of
-												true -> 
-												   case ResultCache of 
-														true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
-														false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)">>] 
-													end;
-												false ->
-												   case ResultCache of 
-														true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
-														false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms">>]
-													end
-											end
-									end;
-								false -> <<>>
-							end;
-						false -> <<>>
-					end,
-				   <<"\n\tCache-Control: ">>, case CacheControl of
-												undefined -> <<>>;
-												_ -> CacheControl
-										  end,  
-					<<"  ETag: ">>, case Etag of
-									undefined -> <<>>;
-									_ -> Etag
-								end,
-					<<"\n\tIf-Modified-Since: ">>, case IfModifiedSince of
-													undefined -> <<>>;
-													_ -> IfModifiedSince
-											   end,
-				   <<"  If-None-Match: ">>, case IfNoneMatch of
-											undefined -> <<>>;
-											_ -> IfNoneMatch
+														_ -> ContentTypeIn
+													end, 
+						<<"\n\tContent-Type out: ">>,  case ContentType of
+															undefined -> <<>>;
+															_ -> ContentType 
+													   end,
+						<<"\n\tPeer: ">>, IpBin, <<"  Referer: ">>, case Referer of
+																		undefined -> <<>>;
+																		_ -> Referer
+																	end,
+						<<"\n\tUser-Agent: ">>, UserAgent,
+						<<"\n\tService: ">>, case Service of 
+												undefined -> <<>>; 
+												_ -> Service#service.service 
+											 end,
+						<<"\n\tParams: ">>, ems_util:print_int_map(Params), 
+						<<"\n\tQuery: ">>, ems_util:print_str_map(Query), 
+						<<"\n\tPayload: ">>, case ContentLength < 90 of
+												true -> Payload;
+												false -> [binary:part(Payload, 0, 89), <<"...">>]
+											 end,
+						 case ShowResponse andalso byte_size(ResponseData) < 90 of 
+							true -> [<<"\n\tResponse: ">>, ResponseData]; 
+							false -> <<>> 
+						end,
+						case Service =/= undefined of
+							true ->
+							   case Service#service.result_cache > 0 of
+									true ->
+									   ResultCacheSec = trunc(Service#service.result_cache / 1000),
+									   case ResultCacheSec > 0 of 
+											true  -> ResultCacheMin = trunc(ResultCacheSec / 60);
+											false -> ResultCacheMin = 0
 									   end,
-				   <<"\n\tAuthorization mode: ">>, case Service of 
-													undefined -> <<>>; 
-													_ -> 
-														case Service#service.authorization of
-															basic -> <<"basic, oauth2">>;
-															oauth2 -> <<"oauth2">>;
-															_ -> <<"public">>
+									   case ResultCacheMin > 0 of
+											true -> 
+											   case ResultCache of 
+													true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
+													false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"sms (">>, integer_to_binary(ResultCacheMin), <<"min)">>] 
+												end;
+											false ->
+											   case ResultCacheSec > 0 of
+													true -> 
+													   case ResultCache of 
+															true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
+															false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheSec), <<"sec)">>] 
+														end;
+													false ->
+													   case ResultCache of 
+															true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
+															false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms">>]
 														end
-											   end,
-				   <<"\n\tAuthorization header: <<">>, case Authorization of
+												end
+										end;
+									false -> <<>>
+								end;
+							false -> <<>>
+						end,
+					   <<"\n\tCache-Control: ">>, case CacheControl of
+													undefined -> <<>>;
+													_ -> CacheControl
+											  end,  
+						<<"  ETag: ">>, case Etag of
+										undefined -> <<>>;
+										_ -> Etag
+									end,
+						<<"\n\tIf-Modified-Since: ">>, case IfModifiedSince of
 														undefined -> <<>>;
-														_ -> Authorization
-													 end, <<">>">>,
-				   case GrantType of
-								undefined -> <<>>;
-								_ -> [<<"\n\tOAuth2 grant type: ">>, GrantType]
-				   end,
-				   case AccessToken of
-						undefined -> <<>>;
-						_ ->  [<<"\n\tOAuth2 access token: ">>, AccessToken]
-				   end,
-				   case RefreshToken of
-						undefined -> <<>>;
-						_ ->  [<<"\n\tOAuth2 refresh token: ">>, RefreshToken]
-				   end,
-				   case Scope of
-						undefined -> <<>>;
-						_ -> [<<"\n\tOAuth2 scope: ">>, Scope]
-				   end,
-				  <<"\n\tClient: ">>, case Client of
+														_ -> IfModifiedSince
+												   end,
+					   <<"  If-None-Match: ">>, case IfNoneMatch of
+												undefined -> <<>>;
+												_ -> IfNoneMatch
+										   end,
+					   <<"\n\tAuthorization mode: ">>, case Service of 
+														undefined -> <<>>; 
+														_ -> 
+															case Service#service.authorization of
+																basic -> <<"basic, oauth2">>;
+																oauth2 -> <<"oauth2">>;
+																_ -> <<"public">>
+															end
+												   end,
+					   <<"\n\tAuthorization header: <<">>, case Authorization of
+															undefined -> <<>>;
+															_ -> Authorization
+														 end, <<">>">>,
+					   case GrantType of
+									undefined -> <<>>;
+									_ -> [<<"\n\tOAuth2 grant type: ">>, GrantType]
+					   end,
+					   case AccessToken of
+							undefined -> <<>>;
+							_ ->  [<<"\n\tOAuth2 access token: ">>, AccessToken]
+					   end,
+					   case RefreshToken of
+							undefined -> <<>>;
+							_ ->  [<<"\n\tOAuth2 refresh token: ">>, RefreshToken]
+					   end,
+					   case Scope of
+							undefined -> <<>>;
+							_ -> [<<"\n\tOAuth2 scope: ">>, Scope]
+					   end,
+					  <<"\n\tClient: ">>, case Client of
+											public -> <<"public">>;
+											undefined -> <<>>;
+											_ -> [integer_to_binary(Client#client.id), <<" ">>, Client#client.name]
+									   end,
+					   <<"\n\tUser: ">>, case User of
 										public -> <<"public">>;
 										undefined -> <<>>;
-										_ -> [integer_to_binary(Client#client.id), <<" ">>, Client#client.name]
-								   end,
-				   <<"\n\tUser: ">>, case User of
-									public -> <<"public">>;
-									undefined -> <<>>;
-									_ ->  [integer_to_binary(User#user.id), <<" ">>,  User#user.login]
-								 end,
-				   <<"\n\tNode: ">>, case Node of
-									undefined -> <<>>;
-									_ -> Node
-								 end,
-				   <<"\n\tFilename: ">>, case Filename of
-										undefined -> <<>>;
-										_ -> Filename
+										_ ->  [integer_to_binary(User#user.id), <<" ">>,  User#user.login]
 									 end,
-				   <<"\n\tStatus: ">>, integer_to_binary(Code), 
-				   <<" <<">>, case is_atom(Reason) of
-									true -> atom_to_binary(Reason, utf8);
-									false -> <<"error">>
-							  end, <<">> (">>, integer_to_binary(Latency), <<"ms)\n}">>]),
-				   
-			NewState = case Code >= 400 of
-							true  -> write_msg(error, Texto1, State#state{ult_reqhash = ReqHash});
-							false -> write_msg(info, Texto1, State#state{ult_reqhash = ReqHash})
-						end,
-			NewState;
-		false -> 
-			ems_db:inc_counter(ems_logger_write_dup),
+					   <<"\n\tNode: ">>, case Node of
+										undefined -> <<>>;
+										_ -> Node
+									 end,
+					   <<"\n\tFilename: ">>, case Filename of
+											undefined -> <<>>;
+											_ -> Filename
+										 end,
+					   <<"\n\tStatus: ">>, integer_to_binary(Code), 
+					   <<" <<">>, case is_atom(Reason) of
+										true -> atom_to_binary(Reason, utf8);
+										false -> <<"error">>
+								  end, <<">> (">>, integer_to_binary(Latency), <<"ms)\n}">>]),
+					   
+				NewState = case Code >= 400 of
+								true  -> write_msg(error, Texto1, State#state{ult_reqhash = ReqHash});
+								false -> write_msg(info, Texto1, State#state{ult_reqhash = ReqHash})
+							end,
+				NewState;
+			false -> 
+				ems_db:inc_counter(ems_logger_write_dup),
+				State
+		end
+	catch 
+		_:_ -> 
+			ems_db:inc_counter(ems_logger_log_request_error),
 			State
 	end.
 	
