@@ -13,12 +13,17 @@
 -include("include/ems_config.hrl").
 -include("include/ems_schema.hrl").
 
-find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName}) ->
+find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{table_name = TableName, 
+																			   remap_fields_rev = RemapFieldsRev,
+																			   show_remap_fields = ShowRemapFields}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 		{ok, {FieldList, FilterList, _LimitSmnt}} -> 
 			case ems_db:find(TableName, FieldList, FilterList, Limit, Offset) of
 				{ok, Result} -> 
-					ResultJson = ems_schema:to_json(Result);
+					case RemapFieldsRev == undefined of
+						true -> ResultJson = ems_schema:to_json(Result);
+						false -> ResultJson = ems_schema:to_json(remap_fields(Result, RemapFieldsRev, ShowRemapFields, []))
+					end;
 				_ -> 
 					ResultJson = ?EMPTY_LIST_JSON
 			end,
@@ -27,11 +32,19 @@ find(FilterJson, Fields, Limit, Offset, Sort, Datasource = #service_datasource{t
 	end.
 
 
-find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName}) ->
+find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName,
+														remap_fields_rev = RemapFieldsRev,
+														show_remap_fields = ShowRemapFields}) ->
 	case ems_api_query_mnesia_parse:generate_dynamic_query(Id, Fields, Datasource) of
 		{ok, FieldList} -> 
 			case ems_db:find_by_id(TableName, Id, FieldList) of
-				{ok, Result} ->	ResultJson = ems_schema:to_json(Result);
+				{ok, Result} ->	
+					case RemapFieldsRev == undefined of
+						true -> ResultJson = ems_schema:to_json(Result);
+						false -> 
+							[Result2] = remap_fields([Result], RemapFieldsRev, ShowRemapFields, []),
+							ResultJson = ems_schema:to_json(Result2)
+					end;
 				_ -> ResultJson = ?ENOENT_JSON
 			end,
 			{ok, ResultJson};
@@ -119,8 +132,23 @@ onvalidate(Operation, Record, #service{middleware = Middleware}) ->
 		{error, Reason} -> {
 			error, {Reason, Middleware}}
 	end.
-			
+		
 
+remap_fields([], _, _, Result) -> Result;
+remap_fields([MapH|MapT], RemapFields, ShowRemapFields, Result) ->
+	Record = maps:to_list(MapH),
+	Record2 = remap_fields_record(Record, RemapFields, ShowRemapFields, []),
+	Map = maps:from_list(Record2),
+	remap_fields(MapT, RemapFields, ShowRemapFields, [Map|Result]).
+	
 
+-spec remap_fields_record(list(), map(), boolean(), list()) -> list().
+remap_fields_record([], _, _, Result) -> Result;
+remap_fields_record([{K,V}|T], RemapFields, true, Result) ->
+	RemapField = {maps:get(K, RemapFields, K), V},
+	remap_fields_record(T, RemapFields, true, [RemapField|[{K,V}|Result]]);
+remap_fields_record([{K,V}|T], RemapFields, false, Result) ->
+	RemapField = {maps:get(K, RemapFields, K), V},
+	remap_fields_record(T, RemapFields, false, [RemapField|Result]).
 
 

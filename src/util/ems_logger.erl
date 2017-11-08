@@ -424,7 +424,7 @@ sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
 sync_buffer_tela(State) ->
 	ems_db:inc_counter(ems_logger_sync_buffer_tela),
 	Msg = lists:reverse(State#state.buffer_tela),
-	io:format(Msg),
+	%io:format(Msg),
 	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined, ult_reqhash = undefined}.
 
 

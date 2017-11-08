@@ -838,6 +838,15 @@ parse_datasource_fields(_, <<>>) -> [];
 parse_datasource_fields(mnesia, Value) -> ems_util:binlist_to_atomlist(Value);
 parse_datasource_fields(_, Value) -> binary_to_list(Value).
 
+
+-spec parse_remap_fields_reverso(map()) -> map().
+parse_remap_fields_reverso(undefined) -> undefined;
+parse_remap_fields_reverso(RemapFields) ->
+	RemapFieldsList = maps:to_list(RemapFields),
+	RemapFieldsRev = [{Value, Key} || {Key,Value} <- RemapFieldsList],
+	maps:from_list(RemapFieldsRev).
+
+
 -spec parse_datasource_remap_fields(list(map())) -> map().
 parse_datasource_remap_fields(undefined) -> undefined;
 parse_datasource_remap_fields([]) -> undefined;
@@ -901,10 +910,12 @@ create_datasource_from_map(M, Rowid) ->
 		TableName = parse_datasource_table_name(Type, maps:get(<<"table_name">>, M, undefined)),
 		Fields = parse_datasource_fields(Type, maps:get(<<"fields">>, M, undefined)),
 		RemapFields = parse_datasource_remap_fields(maps:get(<<"remap_fields">>, M, undefined)),
+		RemapFieldsRev = parse_remap_fields_reverso(RemapFields),
 		PrimaryKey = parse_datasource_primary_key(Type, maps:get(<<"primary_key">>, M, undefined)),
 		ForeignKey = parse_datasource_foreign_key(Type, maps:get(<<"foreign_key">>, M, undefined)),
 		ForeignTableName = parse_datasource_foreign_table_name(Type, maps:get(<<"foreign_table_name">>, M, undefined)),
 		CsvDelimiter = parse_datasource_csvdelimiter(Type, maps:get(<<"csv_delimiter">>, M, undefined)),
+		ShowRemapFields = ems_util:parse_bool(maps:get(<<"show_remap_fields">>, M, true)),
 		Sql = parse_datasource_sql(Type, maps:get(<<"sql">>, M, undefined)),
 		Timeout = ems_util:parse_range(maps:get(<<"timeout">>, M, ?MAX_TIME_ODBC_QUERY), 1, ?MAX_TIME_ODBC_QUERY),
 		MaxPoolSize = ems_util:parse_range(maps:get(<<"max_pool_size">>, M, ?MAX_CONNECTION_BY_POOL), 1, ?MAX_CONNECTION_BY_POOL),
@@ -915,7 +926,7 @@ create_datasource_from_map(M, Rowid) ->
 								  PrimaryKey, ForeignKey, ForeignTableName, CsvDelimiter, 
 								  Sql, Timeout, MaxPoolSize, 
 								  SqlCheckValidConnection, CloseIdleConnectionTimeout, 
-								  CheckValidConnectionTimeout, RemapFields]),
+								  CheckValidConnectionTimeout, RemapFields, ShowRemapFields]),
 		case ems_db:find_first(service_datasource, [{ctrl_hash, "==", CtrlHash}]) of
 			  {error, enoent} ->										
 					Id = ems_db:inc_counter(service_datasource),
@@ -934,7 +945,6 @@ create_datasource_from_map(M, Rowid) ->
 												connection = Connection,
 												table_name = TableName,
 												fields = Fields,
-												remap_fields = RemapFields,
 												primary_key = PrimaryKey,
 												foreign_key = ForeignKey,
 												foreign_table_name = ForeignTableName,
@@ -942,6 +952,9 @@ create_datasource_from_map(M, Rowid) ->
 												sql = Sql,
 												timeout = Timeout,
 												max_pool_size = MaxPoolSize,
+												remap_fields = RemapFields,
+												remap_fields_rev = RemapFieldsRev,
+												show_remap_fields = ShowRemapFields,
 												connection_count_metric_name = ConnectionCountMetricName,
 												connection_created_metric_name = ConnectionCreatedMetricName,
 												connection_closed_metric_name = ConnectionClosedMetricName,

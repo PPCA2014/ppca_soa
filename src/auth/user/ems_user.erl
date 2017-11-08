@@ -33,12 +33,9 @@
 
 -spec find_by_id(non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
 find_by_id(Id) -> 
-	case ems_db:get(user_db, Id) of
+	case ems_db:get([user_db, user_fs], Id) of
 		{ok, Record} -> {ok, Record};
-		_ -> case ems_db:get(user_fs, Id) of
-				{ok, Record} -> {ok, Record};
-				_ -> {error, enoent}
-			 end
+		_ -> {error, enoent}
 	end.
 
 -spec all() -> {ok, list()}.
@@ -222,10 +219,15 @@ find_by_login_and_password(Login, Password)  ->
 to_resource_owner(undefined) -> <<"{}"/utf8>>;
 to_resource_owner(User) ->
 	ems_schema:to_json({<<"id">>, User#user.id,
-						 <<"login">>, User#user.login, 
-						 <<"name">>, User#user.name,
-						 <<"email">>, User#user.email,
-						 <<"type">>, User#user.type}).
+						<<"codigo">>, User#user.codigo_pessoa,
+						<<"login">>, User#user.login, 
+						<<"name">>, User#user.name,
+						<<"email">>, User#user.email,
+						<<"type">>, User#user.type,
+						<<"subtype">>, User#user.subtype,
+						<<"active">>, ems_util:boolean_to_binary(User#user.active),
+						<<"cpf">>, User#user.cpf
+						}).
 
 
 -spec add_user(binary(), binary()) -> {ok, #user{}} | {error, atom()}.

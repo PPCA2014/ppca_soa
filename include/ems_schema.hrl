@@ -196,7 +196,8 @@
 							 connection :: binary(),
 							 table_name :: binary() | atom() | list(atom()),
 							 fields :: binary() | atom() | list(atom()),
-							 remap_fields :: list(tuple()),					%% Permite expor um campo com outro nome
+							 remap_fields :: map(),							%% Permite expor um campo com outro nome
+							 remap_fields_rev :: map(),						
 							 primary_key :: binary() | atom(),
 							 foreign_key :: binary() | atom(),
 							 foreign_table_name  :: binary() | atom(),			
@@ -209,6 +210,7 @@
 							 pid_module_ref,
 							 owner,
 							 owner_ref,
+							 show_remap_fields :: boolean(),				%% Indica se deve mostrar os campos remapeados
 							 connection_count_metric_name :: atom(),		%% Quantas conexões alocadas
 							 connection_created_metric_name :: atom(),		%% Quantas conexões criadas
 							 connection_closed_metric_name :: atom(),   	%% Quantas conexões foram fechadas de forma normal

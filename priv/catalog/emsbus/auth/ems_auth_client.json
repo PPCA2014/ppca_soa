@@ -12,7 +12,8 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["client_db", "client_fs"],
-			"fields" : ["id", "name", "description", "secret", "redirect_uri", "active", "scope"]
+			"fields" : ["id", "name", "description", "secret", "redirect_uri", "active", "scope"],
+			"remap_fields" : [{"codigo" : "id"}]
 		},
 		"schema_in" : "client",
 		"schema_out" : "client",
@@ -31,7 +32,8 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["client_db", "client_fs"],
-			"fields" : ["id", "name", "description", "secret", "redirect_uri", "active", "scope"]
+			"fields" : ["id", "name", "description", "secret", "redirect_uri", "active", "scope"],
+			"remap_fields" : [{"codigo" : "id"}]
 		},
 		"schema_in" : "client",
 		"schema_out" : "client",

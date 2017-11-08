@@ -15,7 +15,7 @@
 -export([insert/1, update/1, all/0, delete/1, 
 		 find_by_id/1,		 
 		 find_by_name/1,
-		 find_by_codigo_and_secret/2,
+		 find_by_id_and_secret/2,
 		 to_json/1,
 		 new_from_map/2,
 		 get_table/1,
@@ -25,12 +25,9 @@
 
 -spec find_by_id(non_neg_integer()) -> {ok, #client{}} | {error, enoent}.
 find_by_id(Id) -> 
-	case ems_db:get(client_db, Id) of
+	case ems_db:get([client_db, client_fs], Id) of
 		{ok, Record} -> {ok, Record};
-		_ -> case ems_db:get(client_fs, Id) of
-				{ok, Record} -> {ok, Record};
-				_ -> {error, enoent}
-			 end
+		_ -> {error, enoent}
 	end.
 
 
@@ -42,12 +39,16 @@ all() ->
 
 
 	
--spec find_by_codigo_and_secret(non_neg_integer(), binary()) -> {ok, #client{}} | {error, enoent}.
-find_by_codigo_and_secret(Codigo, Secret) ->
-	case find_by_id(Codigo) of
+-spec find_by_id_and_secret(non_neg_integer(), binary()) -> {ok, #client{}} | {error, enoent}.
+find_by_id_and_secret(Id, Secret) ->
+	io:format("aqui1\n"),
+	case find_by_id(Id) of
 		{ok, Client = #client{secret = CliSecret}} -> 
+			io:format("aqui2\n"),
 			case CliSecret =:= Secret orelse CliSecret =:= ems_util:criptografia_sha1(Secret)  of
-				true -> {ok, Client};
+				true -> 
+					io:format("aqui3\n"),
+					{ok, Client};
 				false -> {error, enoent}
 			end;
 		_ -> {error, enoent}

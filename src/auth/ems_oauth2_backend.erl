@@ -74,15 +74,18 @@ authenticate_user({Login, Password}, _) ->
 		{ok, User} -> {ok, {<<>>, User}};
 		_ -> {error, unauthorized_user}
 	end.
+	
 authenticate_client({ClientId, Secret},_) ->
-    case ems_client:find_by_codigo_and_secret(ClientId, Secret) of
+    io:format("authenticate_client aqui00 clientid  -> ~p\n", [ClientId]),
+    case ems_client:find_by_id_and_secret(ClientId, Secret) of
 		{ok, Client} ->	 {ok, {<<>>, Client}};
 		_ -> {error, unauthorized_client}		
     end.
     
 get_client_identity(ClientId, _) ->
-    case ems_client:find_by_codigo(ClientId) of
-        {ok, Client} -> {ok, {[],Client}};
+	io:format("get_client_identity aqui0000 clientid -> ~p\n", [ClientId]),
+    case ems_client:find_by_id(ClientId) of
+        {ok, Client} -> {ok, {[], Client}};
         _ -> {error, unauthorized_client}
     end.
         
@@ -132,22 +135,24 @@ get_redirection_uri(ClientId, _) ->
         _ -> {error, einvalid_uri} 
     end.
 
-verify_redirection_uri(ClientId, ClientUri, _) when is_binary(ClientId) ->
+
+verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
+    io:format("aqui0000 ~p\n", [RedirUri]),
+    case ClientUri =:= RedirUri of
+		true -> {ok, []};
+		_Error -> {error, unauthorized_client}
+    end;
+verify_redirection_uri(ClientId, ClientUri, _) ->
+    io:format("aqui000 ~p\n", [ClientId]),
     case get_client_identity(ClientId,[]) of
-        {ok,{_, #client{redirect_uri = RedirUri}}} -> 
+        {ok, {_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
-				true ->	{ok,[]};
+				true ->	{ok, []};
 				_ -> {error, unauthorized_client}
 			end;
         Error -> Error
-    end;
-
-verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
-    case ClientUri =:= RedirUri of
-		true -> {ok,[]};
-		_Error -> {error, unauthorized_client}
     end.
-    
+
 
 verify_client_scope(#client{id = ClientID}, Scope, _) ->
 	case ems_client:find_by_id(ClientID) of

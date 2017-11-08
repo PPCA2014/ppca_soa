@@ -1779,7 +1779,7 @@ match_ip_address({O1, O2, O3, O4}, {X1, X2, X3, X4}) ->
 	
 	
 -spec parse_basic_authorization_header(Header :: binary()) -> {ok, string(), string()} | {error, access_denied}.
-parse_basic_authorization_header(Header = <<Basic:5/binary, _:1/binary, Secret/binary>>) ->
+parse_basic_authorization_header(<<Basic:5/binary, _:1/binary, Secret/binary>>) ->
 	case Basic =:= <<"Basic">> of
 		true ->
 			Secret2 = base64:decode_to_string(binary_to_list(Secret)),
