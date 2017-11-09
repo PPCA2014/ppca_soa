@@ -35,7 +35,6 @@ to_record(Map, Type) when is_map(Map), is_atom(Type) ->
 	NewRecord = new(Type),
 	json_rec:to_rec(JsonStruct, ?MODULE, NewRecord);
 to_record(Map, Record) when is_map(Map), is_tuple(Record)->
-	io:format("aqui1\n"),
 	List = maps:to_list(Map),
 	JsonStruct = {struct, List},
 	json_rec:to_rec(JsonStruct, ?MODULE, Record);

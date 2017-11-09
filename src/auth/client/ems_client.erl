@@ -41,13 +41,10 @@ all() ->
 	
 -spec find_by_id_and_secret(non_neg_integer(), binary()) -> {ok, #client{}} | {error, enoent}.
 find_by_id_and_secret(Id, Secret) ->
-	io:format("aqui1\n"),
 	case find_by_id(Id) of
 		{ok, Client = #client{secret = CliSecret}} -> 
-			io:format("aqui2\n"),
 			case CliSecret =:= Secret orelse CliSecret =:= ems_util:criptografia_sha1(Secret)  of
 				true -> 
-					io:format("aqui3\n"),
 					{ok, Client};
 				false -> {error, enoent}
 			end;

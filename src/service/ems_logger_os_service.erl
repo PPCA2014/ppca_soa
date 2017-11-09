@@ -29,10 +29,8 @@ log_file_tail(Request = #request{service = #service{filename = Filename}}) ->
 	end.
 
 log_file_head(Request = #request{service = #service{filename = Filename}}) ->	
-	io:format("aqui ~p\n", [Filename]),
 	case ems_util:head_file(Filename, 160) of
 		{ok, FileList} -> 
-			io:format("aqui2\n"),
 			{ok, Request#request{code = 200, 
 								 content_type = <<"text/file">>,
 								 response_data = FileList}

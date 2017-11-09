@@ -217,8 +217,6 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 		end
 
 	catch
-		_Exception:Reason -> 
-			io:format("aqui ~p\n", [Reason]),
-			{error, Reason}
+		_Exception:Reason -> {error, Reason}
 	end.
 
