@@ -107,7 +107,7 @@
 		 match_ip_address/2,
  		 allow_ip_address/2,
 		 mask_ipaddress_to_tuple/1,
-		 encode_request_cowboy/2,
+		 encode_request_cowboy/3,
 		 msg_campo_obrigatorio/2, msg_email_invalido/2, mensagens/1,
 		 msg_registro_ja_existe/1, msg_registro_ja_existe/2,
 		 hashsym_and_params/1,
@@ -1299,6 +1299,7 @@ mime_type(".drw") -> <<"application/drafting">>;
 mime_type(".tsp") -> <<"application/dsptype">>;
 mime_type(".dxf") -> <<"application/dxf">>;
 mime_type(".xls") -> <<"application/excel">>;
+mime_type(".csv") -> <<"text/csv">>;
 mime_type(".unv") -> <<"application/i-deas">>;
 mime_type(".jar") -> <<"application/java-archive">>;
 mime_type(".hqx") -> <<"application/mac-binhex40">>;
@@ -1451,12 +1452,11 @@ mime_type(".bz2") -> <<"application/x-bzip2">>;
 mime_type(".doc") -> <<"application/msword">>;
 mime_type(".z") -> <<"application/x-compress">>;
 mime_type(".m4a") -> <<"audio/mpeg">>;
-mime_type(".csv") -> <<"text/csv">>;
 mime_type(_) -> <<"application/octet-stream">>.
 
 
--spec encode_request_cowboy(tuple(), pid()) -> {ok, #request{}} | {error, atom()}.
-encode_request_cowboy(CowboyReq, WorkerSend) ->
+-spec encode_request_cowboy(tuple(), pid(), non_neg_integer()) -> {ok, #request{}} | {error, atom()}.
+encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 	try
 		Url = cowboy_req:path(CowboyReq),
 		Url2 = remove_ult_backslash_url(binary_to_list(Url)),
@@ -1487,7 +1487,7 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 				case ContentLength > 0 of
 					true ->
 						% limit Content-Type header length to avoid CVE-2014-0050
-						case ContentLength > ?HTTP_MAX_CONTENT_LENGTH of
+						case ContentLength > HttpMaxContentLength of
 							true ->
 								ems_db:inc_counter(http_max_content_length_error),
 								erlang:error(ehttp_max_content_length_error);
@@ -1526,6 +1526,18 @@ encode_request_cowboy(CowboyReq, WorkerSend) ->
 								QuerystringMap2 = QuerystringMap;
 							<<"text/plain">> ->
 								ems_db:inc_counter(http_content_type_in_text_plain),
+								ContentType2 = ContentType,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"text/csv">> ->
+								ems_db:inc_counter(http_content_type_in_text_csv),
+								ContentType2 = ContentType,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"application/octet-stream">> ->
+								ems_db:inc_counter(http_content_type_in_octet_stream),
 								ContentType2 = ContentType,
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = undefined,

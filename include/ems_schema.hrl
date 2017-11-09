@@ -309,7 +309,8 @@
 					service_auth_denied_metric_name :: atom(),
 					service_error_metric_name :: atom(),
 					service_unavailable_metric_name :: atom(),
-					service_timeout_metric_name :: atom()
+					service_timeout_metric_name :: atom(),
+					http_max_content_length :: non_neg_integer()
 				}).
 
 

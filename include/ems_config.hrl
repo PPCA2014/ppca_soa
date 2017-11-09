@@ -176,7 +176,9 @@
 
 -define(HTTP_SERVER_PORT, 2381).
 -define(HTTP_MAX_CONNECTIONS, 100000).
--define(HTTP_MAX_CONTENT_LENGTH, 1000000).  % Limite default do conteúdo do payload é de 1MB
+-define(HTTP_MAX_CONTENT_LENGTH, 60000000).  % Limite default do conteúdo do payload é de 60MB
+-define(HTTP_DEFAULT_CONTENT_LENGTH, 64000).  % Limite default do conteúdo do payload é de 64KB
+
 
 -define(TCP_PORT_MIN, 1024).
 -define(TCP_PORT_MAX, 99999).
@@ -184,21 +186,21 @@
 
 
 %  Definição para o arquivo de configuração
--record(config, {cat_host_alias, 							%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
+-record(config, {cat_host_alias :: map(),					%% Lista (Chave-Valor) com os names alternativos para os hosts. Ex.: ["negocio01", "192.168.0.103", "negocio02", "puebla"]
 				 cat_host_search,							%% Lista de hosts para pesquisar os serviços
 				 cat_node_search,							%% Lista de nodes para pesquisar os serviços
 				 cat_path_search :: list(tuple()),			%% Lista de tuplas com caminhos alternativos para catálogos
 				 cat_disable_services :: list(binary()),	%% Lista de serviços para desativar
 				 cat_enable_services :: list(binary()),		%% Lista de serviços para habilitar
 				 static_file_path :: list(string()),		%% Lista de diretórios para arquivos estáticos
-				 ems_hostname,								%% Nome da maquina onde o barramento está sendo executado
-				 ems_host,									%% Atom do name da maquina onde o barramento está sendo executado
-				 ems_file_dest,								%% Nome do arquivo de configuração (útil para saber o local do arquivo)
-				 ems_debug,
-				 ems_result_cache,
+				 ems_hostname :: binary(),					%% Nome da maquina onde o barramento está sendo executado
+				 ems_host :: atom(),						%% Atom do name da maquina onde o barramento está sendo executado
+				 ems_file_dest :: string(),					%% Nome do arquivo de configuração (útil para saber o local do arquivo)
+				 ems_debug :: boolean(),
+				 ems_result_cache  :: non_neg_integer(),
 				 ems_datasources :: map(),
-				 tcp_listen_address			= [<<"0.0.0.0">>],
-				 tcp_allowed_address		= [],
+				 tcp_listen_address :: list(),
+				 tcp_allowed_address :: list() | atom(),
 				 authorization :: binary(),
 				 oauth2_with_check_constraint :: boolean(),
 				 config_file,
@@ -213,7 +215,10 @@
 				 user_dados_funcionais_path_search :: string(),
 				 user_perfil_path_search :: string(),
 				 user_permission_path_search :: string(),
-				 user_email_path_search :: string()
+				 user_email_path_search :: string(),
+				 ssl_cacertfile :: binary(),
+				 ssl_certfile :: binary(),
+				 ssl_keyfile :: binary()
 		 }). 	
 
 
