@@ -74,7 +74,7 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 			};		
 		{redirect, ClientId, RedirectUri} ->
 			LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":"/utf8>>, integer_to_binary(Port), 
-											 <<"/login/index.html?response_type=code&client_id=">>, ClientId, 
+											 <<"/login/index.html?response_type=code&client_id=">>, integer_to_binary(ClientId), 
 											 <<"&redirect_uri=">>, RedirectUri]),
 			{ok, Request#request{code = 302, 
 								 oauth2_grant_type = GrantType,
