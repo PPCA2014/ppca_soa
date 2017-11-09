@@ -18,23 +18,18 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 				ems_db:inc_counter(ems_oauth2_grant_type_password),
 				password_grant(Request);
 			<<"client_credentials">> ->
-				io:format("passo 0\n"),
 				ems_db:inc_counter(ems_oauth2_grant_type_client_credentials),
 				client_credentials_grant(Request);
 			<<"token">> -> 
-				io:format("passo 1\n"),
 				ems_db:inc_counter(ems_oauth2_grant_type_token),
 				authorization_request(Request);
 			<<"code">> ->	
-				io:format("passo 3\n"),
 				ems_db:inc_counter(ems_oauth2_grant_type_code),
 				authorization_request(Request);	
 			<<"authorization_code">> ->	
-				io:format("passo 4\n"),
 				ems_db:inc_counter(ems_oauth2_grant_type_authorization_code),
 				access_token_request(Request);
 			<<"refresh_token">> ->	
-				io:format("passo 5\n"),
 				ems_db:inc_counter(ems_oauth2_grant_type_refresh_token),
 				refresh_token_request(Request);	
 			 _ -> {error, access_denied}
@@ -104,7 +99,6 @@ code_request(Request = #request{authorization = Authorization}) ->
 				Authz = oauth2:authorize_code_request({Username, list_to_binary(Password)}, ClientId, RedirectUri, Scope, []),
 				case issue_code(Authz) of
 					{ok, Response} ->
-						io:format("aqui1.4 code request\n"),
 						Code = element(2, lists:nth(1, Response)),
 						LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=", State/binary>>,
 						{ok, Request#request{code = 200, 

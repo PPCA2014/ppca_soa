@@ -76,14 +76,12 @@ authenticate_user({Login, Password}, _) ->
 	end.
 	
 authenticate_client({ClientId, Secret},_) ->
-    io:format("authenticate_client aqui00 clientid  -> ~p\n", [ClientId]),
     case ems_client:find_by_id_and_secret(ClientId, Secret) of
 		{ok, Client} ->	 {ok, {<<>>, Client}};
 		_ -> {error, unauthorized_client}		
     end.
     
 get_client_identity(ClientId, _) ->
-	io:format("get_client_identity aqui0000 clientid -> ~p\n", [ClientId]),
     case ems_client:find_by_id(ClientId) of
         {ok, Client} -> {ok, {[], Client}};
         _ -> {error, unauthorized_client}
@@ -137,13 +135,11 @@ get_redirection_uri(ClientId, _) ->
 
 
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
-    io:format("aqui0000 ~p\n", [RedirUri]),
     case ClientUri =:= RedirUri of
 		true -> {ok, []};
 		_Error -> {error, unauthorized_client}
     end;
 verify_redirection_uri(ClientId, ClientUri, _) ->
-    io:format("aqui000 ~p\n", [ClientId]),
     case get_client_identity(ClientId,[]) of
         {ok, {_, #client{redirect_uri = RedirUri}}} -> 
 			case ClientUri =:= RedirUri of
@@ -173,10 +169,10 @@ verify_scope(_RegScope, Scope , _) ->
 % função criada pois a biblioteca OAuth2 não trata refresh_tokens
 authorize_refresh_token(Client, RefreshToken, Scope) ->
     case authenticate_client(Client, []) of
-        {error, _}      -> {error, invalid_client};
+        {error, _}  -> {error, invalid_client};
         {ok, {_, C}} -> 
 			case resolve_refresh_token(RefreshToken, []) of
-				{error, _}=E           -> E;
+				{error, _}= E -> E;
 				{ok, {_, GrantCtx}} -> 
 					case verify_client_scope(C, Scope, []) of
 						{error, _}           -> {error, invalid_scope};

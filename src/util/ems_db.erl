@@ -45,18 +45,18 @@ create_database(Nodes) ->
 
     mnesia:create_table(user, [{type, set},
 							   {disc_copies, Nodes},
-							   {index, [#user.codigo_pessoa, #user.login, #user.cpf, #user.email]},
+							   {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
 							   {attributes, record_info(fields, user)}]),
 
     mnesia:create_table(user_fs, [{type, set},
 								  {disc_copies, Nodes},
-								  {index, [#user.codigo_pessoa, #user.login, #user.cpf, #user.email]},
+								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
 								  {attributes, record_info(fields, user)},
 								  {record_name, user}]),
 
     mnesia:create_table(user_db, [{type, set},
 								  {disc_copies, Nodes},
-								  {index, [#user.codigo_pessoa, #user.login, #user.cpf, #user.email]},
+								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
 								  {attributes, record_info(fields, user)},
 								  {record_name, user}]),
 

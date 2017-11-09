@@ -70,8 +70,8 @@ authenticate_login_password(Login, Password) ->
 
 -spec find_by_codigo_pessoa(non_neg_integer()) -> {ok, list(#user{})} | {error, enoent}.
 find_by_codigo_pessoa(Codigo) ->
-	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo_pessoa) of
-		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo_pessoa) of
+	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
+		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
 				[] -> {error, enoent};
 				Records -> {ok, Records}
 			  end;
@@ -81,7 +81,7 @@ find_by_codigo_pessoa(Codigo) ->
 
 -spec find_by_codigo_pessoa(atom(), non_neg_integer()) -> {ok, list(#user{})} | {error, enoent}.
 find_by_codigo_pessoa(Table, Codigo) ->
-	case mnesia:dirty_index_read(Table, Codigo, #user.codigo_pessoa) of
+	case mnesia:dirty_index_read(Table, Codigo, #user.codigo) of
 		[] -> {error, enoent};
 		Records -> {ok, Records}
 	end.
@@ -219,7 +219,7 @@ find_by_login_and_password(Login, Password)  ->
 to_resource_owner(undefined) -> <<"{}"/utf8>>;
 to_resource_owner(User) ->
 	ems_schema:to_json({<<"id">>, User#user.id,
-						<<"codigo">>, User#user.codigo_pessoa,
+						<<"codigo">>, User#user.codigo,
 						<<"login">>, User#user.login, 
 						<<"name">>, User#user.name,
 						<<"email">>, User#user.email,
@@ -242,7 +242,7 @@ new_from_map(Map, _Conf) ->
 		PasswdCrypto = maps:get(<<"passwd_crypto">>, Map, <<>>),
 		Password = maps:get(<<"password">>, Map, <<>>),
 		{ok, #user{	id = maps:get(<<"id">>, Map),
-					codigo_pessoa = maps:get(<<"codigo_pessoa">>, Map, undefined),
+					codigo = maps:get(<<"codigo">>, Map, undefined),
 					login = ?UTF8_STRING(maps:get(<<"login">>, Map)),
 					name = ?UTF8_STRING(maps:get(<<"name">>, Map)),
 					cpf = maps:get(<<"cpf">>, Map, <<>>),

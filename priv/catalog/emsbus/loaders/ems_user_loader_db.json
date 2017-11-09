@@ -17,7 +17,7 @@
 	"enable" : false,
 	"sql_load" : 
 				"select u.UsuId as Id,   
-					   p.PesCodigoPessoa as CodigoPessoa, 
+					   p.PesCodigoPessoa as Codigo, 
 					   lower(rtrim(u.UsuLogin)) as Login, 
 					   rtrim(p.PesNome) as Nome,  
 					   rtrim(cast(p.PesCpf as varchar(14))) as Cpf, 
@@ -41,7 +41,7 @@
 
 	"sql_update" :
 			"select u.UsuId as Id, 
-				   p.PesCodigoPessoa as CodigoPessoa, 
+				   p.PesCodigoPessoa as Codigo, 
 				   lower(rtrim(u.UsuLogin)) as Login, 
 				   rtrim(p.PesNome) as Nome, 
 				   rtrim(cast(p.PesCpf as varchar(14))) as Cpf, 
@@ -65,7 +65,7 @@
 			      u.UsuDataCadastramento >= ? or p.PesDataCadastramento >= ?
 			",
 			
-	"fields" : ["id", "codigo_pessoa", "login", "name", "cpf", "password", 
+	"fields" : ["id", "codigo", "login", "name", "cpf", "password", 
 				"passwd_crypto", "endereco", "complemento_endereco", 
 				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
 				"sexo", "telefone", "celular", "ddd"]

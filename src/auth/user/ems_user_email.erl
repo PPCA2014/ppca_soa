@@ -23,7 +23,7 @@ new_from_map(Map, _Conf) ->
 	try
 		{ok, #user_email{
 					id = maps:get(<<"id">>, Map),
-					codigo_pessoa = maps:get(<<"codigo_pessoa">>, Map),
+					codigo = maps:get(<<"codigo">>, Map),
 					email = ?UTF8_STRING(maps:get(<<"email">>, Map)),
 					type = maps:get(<<"type">>, Map, 1),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),

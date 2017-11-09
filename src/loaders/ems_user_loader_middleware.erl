@@ -76,7 +76,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 							true ->
 								?DEBUG("ems_user_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								User = CurrentUser#user{
-												 codigo_pessoa = NewUser#user.codigo_pessoa,
+												 codigo = NewUser#user.codigo,
 												 login = NewUser#user.login,
 												 name = NewUser#user.name,
 												 cpf = NewUser#user.cpf,

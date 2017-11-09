@@ -13,7 +13,7 @@
      			  index :: non_neg_integer()}).
 
 -record(user, {id :: non_neg_integer(), 					%% identificador do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
-			   codigo_pessoa :: non_neg_integer(),			%% código pessoa se o usuário possui dados pessoais em outra tabela externa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
+			   codigo :: non_neg_integer(),					%% código da pessoa se o usuário possui dados pessoais em outra tabela externa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
 			   login :: binary(),							%% login do usuário (required)
 			   name :: binary(), 							%% nome do usuário (required)
 			   cpf :: binary(),
@@ -61,7 +61,7 @@
 
 -record(user_email, {
 			   id :: non_neg_integer(), 					%% identificador dos email (Na UnB é o campo TB_Email.EmaCodigo)
-			   codigo_pessoa :: non_neg_integer(),			%% código pessoa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
+			   codigo :: non_neg_integer(),					%% código da pessoa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
 			   email :: binary(),	
 			   type :: non_neg_integer(),					%% 1 = institucional  2 = outro
 			   ctrl_path :: string(),
@@ -198,6 +198,7 @@
 							 fields :: binary() | atom() | list(atom()),
 							 remap_fields :: map(),							%% Permite expor um campo com outro nome
 							 remap_fields_rev :: map(),						
+							 show_remap_fields :: boolean(),				%% Indica se deve mostrar os campos remapeados
 							 primary_key :: binary() | atom(),
 							 foreign_key :: binary() | atom(),
 							 foreign_table_name  :: binary() | atom(),			
@@ -210,7 +211,6 @@
 							 pid_module_ref,
 							 owner,
 							 owner_ref,
-							 show_remap_fields :: boolean(),				%% Indica se deve mostrar os campos remapeados
 							 connection_count_metric_name :: atom(),		%% Quantas conexões alocadas
 							 connection_created_metric_name :: atom(),		%% Quantas conexões criadas
 							 connection_closed_metric_name :: atom(),   	%% Quantas conexões foram fechadas de forma normal

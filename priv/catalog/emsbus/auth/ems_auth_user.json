@@ -11,7 +11,7 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_db", "user_fs"],
-			"fields" : ["id", "login", "name", "cpf", "email", "password", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd", "matricula"]
+			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "password", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd"]
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",
@@ -38,7 +38,7 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_db", "user_fs"],
-			"fields" : ["id", "login", "name", "cpf", "email", "password", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd", "matricula"]
+			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "password", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd"]
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",

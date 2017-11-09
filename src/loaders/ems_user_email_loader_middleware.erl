@@ -85,7 +85,7 @@ update_email_tabela_users_([User|UserT], Email, UserTable) ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user_email:new_from_map(Map, Conf) of
-			{ok, NewRecord = #user_email{id = Id, ctrl_hash = CtrlHash, codigo_pessoa = CodigoPessoa}} -> 
+			{ok, NewRecord = #user_email{id = Id, ctrl_hash = CtrlHash, codigo = CodigoPessoa}} -> 
 				Table = ems_user_email:get_table(SourceType),
 				case ems_user_email:find(Table, Id) of
 					{error, enoent} -> 
@@ -97,7 +97,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 							true ->
 								?DEBUG("ems_user_email_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								Record = CurrentRecord#user_email{
-												 codigo_pessoa = CodigoPessoa,
+												 codigo = CodigoPessoa,
 												 email = NewRecord#user_email.email,
 												 type = NewRecord#user_email.type,
 												 ctrl_path = NewRecord#user_email.ctrl_path,
