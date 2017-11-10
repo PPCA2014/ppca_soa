@@ -10,7 +10,7 @@
 		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : ["user_db", "user_fs", "user_aluno_db"],
+			"table_name" : ["user_db", "user_aluno_ativo_db", "user_aluno_inativo_db", "user_fs"],
 			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "password", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd"]
 		},
 		"schema_in" : "user",
@@ -37,7 +37,7 @@
 		"lang" : "erlang",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : ["user_db", "user_fs", "user_aluno_db"],
+			"table_name" : ["user_db", "user_aluno_ativo_db", "user_aluno_inativo_db", "user_fs"],
 			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "password", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd"]
 		},
 		"schema_in" : "user",

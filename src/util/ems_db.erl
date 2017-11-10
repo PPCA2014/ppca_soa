@@ -60,7 +60,13 @@ create_database(Nodes) ->
 								  {attributes, record_info(fields, user)},
 								  {record_name, user}]),
 
-    mnesia:create_table(user_aluno_db, [{type, set},
+    mnesia:create_table(user_aluno_ativo_db, [{type, set},
+								  {disc_copies, Nodes},
+								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
+								  {attributes, record_info(fields, user)},
+								  {record_name, user}]),
+
+    mnesia:create_table(user_aluno_inativo_db, [{type, set},
 								  {disc_copies, Nodes},
 								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
 								  {attributes, record_info(fields, user)},
