@@ -47,6 +47,7 @@ all() ->
 
 -spec authenticate_login_password(binary(), binary()) -> ok | {error, invalidCredentials}.
 authenticate_login_password(Login, Password) ->
+	io:format("aqui1\n"),
 	case find_by_login(Login) of
 		{ok, #user{password = PasswordUser}} -> 
 			case PasswordUser =:= ems_util:criptografia_sha1(Password) orelse PasswordUser =:= Password of
@@ -71,8 +72,15 @@ authenticate_login_password(Login, Password) ->
 -spec find_by_codigo_pessoa(non_neg_integer()) -> {ok, list(#user{})} | {error, enoent}.
 find_by_codigo_pessoa(Codigo) ->
 	case mnesia:dirty_index_read(user_db, Codigo, #user.codigo) of
-		[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
-				[] -> {error, enoent};
+		[] -> case mnesia:dirty_index_read(user_aluno_ativo_db, Codigo, #user.codigo) of
+				[] -> 
+					case mnesia:dirty_index_read(user_aluno_inativo_db, Codigo, #user.codigo) of
+						[] -> case mnesia:dirty_index_read(user_fs, Codigo, #user.codigo) of
+								[] -> {error, enoent};
+								Records -> {ok, Records}
+							  end;
+						Records -> {ok, Records}
+					end;
 				Records -> {ok, Records}
 			  end;
 		Records -> {ok, Records}
@@ -99,11 +107,19 @@ find_by_login(Login) ->
 	LoginBin = list_to_binary(LoginStr),
 	case mnesia:dirty_index_read(user_db, LoginBin, #user.login) of
 		[] -> 
-			case mnesia:dirty_index_read(user_fs, LoginBin, #user.login) of
+			case mnesia:dirty_index_read(user_aluno_ativo_db, LoginBin, #user.login) of
 				[] -> 
-					case find_by_email(LoginBin) of
-						{ok, Record} -> {ok, Record};
-						_ -> find_by_cpf(Login)
+					case mnesia:dirty_index_read(user_aluno_inativo_db, LoginBin, #user.login) of
+						[] -> 
+							case mnesia:dirty_index_read(user_fs, LoginBin, #user.login) of
+								[] -> 
+									case find_by_email(LoginBin) of
+										{ok, Record} -> {ok, Record};
+										_ -> find_by_cpf(Login)
+									end;
+								[Record|_] -> {ok, Record}
+							end;
+						[Record|_] -> {ok, Record}
 					end;
 				[Record|_] -> {ok, Record}
 			end;
@@ -120,18 +136,71 @@ find_by_email(Email) ->
 		true -> EmailStr = string:to_lower(Email);
 		false -> EmailStr = string:to_lower(binary_to_list(Email))
 	end,
-	case string:rchr(EmailStr, $@) > 0 of
-		true -> 
-			EmailBin = list_to_binary(EmailStr),
-			case mnesia:dirty_index_read(user_db, EmailBin, #user.email) of
+	Ch = string:substr(EmailStr, 1, 1),
+	EmailLen = string:len(EmailStr), 
+	case ems_util:is_letter_lower(Ch) andalso EmailLen > 3 of
+		true ->
+			case string:rchr(EmailStr, $@) > 0 of
+				true -> 
+					case EmailLen >= 10 of
+						true -> find_by_email_(list_to_binary(EmailStr));
+						false -> {error, enoent}
+					end;
+				false -> 
+					EmailUnB = list_to_binary(EmailStr ++ "@unb.br"),
+					case find_by_email_or_login(EmailUnB, #user.email) of
+						{ok, Record} -> {ok, Record};
+						{error, enoent} -> 
+							case find_by_email_or_login(EmailUnB, #user.login) of
+								{ok, Record} -> {ok, Record};
+								{error, enoent} -> 
+									EmailGmail = list_to_binary(EmailStr ++ "@gmail.com"),
+									case find_by_email_or_login(EmailGmail, #user.email) of
+										{ok, Record} -> {ok, Record};
+										{error, enoent} -> find_by_email_or_login(EmailGmail, #user.login)
+									end
+							end
+					end
+			end;
+		false -> {error, enoent}
+	end.
+
+-spec find_by_email_(binary()) -> #user{} | {error, enoent}.
+find_by_email_(EmailBin) -> 
+	case mnesia:dirty_index_read(user_db, EmailBin, #user.email) of
+		[] -> 
+			case mnesia:dirty_index_read(user_aluno_ativo_db, EmailBin, #user.email) of
 				[] -> 
-					case mnesia:dirty_index_read(user_fs, EmailBin, #user.email) of
-						[] -> {error, enoent};
+					case mnesia:dirty_index_read(user_aluno_inativo_db, EmailBin, #user.email) of
+						[] -> 
+							case mnesia:dirty_index_read(user_fs, EmailBin, #user.email) of
+								[] -> {error, enoent};
+								[Record|_] -> {ok, Record}
+							end;
 						[Record|_] -> {ok, Record}
 					end;
 				[Record|_] -> {ok, Record}
 			end;
-		false -> {error, enoent}
+		[Record|_] -> {ok, Record}
+	end.
+
+-spec find_by_email_or_login(binary(), non_neg_integer()) -> #user{} | {error, enoent}.
+find_by_email_or_login(EmailBin, Where) -> 
+	case mnesia:dirty_index_read(user_db, EmailBin, Where) of
+		[] -> 
+			case mnesia:dirty_index_read(user_aluno_ativo_db, EmailBin, Where) of
+				[] -> 
+					case mnesia:dirty_index_read(user_aluno_inativo_db, EmailBin, Where) of
+						[] -> 
+							case mnesia:dirty_index_read(user_fs, EmailBin, Where) of
+								[] -> {error, enoent};
+								[Record|_] -> {ok, Record}
+							end;
+						[Record|_] -> {ok, Record}
+					end;
+				[Record|_] -> {ok, Record}
+			end;
+		[Record|_] -> {ok, Record}
 	end.
 
 
@@ -148,9 +217,9 @@ find_by_cpf(Cpf) ->
 			CpfStr = binary_to_list(Cpf),
 			CpfBin = Cpf
 	end,
-	LenCpf = string:len(CpfStr),
-	case (LenCpf =:= 11 andalso ems_util:is_cpf_valid(CpfStr)) orelse
-		 (LenCpf =:= 14 andalso ems_util:is_cnpj_valid(CpfStr)) of
+	CpfLen = string:len(CpfStr),
+	case (CpfLen =:= 11 andalso ems_util:is_cpf_valid(CpfStr)) orelse
+		 (CpfLen =:= 14 andalso ems_util:is_cnpj_valid(CpfStr)) of
 		true ->
 			case mnesia:dirty_index_read(user_db, CpfBin, #user.cpf) of
 				[] -> 
@@ -162,19 +231,27 @@ find_by_cpf(Cpf) ->
 			end;
 		false -> 
 			% tenta inserir zeros na frente e refaz a pesquisa
-			case LenCpf of
+			case CpfLen of
 				10 -> Cpf2 = "0" ++ CpfStr;  
 				 9 -> Cpf2 = "00" ++ CpfStr;
 				 _ -> Cpf2 = CpfStr
 			end,
-			LenCpf2 = string:len(Cpf2),
+			CpfLen2 = string:len(Cpf2),
 			Cpf2Bin = list_to_binary(Cpf2),
-			case (LenCpf2 =:= 11 orelse LenCpf2 =:= 14) of  % deve ser CPF ou CNPJ
+			case (CpfLen2 =:= 11 orelse CpfLen2 =:= 14) of  % deve ser CPF ou CNPJ
 				true ->
 					case mnesia:dirty_index_read(user_db, Cpf2Bin, #user.cpf) of
 						[] -> 
-							case mnesia:dirty_index_read(user_fs, Cpf2Bin, #user.cpf) of
-								[] -> {error, enoent};
+							case mnesia:dirty_index_read(user_aluno_ativo_db, Cpf2Bin, #user.cpf) of
+								[] -> 
+									case mnesia:dirty_index_read(user_alno_inativo_db, Cpf2Bin, #user.cpf) of
+										[] -> 
+											case mnesia:dirty_index_read(user_fs, Cpf2Bin, #user.cpf) of
+												[] -> {error, enoent};
+												[Record|_] -> {ok, Record}
+											end;
+										[Record|_] -> {ok, Record}
+									end;
 								[Record|_] -> {ok, Record}
 							end;
 						[Record|_] -> {ok, Record}
@@ -190,13 +267,9 @@ find_by_name(undefined) -> {error, enoent};
 find_by_name(Name) when is_list(Name) -> 
 	find_by_name(list_to_binary(Name));
 find_by_name(Name) -> 
-	case ems_db:find_first(user_db, [{name, "==", Name}]) of
-		{error, enoent} ->
-			case ems_db:find_first(user_fs, [{name, "==", Name}]) of
-				{error, enoent} -> {error, enoent};
-				{ok, Record2} -> {ok, Record2}
-			end;
-		{ok, Record} -> {ok, Record}
+	case ems_db:find_first([user_db, user_aluno_ativo_db, user_aluno_inativo_db], [{name, "==", Name}]) of
+		{ok, Record} -> {ok, Record};
+		_ -> {error, enoent}
 	end.
 
 -spec find_by_login_and_password(binary() | list(), binary() | list()) -> {ok, #user{}} | {error, enoent}.	
@@ -281,9 +354,11 @@ new_from_map(Map, _Conf) ->
 	end.
 
 
--spec get_table(fs | db) -> user_db | user_fs.
-get_table(db) -> user_db;
-get_table(fs) -> user_fs.
+-spec get_table(user_db | user_fs | user_aluno_ativo_db | user_aluno_inativo_db) -> user_db | user_fs | user_aluno_ativo_db | user_aluno_inativo_db.
+get_table(user_db) -> user_db;
+get_table(user_fs) -> user_fs;
+get_table(user_aluno_ativo_db) -> user_aluno_ativo_db;
+get_table(user_aluno_inativo_db) -> user_aluno_inativo_db.
 
 -spec find(user_fs | user_db, non_neg_integer()) -> {ok, #user{}} | {error, enoent}.
 find(Table, Id) ->

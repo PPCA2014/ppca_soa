@@ -10,8 +10,8 @@
 
 -behavior(gen_server). 
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 %% Server API
 -export([start/1, stop/0]).
@@ -27,7 +27,8 @@
 				last_update,
 				last_update_param_name,
 				filename,
-				middleware
+				middleware,
+				source_type
 			}).
 
 -define(SERVER, ?MODULE).
@@ -78,13 +79,15 @@ init(#service{name = Name,
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	UpdateCheckpoint = maps:get(<<"update_checkpoint">>, Props, ?DATA_LOADER_UPDATE_CHECKPOINT),
 	Filename = do_get_filename(Middleware),
+	SourceType = binary_to_atom(maps:get(<<"source_type">>, Props, <<"fs">>), utf8),
 	erlang:send_after(60000 * 60, self(), check_sync_full),
 	State = #state{name = binary_to_list(Name),
 				   update_checkpoint = UpdateCheckpoint,
 				   last_update_param_name = LastUpdateParamName,
 				   last_update = LastUpdate,
 				   filename = Filename,
-				   middleware = Middleware},
+				   middleware = Middleware,
+				   source_type = SourceType},
 	{ok, State, StartTimeout}.
     
 handle_cast(shutdown, State) ->
@@ -206,7 +209,8 @@ do_check_load_or_update(State = #state{name = Name,
 -spec do_load(tuple(), #config{}, #state{}) -> ok | {error, atom()}.
 do_load(CtrlInsert, Conf, State = #state{name = Name,
 										 middleware = Middleware,
-										 filename = Filename}) -> 
+										 filename = Filename,
+										 source_type = SourceType}) -> 
 	try
 		case ems_json_scan:scan(Filename, Conf) of
 			{ok, []} -> 
@@ -216,7 +220,7 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 				case do_clear_table(State) of
 					ok ->
 						do_reset_sequence(State),
-						{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, fs, []),
+						{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, SourceType, []),
 						ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
 						erlang:garbage_collect(),
 						ok;
@@ -237,7 +241,8 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 -spec do_update(tuple(), tuple(), #config{}, #state{}) -> ok | {error, atom()}.
 do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 											   middleware = Middleware,
-											   filename = Filename}) -> 
+											   filename = Filename,
+											   source_type = SourceType}) -> 
 	try
 		%{{Year, Month, Day}, {Hour, Min, _}} = LastUpdate,
 		% Zera os segundos
@@ -247,7 +252,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 				?DEBUG("~s did not load any record.", [Name]),
 				ok;
 			{ok, Records} ->
-				{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, fs, []),
+				{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, SourceType, []),
 				% Para não gerar muito log, apenas imprime no log se algum registro foi modificado
 				case InsertCount > 0 orelse UpdateCount > 0 orelse ErrorCount > 0 orelse DisabledCount > 0 of
 					true ->
@@ -268,23 +273,23 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 	end.
 
 -spec do_is_empty(#state{}) -> {ok, boolean()}.
-do_is_empty(#state{middleware = Middleware}) ->
-	apply(Middleware, is_empty, [fs]).
+do_is_empty(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, is_empty, [SourceType]).
 
 
 -spec do_size_table(#state{}) -> {ok, non_neg_integer()}.
-do_size_table(#state{middleware = Middleware}) ->
-	apply(Middleware, size_table, [fs]).
+do_size_table(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, size_table, [SourceType]).
 
 
 -spec do_clear_table(#state{}) -> ok | {error, efail_clear_ets_table}.
-do_clear_table(#state{middleware = Middleware}) ->
-	apply(Middleware, clear_table, [fs]).
+do_clear_table(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, clear_table, [SourceType]).
 
 
 -spec do_reset_sequence(#state{}) -> ok.
-do_reset_sequence(#state{middleware = Middleware}) ->
-	apply(Middleware, reset_sequence, [fs]).
+do_reset_sequence(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, reset_sequence, [SourceType]).
 	
 -spec do_get_filename(atom()) -> string() | list(tuple()).
 do_get_filename(Middleware) -> apply(Middleware, get_filename, []).

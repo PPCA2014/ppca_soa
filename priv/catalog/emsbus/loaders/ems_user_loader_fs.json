@@ -14,5 +14,6 @@
 	"middleware" : "ems_user_loader_middleware",
 	"pool_size" : 1,
 	"pool_max" : 1,
-	"enable" : true
+	"enable" : true,
+	"source_type" : "user_fs"
 }

@@ -15,6 +15,7 @@
 	"pool_size" : 1,
 	"pool_max" : 1,
 	"enable" : false,
+	"source_type" : "user_db",
 	"sql_load" : 
 				"select u.UsuId as Id,   
 					   p.PesCodigoPessoa as Codigo, 

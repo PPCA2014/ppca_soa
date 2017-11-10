@@ -90,7 +90,10 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 				case ems_user_email:find(Table, Id) of
 					{error, enoent} -> 
 						Record = NewRecord#user_email{ctrl_insert = CtrlDate},
-						update_email_tabela_users(Record, SourceType, CodigoPessoa),
+						update_email_tabela_users(Record, case SourceType of
+																db -> user_db;
+																fs -> user_fs
+														  end, CodigoPessoa),
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_email{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of

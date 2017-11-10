@@ -14,36 +14,45 @@
 -export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
 
--spec is_empty(fs | db) -> boolean().
-is_empty(db) ->	mnesia:table_info(user_db, size) == 0;
-is_empty(fs) ->	mnesia:table_info(user_fs, size) == 0.
+-spec is_empty(user_db | user_aluno_ativo_db | user_aluno_inativo_db | user_fs) -> boolean().
+is_empty(user_db) -> mnesia:table_info(user_db, size) == 0;
+is_empty(user_aluno_ativo_db) -> mnesia:table_info(user_aluno_ativo_db, size) == 0;
+is_empty(user_aluno_inativo_db) ->	mnesia:table_info(user_aluno_inativo_db, size) == 0;
+is_empty(user_fs) -> mnesia:table_info(user_fs, size) == 0.
 	
 
--spec size_table(fs | db) -> non_neg_integer().
-size_table(db) -> mnesia:table_info(user_db, size);
-size_table(fs) -> mnesia:table_info(user_fs, size).
+-spec size_table(user_db | user_aluno_ativo_db | user_aluno_inativo_db | user_fs) -> non_neg_integer().
+size_table(user_db) -> mnesia:table_info(user_db, size);
+size_table(user_aluno_ativo_db) -> mnesia:table_info(user_aluno_ativo_, size);
+size_table(user_aluno_inativo_db) -> mnesia:table_info(user_aluno_inativo_db, size);
+size_table(user_fs) -> mnesia:table_info(user_fs, size).
 	
 
--spec clear_table(fs | db) -> ok | {error, efail_clear_ets_table}.
-clear_table(db) ->	
+-spec clear_table(user_db | user_aluno_ativo_db | user_aluno_inativo_db | user_fs) -> ok | {error, efail_clear_ets_table}.
+clear_table(user_db) ->	
 	case mnesia:clear_table(user_db) of
 		{atomic, ok} -> ok;
 		_ -> {error, efail_clear_ets_table}
 	end;
-clear_table(fs) ->	
+clear_table(user_aluno_ativo_db) ->	
+	case mnesia:clear_table(user_aluno_ativo_db) of
+		{atomic, ok} -> ok;
+		_ -> {error, efail_clear_ets_table}
+	end;
+clear_table(user_aluno_inativo_db) ->	
+	case mnesia:clear_table(user_aluno_inativo_db) of
+		{atomic, ok} -> ok;
+		_ -> {error, efail_clear_ets_table}
+	end;
+clear_table(user_fs) ->	
 	case mnesia:clear_table(user_fs) of
 		{atomic, ok} -> ok;
 		_ -> {error, efail_clear_ets_table}
 	end.
 	
 	
--spec reset_sequence(fs | db) -> ok.
-reset_sequence(db) -> 
-	ems_db:init_sequence(user_db, 0),
-	ok;
-reset_sequence(fs) ->	
-	ems_db:init_sequence(user_fs, 0),
-	ok.
+-spec reset_sequence(user_db | user_aluno_ativo_db | user_aluno_inativo_db | user_fs) -> ok.
+reset_sequence(_) -> ok.
 	
 	
 -spec check_remove_records(list(), fs | db) -> non_neg_integer().	
@@ -61,16 +70,10 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_user:new_from_map(Map, Conf) of
 			{ok, NewUser = #user{id = Id, ctrl_hash = CtrlHash}} -> 
-				Table = ems_user:get_table(SourceType),
-				case ems_user:find(Table, Id) of
+				case ems_user:find(SourceType, Id) of
 					{error, enoent} -> 
-						case SourceType == fs orelse (SourceType == db andalso not ems_user:exist(user_fs, Id)) of
-							true ->
-								User = NewUser#user{ctrl_insert = CtrlDate},
-								{ok, User, Table, insert};
-							false ->
-								{ok, skip}
-						end;
+						User = NewUser#user{ctrl_insert = CtrlDate},
+						{ok, User, SourceType, insert};
 					{ok, CurrentUser = #user{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
@@ -103,7 +106,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												 ctrl_modified = NewUser#user.ctrl_modified,
 												 ctrl_hash = NewUser#user.ctrl_hash
 											},
-								{ok, User, Table, update};
+								{ok, User, SourceType, update};
 							false -> 
 								{ok, skip}
 						end

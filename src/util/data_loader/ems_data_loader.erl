@@ -10,8 +10,8 @@
 
 -behavior(gen_server). 
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 %% Server API
 -export([start/1, stop/0]).
@@ -45,7 +45,8 @@
 				update_miss_metric_name,
 				error_metric_name,
 				disable_metric_name,
-				skip_metric_name
+				skip_metric_name,
+				source_type
 			}).
 
 -define(SERVER, ?MODULE).
@@ -103,6 +104,7 @@ init(#service{name = Name,
 	SqlCount = re:replace(SqlLoad, "select(.+)( from.+)( order by.+)","select count(1)\\2", [{return,list}]),
 	SqlCodigos = re:replace(SqlLoad, "select ([^,]+),(.+)( from.+)( order by.+)", "select \\1 \\3", [{return,list}]),
 	Fields = maps:get(<<"fields">>, Props, <<>>),
+	SourceType = binary_to_atom(maps:get(<<"source_type">>, Props, <<"db">>), utf8),
 	TimeoutOnError = maps:get(<<"timeout_on_error">>, Props, 60000 * 6),
 	SyncFullCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_full_checkpoint">>]), utf8),
 	CheckCountCheckpointMetricName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_check_count_checkpoint">>]), utf8),
@@ -144,8 +146,8 @@ init(#service{name = Name,
 				   update_miss_metric_name = UpdateMissMetricName,
 				   error_metric_name = ErrorsMetricName,
 				   disable_metric_name = DisabledMetricName,
-				   skip_metric_name = SkipMetricName
-},
+				   skip_metric_name = SkipMetricName,
+				   source_type = SourceType},
 	{ok, State, StartTimeout}.
     
 handle_cast(shutdown, State) ->
@@ -350,7 +352,8 @@ do_load(CtrlInsert, Conf, State = #state{datasource = Datasource,
 										 insert_metric_name = InsertMetricName,
 										 error_metric_name = ErrorsMetricName,
 										 disable_metric_name = DisabledMetricName,
-										 skip_metric_name = SkipMetricName}) -> 
+										 skip_metric_name = SkipMetricName,
+										 source_type = SourceType}) -> 
 	try
 		ems_db:inc_counter(LoadCheckpointMetricName),
 		case ems_odbc_pool:get_connection(Datasource) of
@@ -361,7 +364,7 @@ do_load(CtrlInsert, Conf, State = #state{datasource = Datasource,
 						case do_clear_table(State) of
 							ok ->
 								do_reset_sequence(State),
-								{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, db, Fields),
+								{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, SourceType, Fields),
 								ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
 								ems_db:counter(InsertMetricName, InsertCount),
 								ems_db:counter(ErrorsMetricName, ErrorCount),
@@ -400,7 +403,8 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 											   update_miss_metric_name = UpdateMissMetricName,
 											   error_metric_name = ErrorsMetricName,
 											   disable_metric_name = DisabledMetricName,
-											   skip_metric_name = SkipMetricName}) -> 
+											   skip_metric_name = SkipMetricName,
+											   source_type = SourceType}) -> 
 	try
 		% do_update is optional
 		case SqlUpdate =/= "" of
@@ -426,7 +430,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 								ok;
 							{_, _, Records} ->
 								ems_odbc_pool:release_connection(Datasource2),
-								{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, db, Fields),
+								{ok, InsertCount, UpdateCount, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlUpdate, Conf, Name, Middleware, update, 0, 0, 0, 0, 0, SourceType, Fields),
 								% Para não gerar muito log, apenas imprime no log se algum registro foi modificado
 								case InsertCount > 0 orelse UpdateCount > 0 orelse ErrorCount > 0 orelse DisabledCount > 0 of
 									true ->
@@ -459,27 +463,27 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 	end.
 
 -spec do_is_empty(#state{}) -> {ok, boolean()}.
-do_is_empty(#state{middleware = Middleware}) ->
-	apply(Middleware, is_empty, [db]).
+do_is_empty(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, is_empty, [SourceType]).
 
 
 -spec do_size_table(#state{}) -> {ok, non_neg_integer()}.
-do_size_table(#state{middleware = Middleware}) ->
-	apply(Middleware, size_table, [db]).
+do_size_table(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, size_table, [SourceType]).
 
 
 -spec do_clear_table(#state{}) -> ok | {error, efail_clear_ets_table}.
-do_clear_table(#state{middleware = Middleware}) ->
-	apply(Middleware, clear_table, [db]).
+do_clear_table(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, clear_table, [SourceType]).
 
 
 -spec do_reset_sequence(#state{}) -> ok.
-do_reset_sequence(#state{middleware = Middleware}) ->
-	apply(Middleware, reset_sequence, [db]).
+do_reset_sequence(#state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, reset_sequence, [SourceType]).
 
 
 -spec do_check_remove_records(list(), #state{}) -> non_neg_integer().
-do_check_remove_records(Codigos, #state{middleware = Middleware}) ->
-	apply(Middleware, check_remove_records, [Codigos, db]).
+do_check_remove_records(Codigos, #state{middleware = Middleware, source_type = SourceType}) ->
+	apply(Middleware, check_remove_records, [Codigos, SourceType]).
 
 

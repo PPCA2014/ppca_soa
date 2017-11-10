@@ -71,7 +71,10 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
 								% Sincroniza alguns campos que estão na tabela user por conveniência
-								UserTable = ems_user:get_table(SourceType),
+								UserTable = 	case SourceType of
+												db -> user_db;
+												fs -> user_fs
+											end,
 								case ems_user:find(UserTable, Id) of
 									{ok, User} ->
 										User2 = User#user{type = CurrentRecord#user_dados_funcionais.type,

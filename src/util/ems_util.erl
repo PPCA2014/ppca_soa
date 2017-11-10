@@ -104,6 +104,7 @@
 		 parse_tcp_port/1,
 		 parse_request_querystring/2,
 		 parse_range/3,
+		 parse_email/1,
 		 match_ip_address/2,
  		 allow_ip_address/2,
 		 mask_ipaddress_to_tuple/1,
@@ -2180,9 +2181,40 @@ tuple_to_maps_with_keys([FldH|FldT], [KeyH|KeyT], Result) ->
 is_range_valido(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> true;
 is_range_valido(_Number, _RangeIni, _RangeFim) -> false.
 
+
 -spec parse_range(non_neg_integer(), integer(), integer()) -> non_neg_integer.
 parse_range(Number, RangeIni, RangeFim) when Number >= RangeIni andalso Number =< RangeFim -> Number;
 parse_range(_, _, _) -> erlang:error(erange_not_allowed).
+
+
+-spec parse_email(string() | binary()) -> binary() | undefined.
+parse_email(Value) ->
+	case is_binary(Value) of
+		true ->   
+			io:format("aqui1  ~p\n", [byte_size(Value)]),
+			case byte_size(Value) > 8 of
+				true -> 
+					REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
+					case re:run(binary_to_list(Value), REPattern) of
+						nomatch -> erlang:error(einvalid_email);
+						_ -> Value
+					end;
+				false -> 
+					erlang:error(einvalid_email)
+			end;
+		false -> 
+			io:format("aqui2  ~p\n", [length(Value)]),
+			case length(Value) > 8 of
+				true ->
+					REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
+					case re:run(Value, REPattern) of
+						nomatch -> erlang:error(einvalid_email);
+						_ -> list_to_binary(Value)
+					end;
+				false ->
+					erlang:error(einvalid_email)
+			end
+	end.
 	
 
 -spec is_email_valido(string()) -> boolean().
