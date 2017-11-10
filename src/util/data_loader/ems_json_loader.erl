@@ -218,6 +218,7 @@ do_load(CtrlInsert, Conf, State = #state{name = Name,
 						do_reset_sequence(State),
 						{ok, InsertCount, _, ErrorCount, DisabledCount, SkipCount} = ems_data_pump:data_pump(Records, CtrlInsert, Conf, Name, Middleware, insert, 0, 0, 0, 0, 0, fs, []),
 						ems_logger:info("~s sync ~p inserts, ~p disabled, ~p skips, ~p errors.", [Name, InsertCount, DisabledCount, SkipCount, ErrorCount]),
+						erlang:garbage_collect(),
 						ok;
 					Error ->
 						ems_logger:error("~s could not clear table before load data.", [Name]),
@@ -254,6 +255,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{name = Name,
 						ems_logger:info("~s sync ~p inserts, ~p updates, ~p disabled, ~p skips, ~p errors since ~s.", [Name, InsertCount, UpdateCount, DisabledCount, SkipCount, ErrorCount, LastUpdateStr]);
 					false -> ok
 				end,
+				erlang:garbage_collect(),
 				ok;
 			{error, Reason} = Error -> 
 				ems_logger:error("~s update data error: ~p.", [Name, Reason]),

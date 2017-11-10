@@ -265,6 +265,8 @@ new_from_map(Map, _Conf) ->
 					ddd = ?UTF8_STRING(maps:get(<<"ddd">>, Map, <<>>)),
 					email = ?UTF8_STRING(maps:get(<<"email">>, Map, <<>>)),
 					matricula = maps:get(<<"matricula">>, Map, undefined),
+					type = maps:get(<<"type">>, Map, 1),
+					subtype = maps:get(<<"subtype">>, Map, 0),
 					active = maps:get(<<"matricula">>, Map, true),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),

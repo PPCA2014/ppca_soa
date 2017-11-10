@@ -46,7 +46,7 @@ do_insert_record(Map, CtrlInsert, Conf, Name, Middleware, SourceType, _Fields) -
 			mnesia:dirty_write(Table, Record),
 			{ok, insert};
 		{ok, Record, _, update} ->
-			ems_logger:warn("~s skips data with duplicate key: ~p.", [Name, Record]),
+			?DEBUG("~s skips data with duplicate key: ~p.", [Name, Record]),
 			{ok, skip};
 		{ok, skip} -> {ok, skip};
 		{error, edisabled} -> {error, edisabled};

@@ -34,7 +34,10 @@
 					   p.PesSexo as Sexo, 
 					   p.PesTelefone as Telefone, 
 					   p.PesCelular as Celular, 
-					   rtrim(p.PesDDD) as DDD 
+					   rtrim(p.PesDDD) as DDD,
+  					   1 as Type,  
+					   0 as SubType,	
+					   1 as ActivePessoa  
 				from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
 					 on u.UsuPesIdPessoa = p.PesCodigoPessoa 
 				",
@@ -58,7 +61,10 @@
 				   p.PesSexo as Sexo, 
 				   p.PesTelefone as Telefone, 
 				   p.PesCelular as Celular, 
-				   rtrim(p.PesDDD) as DDD 
+				   rtrim(p.PesDDD) as DDD,
+				   1 as Type,  
+				   0 as SubType,	
+				   1 as ActivePessoa  
 			from BDAcesso.dbo.TB_Usuario u join BDPessoa.dbo.TB_Pessoa p 
 				 on u.UsuPesIdPessoa = p.PesCodigoPessoa  
 			where u.UsuDataAlteracao >= ? or p.PesDataAlteracao >= ? or 
@@ -68,6 +74,6 @@
 	"fields" : ["id", "codigo", "login", "name", "cpf", "password", 
 				"passwd_crypto", "endereco", "complemento_endereco", 
 				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
-				"sexo", "telefone", "celular", "ddd"]
+				"sexo", "telefone", "celular", "ddd", "type", "subtype", "active"]
 				
 }

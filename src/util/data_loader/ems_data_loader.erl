@@ -298,6 +298,7 @@ do_check_count_checkpoint(State = #state{name = Name,
 						ems_odbc_pool:release_connection(Datasource2),
 						Error4
 				end,
+				erlang:garbage_collect(),
 				Result;
 			Error5 -> 
 				?DEBUG("~s has no connection to check counts.", [Name]),
@@ -375,6 +376,7 @@ do_load(CtrlInsert, Conf, State = #state{datasource = Datasource,
 						ems_odbc_pool:release_connection(Datasource2),
 						Error3
 				end,
+				erlang:garbage_collect(),
 				Result;
 			Error4 -> 
 				?DEBUG("~s has no connection to load data from database.", [Name]),
@@ -442,6 +444,7 @@ do_update(LastUpdate, CtrlUpdate, Conf, #state{datasource = Datasource,
 								ems_odbc_pool:release_connection(Datasource2),
 								Error
 						end,
+						erlang:garbage_collect(),
 						Result;
 					Error2 -> 
 						?DEBUG("~s has no connection to update data from database.", [Name]),
