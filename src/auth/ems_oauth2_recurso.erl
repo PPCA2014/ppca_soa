@@ -22,7 +22,7 @@ execute(Request = #request{access_token = AccessToken}) ->
 											   <<"}"/utf8>>]),
 			{ok, Request#request{code = 200, 
 								 response_data = ResponseData2,
-								 content_type = <<"application/json;charset=UTF-8">>}
+								 content_type = <<"application/json; charset=UTF-8">>}
 			};		
 		{error, Reason} = Error -> 
 			{error, Request#request{code = 401,  

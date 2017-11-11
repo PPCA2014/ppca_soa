@@ -36,6 +36,8 @@ init(CowboyReq, State = #state{http_max_content_length = HttpMaxContentLength,
 							ems_db:inc_counter(http_content_type_out_application_json);
 						<<"application/json; charset=utf-8">> ->
 							ems_db:inc_counter(http_content_type_out_application_json);
+						<<"application/json;charset=utf-8">> -> 
+							ems_db:inc_counter(http_content_type_out_application_json);
 						<<"application/xml">> ->
 							ems_db:inc_counter(http_content_type_out_application_xml);
 						<<"application/pdf">> ->

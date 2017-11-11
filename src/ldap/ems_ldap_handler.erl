@@ -373,7 +373,7 @@ handle_request_search_login(UserLogin, #state{admin = AdminLdap,
 										      search_invalid_credential_metric_name = SearchInvalidCredentialMetricName,
 											  search_unavailable_metric_name = SearchUnavailableMetricName,
 											  search_success_metric_name = SearchSuccessMetricName}) ->	
-	case ems_user:find_by_login(UserLogin) of
+	case ems_user:find_by_login_with_metric(UserLogin) of
 		{error, enoent} ->
 			ems_db:inc_counter(SearchInvalidCredentialMetricName),
 			ems_logger:error("ems_ldap_handler search ~p does not exist.", [UserLogin]),

@@ -456,9 +456,13 @@ get_sqlite_connection_from_csv_file(Datasource = #service_datasource{driver = Dr
 %
 -spec get(atom() | list(atom()), non_neg_integer()) -> {ok, tuple()} | {error, enoent}.
 get(Tab, Id) when is_atom(Tab) ->
-	case mnesia:dirty_read(Tab, Id) of
-		[] -> {error, enoent};
-		[Record|_] -> {ok, Record}
+	case Id > 0 of
+		true ->
+			case mnesia:dirty_read(Tab, Id) of
+				[] -> {error, enoent};
+				[Record|_] -> {ok, Record}
+			end;
+		false -> {error, enoent}
 	end;
 get([], _) -> {error, enoent};
 get([Tab|TabT], Id) ->
@@ -475,9 +479,13 @@ get([Tab|TabT], Id) ->
 %
 -spec exist(atom() | list(atom()), non_neg_integer()) -> boolean().
 exist(Tab, Id) when is_atom(Tab) ->
-	case mnesia:dirty_read(Tab, Id) of
-		[] -> false;
-		_ -> true
+	case Id > 0 of
+		true ->
+			case mnesia:dirty_read(Tab, Id) of
+				[] -> false;
+				_ -> true
+			end;
+		false -> false
 	end;
 exist([], _) -> false;
 exist([Tab|TabT], Id) ->

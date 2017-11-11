@@ -19,7 +19,7 @@
 				"select 
 				   em.EmaCodigo as id,
 				   p.PesCodigoPessoa as codigo,
-				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as email,
+				   lower(rtrim(cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)))) as email,
 				   em.EmaTipo as type 
 				from BDPessoa.dbo.TB_Pessoa p 
 						join BDPessoa.dbo.TB_PessoaFisicaEmail pfe  

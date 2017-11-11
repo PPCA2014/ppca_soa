@@ -67,7 +67,7 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 										 oauth2_grant_type = GrantType,
 										 oauth2_access_token = AccessToken,
 										 oauth2_refresh_token = RefreshToken,
-										 content_type = <<"application/json;charset=UTF-8">>}
+										 content_type = <<"application/json; charset=UTF-8">>}
 					};		
 			{redirect, ClientId, RedirectUri} ->
 					LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":"/utf8>>, integer_to_binary(Port), 

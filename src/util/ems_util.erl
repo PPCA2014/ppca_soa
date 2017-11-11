@@ -1495,18 +1495,6 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 							false -> ok
 						end,
 						case ContentType of
-							<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
-								ems_db:inc_counter(http_content_type_in_form_urlencode),
-								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
-								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
-								PayloadMap = maps:from_list(Payload),
-								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
-							<<"application/x-www-form-urlencoded">> ->
-								ems_db:inc_counter(http_content_type_in_form_urlencode),
-								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
-								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
-								PayloadMap = maps:from_list(Payload),
-								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
 							<<"application/json">> ->
 								ems_db:inc_counter(http_content_type_in_application_json),
 								ContentType2 = <<"application/json">>,
@@ -1519,6 +1507,24 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_json(Payload),
 								QuerystringMap2 = QuerystringMap;
+							<<"application/json;charset=utf-8">> -> 
+								ems_db:inc_counter(http_content_type_in_application_json),
+								ContentType2 = <<"application/json">>,
+								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = decode_payload_as_json(Payload),
+								QuerystringMap2 = QuerystringMap;
+							<<"application/x-www-form-urlencoded">> ->
+								ems_db:inc_counter(http_content_type_in_form_urlencode),
+								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+								PayloadMap = maps:from_list(Payload),
+								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
+							<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
+								ems_db:inc_counter(http_content_type_in_form_urlencode),
+								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+								PayloadMap = maps:from_list(Payload),
+								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
 							<<"application/xml">> ->
 								ems_db:inc_counter(http_content_type_in_application_xml),
 								ContentType2 = <<"application/xml">>,
@@ -2188,38 +2194,25 @@ parse_range(_, _, _) -> erlang:error(erange_not_allowed).
 
 
 -spec parse_email(string() | binary()) -> binary() | undefined.
+parse_email(Value) when is_binary(Value) ->
+	parse_email(binary_to_list(Value));
 parse_email(Value) ->
-	case is_binary(Value) of
-		true ->   
-			io:format("aqui1  ~p\n", [byte_size(Value)]),
-			case byte_size(Value) > 8 of
-				true -> 
-					REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
-					case re:run(binary_to_list(Value), REPattern) of
-						nomatch -> erlang:error(einvalid_email);
-						_ -> Value
-					end;
-				false -> 
-					erlang:error(einvalid_email)
+	case length(Value) > 8 of
+		true ->
+			Value2 = string:to_lower(Value),
+			REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
+			case re:run(Value2, REPattern) of
+				nomatch -> erlang:error(einvalid_email);
+				_ -> list_to_binary(Value2)
 			end;
-		false -> 
-			io:format("aqui2  ~p\n", [length(Value)]),
-			case length(Value) > 8 of
-				true ->
-					REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
-					case re:run(Value, REPattern) of
-						nomatch -> erlang:error(einvalid_email);
-						_ -> list_to_binary(Value)
-					end;
-				false ->
-					erlang:error(einvalid_email)
-			end
+		false ->
+			erlang:error(einvalid_email)
 	end.
 	
 
 -spec is_email_valido(string()) -> boolean().
 is_email_valido(Value) -> 
-	REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}\\b"),
+	REPattern = ems_db:get_re_param(check_email_valid_re, "\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-z]{2,4}\\b"),
 	case re:run(Value, REPattern) of
 		nomatch -> false;
 		_ -> true
