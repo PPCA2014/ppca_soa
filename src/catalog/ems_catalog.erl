@@ -486,7 +486,8 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		end
 	catch
 		_Exception:Reason -> 
-			ems_logger:format_warn("ems_catalog parse invalid service specification: ~p\n\t~p.\n", [Reason, Map]),
+			ems_db:inc_counter(edata_loader_invalid_catalog),
+			ems_logger:warn("ems_catalog parse invalid service specification: ~p\n\t~p.\n", [Reason, Map]),
 			{error, Reason}
 	end.
 

@@ -46,21 +46,22 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 				   {<<"token_type">>, TokenType}
 				  ]
 			 } ->
+					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_">>, integer_to_binary(User#user.id)]), utf8)),
 					ResourceOwner = ems_user:to_resource_owner(User),
 					ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
-														   <<"\"access_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\""/utf8>>, <<","/utf8>>,
-														   <<"\"expires_in\""/utf8>>, <<":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,
-														   <<"\"resource_owner\""/utf8>>, <<":"/utf8>>, ResourceOwner, <<","/utf8>>,
-														   <<"\"scope\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Scope, <<"\""/utf8>>, <<","/utf8>>,
-														   <<"\"refresh_token\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, case RefreshToken of
+														   <<"\"access_token\":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\","/utf8>>,
+														   <<"\"expires_in\":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,
+														   <<"\"resource_owner\":"/utf8>>, ResourceOwner, <<","/utf8>>,
+														   <<"\"scope\":"/utf8>>, <<"\""/utf8>>, Scope, <<"\","/utf8>>,
+														   <<"\"refresh_token\":"/utf8>>, <<"\""/utf8>>, case RefreshToken of
 																															undefined -> <<>>;
 																															_ -> RefreshToken
-																													  end, <<"\""/utf8>>, <<","/utf8>>,
-														   <<"\"refresh_token_in\""/utf8>>, <<":"/utf8>>, case RefreshTokenExpireIn of 
-																												undefined -> <<"0">>; 
-																												_ -> integer_to_binary(RefreshTokenExpireIn) 
-																										  end, <<","/utf8>>,
-														   <<"\"token_type\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, TokenType, <<"\""/utf8>>,
+																													  end, <<"\","/utf8>>, 
+														   <<"\"refresh_token_in\":"/utf8>>, case RefreshTokenExpireIn of 
+																									undefined -> <<"0">>; 
+																									_ -> integer_to_binary(RefreshTokenExpireIn) 
+																							 end, <<","/utf8>>,
+														   <<"\"token_type\":"/utf8>>, <<"\""/utf8>>, TokenType, <<"\""/utf8>>,
 													   <<"}"/utf8>>]),
 					{ok, Request#request{code = 200, 
 										 response_data = ResponseData2,
@@ -71,8 +72,7 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 					};		
 			{redirect, ClientId, RedirectUri} ->
 					ClientBin = integer_to_binary(ClientId),
-					%ems_db:inc_counter(binary_to_atom(<<"ems_oauth2_authorize_access_by_client_", ClientBin>>, utf8)),
-					
+					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_client_">>, ClientBin]), utf8)),
 					LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":"/utf8>>, integer_to_binary(Port), 
 													 <<"/login/index.html?response_type=code&client_id=">>, ClientBin, 
 													 <<"&redirect_uri=">>, RedirectUri]),

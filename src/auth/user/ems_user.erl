@@ -340,16 +340,23 @@ find_by_name(Name) ->
 -spec to_resource_owner(#user{} | undefined) -> binary().
 to_resource_owner(undefined) -> <<"{}"/utf8>>;
 to_resource_owner(User) ->
-	ems_schema:to_json({<<"id">>, User#user.id,
-						<<"codigo">>, User#user.codigo,
-						<<"login">>, User#user.login, 
-						<<"name">>, User#user.name,
-						<<"email">>, User#user.email,
-						<<"type">>, User#user.type,
-						<<"subtype">>, User#user.subtype,
-						<<"active">>, ems_util:boolean_to_binary(User#user.active),
-						<<"cpf">>, User#user.cpf
-						}).
+	{ok, ListaPerfil} = ems_user_perfil:find_by_user(User#user.id, [id, name]),
+	ListaPerfilJson = ems_schema:to_json(ListaPerfil),
+	{ok, ListaPermission} = ems_user_permission:find_by_user(User#user.id, [id, name, url, grant_get, grant_post, grant_put, grant_delete]),
+	ListaPermissionJson = ems_schema:to_json(ListaPermission),
+	iolist_to_binary([<<"{"/utf8>>,
+						<<"\"id\":"/utf8>>, integer_to_binary(User#user.id), <<","/utf8>>,
+						<<"\"codigo\":"/utf8>>, integer_to_binary(User#user.codigo), <<","/utf8>>,
+						<<"\"login\":"/utf8>>, <<"\""/utf8>>, User#user.login, <<"\""/utf8>>, <<","/utf8>>,
+						<<"\"name\":"/utf8>>, <<"\""/utf8>>, User#user.name, <<"\""/utf8>>, <<","/utf8>>,
+						<<"\"email\":"/utf8>>, <<"\""/utf8>>, User#user.email, <<"\""/utf8>>, <<","/utf8>>,
+						<<"\"type\":"/utf8>>, integer_to_binary(User#user.type), <<","/utf8>>,
+						<<"\"subtype\":"/utf8>>, integer_to_binary(User#user.subtype), <<","/utf8>>,
+						<<"\"active\":"/utf8>>, ems_util:boolean_to_binary(User#user.active), <<","/utf8>>,
+						<<"\"cpf\":"/utf8>>, <<"\""/utf8>>, User#user.cpf, <<"\""/utf8>>, <<","/utf8>>,
+						<<"\"lista_perfil\":"/utf8>>, ListaPerfilJson, <<","/utf8>>,
+						<<"\"lista_permission\":"/utf8>>, ListaPermissionJson, 
+					<<"}"/utf8>>]).
 
 
 -spec new_from_map(map(), #config{}) -> {ok, #user{}} | {error, atom()}.
