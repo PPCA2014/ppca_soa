@@ -364,7 +364,7 @@ new_from_map(Map, _Conf) ->
 					cpf = maps:get(<<"cpf">>, Map, <<>>),
 					password = case PasswdCrypto of
 									<<"SHA1">> -> ?UTF8_STRING(Password);
-									_ -> ems_util:criptografia_sha1(Password)
+									_ -> ems_util:criptografia_sha1(?UTF8_STRING(Password))
 							   end,
 					passwd_crypto = <<"SHA1">>,
 					endereco = ?UTF8_STRING(maps:get(<<"endereco">>, Map, <<>>)),
@@ -392,7 +392,8 @@ new_from_map(Map, _Conf) ->
 		}
 	catch
 		_Exception:Reason -> 
-			ems_logger:format_warn("ems_user parse invalid user specification: ~p\n\t~p.\n", [Reason, Map]),
+			ems_db:inc_counter(edata_loader_invalid_user),
+			ems_logger:warn("ems_user parse invalid user specification: ~p\n\t~p.\n", [Reason, Map]),
 			{error, Reason}
 	end.
 

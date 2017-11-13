@@ -70,8 +70,11 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 										 content_type = <<"application/json; charset=UTF-8">>}
 					};		
 			{redirect, ClientId, RedirectUri} ->
+					ClientBin = integer_to_binary(ClientId),
+					%ems_db:inc_counter(binary_to_atom(<<"ems_oauth2_authorize_access_by_client_", ClientBin>>, utf8)),
+					
 					LocationPath = iolist_to_binary([Protocol, <<"://"/utf8>>, Host, <<":"/utf8>>, integer_to_binary(Port), 
-													 <<"/login/index.html?response_type=code&client_id=">>, integer_to_binary(ClientId), 
+													 <<"/login/index.html?response_type=code&client_id=">>, ClientBin, 
 													 <<"&redirect_uri=">>, RedirectUri]),
 					{ok, Request#request{code = 302, 
 										 oauth2_grant_type = GrantType,

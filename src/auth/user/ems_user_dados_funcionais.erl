@@ -35,7 +35,8 @@ new_from_map(Map, _Conf) ->
 		}
 	catch
 		_Exception:Reason -> 
-			ems_logger:format_warn("ems_user_dados_funcionais parse invalid user specification: ~p\n\t~p.\n", [Reason, Map]),
+			ems_db:inc_counter(edata_loader_invalid_dados_funcionais),
+			ems_logger:warn("ems_user_dados_funcionais parse invalid user specification: ~p\n\t~p.\n", [Reason, Map]),
 			{error, Reason}
 	end.
 

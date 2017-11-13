@@ -71,7 +71,8 @@ new_from_map(Map, _Conf) ->
 		}
 	catch
 		_Exception:Reason -> 
-			ems_logger:format_warn("ems_user parse invalid user_perfil specification: ~p\n\t~p.\n", [Reason, Map]),
+			ems_db:inc_counter(edata_loader_invalid_user_perfil),
+			ems_logger:warn("ems_user parse invalid user_perfil specification: ~p\n\t~p.\n", [Reason, Map]),
 			{error, Reason}
 	end.
 

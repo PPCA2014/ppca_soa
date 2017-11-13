@@ -55,7 +55,7 @@
 -record(state, {buffer = [],             				% The messages go first to a buffer subsequently to the log file        
 			    buffer_tela = [],        				% The messages go first to a buffer subsequently to screen
 			    flag_checkpoint_sync_buffer = false,    % checkpoint to unload the buffer to the log file
-			    flag_checkpoint_tela = false, 			% checkpoint to unload the screen buffer
+			    flag_checkpoint_screen = false, 			% checkpoint to unload the screen buffer
 				log_file_checkpoint,      				% timeout archive log checkpoing
 				log_file_name,		      				% log file name
 				log_file_handle,						% IODevice of file
@@ -233,7 +233,7 @@ handle_cast({show_response, Value}, State) ->
 	{noreply, State#state{show_response = Value}};
 
 handle_cast(sync_buffer, State) ->
-	State2 = sync_buffer_tela(State),
+	State2 = sync_buffer_screen(State),
 	State3 = sync_buffer(State2),
 	{noreply, State3}.
 
@@ -261,7 +261,7 @@ handle_call({log_file_tail, N}, _From, State) ->
 	{reply, Result, State}.
 
 handle_info(checkpoint_tela, State) ->
-   NewState = sync_buffer_tela(State),
+   NewState = sync_buffer_screen(State),
    {noreply, NewState};
 
 handle_info(checkpoint, State) ->
@@ -368,7 +368,7 @@ set_timeout_for_sync_buffer(#state{flag_checkpoint_sync_buffer = false, log_file
 set_timeout_for_sync_buffer(_State) ->    
 	ok.
 
-set_timeout_for_sync_tela(#state{flag_checkpoint_tela = false}) ->    
+set_timeout_for_sync_tela(#state{flag_checkpoint_screen = false}) ->    
 	erlang:send_after(2000, self(), checkpoint_tela);
 
 set_timeout_for_sync_tela(_State) ->    
@@ -397,18 +397,39 @@ write_msg(Tipo, Msg, State = #state{level = Level, ult_msg = UltMsg})  ->
 			end,
 			case (Level == error andalso Tipo /= error) andalso (Tipo /= debug) of
 				true ->
-					set_timeout_for_sync_buffer(State),
-					State#state{buffer = [Msg1|State#state.buffer], 
-								flag_checkpoint_sync_buffer = true,
-								ult_msg = Msg};
+					case length(State#state.buffer) == 200 of
+						true -> 
+							ems_db:inc_counter(ems_logger_immediate_sync_buffer),
+							State2 = sync_buffer_screen(State),
+							State2#state{buffer = [Msg1|State#state.buffer], 
+										 flag_checkpoint_sync_buffer = true,
+										 ult_msg = Msg};
+						false -> 
+							set_timeout_for_sync_buffer(State),
+							State#state{buffer = [Msg1|State#state.buffer], 
+									    flag_checkpoint_sync_buffer = true,
+										ult_msg = Msg}
+					end;
 				false ->
-					set_timeout_for_sync_buffer(State),
-					set_timeout_for_sync_tela(State),
-					State#state{buffer = [Msg1|State#state.buffer], 
-								buffer_tela = [Msg1|State#state.buffer_tela], 
-								flag_checkpoint_sync_buffer = true, 
-								flag_checkpoint_tela = true,
-								ult_msg = Msg}
+					case length(State#state.buffer) == 200 of
+						true -> 
+							ems_db:inc_counter(ems_logger_immediate_sync_buffer),
+							State2 = sync_buffer_screen(State),
+							State3 = sync_buffer(State2),
+							State3#state{buffer = [Msg1|State#state.buffer], 
+										 buffer_tela = [Msg1|State#state.buffer_tela], 
+										 flag_checkpoint_sync_buffer = true, 
+										 flag_checkpoint_screen = true,
+										 ult_msg = Msg};
+						false ->
+							set_timeout_for_sync_buffer(State),
+							set_timeout_for_sync_tela(State),
+							State#state{buffer = [Msg1|State#state.buffer], 
+										buffer_tela = [Msg1|State#state.buffer_tela], 
+										flag_checkpoint_sync_buffer = true, 
+										flag_checkpoint_screen = true,
+										ult_msg = Msg}
+					end
 			end;
 		false -> 
 			ems_db:inc_counter(ems_logger_write_dup),
@@ -420,12 +441,16 @@ write_msg(Tipo, Msg, Params, State) ->
 	write_msg(Tipo, Msg1, State).
 	
 	
-sync_buffer_tela(State = #state{buffer_tela = []}) -> State;
-sync_buffer_tela(State) ->
-	ems_db:inc_counter(ems_logger_sync_buffer_tela),
+sync_buffer_screen(State = #state{buffer_tela = []}) -> State;
+sync_buffer_screen(State) ->
+	ems_db:inc_counter(ems_logger_sync_buffer_screen),
 	Msg = lists:reverse(State#state.buffer_tela),
-	io:format(Msg),
-	State#state{buffer_tela = [], flag_checkpoint_tela = false, ult_msg = undefined, ult_reqhash = undefined}.
+	try
+		io:format(Msg)
+	catch
+		_:_ -> ok
+	end,
+	State#state{buffer_tela = [], flag_checkpoint_screen = false, ult_msg = undefined, ult_reqhash = undefined}.
 
 
 sync_buffer(State = #state{buffer = Buffer,
