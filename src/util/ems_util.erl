@@ -149,7 +149,8 @@
 		 tuple_to_maps_with_keys/2,
 		 compile_modulo_erlang/2,
 		 print_int_map/1,
-		 print_str_map/1
+		 print_str_map/1,
+		 parse_user_agent/1
 		]).
 
 -spec version() -> string().
@@ -1572,7 +1573,9 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 				end,
 				case cowboy_req:header(<<"user-agent">>, CowboyReq) of
 					undefined -> User_Agent = <<>>;
-					UserAgentValue -> User_Agent = UserAgentValue
+					UserAgentValue -> 
+						%io:format("user agent is ~p\n", [UserAgentValue]),
+						User_Agent = parse_user_agent(UserAgentValue)
 				end,
 				case cowboy_req:header(<<"cache-control">>, CowboyReq) of
 					undefined -> Cache_Control = <<>>;
@@ -2364,3 +2367,41 @@ json_field_strip_and_escape(Value) ->
 							end || Ch <- ValueStrip],
 			[<<"\""/utf8>>, ValueEscaped, <<"\""/utf8>>]
 	end.
+
+
+parse_user_agent(<<>>) -> <<"other">>;
+parse_user_agent(UserAgent) when is_binary(UserAgent) ->
+	parse_user_agent(binary_to_list(UserAgent));
+parse_user_agent(UserAgent) ->
+	Tokens = string:tokens(UserAgent, " "),
+	TokenLen = length(Tokens),
+	Result = case length(Tokens) of
+			1 -> UserAgent;
+			12 -> 
+				case string:rstr(UserAgent, "Insomnia") > 0 of
+					true -> lists:nth(TokenLen-4, Tokens);  	%% Insomnia Rest Linux
+					false -> 
+						case string:rstr(UserAgent, "Chrome") > 0 of
+							true -> lists:nth(TokenLen-2, Tokens);  		%% Chrome desktop Windows
+							false -> "other"
+						end
+				end;
+			13 -> lists:nth(TokenLen-2, Tokens);  %% Chrome mobile android ou Edge
+			14 -> lists:nth(TokenLen, Tokens);    %% Opera mobile android
+			10 -> lists:nth(TokenLen-1, Tokens);  %% Chrome desktop Linux
+			 7 -> lists:nth(TokenLen, Tokens);    %% Firefox mobile android
+			 8 -> lists:nth(TokenLen, Tokens);    %% Firefox desktop Linux
+			 9 -> 
+				case string:rstr(UserAgent, "Firefox") > 0 of
+					true -> lists:nth(TokenLen, Tokens);  	%% Firefox desktop Windows
+					false -> 
+						case string:rstr(UserAgent, "Trident") > 0 of
+							true -> lists:nth(TokenLen-4, Tokens);  		%% Chrome desktop Windows
+							false -> "other"
+						end
+				end;
+			_ -> "other"
+		end,
+	list_to_binary(Result).
+		
+		
