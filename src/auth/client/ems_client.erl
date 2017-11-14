@@ -75,8 +75,10 @@ to_json(undefined) -> <<"{}"/utf8>>;
 to_json(Client) ->
 	iolist_to_binary([
 		<<"{"/utf8>>,
-			<<"\"id\""/utf8>>, <<":"/utf8>>, integer_to_binary(Client#client.id), <<","/utf8>>,
-			<<"\"description\""/utf8>>, <<":"/utf8>>, <<"\""/utf8>>, Client#client.description, <<"\""/utf8>>, 
+			<<"\"id\":"/utf8>>, integer_to_binary(Client#client.id), <<","/utf8>>,
+			<<"\"name\":\""/utf8>>, Client#client.name, <<"\","/utf8>>, 
+			<<"\"redirect_uri\":\""/utf8>>, Client#client.redirect_uri, <<"\","/utf8>>, 
+			<<"\"description\":\""/utf8>>, Client#client.description, <<"\""/utf8>>, 
 		<<"}"/utf8>>
 		]).
 

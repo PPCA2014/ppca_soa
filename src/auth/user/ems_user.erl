@@ -343,7 +343,6 @@ to_resource_owner(undefined, _) -> <<"{}"/utf8>>;
 to_resource_owner(User, ClientId) ->
 	{ok, ListaPerfil} = ems_user_perfil:find_by_user_and_client(User#user.id, ClientId, [id, name]),
 	ListaPerfilJson = ems_schema:to_json(ListaPerfil),
-	io:format("ems_user_permission:find_by_user_and_perfil(~p, ~p, [id, name, url, grant_get, grant_post, grant_put, grant_delete]),\n", [User#user.id, ClientId]),
 	{ok, ListaPermission} = ems_user_permission:find_by_user_and_client(User#user.id, ClientId, [id, name, url, grant_get, grant_post, grant_put, grant_delete]),
 	ListaPermissionJson = ems_schema:to_json(ListaPermission),
 	iolist_to_binary([<<"{"/utf8>>,

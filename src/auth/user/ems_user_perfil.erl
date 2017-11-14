@@ -46,11 +46,8 @@ find_by_user(Id, Fields) ->
 	
 -spec find_by_user_and_client(non_neg_integer(), non_neg_integer(), list()) -> {ok, list(#user_perfil{})} | {error, enoent}.
 find_by_user_and_client(UserId, ClientId, Fields) -> 
-	io:format("pesquisa com  ~p\n", [ClientId]),
 	case ems_db:find([user_perfil_db, user_perfil_fs], Fields, [{user_id, "==", UserId}, {client_id, "==", ClientId}]) of
-		{ok, Record} -> 
-			io:format("perfis ~p\n", [Record]),
-			{ok, Record};
+		{ok, Record} -> {ok, Record};
 		_ -> {error, enoent}
 	end.
 

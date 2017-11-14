@@ -18,7 +18,7 @@
 	"enable" : false,
 	"sql_load" :
 			"select up.APeid as id, 
-				u.UsuPesIdPessoa as user_id, 
+				u.UsuId as user_id, 
 					p.PerSisId as client_id, 
 					p.PerNome as name  
 			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
@@ -28,7 +28,7 @@
 		   ",
 	"sql_update" :
 			"select up.APeid as id, 
-				u.UsuPesIdPessoa as user_id, 
+				u.UsuId as user_id, 
 				p.PerSisId as client_id, 
 				p.PerNome as name  
 			from BDAcesso.dbo.TB_Usuario u join BDAcesso.dbo.TB_Acessos_Perfil up  
