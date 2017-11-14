@@ -47,21 +47,34 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 				  ]
 			 } ->
 					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_">>, integer_to_binary(User#user.id)]), utf8)),
-					ResourceOwner = ems_user:to_resource_owner(User),
+
+					ClientId = parse_client_id(ems_util:get_querystring(<<"client_id">>, <<>>, Request)),
+					case ClientId > 0 of
+						true ->
+							{ok, Client} = ems_client:find_by_id(ClientId),
+							ClientJson = ems_client:to_json(Client),
+							ResourceOwner = ems_user:to_resource_owner(User, ClientId),
+							ClientProp = [<<"\"client\":"/utf8>>, ClientJson, <<","/utf8>>];
+						false ->
+							ResourceOwner = ems_user:to_resource_owner(User),
+							ClientProp = <<"\"client\": \"public\","/utf8>>
+					end,
+
 					ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
-														   <<"\"access_token\":"/utf8>>, <<"\""/utf8>>, AccessToken, <<"\","/utf8>>,
+															ClientProp,
+														   <<"\"access_token\":\""/utf8>>, AccessToken, <<"\","/utf8>>,
 														   <<"\"expires_in\":"/utf8>>, integer_to_binary(ExpireIn), <<","/utf8>>,
 														   <<"\"resource_owner\":"/utf8>>, ResourceOwner, <<","/utf8>>,
-														   <<"\"scope\":"/utf8>>, <<"\""/utf8>>, Scope, <<"\","/utf8>>,
-														   <<"\"refresh_token\":"/utf8>>, <<"\""/utf8>>, case RefreshToken of
-																															undefined -> <<>>;
-																															_ -> RefreshToken
-																													  end, <<"\","/utf8>>, 
-														   <<"\"refresh_token_in\":"/utf8>>, case RefreshTokenExpireIn of 
+														   <<"\"scope\":\""/utf8>>, Scope, <<"\","/utf8>>,
+														   <<"\"refresh_token\":\""/utf8>>, case RefreshToken of
+																									undefined -> <<>>;
+																									_ -> RefreshToken
+																							end, <<"\","/utf8>>, 
+															<<"\"refresh_token_in\":"/utf8>>, case RefreshTokenExpireIn of 
 																									undefined -> <<"0">>; 
 																									_ -> integer_to_binary(RefreshTokenExpireIn) 
 																							 end, <<","/utf8>>,
-														   <<"\"token_type\":"/utf8>>, <<"\""/utf8>>, TokenType, <<"\""/utf8>>,
+														   <<"\"token_type\":\""/utf8>>, TokenType, <<"\""/utf8>>,
 													   <<"}"/utf8>>]),
 					{ok, Request#request{code = 200, 
 										 response_data = ResponseData2,

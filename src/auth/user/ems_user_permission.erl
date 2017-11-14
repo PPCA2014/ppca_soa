@@ -15,6 +15,7 @@
 -export([all/0, 
 		 find_by_id/1,		 
 		 find_by_user/2,
+		 find_by_user_and_client/3,
 		 find_by_name/1, 
  		 new_from_map/2,
 		 get_table/1,
@@ -37,6 +38,13 @@ find_by_user(Id, Fields) ->
 		_ -> {error, enoent}
 	end.
 	
+-spec find_by_user_and_client(non_neg_integer(), non_neg_integer(), list()) -> {ok, list(#user_perfil{})} | {error, enoent}.
+find_by_user_and_client(Id, ClientId, Fields) -> 
+	case ems_db:find([user_permission_db, user_permission_fs], Fields, [{user_id, "==", Id}, {client_id, "==", ClientId}]) of
+		{ok, Record} -> {ok, Record};
+		_ -> {error, enoent}
+	end.
+
 
 -spec all() -> {ok, list()}.
 all() -> 

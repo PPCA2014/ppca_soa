@@ -14,7 +14,7 @@
 
 -export([all/0, 
 		 find_by_id/1,		 
-		 find_by_user_and_client/2,
+		 find_by_user_and_client/3,
 		 find_by_user/2,
 		 find_by_name/1, 
  		 new_from_map/2,
@@ -44,10 +44,13 @@ find_by_user(Id, Fields) ->
 		_ -> {error, enoent}
 	end.
 	
--spec find_by_user_and_client(non_neg_integer(), non_neg_integer()) -> {ok, #user_perfil{}} | {error, enoent}.
-find_by_user_and_client(UserId, ClientId) -> 
-	case ems_db:find([user_perfil_db, user_perfil_fs], [], [{user_id, "==", UserId}, {client_id, "==", ClientId}]) of
-		{ok, Record} -> {ok, Record};
+-spec find_by_user_and_client(non_neg_integer(), non_neg_integer(), list()) -> {ok, list(#user_perfil{})} | {error, enoent}.
+find_by_user_and_client(UserId, ClientId, Fields) -> 
+	io:format("pesquisa com  ~p\n", [ClientId]),
+	case ems_db:find([user_perfil_db, user_perfil_fs], Fields, [{user_id, "==", UserId}, {client_id, "==", ClientId}]) of
+		{ok, Record} -> 
+			io:format("perfis ~p\n", [Record]),
+			{ok, Record};
 		_ -> {error, enoent}
 	end.
 
