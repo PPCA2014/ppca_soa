@@ -1571,12 +1571,7 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 					undefined -> Accept_Encoding = <<"*">>;
 					AcceptEncodingValue -> Accept_Encoding = AcceptEncodingValue
 				end,
-				case cowboy_req:header(<<"user-agent">>, CowboyReq) of
-					undefined -> User_Agent = <<>>;
-					UserAgentValue -> 
-						%io:format("user agent is ~p\n", [UserAgentValue]),
-						User_Agent = parse_user_agent(UserAgentValue)
-				end,
+				{UserAgent, UserAgentVersion} = parse_user_agent(cowboy_req:header(<<"user-agent">>, CowboyReq)),
 				case cowboy_req:header(<<"cache-control">>, CowboyReq) of
 					undefined -> Cache_Control = <<>>;
 					CacheControlValue -> Cache_Control = CacheControlValue
@@ -1601,7 +1596,8 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 					content_type_in = ContentType2,
 					content_type = ContentType2,
 					accept = Accept,
-					user_agent = User_Agent,
+					user_agent = UserAgent,
+					user_agent_version = UserAgentVersion,
 					accept_encoding = Accept_Encoding,
 					cache_control = Cache_Control,
 					ip = Ip,
@@ -2368,40 +2364,69 @@ json_field_strip_and_escape(Value) ->
 			[<<"\""/utf8>>, ValueEscaped, <<"\""/utf8>>]
 	end.
 
-
-parse_user_agent(<<>>) -> <<"other">>;
+-spec parse_user_agent(binary() | string()) -> tuple().
+parse_user_agent(<<>>) -> {<<"Other">>, ""};
 parse_user_agent(UserAgent) when is_binary(UserAgent) ->
 	parse_user_agent(binary_to_list(UserAgent));
 parse_user_agent(UserAgent) ->
-	Tokens = string:tokens(UserAgent, " "),
-	TokenLen = length(Tokens),
-	Result = case length(Tokens) of
-			1 -> UserAgent;
-			12 -> 
-				case string:rstr(UserAgent, "Insomnia") > 0 of
-					true -> lists:nth(TokenLen-4, Tokens);  	%% Insomnia Rest Linux
-					false -> 
-						case string:rstr(UserAgent, "Chrome") > 0 of
-							true -> lists:nth(TokenLen-2, Tokens);  		%% Chrome desktop Windows
-							false -> "other"
-						end
-				end;
-			13 -> lists:nth(TokenLen-2, Tokens);  %% Chrome mobile android ou Edge
-			14 -> lists:nth(TokenLen, Tokens);    %% Opera mobile android
-			10 -> lists:nth(TokenLen-1, Tokens);  %% Chrome desktop Linux
-			 7 -> lists:nth(TokenLen, Tokens);    %% Firefox mobile android
-			 8 -> lists:nth(TokenLen, Tokens);    %% Firefox desktop Linux
-			 9 -> 
-				case string:rstr(UserAgent, "Firefox") > 0 of
-					true -> lists:nth(TokenLen, Tokens);  	%% Firefox desktop Windows
-					false -> 
-						case string:rstr(UserAgent, "Trident") > 0 of
-							true -> lists:nth(TokenLen-4, Tokens);  		%% Chrome desktop Windows
-							false -> "other"
-						end
-				end;
-			_ -> "other"
-		end,
-	list_to_binary(Result).
-		
+	case string:rstr(UserAgent, "Chrome/") of
+		PosChrome when PosChrome > 0 ->
+			BrowserName = "Chrome",
+			BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosChrome+7, 4));
+		0 ->
+			case string:rstr(UserAgent, "Firefox/") of
+				PosFirefox when PosFirefox > 0 ->
+					BrowserName = "Firefox",
+					BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosFirefox+8, 4));
+				0 ->
+					case string:rstr(UserAgent, "Trident/") of
+						PosTrident when PosTrident > 0 ->
+							BrowserName = "IE",
+							BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosTrident+8, 4));
+						0 ->
+							case string:rstr(UserAgent, "Edge/") of
+								PosEdge when PosEdge > 0 ->
+									BrowserName = "Edge",
+									BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosEdge+5, 4));
+								0 ->
+									case string:rstr(UserAgent, "OPR/") of
+										PosOpera when PosOpera > 0 ->
+											BrowserName = "Opera",
+											BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosOpera+4, 4));
+										0 ->
+											case string:rstr(UserAgent, "insomnia/") of
+												PosInsomnia when PosInsomnia > 0 ->
+													BrowserName = "Insomnia",
+													BrowserVersion = parse_user_agent_version_subversion(string:substr(UserAgent, PosInsomnia+9, 5));
+												0 ->
+													case string:rstr(UserAgent, "Safari/") of
+														PosSafari when PosSafari > 0 ->
+															BrowserName = "Safari",
+															BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosSafari+7, 4));
+														0 ->
+															BrowserName = "Other",
+															BrowserVersion = ""
+													end
+											end
+									end
+							end
+					end
+			end
+	end,
+	{BrowserName, BrowserVersion}.
+
+parse_user_agent_version(Version) -> parse_user_agent_version(Version, []).
+parse_user_agent_version([], Result) -> lists:reverse(Result);
+parse_user_agent_version([$.|_], Result) -> lists:reverse(Result);
+parse_user_agent_version([H|T], Result) -> 
+  parse_user_agent_version(T, [H|Result]).
+
+parse_user_agent_version_subversion(Version) ->
+	parse_user_agent_version_subversion(Version, false, []).
+parse_user_agent_version_subversion([], _, Result) -> lists:reverse(Result);
+parse_user_agent_version_subversion([$.|_], true, Result) -> lists:reverse(Result);
+parse_user_agent_version_subversion([$.|T], false, Result) -> 
+	parse_user_agent_version_subversion(T, true, [$.|Result]);
+parse_user_agent_version_subversion([H|T], Stop, Result) -> 
+  parse_user_agent_version_subversion(T, Stop, [H|Result]).
 		

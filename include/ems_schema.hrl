@@ -151,7 +151,8 @@
 					  content_length :: non_neg_integer(), 		%% Largura da requisição
 					  content_type :: string(),					%% Tipo de conteúdo (Ex.: application/json)
 					  accept :: binary(),						%% Parâmetro ACCEPT HTTP
-					  user_agent :: binary(),					%% Parâmetro USER_AGENT HTTP
+					  user_agent :: binary(),					%% Nome do browser
+					  user_agent_version :: binary(),			%% Versão do browser
 					  accept_encoding :: string(),				%% Parâmetro ACCEPT_ENCODING HTTP
 					  cache_control :: binary(),				%% Parâmetro CACHE-CONTROL HTTP
 					  etag :: string(),							%% Parâmetro ETag
