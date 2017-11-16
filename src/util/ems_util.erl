@@ -150,7 +150,8 @@
 		 compile_modulo_erlang/2,
 		 print_int_map/1,
 		 print_str_map/1,
-		 parse_user_agent/1
+		 parse_user_agent/1,
+		 user_agent_atom_to_binary/1
 		]).
 
 -spec version() -> string().
@@ -2365,46 +2366,46 @@ json_field_strip_and_escape(Value) ->
 	end.
 
 -spec parse_user_agent(binary() | string()) -> tuple().
-parse_user_agent(<<>>) -> {<<"Other">>, ""};
+parse_user_agent(<<>>) -> {browser_other, ""};
 parse_user_agent(UserAgent) when is_binary(UserAgent) ->
 	parse_user_agent(binary_to_list(UserAgent));
 parse_user_agent(UserAgent) ->
 	case string:rstr(UserAgent, "Chrome/") of
 		PosChrome when PosChrome > 0 ->
-			BrowserName = "Chrome",
+			BrowserName = browser_chrome,
 			BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosChrome+7, 4));
 		0 ->
 			case string:rstr(UserAgent, "Firefox/") of
 				PosFirefox when PosFirefox > 0 ->
-					BrowserName = "Firefox",
+					BrowserName = browser_firefox,
 					BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosFirefox+8, 4));
 				0 ->
 					case string:rstr(UserAgent, "Trident/") of
 						PosTrident when PosTrident > 0 ->
-							BrowserName = "IE",
+							BrowserName = browser_ie,
 							BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosTrident+8, 4));
 						0 ->
 							case string:rstr(UserAgent, "Edge/") of
 								PosEdge when PosEdge > 0 ->
-									BrowserName = "Edge",
+									BrowserName = browser_edge,
 									BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosEdge+5, 4));
 								0 ->
 									case string:rstr(UserAgent, "OPR/") of
 										PosOpera when PosOpera > 0 ->
-											BrowserName = "Opera",
+											BrowserName = browser_opera,
 											BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosOpera+4, 4));
 										0 ->
 											case string:rstr(UserAgent, "insomnia/") of
 												PosInsomnia when PosInsomnia > 0 ->
-													BrowserName = "Insomnia",
+													BrowserName = browser_insomnia,
 													BrowserVersion = parse_user_agent_version_subversion(string:substr(UserAgent, PosInsomnia+9, 5));
 												0 ->
 													case string:rstr(UserAgent, "Safari/") of
 														PosSafari when PosSafari > 0 ->
-															BrowserName = "Safari",
+															BrowserName = browser_safari,
 															BrowserVersion = parse_user_agent_version(string:substr(UserAgent, PosSafari+7, 4));
 														0 ->
-															BrowserName = "Other",
+															BrowserName = browser_other,
 															BrowserVersion = ""
 													end
 											end
@@ -2413,7 +2414,7 @@ parse_user_agent(UserAgent) ->
 					end
 			end
 	end,
-	{BrowserName, BrowserVersion}.
+	{BrowserName, list_to_binary(BrowserVersion)}.
 
 parse_user_agent_version(Version) -> parse_user_agent_version(Version, []).
 parse_user_agent_version([], Result) -> lists:reverse(Result);
@@ -2430,3 +2431,11 @@ parse_user_agent_version_subversion([$.|T], false, Result) ->
 parse_user_agent_version_subversion([H|T], Stop, Result) -> 
   parse_user_agent_version_subversion(T, Stop, [H|Result]).
 		
+-spec user_agent_atom_to_binary(atom()) -> binary().
+user_agent_atom_to_binary(browser_chrome) -> <<"Chrome">>;
+user_agent_atom_to_binary(browser_firefox) -> <<"Firefox">>;
+user_agent_atom_to_binary(browser_ie) -> <<"IE">>;
+user_agent_atom_to_binary(browser_insomnia) -> <<"Insomnia">>;
+user_agent_atom_to_binary(browser_opera) -> <<"Opera">>;
+user_agent_atom_to_binary(browser_safari) -> <<"Safari">>;
+user_agent_atom_to_binary(_) -> <<"Other">>.

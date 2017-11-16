@@ -10,7 +10,7 @@
 	"lang" : "erlang",
 	"last_update_param_name" : "ems_client_loader_fs_lastupdate",
 	"update_checkpoint" : 2628000000,
-	"start_timeout" : 1000,
+	"start_timeout" : 2000,
 	"middleware" : "ems_client_loader_middleware",
 	"pool_size" : 1,
 	"pool_max" : 1,

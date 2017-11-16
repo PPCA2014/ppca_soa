@@ -518,6 +518,7 @@ do_log_request(#request{rid = RID,
 						node_exec = Node,
 						referer = Referer,
 						user_agent = UserAgent,
+						user_agent_version = UserAgentVersion,
 						filename = Filename,
 						client = Client,
 						user = User,
@@ -550,7 +551,7 @@ do_log_request(#request{rid = RID,
 																		undefined -> <<>>;
 																		_ -> Referer
 																	end,
-						<<"\n\tUser-Agent: ">>, UserAgent,
+						<<"\n\tUser-Agent: ">>, ems_util:user_agent_atom_to_binary(UserAgent), <<"  Version: ">>, UserAgentVersion,	
 						<<"\n\tService: ">>, case Service of 
 												undefined -> <<>>; 
 												_ -> Service#service.service 

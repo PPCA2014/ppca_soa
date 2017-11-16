@@ -8,7 +8,12 @@
 
 
 
-execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, host = Host}) -> 
+execute(Request = #request{type = Type, 
+						   protocol_bin = Protocol, 
+						   port = Port, 
+						   host = Host, 
+						   user_agent = UserAgent, 
+						   user_agent_version = UserAgentVersion}) -> 
 	try
 		case Type of
 			<<"GET">> -> GrantType = ems_util:get_querystring(<<"response_type">>, <<>>, Request);
@@ -47,7 +52,8 @@ execute(Request = #request{type = Type, protocol_bin = Protocol, port = Port, ho
 				  ]
 			 } ->
 					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_">>, integer_to_binary(User#user.id)]), utf8)),
-
+					UserAgentBin = ems_util:user_agent_atom_to_binary(UserAgent),
+					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_agent_">>, UserAgentBin, <<"_">>, UserAgentVersion]), utf8)),
 					ClientId = parse_client_id(ems_util:get_querystring(<<"client_id">>, <<>>, Request)),
 					case ClientId > 0 of
 						true ->

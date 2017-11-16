@@ -260,7 +260,7 @@ create_database(Nodes) ->
 										  {record_name, service}]),
 
 	% foi preciso aguardar um pouco a inicialização do banco
-	ems_util:sleep(3000),
+	ems_util:sleep(4000),
 
 	ok.
 
