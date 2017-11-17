@@ -65,7 +65,6 @@ execute(Request = #request{type = Type,
 							ResourceOwner = ems_user:to_resource_owner(User),
 							ClientProp = <<"\"client\": \"public\","/utf8>>
 					end,
-
 					ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
 															ClientProp,
 														   <<"\"access_token\":\""/utf8>>, AccessToken, <<"\","/utf8>>,

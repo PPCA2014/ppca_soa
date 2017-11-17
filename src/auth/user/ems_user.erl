@@ -341,10 +341,18 @@ find_by_name(Name) ->
 -spec to_resource_owner(#user{}, non_neg_integer()) -> binary().
 to_resource_owner(undefined, _) -> <<"{}"/utf8>>;
 to_resource_owner(User, ClientId) ->
-	{ok, ListaPerfil} = ems_user_perfil:find_by_user_and_client(User#user.id, ClientId, [id, name]),
-	ListaPerfilJson = ems_schema:to_json(ListaPerfil),
-	{ok, ListaPermission} = ems_user_permission:find_by_user_and_client(User#user.id, ClientId, [id, name, url, grant_get, grant_post, grant_put, grant_delete]),
-	ListaPermissionJson = ems_schema:to_json(ListaPermission),
+	case User#user.remap_user_id == undefined of
+		true -> 
+			{ok, ListaPerfil} = ems_user_perfil:find_by_user_and_client(User#user.id, ClientId, [id, name]),
+			ListaPerfilJson = ems_schema:to_json(ListaPerfil),
+			{ok, ListaPermission} = ems_user_permission:find_by_user_and_client(User#user.id, ClientId, [id, name, url, grant_get, grant_post, grant_put, grant_delete]),
+			ListaPermissionJson = ems_schema:to_json(ListaPermission);
+		false ->
+			{ok, ListaPerfil} = ems_user_perfil:find_by_user_and_client(User#user.remap_user_id, ClientId, [id, name]),
+			ListaPerfilJson = ems_schema:to_json(ListaPerfil),
+			{ok, ListaPermission} = ems_user_permission:find_by_user_and_client(User#user.remap_user_id, ClientId, [id, name, url, grant_get, grant_post, grant_put, grant_delete]),
+			ListaPermissionJson = ems_schema:to_json(ListaPermission)
+	end,
 	iolist_to_binary([<<"{"/utf8>>,
 						<<"\"id\":"/utf8>>, integer_to_binary(User#user.id), <<","/utf8>>,
 						<<"\"codigo\":"/utf8>>, integer_to_binary(User#user.codigo), <<","/utf8>>,
@@ -408,6 +416,7 @@ new_from_map(Map, _Conf) ->
 					type = maps:get(<<"type">>, Map, 1),
 					subtype = maps:get(<<"subtype">>, Map, 0),
 					active = maps:get(<<"matricula">>, Map, true),
+					remap_user_id = maps:get(<<"remap_user_id">>, Map, undefined),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 					ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),

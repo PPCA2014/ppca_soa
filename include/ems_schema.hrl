@@ -37,6 +37,7 @@
 			   celular :: binary(),
 			   ddd :: binary(),
 			   matricula :: non_neg_integer(),				%% se o usuário tem alguma matrícula proveniente de dados funcionais
+			   remap_user_id :: non_neg_integer(),
 			   ctrl_path :: string(),
 			   ctrl_file :: string(),
 			   ctrl_insert,									%% Data que o serviço foi inserido no banco mnesia

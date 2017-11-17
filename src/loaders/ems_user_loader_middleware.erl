@@ -100,6 +100,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												 type = NewUser#user.type,
 												 subtype = NewUser#user.subtype,
 												 active = NewUser#user.active,
+												 remap_user_id = NewUser#user.remap_user_id,
 												 ctrl_path = NewUser#user.ctrl_path,
 												 ctrl_file = NewUser#user.ctrl_file,
 												 ctrl_update = CtrlDate,
