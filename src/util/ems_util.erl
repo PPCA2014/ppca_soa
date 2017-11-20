@@ -1973,6 +1973,10 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 parse_tcp_listen_address(undefined) -> [];
 parse_tcp_listen_address(null) -> [];
 parse_tcp_listen_address(<<>>) -> [];
+parse_tcp_listen_address([H|_] = ListenAddress) when is_binary(H) -> 
+	parse_tcp_listen_address_t(ListenAddress, []);
+parse_tcp_listen_address([H|_] = ListenAddress) when is_list(H) -> 
+	parse_tcp_listen_address_t(ListenAddress, []);
 parse_tcp_listen_address(ListenAddress) when is_binary(ListenAddress) ->
 	parse_tcp_listen_address(binary_to_list(ListenAddress));
 parse_tcp_listen_address(ListenAddress) when is_list(ListenAddress) ->
@@ -1982,14 +1986,12 @@ parse_tcp_listen_address(ListenAddress) when is_list(ListenAddress) ->
 			ListenAddress3 = [string:trim(IP) || IP <- string:split(ListenAddress2, ",")],
 			parse_tcp_listen_address_t(ListenAddress3, []);
 		false -> []
-	end;
-parse_tcp_listen_address(ListenAddress) ->
-	parse_tcp_listen_address_t(ListenAddress, []).
+	end.
 
--spec parse_tcp_listen_address_t(list(string()), list(tuple())) -> list(tuple()). 
+-spec parse_tcp_listen_address_t(list(string()) | list(binary()), list(tuple())) -> list(tuple()). 
 parse_tcp_listen_address_t([], Result) -> Result;
 parse_tcp_listen_address_t([H|T], Result) when is_binary(H) ->
-	parse_tcp_listen_address_t([binary_to_list(H)|T], Result);
+	parse_tcp_listen_address_t([binary_to_list(H) | T], Result);
 parse_tcp_listen_address_t([H|T], Result) ->
 	case inet:parse_address(H) of
 		{ok, {0, 0, 0, 0}} ->

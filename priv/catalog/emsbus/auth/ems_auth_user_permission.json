@@ -10,7 +10,7 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_permission_db", "user_permission_fs"],
-			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+			"fields" : ["user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",
@@ -41,7 +41,7 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_permission_db", "user_permission_fs"],
-			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+			"fields" : ["user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",
@@ -92,7 +92,7 @@
 			"table_name" : ["user_permission_db", "user_permission_fs"],
 			"foreign_table_name" : ["user_db", "user_fs"],
 			"foreign_key" : "user_id",
-			"fields" : ["id", "user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
+			"fields" : ["user_id", "client_id", "name", "url", "grant_get", "grant_post", "grant_put", "grant_delete"]
 		},
 		"schema_in" : "user_permission",
 		"schema_out" : "user_permission",

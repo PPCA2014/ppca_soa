@@ -74,7 +74,7 @@ find_by_name(Name) ->
 -spec new_from_map(map(), #config{}) -> {ok, #user_permission{}} | {error, atom()}.
 new_from_map(Map, _Conf) ->
 	try
-		{ok, #user_permission{id = trunc(maps:get(<<"id">>, Map)),
+		{ok, #user_permission{id = binary_to_integer(maps:get(<<"id">>, Map)),
 							  user_id = maps:get(<<"user_id">>, Map),
 							  client_id = maps:get(<<"client_id">>, Map),
 							  url = ?UTF8_STRING(maps:get(<<"url">>, Map)),

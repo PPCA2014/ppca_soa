@@ -17,7 +17,7 @@
 	"pool_max" : 1,
 	"enable" : false,
 	"sql_load" :
-			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as id,
+			"select  cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as id,
 					u.UsuId as user_id,
 					s.SisId as client_id,
 					pt.PTrVisualizar as GrantGet,
@@ -37,7 +37,7 @@
 			where t.TraNomeFrm is not null and t.TraNomeFrm <> '' 
 			",
 	"sql_update" :
-			"select  cast(cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as bigint) as id,
+			"select  cast(up.APeid as varchar) + cast(t.TraId as varchar) + cast(u.UsuId as varchar) + cast(pt.PTrId as varchar) as id,
 					u.UsuId as user_id, 
 					s.SisId as client_id, 
 					pt.PTrVisualizar as GrantGet, 
