@@ -336,7 +336,11 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 			true -> Enable = false;
 			false -> Enable = Enable1
 		end,
-		Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map)),
+		UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
+		case UseRE of
+			true -> Url2 = maps:get(<<"url">>, Map);
+			false -> Url2 = ems_util:parse_url_service(maps:get(<<"url">>, Map))
+		end,
 		Type = ems_util:parse_type_service(maps:get(<<"type">>, Map, <<"GET">>)),
 		ServiceImpl = maps:get(<<"service">>, Map),
 		{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
@@ -358,7 +362,6 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		OAuth2TokenEncrypt = ems_util:parse_bool(maps:get(<<"oauth2_token_encrypt">>, Map, false)),
 		AuthorizationPublicCheckCredential = ems_util:parse_bool(maps:get(<<"authorization_public_check_credential">>, Map, false)),
 		Debug = ems_util:parse_bool(maps:get(<<"debug">>, Map, false)),
-		UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
 		SchemaIn = maps:get(<<"schema_in">>, Map, null),
 		SchemaOut = maps:get(<<"schema_out">>, Map, null),
 		PoolSize = ems_config:getConfig(<<"pool_size">>, Name, maps:get(<<"pool_size">>, Map, 1)),
