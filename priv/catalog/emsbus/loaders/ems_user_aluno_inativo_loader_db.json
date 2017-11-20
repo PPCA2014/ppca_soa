@@ -41,7 +41,7 @@
 					   0 as ActivePessoa  
 				from BDSiac.dbo.TB_Aluno al join BDPessoa.dbo.TB_Pessoa p 
 					   on al.AluPesCodigoPessoa = p.PesCodigoPessoa 
-				where al.AluPerSaiUnB <> 99999
+				where al.AluPerSaiUnB <> 99999 and al.alunivel not in  (9,10,11) and al.AluSenha is not null
 				",
 
 	"sql_update" :
@@ -71,7 +71,7 @@
 					   on al.AluPesCodigoPessoa = p.PesCodigoPessoa 
 				where (al.AluDataAlteracao >= ? or p.PesDataAlteracao >= ? or 
 					   al.AluDataCadastramento >= ? or p.PesDataCadastramento >= ?) 
-					  and al.AluPerSaiUnB <> 99999
+					  and al.AluPerSaiUnB <> 99999 and al.alunivel not in  (9,10,11) and al.AluSenha is not null
 				",
 			
 	"fields" : ["id", "codigo", "login", "name", "cpf", "password", 
