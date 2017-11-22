@@ -91,24 +91,13 @@ lookup(Method, Uri) ->
 
 -spec list_kernel_catalog() -> list(tuple()).
 list_kernel_catalog() ->
-	case mnesia:table_info(catalog_kernel_fs, size) == 0 of
-		true -> 
-			Conf = ems_config:getConfig(),
-			case ems_json_scan:scan_with_filter(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>) of
-				{ok, CatKernel} -> 
-					CatKernel2 = [ems_catalog:new_from_map(Map, Conf) || Map <- CatKernel],
-					CatKernel3 = [Cat || {Reason, Cat} <- CatKernel2, Reason == ok, Cat#service.enable == true],
-					CatKernel3;
-				Error -> Error
-			end;
-		false ->
-			F = fun() -> 
-						Q1 = qlc:q([R || R <- mnesia:table(catalog_kernel_fs), R#service.enable == true]),
-						Q2 = qlc:sort(Q1,  {order, fun(R1, R2) -> R1#service.id < R2#service.id end}),
-						qlc:e(Q2)
-			    end,
-			{atomic, CatKernel} = mnesia:transaction(F),
-			CatKernel
+	Conf = ems_config:getConfig(),
+	case ems_json_scan:scan_with_filter(Conf#config.cat_path_search, Conf, <<"type">>, <<"KERNEL">>) of
+		{ok, CatKernel} -> 
+			CatKernel2 = [ems_catalog:new_from_map(Map, Conf) || Map <- CatKernel],
+			CatKernel3 = [Cat || {Reason, Cat} <- CatKernel2, Reason == ok, Cat#service.enable == true],
+			CatKernel3;
+		Error -> Error
 	end.
 
 list_re_catalog() ->

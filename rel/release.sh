@@ -132,9 +132,9 @@ help(){
 	echo "How to use: ./release.sh"
 	echo
 	echo "Additional parameters:"
-	echo "  --skip-build    -> skip build with rebar. Default is true."
-	echo "  --auto-upload   -> auto upload release to git. Default is false."
-	echo "  --clean         -> clean build release."
+	echo "  --skip-build     -> skip build with rebar. Default is true."
+	echo "  --upload         -> upload release to git. Default is false."
+	echo "  --clean          -> clean build release."
 	exit 1
 }
 
@@ -376,8 +376,8 @@ for P in $*; do
 		elif [[ "$P" =~ --skip[_-]build ]]; then
 			echo "Skip build ems-bus enabled..."
 			SKIP_BUILD="true"
-		elif [[ "$P" =~ --auto[_-]upload ]]; then
-			echo "Auto upload release build enabled..."
+		elif [[ "$P" =~ --upload ]]; then
+			echo "Upload release after build..."
 			AUTO_UPLOAD="true"
 		else
 			echo "Invalid parameter: $P"
