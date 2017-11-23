@@ -1,0 +1,14 @@
+{
+	"name": "/barramento",
+	"comment": "Informações do barramento utilizado por front-ends.",
+	"owner": "samples",
+	"version": "1.0.0",
+	"service" : "ems_barramento_service:execute",
+	"url": "/.+/barramento",
+	"use_re" : true,
+	"async": "false",
+	"result_cache" : 0,
+	"type": "GET",
+	"authorization": "public",
+	"lang" : "erlang"
+}
