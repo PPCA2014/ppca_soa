@@ -27,5 +27,10 @@
 	{
 		"catalog": "/samples/hackathon", 
 		"file": "catalogo_hackathon.json"
+	},
+	
+	{
+		"catalog": "/samples/ems_barramento_service", 
+		"file": "ems_barramento_service.json"
 	}	
 ]

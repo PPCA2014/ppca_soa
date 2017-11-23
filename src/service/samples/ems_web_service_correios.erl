@@ -17,8 +17,6 @@ busca_cep(Request = #request{service = #service{properties = Props}}) ->
     Cep = ems_util:get_param_url(<<"id">>, 0, Request),
 	UrlCorreio = binary_to_list(maps:get(<<"url_correio">>, Props, <<>>)),
 	UrlBuscaCep =  lists:concat([UrlCorreio,Cep,"/json/"]), 
-	io:format("UrlBuscaCep >>>>>>>>>>>>>>>>>>>>>>>>>  ~p~n",[UrlBuscaCep]),
-	io:format("UrlCorreio >>>>>>>>>>>>>>>>>>>>>>>>>>  ~p~n",[UrlCorreio]), 
 	case httpc:request(get, {UrlBuscaCep, []}, [], []) of
 		{ok, {_, _, Result}} ->	
 			{ok, Request#request{code = 200, 

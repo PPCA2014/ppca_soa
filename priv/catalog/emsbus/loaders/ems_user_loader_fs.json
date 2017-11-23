@@ -1,7 +1,7 @@
 {
     "name": "ems_user_loader_fs",
 	"comment": "Catalog for ems_user_loader_fs",
-	"owner": "emsbus",
+	"owner": "data_loader",
 	"version": "1.0.0",
 	"service" : "ems_json_loader:start",
 	"url": "/emsbus/ems_user_loader_fs",

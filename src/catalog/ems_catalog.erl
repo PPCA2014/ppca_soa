@@ -312,6 +312,8 @@ parse_host_service(_Host, ModuleName, Node, Conf) ->
 -spec new_from_map(map(), #config{}) -> {ok, #service{}} | {error, atom()}.
 new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 								 cat_disable_services = DisableServices,
+								 cat_enable_services_owner = EnableServicesOwner,
+								 cat_disable_services_owner = DisableServicesOwner,
 								 ems_result_cache = ResultCacheDefault,
 								 ems_hostname = HostNameDefault,
 								 authorization = AuthorizationDefault,
@@ -327,14 +329,25 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 								 http_max_content_length = HttpMaxContentLengthDefault}) ->
 	try
 		Name = ems_util:parse_name_service(maps:get(<<"name">>, Map)),
+		Owner = maps:get(<<"owner">>, Map, <<>>),
+		% habilitar serviços
 		Enable0 = ems_util:parse_bool(maps:get(<<"enable">>, Map, true)),
-		case Enable0 =:= false andalso lists:member(Name, EnableServices) of
+		case lists:member(Owner, EnableServicesOwner) of
 			true -> Enable1 = true;
 			false -> Enable1 = Enable0
 		end,
-		case Enable1 =:= true andalso lists:member(Name, DisableServices) of
+		case lists:member(Name, EnableServices) of
+			true -> Enable2 = true;
+			false -> Enable2 = Enable1
+		end,
+		% desabilitar serviços
+		case lists:member(Owner, DisableServicesOwner) of
+			true -> Enable3 = false;
+			false -> Enable3 = Enable2
+		end,
+		case lists:member(Name, DisableServices) of
 			true -> Enable = false;
-			false -> Enable = Enable1
+			false -> Enable = Enable3
 		end,
 		UseRE = ems_util:parse_bool(maps:get(<<"use_re">>, Map, false)),
 		case UseRE of
@@ -346,7 +359,6 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 		{ModuleName, ModuleNameCanonical, FunctionName} = ems_util:parse_service_service(ServiceImpl),
 		Comment = ?UTF8_STRING(maps:get(<<"comment">>, Map, <<>>)),
 		Version = maps:get(<<"version">>, Map, <<"1.0.0">>),
-		Owner = maps:get(<<"owner">>, Map, <<>>),
 		Async = ems_util:parse_bool(maps:get(<<"async">>, Map, false)),
 		Rowid = ems_util:make_rowid(Url2),
 		Id = maps:get(<<"id">>, Map, Rowid), % catálogos internos vão usar rowid como chave primária

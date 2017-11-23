@@ -43,13 +43,8 @@ create_database(Nodes) ->
 											 {ram_copies, Nodes},
 											 {attributes, record_info(fields, service_datasource)}]),
 
-    mnesia:create_table(user, [{type, set},
-							   {disc_copies, Nodes},
-							   {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
-							   {attributes, record_info(fields, user)}]),
-
     mnesia:create_table(user_fs, [{type, set},
-								  {disc_copies, Nodes},
+								 {ram_copies, Nodes},
 								  {index, [#user.codigo, #user.login, #user.cpf, #user.email]},
 								  {attributes, record_info(fields, user)},
 								  {record_name, user}]),
@@ -73,7 +68,7 @@ create_database(Nodes) ->
 								  {record_name, user}]),
 
     mnesia:create_table(user_dados_funcionais_fs, [{type, set},
-								  {disc_copies, Nodes},
+								  {ram_copies, Nodes},
 								  {attributes, record_info(fields, user_dados_funcionais)},
 								  {record_name, user_dados_funcionais}]),
 
@@ -83,7 +78,7 @@ create_database(Nodes) ->
 								  {record_name, user_dados_funcionais}]),
 
     mnesia:create_table(user_email_fs, [{type, set},
-								  {disc_copies, Nodes},
+ 								  {ram_copies, Nodes},
 								  {attributes, record_info(fields, user_email)},
 								  {record_name, user_email}]),
 
@@ -92,14 +87,9 @@ create_database(Nodes) ->
 								  {attributes, record_info(fields, user_email)},
 								  {record_name, user_email}]),
 
-	mnesia:create_table(user_permission, [{type, set},
-										   {disc_copies, Nodes},
-										   {index, [#user_permission.hash, #user_permission.hash2]},
-										   {attributes, record_info(fields, user_permission)}]),
-
 
 	mnesia:create_table(user_perfil_fs, [{type, set},
-										{disc_copies, Nodes},
+									    {ram_copies, Nodes},
 										{index, [#user_perfil.user_id, #user_perfil.client_id]},
 										{attributes, record_info(fields, user_perfil)},
 										{record_name, user_perfil}]),
@@ -111,7 +101,7 @@ create_database(Nodes) ->
 									    {record_name, user_perfil}]),
 
 	mnesia:create_table(user_permission_fs, [{type, set},
-										{disc_copies, Nodes},
+										{ram_copies, Nodes},
 										{index, [#user_permission.user_id, #user_permission.client_id]},
 										{attributes, record_info(fields, user_permission)},
 										{record_name, user_permission}]),
@@ -122,17 +112,13 @@ create_database(Nodes) ->
 									    {attributes, record_info(fields, user_permission)},
 									    {record_name, user_permission}]),
 
-    mnesia:create_table(client, [{type, set},
-							     {disc_copies, Nodes},
-							     {attributes, record_info(fields, client)}]),
-							     
     mnesia:create_table(client_db, [{type, set},
 									{disc_copies, Nodes},
 									{attributes, record_info(fields, client)},
 									{record_name, client}]),
 
     mnesia:create_table(client_fs, [{type, set},
-									{disc_copies, Nodes},
+								    {ram_copies, Nodes},
 									{attributes, record_info(fields, client)},
 									{record_name, client}]),
 
@@ -161,11 +147,6 @@ create_database(Nodes) ->
 	 							  {disc_copies, Nodes},
 								  {attributes, record_info(fields, produto)}]),
 
-    mnesia:create_table(service, [{type, set},
-	 							  {disc_copies, Nodes},
-								  {attributes, record_info(fields, service)}]),
-
-
     mnesia:create_table(service_owner, [{type, set},
 	 							  {disc_copies, Nodes},
 								  {attributes, record_info(fields, service_owner)}]),
@@ -176,43 +157,43 @@ create_database(Nodes) ->
 									  
 
     mnesia:create_table(catalog_get_fs, [{type, set},
-									  {disc_copies, Nodes},
+									  {ram_copies, Nodes},
 									  {index, [#service.rowid]},
 									  {attributes, record_info(fields, service)},
 									  {record_name, service}]),
 
     mnesia:create_table(catalog_post_fs, [{type, set},
-									  {disc_copies, Nodes},
+ 									  {ram_copies, Nodes},
 									  {index, [#service.rowid]},
 									  {attributes, record_info(fields, service)},
 									  {record_name, service}]),
 
     mnesia:create_table(catalog_put_fs, [{type, set},
-									  {disc_copies, Nodes},
+									  {ram_copies, Nodes},
 									  {index, [#service.rowid]},
 									  {attributes, record_info(fields, service)},
 									  {record_name, service}]),
 
     mnesia:create_table(catalog_delete_fs, [{type, set},
-									  {disc_copies, Nodes},
+									  {ram_copies, Nodes},
 									  {index, [#service.rowid]},
 									  {attributes, record_info(fields, service)},
 									  {record_name, service}]),
 
     mnesia:create_table(catalog_options_fs, [{type, set},
-										  {disc_copies, Nodes},
+									      {ram_copies, Nodes},
 										  {index, [#service.rowid]},
 										  {attributes, record_info(fields, service)},
 										  {record_name, service}]),
 
     mnesia:create_table(catalog_kernel_fs, [{type, set},
-										  {disc_copies, Nodes},
+										  {ram_copies, Nodes},
 										  {index, [#service.rowid]},
 										  {attributes, record_info(fields, service)},
 										  {record_name, service}]),
 
     mnesia:create_table(catalog_re_fs, [{type, set},
-										  {disc_copies, Nodes},
+									      {ram_copies, Nodes},
 										  {index, [#service.rowid]},
 										  {attributes, record_info(fields, service)},
 										  {record_name, service}]),

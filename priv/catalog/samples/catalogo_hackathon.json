@@ -2,7 +2,7 @@
 	{
 		"name": "/hackathon/pessoa",
 		"comment": "Lista as pessoas",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/pessoa",
@@ -55,7 +55,7 @@
 	{
 		"name": "/hackathon/pessoa/:id",
 		"comment": "Lista um pessoa pelo seu id",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/pessoa/:id",
@@ -81,7 +81,7 @@
 	{
 		"name": "/hackathon/cursos",
 		"comment": "Lista os cursos ofertados na UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/cursos",
@@ -132,7 +132,7 @@
 	{
 		"name": "/hackathon/cursos/:id",
 		"comment": "Lista um curso ofertado na UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/cursos/:id",
@@ -160,7 +160,7 @@
 	{
 		"name": "/hackathon/ofertas",
 		"comment": "Lista as ofertas de cursos na UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/ofertas",
@@ -210,7 +210,7 @@
 	{
 		"name": "/hackathon/campus",
 		"comment": "Lista os campus da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/campus",
@@ -261,7 +261,7 @@
 	{
 		"name": "/hackathon/campus/:id",
 		"comment": "Lista um campus pelo id",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/campus/:id",
@@ -287,7 +287,7 @@
 	{
 		"name": "/hackathon/local",
 		"comment": "Lista os locais da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/local",
@@ -337,7 +337,7 @@
 	{
 		"name": "/hackathon/local/:id",
 		"comment": "Lista um local pelo id",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/local/:id",
@@ -363,7 +363,7 @@
 	{
 		"name": "/hackathon/area_tematica",
 		"comment": "Lista as áreas temáticas da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/area_tematica",
@@ -413,7 +413,7 @@
 	{
 		"name": "/hackathon/area_tematica/:id",
 		"comment": "Lista a área temática pelo id da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/area_tematica/:id",
@@ -439,7 +439,7 @@
 	{
 		"name": "/hackathon/mencao",
 		"comment": "Lista as menções da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/mencao",
@@ -489,7 +489,7 @@
 	{
 		"name": "/hackathon/mencao/:id",
 		"comment": "Lista a menção pelo id",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/mencao/:id",
@@ -515,7 +515,7 @@
 	{
 		"name": "/hackathon/forma_ingresso",
 		"comment": "Lista as formas de ingresso da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/forma_ingresso",
@@ -565,7 +565,7 @@
 	{
 		"name": "/hackathon/forma_ingresso/:id",
 		"comment": "Lista a forma de ingresso pelo id",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/forma_ingresso/:id",
@@ -591,7 +591,7 @@
 	{
 		"name": "/hackathon/centro_custo",
 		"comment": "Lista os centros de custo da UnB",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find",
 		"url": "/hackathon/centro_custo",
@@ -641,7 +641,7 @@
 	{
 		"name": "/hackathon/centro_custo/:id",
 		"comment": "Lista o centro de custo pelo id",
-		"owner": "hackathon",
+		"owner": "samples",
 		"version": "1",
 		"service" : "ems_api_query_service:find_by_id",
 		"url": "/hackathon/centro_custo/:id",

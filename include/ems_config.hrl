@@ -113,7 +113,7 @@
 -define(TCP_ACCEPT_CONNECT_TIMEOUT, 1000 * 60). % 1 minuto
 
 % Quanto tempo aguardar um serviço
--define(SERVICE_TIMEOUT, 30000). % 30 segundos segundos
+-define(SERVICE_TIMEOUT, 60000). % 30 segundos segundos
 -define(SERVICE_MAX_TIMEOUT, 604800000). % 7 dias
 
 % Caminho do utilitário que importa dados csv para um banco sqlite
@@ -192,6 +192,8 @@
 				 cat_path_search :: list(tuple()),			%% Lista de tuplas com caminhos alternativos para catálogos
 				 cat_disable_services :: list(binary()),	%% Lista de serviços para desativar
 				 cat_enable_services :: list(binary()),		%% Lista de serviços para habilitar
+				 cat_disable_services_owner :: list(binary()),	%% Lista de owners dos serviços para desativar
+				 cat_enable_services_owner :: list(binary()),		%% Lista de owners de serviços para habilitar
 				 static_file_path :: list(string()),		%% Lista de diretórios para arquivos estáticos
 				 ems_hostname :: binary(),					%% Nome da maquina onde o barramento está sendo executado
 				 ems_host :: atom(),						%% Atom do name da maquina onde o barramento está sendo executado
