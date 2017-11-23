@@ -218,7 +218,7 @@ parse_config(Json, NomeArqConfig) ->
 	Hostname2 = list_to_binary(Hostname),
 	TcpListenAddress = maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
 	TcpListenAddress_t = ems_util:parse_tcp_listen_address(TcpListenAddress),
- 	TcpListenMainIp = get_tcp_listen_main_ip(TcpListenAddress_t),
+ 	{TcpListenMainIp, TcpListenMainIp_t} = get_tcp_listen_main_ip(TcpListenAddress_t),
 	#config{ cat_host_alias	= maps:get(<<"host_alias">>, Json, #{<<"local">> => Hostname2}),
 			 cat_host_search = maps:get(<<"host_search">>, Json, <<>>),							
 			 cat_node_search = maps:get(<<"node_search">>, Json, <<>>),
@@ -235,6 +235,7 @@ parse_config(Json, NomeArqConfig) ->
 			 tcp_listen_address	= TcpListenAddress,
 			 tcp_listen_address_t = TcpListenAddress_t,
 			 tcp_listen_main_ip = TcpListenMainIp,
+			 tcp_listen_main_ip_t = TcpListenMainIp_t,
 			 tcp_allowed_address = parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
 			 http_max_content_length = ems_util:parse_range(maps:get(<<"http_max_content_length">>, Json, ?HTTP_DEFAULT_CONTENT_LENGTH), 0, ?HTTP_MAX_CONTENT_LENGTH),
 			 authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
@@ -259,7 +260,7 @@ get_default_config() ->
 	Hostname2 = list_to_binary(Hostname),
 	TcpListenAddress = [<<"0.0.0.0">>],
 	TcpListenAddress_t = ems_util:parse_tcp_listen_address(TcpListenAddress),
- 	TcpListenMainIp = get_tcp_listen_main_ip(TcpListenAddress_t),
+ 	{TcpListenMainIp, TcpListenMainIp_t} = get_tcp_listen_main_ip(TcpListenAddress_t),
 	#config{ cat_host_alias				= #{<<"local">> => Hostname2},
 			 cat_host_search			= <<>>,							
 			 cat_node_search			= <<>>,
@@ -276,6 +277,7 @@ get_default_config() ->
 			 tcp_listen_address			= TcpListenAddress,
 			 tcp_listen_address_t		= TcpListenAddress_t,
 			 tcp_listen_main_ip 		= TcpListenMainIp,
+			 tcp_listen_main_ip_t 		= TcpListenMainIp_t,
 			 tcp_allowed_address		= all,
 			 authorization				= oauth2,
 			 oauth2_with_check_constraint = false,
@@ -283,7 +285,7 @@ get_default_config() ->
 			 params						= #{},
 			 client_path_search			= ?CLIENT_PATH,
 			 user_path_search			= ?USER_PATH,
-			 user_dados_funcionais_path_search			= ?USER_DADOS_FUNCIONAIS_PATH,
+			 user_dados_funcionais_path_search = ?USER_DADOS_FUNCIONAIS_PATH,
 			 user_perfil_path_search	= ?USER_PERFIL_PATH,
 			 user_permission_path_search	= ?USER_PERMISSION_PATH,
 			 user_email_path_search	= ?USER_EMAIL_PATH,
@@ -293,8 +295,11 @@ get_default_config() ->
 			 ssl_keyfile = undefined
 		}.
 
-get_tcp_listen_main_ip(TcpListenAddress_t) when length(TcpListenAddress_t) > 0 -> lists:last(TcpListenAddress_t);
-get_tcp_listen_main_ip(_) -> undefined.
+-spec get_tcp_listen_main_ip(list(tuple())) -> tuple().
+get_tcp_listen_main_ip(TcpListenAddress_t) when length(TcpListenAddress_t) > 0 -> 
+	Ip = lists:last(TcpListenAddress_t),
+	{list_to_binary(inet:ntoa(Ip)), Ip};
+get_tcp_listen_main_ip(_) -> {undefined, undefined}.
 
 
 	

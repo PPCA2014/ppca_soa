@@ -1968,17 +1968,19 @@ parse_querystring_def([H|T], Querystring, QtdRequired) ->
 	parse_querystring_def(T, [Q | Querystring], QtdRequired2).
 
 	
--spec parse_tcp_listen_address(list(string()) | string() | binary() | undefined | null) -> list(tuple()). 
+-spec parse_tcp_listen_address(list(string()) | list(binary()) |  list(tuple()) | string() | binary() | undefined | null) -> list(tuple()). 
 parse_tcp_listen_address(undefined) -> [];
 parse_tcp_listen_address(null) -> [];
 parse_tcp_listen_address(<<>>) -> [];
+parse_tcp_listen_address("") -> [];
+parse_tcp_listen_address([{_,_,_,_}|_] = ListenAddress) -> ListenAddress;
 parse_tcp_listen_address([H|_] = ListenAddress) when is_binary(H) -> 
 	parse_tcp_listen_address_t(ListenAddress, []);
 parse_tcp_listen_address([H|_] = ListenAddress) when is_list(H) -> 
 	parse_tcp_listen_address_t(ListenAddress, []);
 parse_tcp_listen_address(ListenAddress) when is_binary(ListenAddress) ->
 	parse_tcp_listen_address(binary_to_list(ListenAddress));
-parse_tcp_listen_address(ListenAddress) when is_list(ListenAddress) ->
+parse_tcp_listen_address(ListenAddress) ->
 	ListenAddress2 = string:trim(ListenAddress),
 	case ListenAddress2 =/= "" of
 		true ->	
