@@ -532,10 +532,9 @@ json_decode(JSON) ->
 	end.
 	
 %% @doc Retorna o primeiro item da lista ou vazio
+-spec hd_or_empty(list()) -> any().
 hd_or_empty(List) when length(List) > 0 -> 
 	hd(List);
-
-%% @doc Retorna o primeiro item da lista ou vazio	
 hd_or_empty(_) -> [].
 
 %% @doc Retorna a string com aspas

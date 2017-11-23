@@ -216,6 +216,9 @@ parse_tcp_allowed_address(V) -> V.
 parse_config(Json, NomeArqConfig) ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
+	TcpListenAddress = maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
+	TcpListenAddress_t = ems_util:parse_tcp_listen_address(TcpListenAddress),
+ 	TcpListenMainIp = get_tcp_listen_main_ip(TcpListenAddress_t),
 	#config{ cat_host_alias	= maps:get(<<"host_alias">>, Json, #{<<"local">> => Hostname2}),
 			 cat_host_search = maps:get(<<"host_search">>, Json, <<>>),							
 			 cat_node_search = maps:get(<<"node_search">>, Json, <<>>),
@@ -229,8 +232,10 @@ parse_config(Json, NomeArqConfig) ->
 			 ems_debug = ems_util:parse_bool(maps:get(<<"debug">>, Json, false)),
 			 ems_result_cache = ems_util:parse_result_cache(maps:get(<<"result_cache">>, Json, ?TIMEOUT_DISPATCHER_CACHE)),
 			 ems_datasources = parse_datasources(Json),
+			 tcp_listen_address	= TcpListenAddress,
+			 tcp_listen_address_t = TcpListenAddress_t,
+			 tcp_listen_main_ip = TcpListenMainIp,
 			 tcp_allowed_address = parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
-			 tcp_listen_address = maps:get(<<"tcp_listen_address">>, Json, [<<"0.0.0.0">>]),
 			 http_max_content_length = ems_util:parse_range(maps:get(<<"http_max_content_length">>, Json, ?HTTP_DEFAULT_CONTENT_LENGTH), 0, ?HTTP_MAX_CONTENT_LENGTH),
 			 authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
 			 oauth2_with_check_constraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
@@ -252,6 +257,9 @@ parse_config(Json, NomeArqConfig) ->
 get_default_config() ->
 	{ok, Hostname} = inet:gethostname(),
 	Hostname2 = list_to_binary(Hostname),
+	TcpListenAddress = [<<"0.0.0.0">>],
+	TcpListenAddress_t = ems_util:parse_tcp_listen_address(TcpListenAddress),
+ 	TcpListenMainIp = get_tcp_listen_main_ip(TcpListenAddress_t),
 	#config{ cat_host_alias				= #{<<"local">> => Hostname2},
 			 cat_host_search			= <<>>,							
 			 cat_node_search			= <<>>,
@@ -265,8 +273,10 @@ get_default_config() ->
 			 ems_debug					= false,
 			 ems_result_cache			= ?TIMEOUT_DISPATCHER_CACHE,
 			 ems_datasources			= #{},
+			 tcp_listen_address			= TcpListenAddress,
+			 tcp_listen_address_t		= TcpListenAddress_t,
+			 tcp_listen_main_ip 		= TcpListenMainIp,
 			 tcp_allowed_address		= all,
-			 tcp_listen_address			= [<<"0.0.0.0">>],
 			 authorization				= oauth2,
 			 oauth2_with_check_constraint = false,
 			 config_file			    = undefined,
@@ -283,4 +293,9 @@ get_default_config() ->
 			 ssl_keyfile = undefined
 		}.
 
+get_tcp_listen_main_ip(TcpListenAddress_t) when length(TcpListenAddress_t) > 0 -> lists:last(TcpListenAddress_t);
+get_tcp_listen_main_ip(_) -> undefined.
+
+
+	
 

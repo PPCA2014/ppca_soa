@@ -200,6 +200,8 @@
 				 ems_result_cache  :: non_neg_integer(),
 				 ems_datasources :: map(),
 				 tcp_listen_address :: list(),
+				 tcp_listen_address_t :: list(),
+				 tcp_listen_main_ip :: binary(),
 				 tcp_allowed_address :: list() | atom(),
 				 authorization :: binary(),
 				 oauth2_with_check_constraint :: boolean(),
