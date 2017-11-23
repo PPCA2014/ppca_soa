@@ -252,14 +252,15 @@ parse_middleware(null) -> undefined;
 parse_middleware(undefined) -> undefined;
 parse_middleware(Middleware) -> erlang:binary_to_atom(Middleware, utf8).
 
-parse_ssl_path(undefined, _) -> erlang:error(einvalid_ssl_config_service);
-parse_ssl_path(<<>>, _) -> erlang:error(einvalid_ssl_config_service);
-parse_ssl_path(Filename, StaticFilePathDefault) -> 
-	Filename2 = ems_util:parse_file_name_path(Filename, StaticFilePathDefault, ?SSL_PATH),
-	case filelib:is_regular(Filename2) of
-		true -> list_to_binary(Filename2);
+parse_ssl_path(FilenameCat, FilenameConfig, StaticFilePathDefault) -> 
+	case FilenameConfig of
+		undefined -> Filename = ems_util:parse_file_name_path(FilenameCat, StaticFilePathDefault, ?SSL_PATH);
+		_ -> Filename = Filename = ems_util:parse_file_name_path(FilenameConfig, StaticFilePathDefault, ?SSL_PATH)
+	end,
+	case filelib:is_regular(Filename) of
+		true -> list_to_binary(Filename);
 		false -> 
-			ems_logger:error("ems_catalog parse invalid filename ~p.", [Filename]),
+			ems_logger:error("ems_catalog parse invalid ssl filename ~p.", [Filename]),
 			erlang:error(einvalid_ssl_config_service)
 	end.
 	
@@ -412,9 +413,9 @@ new_from_map(Map, Conf = #config{cat_enable_services = EnableServices,
 				SslKeyFile = undefined;
 			_ ->
 				IsSsl = true,
-				SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, SslCaCertFileDefault), StaticFilePathDefault),
-				SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, SslCertFileDefault), StaticFilePathDefault),
-				SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, SslKeyFileDefault), StaticFilePathDefault)
+				SslCaCertFile = parse_ssl_path(maps:get(<<"cacertfile">>, Ssl, SslCaCertFileDefault), SslCaCertFileDefault, StaticFilePathDefault),
+				SslCertFile = parse_ssl_path(maps:get(<<"certfile">>, Ssl, SslCertFileDefault), SslCertFileDefault, StaticFilePathDefault),
+				SslKeyFile = parse_ssl_path(maps:get(<<"keyfile">>, Ssl, SslKeyFileDefault), SslKeyFileDefault, StaticFilePathDefault)
 		end,
 		case Lang of
 			<<"erlang">> -> 
