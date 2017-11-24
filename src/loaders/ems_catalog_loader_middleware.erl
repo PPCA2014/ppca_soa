@@ -138,7 +138,7 @@ get_filename() ->
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 	try
 		case ems_catalog:new_from_map(Map, Conf) of
-			{ok, NewCatalog = #service{type = ServiceType, use_re = UseRE, rowid = Rowid, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash}} -> 
+			{ok, NewCatalog = #service{type = ServiceType, use_re = UseRE, rowid = Rowid, ctrl_modified = CtrlModified, ctrl_hash = CtrlHash, enable = Enable}} when Enable == true -> 
 				Table = ems_catalog:get_table(ServiceType, UseRE, SourceType),
 				case ems_catalog_lookup:find(Table, Rowid) of
 					{error, enoent} -> 
@@ -213,6 +213,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 							false -> {ok, skip}
 						end
 				end;
+			{ok, _} -> {ok, skip};
 			Error -> Error
 		end
 

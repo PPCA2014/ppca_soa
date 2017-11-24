@@ -92,6 +92,7 @@ clean(){
 	rm -Rf ems-bus
 	rm -Rf ems_bus
 	rm -f *.tar.gz
+	rm -f *.tar
 	
 	# Loop pelas pastas de templates dos pacotes rpm
 	for SKEL_RPM_PACKAGE in `find ./rpm/* -maxdepth 0 -type d`; do

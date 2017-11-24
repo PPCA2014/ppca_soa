@@ -182,9 +182,9 @@ parse_cat_path_search(Json) ->
 	CatPathSearch = maps:get(<<"catalog_path">>, Json, #{}),
 	CatPathSearch2 = case maps:is_key(<<"ems-bus">>, CatPathSearch) of
 						true -> maps:to_list(CatPathSearch);
-						false -> [{<<"ems-bus">>, list_to_binary(?CATALOGO_ESB_PATH)} | maps:to_list(CatPathSearch)]
+						false -> maps:to_list(CatPathSearch) 
 					end,
-	[{K, binary_to_list(V)} || {K,V} <- CatPathSearch2].
+	[{K, binary_to_list(V)} || {K,V} <- CatPathSearch2] ++ [{<<"ems-bus">>, ?CATALOGO_ESB_PATH}].
 
 
 -spec parse_static_file_path(map()) -> list().
