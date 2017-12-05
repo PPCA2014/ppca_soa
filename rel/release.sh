@@ -20,7 +20,7 @@
 # 28/11/2016  Everton Agilar     Release inicial do script de release
 # 05/03/2017  Everton Agilar     Improve release to deb and rpm
 # 06/07/2017  Everton Agilar     New: --skip_build
-# 23/09/2017  Everton Agilar     New: --auto_upload
+# 23/09/2017  Everton Agilar     New: --push
 # 28/09/2017  Everton Agilar     New: --clean
 #
 #
@@ -36,7 +36,7 @@ GIT_RELEASE_REPO=https://github.com/erlangms/releases
 BUILD_RPM_FLAG="$( rpmbuild --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
 BUILD_DEB_FLAG="$( dpkg-deb --version > /dev/null 2>&1 && echo 'true' || echo 'false')"  
 SKIP_BUILD="true"
-AUTO_UPLOAD="false"
+PUSH="false"
 
 # Identify the linux distribution: ubuntu, debian, centos
 LINUX_DISTRO=$(awk -F"=" '{ if ($1 == "ID"){ 
@@ -66,7 +66,7 @@ die () {
 }
 
 config_release_path(){
-	if [ "$AUTO_UPLOAD" = "true" ]; then
+	if [ "$PUSH" = "true" ]; then
 		# Sets the RELEASE_PATH variable with the path of the releases folder
 		# If the folder does not exist, then you must first download
 		if cd $WORKING_DIR/../../releases 2> /dev/null; then
@@ -134,7 +134,7 @@ help(){
 	echo
 	echo "Additional parameters:"
 	echo "  --skip-build     -> skip build with rebar. Default is true."
-	echo "  --upload         -> upload release to git. Default is false."
+	echo "  --push           -> push release to repository. Default is false."
 	echo "  --clean          -> clean build release."
 	exit 1
 }
@@ -156,7 +156,7 @@ send_build_repo(){
 
 # send the generated package to git
 push_release(){
-	if [ "$AUTO_UPLOAD" = "true" ]; then
+	if [ "$PUSH" = "true" ]; then
 		cd $RELEASE_PATH
 		echo "$VERSION_RELEASE" > setup/current_version
 		git add $VERSION_RELEASE >> /dev/null
@@ -377,9 +377,9 @@ for P in $*; do
 		elif [[ "$P" =~ --skip[_-]build ]]; then
 			echo "Skip build ems-bus enabled..."
 			SKIP_BUILD="true"
-		elif [[ "$P" =~ --upload ]]; then
-			echo "Upload release after build..."
-			AUTO_UPLOAD="true"
+		elif [[ "$P" =~ --push ]]; then
+			echo "Push release after build to repository..."
+			PUSH="true"
 		else
 			echo "Invalid parameter: $P"
 			help
