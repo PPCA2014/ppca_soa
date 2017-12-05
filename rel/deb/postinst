@@ -12,15 +12,10 @@
 
 if [ "$1" = "configure" ]; then
 
-  LOG="/var/log/ems-bus/ems-bus.log"
   USER_EMS_BUS=erlangms
   GROUP_EMS_BUS=erlangms
   HOME_EMS_BUS=/var/opt/erlangms
   USER_CREATED="false"
-
-  # database and log path
-  mkdir -p /usr/lib/ems-bus/priv/db > /dev/null 2>&1
-  mkdir -p /var/log/ems-bus > /dev/null 2>&1
 
   # create user and group erlangms if it not exist
   if ! grep "^erlangms:" /etc/passwd >> /dev/null ; then
@@ -44,9 +39,6 @@ if [ "$1" = "configure" ]; then
       chmod 4511 $ExecutableErts > /dev/null 2>&1
   done
   
-  # Create folder /var/log/ems-bus
-  mkdir -p /var/log/ems-bus
-  chown -Rf $USER_EMS_BUS:$GROUP_EMS_BUS /var/log/ems-bus > /dev/null 2>&1
 
   # Configure home user (/var/opt/erlangms)
   mkdir -p $HOME_EMS_BUS/.erlangms > /dev/null 2>&1
@@ -55,9 +47,11 @@ if [ "$1" = "configure" ]; then
   if [ ! -f /var/opt/erlangms/.erlangms/emsbus.conf ]; then
 	cp /usr/lib/ems-bus/priv/conf/emsbus.conf $HOME_EMS_BUS/.erlangms/ > /dev/null 2>&1
   fi
-  ln -s /usr/lib/ems-bus/ $HOME_EMS_BUS/ems-bus > /dev/null 2>&1 || true
-  ln -s /usr/lib/ems-bus/priv/ $HOME_EMS_BUS/ems-bus/priv > /dev/null 2>&1 || true
-  
+  ln -s /usr/lib/ems-bus $HOME_EMS_BUS/ems-bus > /dev/null 2>&1 || true
+  #ln -s /usr/lib/ems-bus/priv/ $HOME_EMS_BUS/ems-bus/priv > /dev/null 2>&1 || true
+  ln -s /usr/lib/ems-bus/priv $HOME_EMS_BUS/priv > /dev/null 2>&1 || true
+  ln -s /usr/lib/ems-bus/priv/log /var/log/ems-bus > /dev/null 2>&1
+ 
 
   # It only changes the $ HOME_EMS_BUS/.odbc.ini file when the user was created
   if [ "$USER_CREATED" = "true" ]; then
@@ -97,6 +91,7 @@ if [ "$1" = "configure" ]; then
   # Config /etc/odbcinst.ini if necessary for FreeTDS SQL-server driver
   JTDS_ENTRY_CONF=$(sed -rn '/\[FreeTDS\]/, /(^$|^#)/p' /etc/odbcinst.ini 2> /dev/null)
   if [ -z "$JTDS_ENTRY_CONF" ]; then
+	updatedb
 	LIB_TDODBC_PATH=$(locate libtdsodbc.so | sed -n '1p')
 	if [ ! -z "$LIB_TDODBC_PATH" ]; then
 		echo " " >> /etc/odbcinst.ini 

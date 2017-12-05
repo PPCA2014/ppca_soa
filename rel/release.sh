@@ -281,7 +281,7 @@ make_release(){
 			ln -s /usr/lib/ems-bus/priv/sudoers.d/ems-bus.sudoers $SKEL_PACKAGE_SOURCES/etc/sudoers.d/ems-bus.sudoers || die "Could not create symbolic link $SKEL_RPM_PACKAGE/etc/sudoers.d/ems-bus!" 
 
 			# Log -> /var/log/ems-bus
-			ln -s /var/log/ems-bus $SKEL_PACKAGE_SOURCES/usr/lib/ems-bus/priv/log
+			#ln -s /var/log/ems-bus $SKEL_PACKAGE_SOURCES/usr/lib/ems-bus/priv/log
 
 			#echo "Generate $SKEL_PACKAGE_SOURCES/ems-bus-$VERSION_PACK.tar.gz from $SKEL_PACKAGE_SOURCES"
 			tar -czvf  ems-bus-$VERSION_PACK.tar.gz *
@@ -340,7 +340,7 @@ make_release(){
 			ln -s /usr/lib/ems-bus/priv/sudoers.d/ems-bus.sudoers $SKEL_PACKAGE_SOURCES/etc/sudoers.d/ems-bus.sudoers || die "Could not create symbolic link $SKEL_RPM_PACKAGE/etc/sudoers.d/ems-bus!" 
 
 			# Log -> /var/log/ems-bus
-			ln -s /var/log/ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus/priv/log
+			#ln -s /var/log/ems-bus $SKEL_DEB_PACKAGE/usr/lib/ems-bus/priv/log
 			
 			# Copia os scripts padrão para o pacote
 			cp -f deb/postinst $SKEL_DEB_PACKAGE/DEBIAN
@@ -397,7 +397,7 @@ done
 #	sudo rm  /usr/lib/erlang/man
 #fi	
 
-
+rm -f ../priv/scripts/*.tar
 clean
 config_release_path
 make_release

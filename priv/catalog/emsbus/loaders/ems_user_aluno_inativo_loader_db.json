@@ -36,6 +36,9 @@
 					   coalesce(p.PesTelefone, al.AluTelefone) as Telefone,
 					   coalesce(p.PesCelular, al.AluCelular) as Celular,
 					   rtrim(p.PesDDD) as DDD,
+					   p.PesNomePai,
+					   p.PesNomeMae,
+					   cast(p.PesNacionalidade as int) as nacionalidade,
 					   3 as Type,  
 					   al.AluNivel as SubType,	
 					   0 as ActivePessoa  
@@ -64,6 +67,9 @@
 					   coalesce(p.PesTelefone, al.AluTelefone) as Telefone,
 					   coalesce(p.PesCelular, al.AluCelular) as Celular,
 					   rtrim(p.PesDDD) as DDD,
+					   p.PesNomePai,
+					   p.PesNomeMae,
+					   cast(p.PesNacionalidade as int) as nacionalidade,
 					   3 as Type,  
 					   al.AluNivel as SubType,	
 					   0 as ActivePessoa  
@@ -77,6 +83,7 @@
 	"fields" : ["id", "codigo", "login", "name", "cpf", "password", 
 				"passwd_crypto", "endereco", "complemento_endereco", 
 				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
-				"sexo", "telefone", "celular", "ddd", "type", "subtype", "active"]
+				"sexo", "telefone", "celular", "ddd", "nome_pai", "nome_mae", "nacionalidade", 
+				"type", "subtype", "active"]
 				
 }

@@ -191,7 +191,7 @@ parse_limit(_, _) -> erlang:error(einvalid_limit_filter).
 
 generate_dynamic_query(FilterJson, Fields, 
 					   #service_datasource{table_name = TableName, 
-										   sql = ""}, 
+										   sql = undefined}, 
 					   Limit, Offset, Sort) ->
 	{FilterSmnt, Params} = parse_filter(FilterJson),
 	FieldsSmnt = parse_fields(Fields),
@@ -201,7 +201,6 @@ generate_dynamic_query(FilterJson, Fields,
 								 true -> 
 										io_lib:format("select top ~p ~s from ~s ~s ~s", 
 											[Limit, FieldsSmnt, TableName, FilterSmnt, SortSmnt]);
-
 								 _ ->   %% bastante lento se não existir índice na chave
 										io_lib:format("select * from (select ~s, row_number() over (order by current_timestamp) AS _RowNumber from ~s ~s ~s) _t where _t._RowNumber between ~p and ~p", 
 											[FieldsSmnt, TableName, FilterSmnt, SortSmnt, Offset, Offset+Limit-1])
@@ -209,8 +208,7 @@ generate_dynamic_query(FilterJson, Fields,
 	{ok, {SqlSmnt, Params}};
 
 generate_dynamic_query(FilterJson, Fields, 
-					   #service_datasource{table_name = "", 
-										   sql = Sql}, 
+					   #service_datasource{sql = Sql}, 
 					   Limit, Offset, Sort) ->
 	{FilterSmnt, Params} = parse_filter(FilterJson),
 	FieldsSmnt = parse_fields(Fields),
@@ -220,7 +218,6 @@ generate_dynamic_query(FilterJson, Fields,
 								 true -> 
 										io_lib:format("select top ~p ~s from (~s) _t ~s ~s", 
 											[Limit, FieldsSmnt, Sql, FilterSmnt, SortSmnt]);
-
 								 _ ->   
 										%% bastante lento se não existir índice na chave
 										io_lib:format("select * from (select ~s, row_number() over (order by current_timestamp) AS _RowNumber from (~s) _t_sql ~s ~s) _t where _t._RowNumber between ~p and ~p", 

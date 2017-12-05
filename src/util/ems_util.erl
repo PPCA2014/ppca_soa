@@ -459,6 +459,8 @@ join_binlist([], _) -> "";
 join_binlist(BinList, Str) -> string:join(binlist_to_list(BinList), Str).
 
 
+item_to_binary(undefined) -> undefined;
+item_to_binary(null) -> undefined;
 item_to_binary([]) -> <<>>;
 item_to_binary(<<I/binary>>) -> I;
 item_to_binary(T) when is_tuple(T) -> 

@@ -127,17 +127,22 @@ by graduate student Everton Vargas Agilar.
   chown root:root /etc/systemd/system/ems-bus.service > /dev/null 2>&1
 
 
-  # config /etc/odbcinst.ini if necessary for FreeTDS SQL-server driver
+  # Config /etc/odbcinst.ini if necessary for FreeTDS SQL-server driver
   JTDS_ENTRY_CONF=$(sed -rn '/\[FreeTDS\]/, /(^$|^#)/p' /etc/odbcinst.ini 2> /dev/null)
   if [ -z "$JTDS_ENTRY_CONF" ]; then
-	echo " " >> /etc/odbcinst.ini 
-	echo "# Driver for SQL-server" >> /etc/odbcinst.ini 
-	echo "# Setup from the ems-bus package" >> /etc/odbcinst.ini 
-	echo "[FreeTDS]" >> /etc/odbcinst.ini 
-	echo "Description=FreeTDS Driver" >> /etc/odbcinst.ini 
-	echo "Driver=/usr/lib64/libtdsodbc.so.0" >> /etc/odbcinst.ini 
-	echo " " >> /etc/odbcinst.ini 
+	updatedb
+	LIB_TDODBC_PATH=$(locate libtdsodbc.so | sed -n '1p')
+	if [ ! -z "$LIB_TDODBC_PATH" ]; then
+		echo " " >> /etc/odbcinst.ini 
+		echo "# Driver for SQL-server" >> /etc/odbcinst.ini 
+		echo "# Setup from the ems-bus package" >> /etc/odbcinst.ini 
+		echo "[FreeTDS]" >> /etc/odbcinst.ini 
+		echo "Description=FreeTDS Driver" >> /etc/odbcinst.ini 
+		echo "Driver=$LIB_TDODBC_PATH" >> /etc/odbcinst.ini 
+		echo " " >> /etc/odbcinst.ini 
+	fi
   fi
+  
 
   # Config /etc/security/limits.conf if necessary for erlangms group
   if ! grep -q '@erlangms' /etc/security/limits.conf ; then

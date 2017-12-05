@@ -314,10 +314,9 @@ checkpoint_arquive_log(State = #state{log_file_handle = CurrentIODevice,
 
     
 open_filename_device() -> 
-	{{Ano,Mes,Dia},{Hora,Min,Seg}} = calendar:local_time(),
+	{{Ano,Mes,Dia},{Hora,Min,_}} = calendar:local_time(),
 	MesAbrev = ems_util:mes_abreviado(Mes),
-	NodeName = ems_util:get_node_name(),
-	LogFilename = lists:flatten(io_lib:format("~s/~s/~p/~s/~s_~s_~2..0w~2..0w~4..0w_~2..0w~2..0w~2..0w.log", [?LOG_PATH, atom_to_list(node()), Ano, MesAbrev, NodeName, MesAbrev, Dia, Mes, Ano, Hora, Min, Seg])),
+	LogFilename = lists:flatten(io_lib:format("~s/~p/~s/~s_~s_~2..0w~2..0w~4..0w_~2..0w~2..0w.log", [?LOG_PATH, Ano, MesAbrev, "emsbus", MesAbrev, Dia, Mes, Ano, Hora, Min])),
 	open_filename_device(LogFilename).
 
 open_filename_device(LogFilename) ->
@@ -456,38 +455,42 @@ sync_buffer_screen(State) ->
 sync_buffer(State = #state{buffer = Buffer,
 						   log_file_name = CurrentLogFilename,
 						   log_file_max_size = LogFileMaxSize,
-						   log_file_handle = IODevice}) ->
+						   log_file_handle = CurrentIODevice}) ->
 	ems_db:inc_counter(ems_logger_sync_buffer),
-	% check limit log file max size
-	case filelib:file_size(CurrentLogFilename) > LogFileMaxSize of
+	FileSize = filelib:file_size(CurrentLogFilename),
+	case FileSize > LogFileMaxSize of 	% check limit log file max size
 		true -> 
 			ems_db:inc_counter(ems_logger_sync_buffer_file_size_exceeded),
 			ems_logger:info("ems_logger is writing to a log file that has already exceeded the allowed limit."),
-			State2 = checkpoint_arquive_log(State, true),
-			State2#state{flag_checkpoint_sync_buffer = false};
+			State2 = checkpoint_arquive_log(State, true);
 		false ->
-			Msg = lists:reverse(Buffer),
-			case file:write(IODevice, Msg) of
-				ok -> 
-					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false};
-				{error, enospc} -> 
-					ems_db:inc_counter(ems_logger_sync_buffer_enospc),
-					ems_logger:error("ems_logger does not have disk storage space to write to the log files. Clear log buffer cache."),
-					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false};
-				{error, ebadf} ->
-					ems_db:inc_counter(ems_logger_sync_buffer_ebadf),
-					ems_logger:error("ems_logger does no have log file descriptor valid. Clear log buffer cache."),
-					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false};
-				{error, Reason} ->
-					ems_db:inc_counter(ems_logger_sync_buffer_error),
-					ems_logger:error("ems_logger was unable to unload the log buffer cache. Reason: ~p. Clear log buffer cache.", [Reason]),
-					State#state{buffer = [], 
-								flag_checkpoint_sync_buffer = false}
+			case FileSize == 0 of % Check file deleted
+				true ->
+					close_filename_device(CurrentIODevice, CurrentLogFilename),
+					{ok, LogFilename, IODevice} = open_filename_device(),
+					State2 = State#state{buffer = [], 
+										 log_file_handle = IODevice,
+										 log_file_name = LogFilename,
+										 flag_checkpoint_sync_buffer = false};
+				false ->
+					State2 = State#state{buffer = [], 
+										 flag_checkpoint_sync_buffer = false}
 			end
-	end.
+	end,
+	Msg = lists:reverse(Buffer),
+	case file:write(State2#state.log_file_handle, Msg) of
+		ok -> ok;
+		{error, enospc} -> 
+			ems_db:inc_counter(ems_logger_sync_buffer_enospc),
+			ems_logger:error("ems_logger does not have disk storage space to write to the log files.");
+		{error, ebadf} ->
+			ems_db:inc_counter(ems_logger_sync_buffer_ebadf),
+			ems_logger:error("ems_logger does no have log file descriptor valid.");
+		{error, Reason} ->
+			ems_db:inc_counter(ems_logger_sync_buffer_error),
+			ems_logger:error("ems_logger was unable to unload the log buffer cache. Reason: ~p.", [Reason])
+	end,
+	State2.
 
 	
 do_log_request(#request{rid = RID,

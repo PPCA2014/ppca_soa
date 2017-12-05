@@ -25,10 +25,18 @@
 # 14/02/2017  Everton Agilar     Release inicial    
 # 03/03/2017  Everton Agilar     Add --showlogs option and improve ldap report
 # 19/05/2017  Everton Agilar     Add --email_to option
+# 27/11/2017  Everton Agilar     Add --fix send_email to multiples emails
 #
 #
 #
 ########################################################################################################
+
+# Check pre-requisites: netstat
+if [ "`netstat --version 2> /dev/null`" = "" ]; then
+	echo "Prerequisite: netstat is not installed, exiting..."
+	exit 1
+fi
+
 
 # locale
 LANG=en_US.UTF-8
@@ -57,8 +65,8 @@ NET_INTERFACES=$(netstat -tnl | awk -v PORT=$LDAP_PORT '$4 ~ PORT { print $4; }'
 MEM=$(free -h | awk '$1 == "Mem:" {  print "Total: " $2 "   Free: " $4 "   Avaiable: " $7; }')
 LOAD_AVERAGE=$(cat /proc/loadavg | awk '{ print "Min: "$1"     5 Min: "$2"    15 Min: "$3 ; }')
 UPTIME=$(echo since `uptime -s` " ( " `uptime -p` " )" | sed 's/hours/hs/; s/minutes/min/ ;')
-SERVICE_UPTIME=$(systemctl status ems-bus | awk '/Active/ { print $2" "$3" "$4" "$6$7" "" ( up "$9" "$10" )";  }' | sed -r 's/ago //')
-MAIN_PID=$(systemctl status ems-bus | grep "Main PID:")
+SERVICE_UPTIME=$(systemctl status ems-bus 2> /dev/null | awk '/Active/ { print $2" "$3" "$4" "$6$7" "" ( up "$9" "$10" )";  }' | sed -r 's/ago //')
+MAIN_PID=$(systemctl status ems-bus 2> /dev/null | grep "Main PID:")
 MMIN="1440"
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 REPORT_FILE="$TMP_DIR/report_audit_ldap_log_$(date '+%d%m%Y_%H%M%S').txt"
@@ -91,10 +99,10 @@ if [ "$#" = "0" ]; then
 	MMIN="1440"	
 elif [ "$1" = "--help" ]; then
 	echo "How to use: ./audit_ldap_log.sh minutes  [ --send_email --showlogs ]"
-	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-	echo "parameter --send_email is optional and send email to admin"
-	echo "parameter --send_to is emails to send"			
-	echo "parameter --showlogs show content of logs"
+	echo "where minutes is logfile's data was last modified minutes ago (default is 1 day or 43200 minutes)."
+	echo "parameter --send_email is optional and send email to admin."
+	echo "parameter --email_to is list of email to send."			
+	echo "parameter --showlogs show content of logs."
 	exit 1
 else
 	if [ "$1" == "--sendemail" ] || [ "$1" == "--send_email" ] || [ "$1" == "--showlogs" ]; then
@@ -104,10 +112,10 @@ else
 		if ! [[ $MMIN =~ ^[0-9]{1,6}$ ]] ; then
 			echo "Parameter minutes with value \"$MMIN\" is inválid. Values allowed from 1 to 99999."
 			echo "How to use: ./audit_ldap_log.sh minutes  [ --sendemail  --showlogs ]"
-			echo "where minutes is logfile's data was last modified minutes ago (default is 1 day -- 43200 minutes)"
-			echo "parameter --send_email is optional and send email to admin"
-			echo "parameter --send_to is emails to send"			
-			echo "parameter --showlogs show log files content"
+			echo "where minutes is logfile's data was last modified minutes ago (default is 1 day or 43200 minutes)."
+			echo "parameter --send_email is optional and send email to admin."
+			echo "parameter --email_to is list of email to send."
+			echo "parameter --showlogs show log files content."
 			exit 1
 		fi
 	fi
@@ -129,7 +137,7 @@ generate_report(){
 	echo "Listen interfaces: $NET_INTERFACES"
 	echo "Load average: $LOAD_AVERAGE"
 	echo "Server machine uptime: $UPTIME"
-	echo "Service uptime: $SERVICE_UPTIME"
+	echo "ErlangMs uptime: $SERVICE_UPTIME"
 	echo "Node: $EMS_NODE $MAIN_PID"
 	echo "Log dest: $LOG_DEST"
 	echo
@@ -300,7 +308,7 @@ generate_report(){
 	echo '+-----------------------------------------------+------------------------------------------------------+'
 	TMP_USERS_NOT_FOUND_SEARCH_OP=$TMP_DIR/tmp_users_not_found_search_op.tmp
 	while read USER; do
-		USER=$(echo $USER | tr '"' '\0')
+		USER=$(echo $USER | tr -d '"')
 		REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER=$(grep -w "$USER" request_search_login_does_not_exist.tmp | wc -l | cut -d" " -f1)
 		printf "| %-45s | %19d         %25s|\n"   "$USER"   $REQ_SEARCH_FAIL_LOGIN_DOES_NOT_EXIST_TOTAL_BY_USER " " >> $TMP_USERS_NOT_FOUND_SEARCH_OP
 	done <  request_search_login_does_not_exist_uniq.tmp
@@ -349,8 +357,11 @@ send_email(){
 				<![endif]-->
 			</body>
 			</html>"
-    SEND_TO=["'''$SMTP_TO'''"]
-    python <<EOF
+    
+    Emails=$(echo $SMTP_TO | tr "," "\n")
+	for Addr in $Emails; do
+		SEND_TO=["'''$Addr'''"]	
+		python <<EOF
 # -*- coding: utf-8 -*-
 import smtplib
 from email.mime.text import MIMEText
@@ -364,7 +375,7 @@ try:
 	msg = MIMEMultipart()
 	msg['Subject'] = "$TITULO_MSG"
 	msg['From'] = "$SMTP_DE"
-	msg['To'] = "$SMTP_TO"
+	msg['To'] = "$Addr"
 	msg['Date'] = formatdate(localtime=True)
 	part1 = MIMEText("Relatório em anexo.", 'plain')
 	part2 = MIMEText("""$SUBJECT""", 'html', 'utf-8')
@@ -376,6 +387,7 @@ except Exception as e:
 	print("Send email error: "+ str(e))
 	exit(1)
 EOF
+	done
 	
 }	
 
@@ -385,14 +397,15 @@ EOF
 
 # Optional parameters
 for P in $*; do
-	# check parameter --showlogs
 	if [ "$P" == "--showlogs" ]; then
 		SHOW_LOGS="true"		
-	# check parameter --sendemail
-	elif [[ "$P" =~ ^--send_?email$ ]]; then
+	elif [[ "$P" =~ ^--send_email$ ]]; then
 		SEND_EMAIL="true"
 	elif [[ "$P" =~ ^--email_to=.+$ ]]; then
 		SMTP_TO="$(echo $P | cut -d= -f2)"
+	else
+		echo "Invalid parameter: $P"
+		exit 1
 	fi
 done
 

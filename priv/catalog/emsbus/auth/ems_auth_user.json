@@ -11,7 +11,10 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_db", "user_aluno_ativo_db", "user_aluno_inativo_db", "user_fs"],
-			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd"]
+			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "type", "subtype", "active", 
+						"endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", 
+						"data_nascimento", "sexo", "telefone", "celular", "ddd", "nome_pai", 
+						"nome_mae", "nacionalidade", "matricula"]
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",
@@ -38,7 +41,10 @@
 		"datasource" : {
 			"type" : "mnesia",
 			"table_name" : ["user_db", "user_aluno_ativo_db", "user_aluno_inativo_db", "user_fs"],
-			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "type", "subtype", "active", "endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", "data_nascimento", "sexo", "telefone", "celular", "ddd"]
+			"fields" : ["id", "codigo", "login", "name", "cpf", "email", "type", "subtype", "active", 
+						"endereco", "complemento_endereco", "bairro", "cidade", "uf", "cep", "rg", 
+						"data_nascimento", "sexo", "telefone", "celular", "ddd", "nome_pai", 
+						"nome_mae", "nacionalidade", "matricula"]
 		},
 		"schema_in" : "user",
 		"schema_out" : "user",

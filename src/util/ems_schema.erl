@@ -49,7 +49,11 @@ to_record(_, _) -> erlang:error(einvalid_to_record).
 to_list(Record) when is_tuple(Record)-> 
 	try
 		{struct, Result} = json_rec:to_json(Record, ?MODULE),
-		Result
+		Result2 = [case V of
+						<<"undefined">> -> {K, null};
+						_ -> {K, V} 
+				   end || {K,V} <- Result],
+		Result2
 	catch 
 		_Exception:invalid_string -> 
 			ems_logger:warn("ems_schema to_list invalid_string: ~p.", [Record]),

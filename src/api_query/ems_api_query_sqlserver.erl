@@ -10,13 +10,14 @@
 
 -export([find/6, find_by_id/3, delete/2]).
 
--include("../../include/ems_config.hrl").
--include("../../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 
 find(FilterJson, Fields, Limit, Offset, Sort, Datasource) ->
 	case ems_api_query_sqlserver_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
-		{ok, {Sql, Params}} -> execute_dynamic_query(Sql, Params, Datasource);
+		{ok, {Sql, Params}} -> 
+			execute_dynamic_query(Sql, Params, Datasource);
 		{error, Reason} -> {error, Reason}
 	end.
 

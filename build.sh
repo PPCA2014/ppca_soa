@@ -187,7 +187,6 @@ echo "Date: $(date '+%d/%m/%Y %H:%M:%S')"
 echo "============================================================================="
 
 # Clean somes files
-rm -Rf priv/log
 rm -f *.dump
 
 if [ "$KEEP_DB" = "false" ]; then

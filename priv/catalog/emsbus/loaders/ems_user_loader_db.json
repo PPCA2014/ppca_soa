@@ -10,7 +10,7 @@
 	"lang" : "erlang",
 	"update_checkpoint" : 120000,
 	"datasource" : "ds_ems_user_loader",
-	"start_timeout" : 2000,
+	"start_timeout" : 3000,
 	"middleware" : "ems_user_loader_middleware",
 	"pool_size" : 1,
 	"pool_max" : 1,
@@ -36,6 +36,9 @@
 					   p.PesTelefone as Telefone, 
 					   p.PesCelular as Celular, 
 					   rtrim(p.PesDDD) as DDD,
+					   p.PesNomePai,
+					   p.PesNomeMae,
+					   cast(p.PesNacionalidade as int) as nacionalidade,
   					   1 as Type,  
 					   0 as SubType,	
 					   1 as ActivePessoa  
@@ -63,6 +66,9 @@
 				   p.PesTelefone as Telefone, 
 				   p.PesCelular as Celular, 
 				   rtrim(p.PesDDD) as DDD,
+				   p.PesNomePai,
+				   p.PesNomeMae,
+				   cast(p.PesNacionalidade as int) as nacionalidade,
 				   1 as Type,  
 				   0 as SubType,	
 				   1 as ActivePessoa  
@@ -75,6 +81,7 @@
 	"fields" : ["id", "codigo", "login", "name", "cpf", "password", 
 				"passwd_crypto", "endereco", "complemento_endereco", 
 				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
-				"sexo", "telefone", "celular", "ddd", "type", "subtype", "active"]
+				"sexo", "telefone", "celular", "ddd", "nome_pai", "nome_mae", "nacionalidade", 
+				"type", "subtype", "active"]
 				
 }
