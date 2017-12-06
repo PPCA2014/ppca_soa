@@ -68,6 +68,11 @@
 	{
 		"catalog": "/emsbus/ems_logger_os_service", 
 		"file": "ems_logger_os_service.json"
+	},
+	
+	{
+		"catalog": "/emsbus/ems_smon", 
+		"file": "ems_smon.json"
 	}
 		
 ]

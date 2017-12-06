@@ -240,6 +240,11 @@ create_database(Nodes) ->
 										  {attributes, record_info(fields, service)},
 										  {record_name, service}]),
 
+    mnesia:create_table(smon_stat, [{type, set},
+								    {disc_copies, Nodes},
+								    {attributes, record_info(fields, smon_stat)},
+								    {record_name, smon_stat}]),
+
 	% foi preciso aguardar um pouco a inicialização do banco
 	ems_util:sleep(4000),
 

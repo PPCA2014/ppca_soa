@@ -1,0 +1,14 @@
+{
+	"name": "ems_smon",
+	"comment": "Catalog for ems_smon",
+	"owner": "ems_bus",
+	"version": "1.0.0",
+	"service" : "ems_smon:start",
+	"url": "/emsbus/ems_smon",
+	"type": "KERNEL",
+	"start_timeout" : 3600000,
+	"debug" : false,
+	"lang" : "erlang",
+	"pool_size" : 1,
+	"pool_max" : 1
+}
