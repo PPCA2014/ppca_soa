@@ -43,6 +43,7 @@ CLIENT_CONF_IN_MEMORY="true"
 APP_VERSION="1.0"
 ENVIRONMENT="undefined"
 SKIP_CHECK="false"
+IMAGE_ID="latest"
 
 # Erlangms
 ERLANGMS_ADDR="127.0.0.1"
@@ -155,6 +156,7 @@ help() {
 	echo "  --erlangms_https_port   ->  port of https erlangms listener"
 	echo "  --erlangms_auth_protocol    -> authorization protocol to use. The default is oauth2"
 	echo "  --erlangms_base_url    -> base url of erlangms"
+	echo "  --image_id         -> id of a specific docker image. The default is latest"
 	echo
 	echo "Obs.: Use only com root or sudo!"
 	exit 1
@@ -230,6 +232,8 @@ for P in $*; do
 			DOCKER_VERSION="$(echo $P | cut -d= -f2)"
 		elif [[ "$P" =~ ^--registry=.+$ ]]; then
 			REGISTRY="$(echo $P | cut -d= -f2)"
+		elif [[ "$P" =~ ^--image_id=.+$ ]]; then
+			IMAGE_ID="$(echo $P | cut -d= -f2)"
 		elif [[ "$P" =~ ^--erlangms_addr=.+$ ]]; then
 			ERLANGMS_ADDR="$(echo $P | cut -d= -f2)"
 		elif [[ "$P" =~ ^--erlangms_http_port=.+$ ]]; then
@@ -351,10 +355,10 @@ if [ -z "$TAR_FILE" -a -z "$IMAGE" -a "$CURRENT_DIR_IS_DOCKER_PROJECT_GITLAB"="1
 	echo docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 					--network bridge -p $SERVER_ADDR:$SERVER_HTTPS_PORT_LISTENER:$SERVER_HTTPS_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME $ENTRYPOINT 
+			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 	docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME $ENTRYPOINT 
+			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 
 elif [ ! -z "$IMAGE" ]; then
 	if [ -z "$APP_NAME" ]; then
@@ -399,11 +403,11 @@ elif [ ! -z "$IMAGE" ]; then
 	echo docker run  --name erlangms_$APP_NAME \
 			   --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $IMAGE $ENTRYPOINT 
+			   -it $IMAGE:$IMAGE_ID $ENTRYPOINT 
 	docker run --name erlangms_$APP_NAME \
 			   --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $IMAGE $ENTRYPOINT  
+			   -it $IMAGE:$IMAGE_ID $ENTRYPOINT  
 else
 	if [ -z "$APP_NAME" ]; then
 		APP_NAME=$(echo $TAR_FILE | awk -F: '{ print $1 }')
@@ -437,9 +441,9 @@ else
 
 	echo docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME $ENTRYPOINT 
+			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 	docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME $ENTRYPOINT 
+			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 
 fi

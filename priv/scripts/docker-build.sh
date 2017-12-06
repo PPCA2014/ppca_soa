@@ -45,6 +45,9 @@ help() {
 	echo "  --cache_node_modules         -> cache node_modules for speed (development use only!)"
 	echo "  --keep_stage                 -> does not delete stage area after build"
 	echo "  --push                       -> push to registry. The same as --skip_push=false"
+	echo "  --mode_build                 -> build npm project in mode pass in variable"
+	echo "  --http_port                  -> change port http frontend. Default is 3000"
+	echo "  --https_port                 -> change port https frontend. Default is 4000"
 	echo
 	echo "Obs.: Use only com root or sudo!"
 	cd $CURRENT_DIR
@@ -114,6 +117,9 @@ ERLANGMS_RELEASE_URL="https://github.com/erlangms/releases/raw/master"
 
 # Onde está o template docker utilizado por este build
 ERLANGMS_DOCKER_GIT_URL="https://github.com/erlangMS/docker"
+
+# variável opcional para dizer qual modo de build da aplicação
+MODE_BUILD="dev"
 
 
 # Registry server daemon to catalog images
@@ -338,8 +344,8 @@ build_image(){
 
 
 		# ***** npm run build *****
-		npm run build
-		echo "Return npm build: $?"
+		npm run build:$MODE_BUILD
+		echo "Return npm build:$MODE_BUILD $?"
 		if [ "$?" != "0" ]; then
 			die "An error occurred in the npm run build command. Build canceled."
 		fi
@@ -584,6 +590,8 @@ for P in $*; do
 		GIT_PASSWD="$(echo $P | cut -d= -f2)"
 	elif [[ "$P" =~ ^--base_url_git_projects=.+$ ]]; then
 		GIT_BASE_URL_PROJECTS="$(echo $P | cut -d= -f2)"
+	elif [[ "$P" =~ ^--mode_build=.+$ ]]; then
+		MODE_BUILD="$(echo $P | cut -d= -f2)"
 	elif [ "$P" = "--cache_node_modules" ]; then
 		CACHE_NODE_MODULES="true"
 	elif [ "$P" = "--keep_stage" ]; then
