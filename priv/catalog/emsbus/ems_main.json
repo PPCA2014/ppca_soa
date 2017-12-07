@@ -71,8 +71,8 @@
 	},
 	
 	{
-		"catalog": "/emsbus/ems_smon", 
-		"file": "ems_smon.json"
+		"catalog": "/emsbus/ems_stat_collector", 
+		"file": "ems_stat_collector.json"
 	}
 		
 ]

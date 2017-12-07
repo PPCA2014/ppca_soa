@@ -1,12 +1,12 @@
 %%********************************************************************
-%% @title Module ems_smon
+%% @title Module ems_stat_collector
 %% @version 1.0.0
 %% @doc Module responsible for the system monitor
 %% @author Everton de Vargas Agilar <evertonagilar@gmail.com>
 %% @copyright ErlangMS Team
 %%********************************************************************
 
--module(ems_smon).
+-module(ems_stat_collector).
 
 -behavior(gen_server). 
 
@@ -59,9 +59,9 @@ init(#service{start_timeout = Timeout}) ->
 handle_cast(shutdown, State) ->
     {stop, normal, State};
 
-handle_cast(collect, State) ->
+handle_cast(collect, State = #state{timeout = Timeout}) ->
 	NewState = collect_stats(State),
-	{noreply, NewState};
+	{noreply, NewState, Timeout};
 
 handle_cast(_, State) ->
 	{noreply, State}.
@@ -85,7 +85,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 
 collect_stats(State) ->
-	ems_logger:info("ems_smon collect system statistics."),
+	ems_logger:info("ems_stat_collector collect system statistics."),
 	Timestamp = calendar:local_time(),
 	{ok, Counters} = ems_db:all(counter),
 	mnesia:clear_table(counter),

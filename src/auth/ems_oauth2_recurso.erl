@@ -13,7 +13,10 @@ execute(Request = #request{access_token = AccessToken}) ->
 				 {<<"scope">>, Scope}] 
 			}} -> 	
 			ClientJson = ems_client:to_json(Client),
-			ResourceOwner = ems_user:to_resource_owner(User, Client#client.id),
+			case Client == undefined of 
+				true -> ResourceOwner = ems_user:to_resource_owner(User, undefined);
+				false -> ResourceOwner = ems_user:to_resource_owner(User, Client#client.id)
+			end,
 			ResponseData2 = iolist_to_binary([<<"{"/utf8>>,
 												   <<"\"client\":"/utf8>>, ClientJson, <<","/utf8>>,
 												   <<"\"resource_owner\":"/utf8>>, ResourceOwner, <<","/utf8>>,
