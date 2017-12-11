@@ -42,10 +42,10 @@ SKIP_DEPS="false"
 SKIP_CLEAN="false"
 KEEP_DB="false"
 
-# Erlang version required > 20
+# Erlang Runtime version required > 20
 ERLANG_VERSION=20
 
-# Erlang version installled
+# Erlang Runtime version installled
 ERLANG_VERSION_OS=`erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell 2> /dev/null | sed 's/[^0-9]//g'`
 
 
@@ -115,18 +115,18 @@ le_all_settings () {
 	fi
 }
 
-# Checks if the version of erlang installed is compatible with this script
+## Checks if the version of erlang installed is compatible with this script
 check_erlang_version(){
-	printf "Checking installed erlang version... "
+	printf "Checking Erlang Runtime version... "
 	if [ -n "$ERLANG_VERSION_OS" ]; then
 		if [ $ERLANG_VERSION_OS -ge $ERLANG_VERSION ]; then
 			printf "OK\n"
 		else
 			printf "ERROR\n"
-			die "Build canceled because the erlang installed is incompatible with this software. Expected version: $ERLANG_VERSION"
+			die "Build canceled because the Erlang Runtime installed is incompatible with this software. Expected version: $ERLANG_VERSION"
 		fi 
 	else
-		die "Oops, you should install erlang first !!!"
+		die "Oops, you should install Erlang Runtime $ERLANG_VERSION first !!!"
 	fi
 }
 
