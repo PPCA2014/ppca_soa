@@ -41,7 +41,7 @@ ENTRYPOINT="ems-bus/bin/ems-bus console"
 CLIENT_CONF="/tmp/erlangms_$$_barramento_client.conf"
 CLIENT_CONF_IN_MEMORY="true"
 APP_VERSION="1.0"
-ENVIRONMENT="undefined"
+ENVIRONMENT=`hostname`
 SKIP_CHECK="false"
 IMAGE_ID="latest"
 
@@ -271,25 +271,23 @@ for P in $*; do
 done
 
 
-# Registry settings
-if [ ! -z $REGISTRY ]; then
-	if [[ "$REGISTRY" =~ ^[0-9a-zA-Z_.]+:[0-9]+$ ]] ; then
-	   REGISTRY_PORT=$(echo $REGISTRY | awk -F: '{ print $2; }')
-	   REGISTRY_SERVER=$REGISTRY
-	elif [[ $REGISTRY =~ ^[0-9a-zA-Z_-.]+$ ]] ; then
-		REGISTRY_SERVER=$REGISTRY:$REGISTRY_PORT
+if [ -z "$TAR_FILE" ]; then
+	# Vamos precisar do registry. Validar registry settings
+	if [ ! -z $REGISTRY ]; then
+		if [[ "$REGISTRY" =~ ^[0-9a-zA-Z_.]+:[0-9]+$ ]] ; then
+		   REGISTRY_PORT=$(echo $REGISTRY | awk -F: '{ print $2; }')
+		   REGISTRY_SERVER=$REGISTRY
+		elif [[ $REGISTRY =~ ^[0-9a-zA-Z_-.]+$ ]] ; then
+			REGISTRY_SERVER=$REGISTRY:$REGISTRY_PORT
+		else
+			die "Parameter --registry $REGISTRY is invalid. Example: 127.0.0.1:5000"
+		fi
+		REGISTRY_IP="$(echo $REGISTRY_SERVER | cut -d: -f1)"
 	else
-		die "Parameter --registry $REGISTRY is invalid. Example: 127.0.0.1:5000"
+		die "Parameter --registry is required. Example: 127.0.0.1:5000"
 	fi
-	REGISTRY_IP="$(echo $REGISTRY_SERVER | cut -d: -f1)"
 else
-	die "Parameter --registry is required. Example: 127.0.0.1:5000"
-fi
-
-
-# Valida o parâmetro --tarfile se informado
-if [ ! -z "$TAR_FILE" ]; then
-	# O arquivo existe?
+	# O arquivo tar foi informado, valida se existe
 	if [ ! -f "$TAR_FILE" ]; then
 		die "tarfile $TAR_FILE does not exist!"
 	fi

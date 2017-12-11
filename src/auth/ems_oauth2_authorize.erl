@@ -51,9 +51,16 @@ execute(Request = #request{type = Type,
 				   {<<"token_type">>, TokenType}
 				  ]
 			 } ->
-					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_">>, integer_to_binary(User#user.id)]), utf8)),
-					UserAgentBin = ems_util:user_agent_atom_to_binary(UserAgent),
-					ems_db:inc_counter(binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_agent_">>, UserAgentBin, <<"_">>, UserAgentVersion]), utf8)),
+					% When it is authorization_code, we will record metrics for singlesignon
+					case User =/= undefined of
+						true -> 
+							UserAgentBin = ems_util:user_agent_atom_to_binary(UserAgent),
+							SingleSignonUserMetricName = binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_">>, integer_to_binary(User#user.id)]), utf8),
+							SingleSignonUserAgentMetricName = binary_to_atom(iolist_to_binary([<<"ems_oauth2_singlesignon_user_agent_">>, UserAgentBin, <<"_">>, UserAgentVersion]), utf8),
+							ems_db:inc_counter(SingleSignonUserMetricName),
+							ems_db:inc_counter(SingleSignonUserAgentMetricName);
+						false -> ok
+					end,
 					ClientId = parse_client_id(ems_util:get_querystring(<<"client_id">>, <<>>, Request)),
 					case ClientId > 0 of
 						true ->
@@ -238,9 +245,10 @@ authorization_request(Request) ->
 	end.
 
 
+
 %% Requisita o código de autorização - seções 4.1.1 e 4.1.2 do RFC 6749.
 %% URL de teste: GET http://127.0.0.1:2301/authorize?response_type=code2&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w
-refresh_token_request(Request) ->
+refresh_token_request(Request = #request{authorization = Authorization}) ->
     try
 		ClientId = parse_client_id(ems_util:get_querystring(<<"client_id">>, <<>>, Request)),
 		case ClientId > 0 of
@@ -248,14 +256,39 @@ refresh_token_request(Request) ->
 				ClientSecret = ems_util:get_querystring(<<"client_secret">>, <<>>, Request),
 				Reflesh_token = ems_util:get_querystring(<<"refresh_token">>, <<>>, Request),
 				Scope = ems_util:get_querystring(<<"scope">>, <<>>, Request),
-				Authorization = ems_oauth2_backend:authorize_refresh_token({ClientId, ClientSecret}, Reflesh_token, Scope),
-				issue_token(Authorization);
-			false -> {error, access_denied}
+				case ems_client:find_by_id_and_secret(ClientId, ClientSecret) of
+					{ok, Client} ->
+						Authorization = ems_oauth2_backend:authorize_refresh_token(Client, Reflesh_token, Scope),
+						issue_token(Authorization);
+					_ -> {error, access_denied}
+				end;
+			false ->
+				% O ClientId também pode ser passado via header Authorization
+				case Authorization =/= undefined of
+					true ->
+						case ems_util:parse_basic_authorization_header(Authorization) of
+							{ok, Login, Password} ->
+								ClientId2 = list_to_integer(Login),
+								ClientSecret = list_to_binary(Password),
+								Reflesh_token = ems_util:get_querystring(<<"refresh_token">>, <<>>, Request),
+								Scope = ems_util:get_querystring(<<"scope">>, <<>>, Request),
+								case ems_client:find_by_id_and_secret(ClientId2, ClientSecret) of
+									{ok, Client} ->
+										Authz = ems_oauth2_backend:authorize_refresh_token(Client, Reflesh_token, Scope),
+										issue_token(Authz);
+									_ -> {error, access_denied}
+								end;
+							_ -> {error, access_denied}
+						end;
+					false -> {error, access_denied}
+				end
 		end
 	catch
 		_:_ -> {error, access_denied}
 	end.
 		
+
+
 
 %% Requisita o token de acesso com o código de autorização - seções  4.1.3. e  4.1.4 do RFC 6749.
 %% URL de teste: POST http://127.0.0.1:2301/authorize?grant_type=authorization_code&client_id=s6BhdRkqt3&state=xyz%20&redirect_uri=http%3A%2F%2Flocalhost%3A2301%2Fportal%2Findex.html&username=johndoe&password=A3ddj3w&secret=qwer&code=dxUlCWj2JYxnGp59nthGfXFFtn3hJTqx
@@ -275,7 +308,7 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 					true ->
 						case ems_util:parse_basic_authorization_header(Authorization) of
 							{ok, Login, Password} ->
-								ClientId2 = list_to_binary(Login),
+								ClientId2 = list_to_integer(Login),
 								ClientSecret = list_to_binary(Password),
 								Auth = oauth2:authorize_code_grant({ClientId2, ClientSecret}, Code, RedirectUri, []),
 								issue_token_and_refresh(Auth);						
@@ -328,7 +361,8 @@ issue_token_and_refresh({ok, {_, Auth}}) ->
             {<<"refresh_token">>, RefreshToken},
             {<<"refresh_token_expires_in">>, RefreshTokenExpiresIn},
             {<<"token_type">>, TokenType}]};
-issue_token_and_refresh(_) -> {error, access_denied}.
+issue_token_and_refresh(_) -> 
+	{error, access_denied}.
 
 issue_code({ok, {_, Auth}}) ->
 	{ok, {_, Response}} = oauth2:issue_code(Auth, []),

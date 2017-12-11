@@ -154,7 +154,8 @@ verify_client_scope(#client{id = ClientID}, Scope, _) ->
 	case ems_client:find_by_id(ClientID) of
         {ok, #client{scope = Scope0}} ->     
 			case Scope =:= Scope0 of
-				true -> {ok, {[],Scope0}};
+				true -> 
+					{ok, {[],Scope0}};
 				_ -> {error, unauthorized_client}
 			end;
         _ -> {error, invalid_scope}
@@ -168,23 +169,20 @@ verify_scope(_RegScope, Scope , _) ->
     
 % função criada pois a biblioteca OAuth2 não trata refresh_tokens
 authorize_refresh_token(Client, RefreshToken, Scope) ->
-    case authenticate_client(Client, []) of
-        {error, _}  -> {error, invalid_client};
-        {ok, {_, C}} -> 
-			case resolve_refresh_token(RefreshToken, []) of
-				{error, _}= E -> E;
-				{ok, {_, GrantCtx}} -> 
-					case verify_client_scope(C, Scope, []) of
-						{error, _}           -> {error, invalid_scope};
-						{ok, {Ctx3, _}} ->
-							{ok, {Ctx3, #a{ client  =C
-								, resowner= get_(GrantCtx,<<"resource_owner">>)
-								, scope   = get_(GrantCtx, <<"scope">>)
-								, ttl     = oauth2_config:expiry_time(password_credentials)
-							}}}
-					end
-            end
-    end.
+	case resolve_refresh_token(RefreshToken, []) of
+		{error, _}= E -> E;
+		{ok, {_, [_, {_, ResourceOwner}, _, _]}} -> 
+			case verify_client_scope(Client, Scope, []) of
+				{error, _}           -> {error, invalid_scope};
+				{ok, {Ctx3, _}} ->
+					Result = {ok, {Ctx3, #a{client = Client,
+								   resowner = ResourceOwner,
+								   scope = Scope,
+								   ttl = oauth2_config:expiry_time(password_credentials)
+					}}},
+				Result
+			end
+	end.
 
 
     

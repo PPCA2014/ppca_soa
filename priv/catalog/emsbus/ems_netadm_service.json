@@ -203,7 +203,9 @@
 		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "service_datasource"
+			"table_name" : "service_datasource",
+			"fields" : ["id", "rowid", "type", "driver", "table_name", "fields", "show_remap_fields", 
+						"primary_key", "foreign_key", "foreign_table_name", "csv_delimiter", "sql", "timeout", "max_pool_size"]
 		},
 		"lang" : "erlang"
 	},
@@ -219,7 +221,9 @@
 		"authorization": "basic",
 		"datasource" : {
 			"type" : "mnesia",
-			"table_name" : "service_datasource"
+			"table_name" : "service_datasource",
+			"fields" : ["id", "rowid", "type", "driver", "table_name", "fields", "show_remap_fields", 
+						"primary_key", "foreign_key", "foreign_table_name", "csv_delimiter", "sql", "timeout", "max_pool_size"]
 		},
 		"lang" : "erlang",
 		"querystring": [
