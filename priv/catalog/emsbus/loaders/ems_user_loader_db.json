@@ -39,6 +39,7 @@
 					   p.PesNomePai,
 					   p.PesNomeMae,
 					   cast(p.PesNacionalidade as int) as nacionalidade,
+					   lower(rtrim(p.PesEmail)) as email,
   					   1 as Type,  
 					   0 as SubType,	
 					   1 as ActivePessoa  
@@ -69,6 +70,7 @@
 				   p.PesNomePai,
 				   p.PesNomeMae,
 				   cast(p.PesNacionalidade as int) as nacionalidade,
+				   lower(rtrim(p.PesEmail)) as email,
 				   1 as Type,  
 				   0 as SubType,	
 				   1 as ActivePessoa  
@@ -82,6 +84,6 @@
 				"passwd_crypto", "endereco", "complemento_endereco", 
 				"bairro", "cidade", "uf", "cep", "rg", "data_nascimento", 
 				"sexo", "telefone", "celular", "ddd", "nome_pai", "nome_mae", "nacionalidade", 
-				"type", "subtype", "active"]
+				"email", "type", "subtype", "active"]
 				
 }

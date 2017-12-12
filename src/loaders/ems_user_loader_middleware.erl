@@ -100,6 +100,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												 nome_pai = NewUser#user.nome_pai,
 												 nome_mae = NewUser#user.nome_mae,
 												 nacionalidade = NewUser#user.nacionalidade,
+												 email = NewUser#user.email,
 												 type = NewUser#user.type,
 												 subtype = NewUser#user.subtype,
 												 active = NewUser#user.active,
