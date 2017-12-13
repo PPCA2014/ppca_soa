@@ -53,12 +53,26 @@ find_by_id(Id, Fields, Datasource = #service_datasource{table_name = TableName,
 
 find_by_owner(FilterJson, Fields, Limit, Offset, Sort, IdOwner, Datasource = #service_datasource{table_name = TableName, 
 																								 foreign_key = ForeignKey, 
-																								 foreign_table_name = ForeignTableName}) ->
-	case ems_db:exist(ForeignTableName, IdOwner) of
-		true ->
+																								 foreign_table_name = ForeignTableName,
+																								 primary_key = PrimaryKey}) ->
+	case ems_db:get(ForeignTableName, IdOwner) of
+		{ok, Owner} ->
 			case ems_api_query_mnesia_parse:generate_dynamic_query(FilterJson, Fields, Datasource, Limit, Offset, Sort) of
 				{ok, {FieldList, FilterList, _LimitSmnt}} -> 
-					FilterList2 = [{ForeignKey, "==", IdOwner} | FilterList],
+					case PrimaryKey of
+						undefined -> ForeignKeyValue = IdOwner;
+						_ -> 
+							case is_list(TableName) of
+								true -> 
+									TableName2 = hd(TableName),
+									TabFieldNames = mnesia:table_info(TableName2, attributes);
+								false -> 
+									TabFieldNames = mnesia:table_info(TableName, attributes)
+							end,
+							FieldPosition = ems_db:field_position(PrimaryKey, TabFieldNames, 2),
+							ForeignKeyValue = element(FieldPosition, Owner)
+					end,
+					FilterList2 = [{ForeignKey, <<"==">>, ForeignKeyValue} | FilterList],
 					case ems_db:find(TableName, FieldList, FilterList2, Limit, Offset) of
 						{ok, Result} -> ResultJson = ems_schema:to_json(Result);
 						_ -> ResultJson = ?ENOENT_JSON
@@ -66,7 +80,7 @@ find_by_owner(FilterJson, Fields, Limit, Offset, Sort, IdOwner, Datasource = #se
 					{ok, ResultJson};
 				{error, Reason} -> {error, Reason}
 			end;
-		false -> {error, enoent}
+		_ -> {error, enoent}
 	end.
 
 

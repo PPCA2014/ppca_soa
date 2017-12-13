@@ -60,19 +60,17 @@ get_filename() ->
 update_email_tabela_users(Email, SourceType, CodigoPessoa) ->
 	UserTable = ems_user:get_table(SourceType),
 	case ems_user:find_by_codigo_pessoa(UserTable, CodigoPessoa) of
-		{ok, Users} -> update_email_tabela_users_(Users, Email, UserTable);
+		{ok, Users} -> 
+			update_email_tabela_users_(Users, Email, UserTable);
 		_ -> ok
 	end.
 
 
 -spec update_email_tabela_users_(list(#user{}), #user_email{}, atom()) -> ok.
 update_email_tabela_users_([], _, _) -> ok;
-update_email_tabela_users_([#user{ctrl_insert = CtrlInsertUser, 
-								  ctrl_update = CtrlUpdateUser, 
-								  type_email = EmailType}| UserT], 
-							 Email = #user_email{ctrl_insert = CtrlInsertEmail, 
-												 ctrl_update = CtrlUpdateEmail}, 
-							 UserTable) when EmailType =:= 1 andalso (CtrlInsertUser =:= CtrlInsertEmail orelse CtrlUpdateUser =:= CtrlUpdateEmail) -> 
+update_email_tabela_users_([ #user{type_email = 1}|UserT], 
+							 Email, 
+							 UserTable) -> 
 	update_email_tabela_users_(UserT, Email, UserTable);
 update_email_tabela_users_([User|UserT], Email, UserTable) ->
 	User2 = User#user{email = Email#user_email.email,
@@ -109,7 +107,11 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												 ctrl_modified = NewRecord#user_email.ctrl_modified,
 												 ctrl_hash = NewRecord#user_email.ctrl_hash
 											},
-								update_email_tabela_users(Record, SourceType, CodigoPessoa),
+								update_email_tabela_users(Record, case SourceType of
+																db -> user_db;
+																fs -> user_fs
+														  end, CodigoPessoa),
+
 								{ok, Record, Table, update};
 							false -> {ok, skip}
 						end

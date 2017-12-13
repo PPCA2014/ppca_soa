@@ -12,7 +12,8 @@
 			"table_name" : ["user_email_db", "user_email_fs"],
 			"foreign_table_name" : ["user_db", "user_fs"],
 			"foreign_key" : "codigo",
-			"fields" : ["id", "email"]
+			"primary_key" : "codigo",
+			"fields" : ["id", "email", "type"]
 		},
 		"schema_in" : "user_email",
 		"schema_out" : "user_email",

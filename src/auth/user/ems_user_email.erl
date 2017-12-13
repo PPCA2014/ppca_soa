@@ -19,13 +19,14 @@
 
 
 -spec new_from_map(map(), #config{}) -> {ok, #user_email{}} | {error, atom()}.
-new_from_map(Map, _Conf) ->
+new_from_map(Map, #config{sufixo_email_institucional = SufixoEmailInstitucional}) ->
 	try
+		Email = ems_util:parse_email(?UTF8_STRING(maps:get(<<"email">>, Map))),
 		{ok, #user_email{
 					id = maps:get(<<"id">>, Map),
 					codigo = maps:get(<<"codigo">>, Map),
-					email = ems_util:parse_email(?UTF8_STRING(maps:get(<<"email">>, Map))),
-					type = maps:get(<<"type">>, Map, 1),
+					email = Email,
+					type = is_email_institucional(SufixoEmailInstitucional, Email),
 					ctrl_path = maps:get(<<"ctrl_path">>, Map, <<>>),
 					ctrl_file = maps:get(<<"ctrl_file">>, Map, <<>>),
 					ctrl_modified = maps:get(<<"ctrl_modified">>, Map, undefined),
@@ -35,7 +36,7 @@ new_from_map(Map, _Conf) ->
 	catch
 		_Exception:Reason -> 
 			ems_db:inc_counter(edata_loader_invalid_user_email),
-			ems_logger:warn("ems_user_email parse invalid user specification: ~p\n\t~p.\n", [Reason, Map]),
+			ems_logger:warn("ems_user_email parse invalid email specification: ~p\n\t~p.\n", [Reason, Map]),
 			{error, Reason}
 	end.
 
@@ -54,3 +55,10 @@ find(Table, Id) ->
 -spec all(user_email_fs | user_email_db) -> list() | {error, atom()}.
 all(Table) -> ems_db:all(Table).
 
+-spec is_email_institucional(binary(), binary()) -> 1 | 2.
+is_email_institucional("", _) -> 2;
+is_email_institucional(SufixoEmailInstitucional, Email) ->
+	case lists:suffix(SufixoEmailInstitucional, binary_to_list(Email)) of
+		true -> 1;
+		false -> 2
+	end.

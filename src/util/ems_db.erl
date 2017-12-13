@@ -12,7 +12,7 @@
 -export([get/2, exist/2, all/1, insert/1, insert/2, update/1, delete/2, 
 		 match/2, find/2, find/3, find/5, find_by_id/2, find_by_id/3, filter/2, 
 		 filter_with_limit/4, select_fields/2, 
-		 find_first/2, find_first/3, find_first/4]).
+		 find_first/2, find_first/3, find_first/4, field_position/3]).
 -export([init_sequence/2, sequence/1, sequence/2, current_sequence/1]).
 -export([init_counter/2, counter/2, current_counter/1, inc_counter/1, dec_counter/1]).
 -export([get_connection/1, release_connection/1, get_sqlite_connection_from_csv_file/1, create_datasource_from_map/1, create_datasource_from_map/2]).

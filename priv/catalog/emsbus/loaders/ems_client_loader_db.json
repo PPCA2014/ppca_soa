@@ -5,7 +5,7 @@
 	"version": "1.0.0",
 	"service" : "ems_data_loader:start",
 	"url": "/emsbus/ems_client_loader_db",
-	"async": "false",
+	"async": true,
 	"type": "KERNEL",
 	"lang" : "erlang",
 	"update_checkpoint" : 180000,

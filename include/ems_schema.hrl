@@ -22,7 +22,7 @@
 			   type = 0 :: non_neg_integer(),				%% 0 = interno  1 = tecnico  2 = docente  3 = discente
 			   subtype = 0 :: non_neg_integer(),			%% se aluno,  1 = extensao 2 = graduacao 3 = aperfeicoamento 4 = especializacao 5 = mestrado 6 = doutorado 7 = pos-doutorado 8 = residencia 9 = aluno especial - graduacao 10 = aluno especial - pos-graduacao 11 = estagio em pos-graduacao
 			   passwd_crypto :: binary(),					%% Algoritmo criptografia: SHA1
-			   type_email = 1 :: non_neg_integer(),			%% 1 = Institucional  2 = Pessoal
+			   type_email :: non_neg_integer(),				%% undefined = desconhecido  1 = Institucional  2 = Pessoal
 			   active = true :: boolean(),
 			   endereco :: binary(),
 			   complemento_endereco :: binary(),

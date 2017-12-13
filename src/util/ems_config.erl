@@ -252,7 +252,8 @@ parse_config(Json, NomeArqConfig) ->
 			 user_email_path_search	= maps:get(<<"user_email_path_search">>, Json, ?USER_EMAIL_PATH),
  			 ssl_cacertfile = maps:get(<<"ssl_cacertfile">>, Json, undefined),
 			 ssl_certfile = maps:get(<<"ssl_certfile">>, Json, undefined),
-			 ssl_keyfile = maps:get(<<"ssl_keyfile">>, Json, undefined)
+			 ssl_keyfile = maps:get(<<"ssl_keyfile">>, Json, undefined),
+			 sufixo_email_institucional = binary_to_list(maps:get(<<"sufixo_email_institucional">>, Json, ""))
 		}.
 
 % It generates a default configuration if there is no configuration file
@@ -296,7 +297,8 @@ get_default_config() ->
 			 http_max_content_length = ?HTTP_MAX_CONTENT_LENGTH,
 			 ssl_cacertfile = undefined,
 			 ssl_certfile = undefined,
-			 ssl_keyfile = undefined
+			 ssl_keyfile = undefined,
+			 sufixo_email_institucional = ""
 		}.
 
 -spec get_tcp_listen_main_ip(list(tuple())) -> tuple().

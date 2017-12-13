@@ -132,8 +132,8 @@ if [ "$1" = "configure" ]; then
 		sysctl -p > /dev/null 2>&1
   fi
 
-  # database recreate
-  rm -Rf /usr/lib/ems-bus/priv/ems-bus/db > /dev/null 2>&1 || true
+  # database backup
+  mv /usr/lib/ems-bus/priv/db /usr/lib/ems-bus/priv/db_`date '+%d%m%Y_%H%M%S'`  > /dev/null 2>&1 || true
 
   # ldconfig
   /sbin/ldconfig  > /dev/null 2>&1 || true

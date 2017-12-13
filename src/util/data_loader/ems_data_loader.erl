@@ -19,7 +19,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/1, handle_info/2, terminate/2, code_change/3, 
-		 last_update/1, is_empty/1, size_table/1, sync/1, sync_full/1, pause/1, resume/1, handle_event/2]).
+		 last_update/1, is_empty/1, size_table/1, sync/1, sync_full/1, pause/1, resume/1]).
 
 % estado do servidor
 -record(state, {name,
@@ -46,7 +46,8 @@
 				error_metric_name,
 				disable_metric_name,
 				skip_metric_name,
-				source_type
+				source_type,
+				async
 			}).
 
 -define(SERVER, ?MODULE).
@@ -93,7 +94,8 @@ init(#service{name = Name,
 			  datasource = Datasource, 
 			  middleware = Middleware, 
 			  start_timeout = StartTimeout,
-			  properties = Props}) ->
+			  properties = Props,
+			  async = Async}) ->
 	LastUpdateParamName = erlang:binary_to_atom(iolist_to_binary([Name, <<"_last_update_param_name">>]), utf8),
 	LastUpdate = ems_db:get_param(LastUpdateParamName),
 	CheckRemoveRecords = ems_util:parse_bool(maps:get(<<"check_remove_records">>, Props, false)),
@@ -147,8 +149,9 @@ init(#service{name = Name,
 				   error_metric_name = ErrorsMetricName,
 				   disable_metric_name = DisabledMetricName,
 				   skip_metric_name = SkipMetricName,
-				   source_type = SourceType},
-	{ok, State, StartTimeout}.
+				   source_type = SourceType,
+				   async = Async},
+	{ok, State, 4500 + StartTimeout}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};
@@ -195,38 +198,55 @@ handle_info(check_sync_full, State = #state{name = Name,
 											sync_full_checkpoint_metric_name = SyncFullCheckpointMetricName,
 											error_checkpoint_metric_name = ErrorCheckpointMetricName
 										}) ->
-	{{_, _, _}, {Hour, _, _}} = calendar:local_time(),
-	case Hour >= 4 andalso Hour =< 6 of
+		{{_, _, _}, {Hour, _, _}} = calendar:local_time(),
+		case Hour >= 4 andalso Hour =< 6 of
+			true ->
+				case do_permission_to_execute(check_sync_full, Name, State) of
+					true ->
+						ems_db:inc_counter(SyncFullCheckpointMetricName),
+						ems_logger:info("~s sync full checkpoint.", [Name]),
+						State2 = State#state{last_update = undefined},
+						case do_check_load_or_update_checkpoint(State2) of
+							{ok, State3} ->
+								erlang:send_after(86400 * 1000, self(), check_sync_full),
+								ems_data_loader_ctl:notify_finish_work(check_sync_full, Name),
+								{noreply, State3, UpdateCheckpoint};
+							_Error -> 
+								ems_db:inc_counter(ErrorCheckpointMetricName),
+								erlang:send_after(86400 * 1000, self(), check_sync_full),
+								ems_logger:warn("~s wait ~p minutes for next checkpoint while has database connection error.", [Name, trunc(TimeoutOnError / 60000)]),
+								ems_data_loader_ctl:notify_finish_work(check_sync_full, Name),
+								{noreply, State, TimeoutOnError}
+						end;
+					false ->
+						erlang:send_after(1000, self(), check_sync_full),
+						{noreply, State, UpdateCheckpoint}
+				end;
+			_ -> 
+				erlang:send_after(60000 * 60, self(), check_sync_full),
+				{noreply, State, UpdateCheckpoint}
+		end;
+
+handle_info(timeout, State) -> 
+	handle_do_check_load_or_update_checkpoint(State);
+
+handle_info(check_count_records, State = #state{name = Name,
+												update_checkpoint = UpdateCheckpoint,
+											    timeout_on_error = TimeoutOnError}) ->
+	case do_permission_to_execute(check_count_records, Name, State) of
 		true ->
-			ems_db:inc_counter(SyncFullCheckpointMetricName),
-			ems_logger:info("~s sync full checkpoint.", [Name]),
-			State2 = State#state{last_update = undefined},
-			case do_check_load_or_update_checkpoint(State2) of
-				{ok, State3} ->
-					erlang:send_after(86400 * 1000, self(), check_sync_full),
-					{noreply, State3, UpdateCheckpoint};
-				_Error -> 
-					ems_db:inc_counter(ErrorCheckpointMetricName),
-					erlang:send_after(86400 * 1000, self(), check_sync_full),
-					ems_logger:warn("~s wait ~p minutes for next checkpoint while has database connection error.", [Name, trunc(TimeoutOnError / 60000)]),
+			case do_check_count_checkpoint(State) of
+				ok -> 
+					erlang:send_after(60000, self(), check_count_records),
+					ems_data_loader_ctl:notify_finish_work(check_count_records, Name),
+					{noreply, State, UpdateCheckpoint};
+				_ -> 
+					erlang:send_after(60000, self(), check_count_records),
+					ems_data_loader_ctl:notify_finish_work(check_count_records, Name),
 					{noreply, State, TimeoutOnError}
 			end;
-		_ -> 
-			erlang:send_after(60000 * 60, self(), check_sync_full),
-			{noreply, State, UpdateCheckpoint}
-	end;
-
-handle_info(timeout, State) -> handle_do_check_load_or_update_checkpoint(State);
-
-handle_info(check_count_records, State = #state{update_checkpoint = UpdateCheckpoint,
-											    timeout_on_error = TimeoutOnError}) ->
-	case do_check_count_checkpoint(State) of
-		ok -> 
-			erlang:send_after(60000, self(), check_count_records),
-			{noreply, State, UpdateCheckpoint};
-		_ -> 
-			erlang:send_after(60000, self(), check_count_records),
-			{noreply, State, TimeoutOnError}
+		false ->
+			{noreply, State, 500}
 	end;
 
 handle_info({_Pid, {error, _Reason}}, State = #state{timeout_on_error = TimeoutOnError}) ->
@@ -235,9 +255,6 @@ handle_info({_Pid, {error, _Reason}}, State = #state{timeout_on_error = TimeoutO
 handle_info(_Msg, State = #state{timeout_on_error = TimeoutOnError}) ->
 	{noreply, State, TimeoutOnError}.
 		
-handle_event(_Event, State) ->
-      {ok, State}.
-      			
 terminate(Reason, #service{name = Name}) ->
     ems_logger:warn("~s was terminated. Reason: ~p.", [Name, Reason]),
     ok.
@@ -246,16 +263,23 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 handle_do_check_load_or_update_checkpoint(State = #state{name = Name,
-											  update_checkpoint = UpdateCheckpoint,
-											  timeout_on_error = TimeoutOnError,
-											  error_checkpoint_metric_name = ErrorCheckpointMetricName}) ->
-	case do_check_load_or_update_checkpoint(State) of
-		{ok, State2} ->
-			{noreply, State2, UpdateCheckpoint};
-		_Error -> 
-			ems_db:inc_counter(ErrorCheckpointMetricName),
-			ems_logger:warn("~s wait ~p minutes for next checkpoint while has database connection error.", [Name, trunc(TimeoutOnError / 60000)]),
-			{noreply, State, TimeoutOnError}
+														 update_checkpoint = UpdateCheckpoint,
+														 timeout_on_error = TimeoutOnError,
+														 error_checkpoint_metric_name = ErrorCheckpointMetricName}) ->
+	case do_permission_to_execute(check_load_or_update_checkpoint, Name, State) of
+		true ->
+			case do_check_load_or_update_checkpoint(State) of
+				{ok, State2} ->
+					ems_data_loader_ctl:notify_finish_work(check_load_or_update_checkpoint, Name),
+					{noreply, State2, UpdateCheckpoint};
+				_Error -> 
+					ems_db:inc_counter(ErrorCheckpointMetricName),
+					ems_logger:warn("~s wait ~p minutes for next checkpoint while has database connection error.", [Name, trunc(TimeoutOnError / 60000)]),
+					ems_data_loader_ctl:notify_finish_work(check_load_or_update_checkpoint, Name),
+					{noreply, State, TimeoutOnError}
+			end;
+		false ->
+			{noreply, State, 500}	
 	end.
 	
 
@@ -486,4 +510,10 @@ do_reset_sequence(#state{middleware = Middleware, source_type = SourceType}) ->
 do_check_remove_records(Codigos, #state{middleware = Middleware, source_type = SourceType}) ->
 	apply(Middleware, check_remove_records, [Codigos, SourceType]).
 
+-spec do_permission_to_execute(atom(), atom(), #state{}) -> boolean().
+do_permission_to_execute(_, _, #state{async = true}) -> 
+	true;
+do_permission_to_execute(What, ProcessName, _) -> 
+	ems_data_loader_ctl:permission_to_execute(What, ProcessName).
+		
 

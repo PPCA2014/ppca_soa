@@ -198,16 +198,6 @@ get(Table, Key) ->
         [{_Key, Value}] ->
             {ok, Value}
     end.
-get(O, K, _)  ->
-    case lists:keyfind(K, 1, O) of
-        {K, V} -> {ok, V};
-        false  -> {error, notfound}
-    end.
-
-get_(O, K) ->
-    {ok, V} = get(O, K, []),
-    V.
-
 
 put(Table, Key, Value) ->
     ets:insert(Table, {Key, Value}),

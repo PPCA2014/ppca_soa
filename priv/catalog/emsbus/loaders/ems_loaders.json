@@ -1,6 +1,11 @@
 [
 
 	{
+		"catalog": "/emsbus/loaders/ems_data_loader_ctl", 
+		"file": "ems_data_loader_ctl.json"
+	},
+
+	{
 		"catalog": "/emsbus/loaders/ems_catalog_loader_fs", 
 		"file": "ems_catalog_loader_fs.json"
 	},

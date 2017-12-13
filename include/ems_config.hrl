@@ -223,7 +223,8 @@
 				 user_email_path_search :: string(),
 				 ssl_cacertfile :: binary(),
 				 ssl_certfile :: binary(),
-				 ssl_keyfile :: binary()
+				 ssl_keyfile :: binary(),
+				 sufixo_email_institucional :: binary()
 		 }). 	
 
 
