@@ -105,13 +105,13 @@ resolve_access_code(AccessCode, _) ->
 
 resolve_refresh_token(RefreshToken, _AppContext) ->
     case get(?REFRESH_TOKEN_TABLE, RefreshToken) of
-       {ok,Value} -> {ok,{[],Value}};
+       {ok,Value} -> {ok,{[], Value}};
         _Error -> {error, invalid_token} 
     end.
 
 resolve_access_token(AccessToken, _) ->
     case get(?ACCESS_TOKEN_TABLE, AccessToken) of
-       {ok,Value} -> {ok,{[],Value}};
+       {ok,Value} -> {ok,{[], Value}};
         _Error -> {error, invalid_token} 
     end.
 
@@ -127,28 +127,33 @@ revoke_refresh_token(_RefreshToken, _) ->
     {ok, []}.
 
 get_redirection_uri(ClientId, _) ->
-    case get_client_identity(ClientId,[])  of
-        {ok, #client{redirect_uri = RedirectUri}} ->
-            {ok, RedirectUri};
+    case get_client_identity(ClientId, [])  of
+        {ok, #client{redirect_uri = RedirectUri}} -> {ok, RedirectUri};
         _ -> {error, einvalid_uri} 
     end.
 
 
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
+    io:format("passo 1  ~p = ~p\n", [RedirUri, ClientUri]),
     case ClientUri =:= RedirUri of
-		true -> {ok, []};
-		_Error -> {error, unauthorized_client}
+		true -> 
+			io:format("ok, igual!!!\n"),
+			{ok, []};
+		_Error -> 
+			io:format("nao, igual!!!\n"),
+			{error, unauthorized_client}
     end;
 verify_redirection_uri(ClientId, ClientUri, _) ->
-    case get_client_identity(ClientId,[]) of
+   io:format("aqui1\n"),
+    case get_client_identity(ClientId, []) of
         {ok, {_, #client{redirect_uri = RedirUri}}} -> 
+			io:format("passo 2  ~p = ~p\n", [RedirUri, ClientUri]),
 			case ClientUri =:= RedirUri of
 				true ->	{ok, []};
 				_ -> {error, unauthorized_client}
 			end;
         Error -> Error
     end.
-
 
 verify_client_scope(#client{id = ClientID}, Scope, _) ->
 	case ems_client:find_by_id(ClientID) of
@@ -161,31 +166,29 @@ verify_client_scope(#client{id = ClientID}, Scope, _) ->
         _ -> {error, invalid_scope}
     end.
 verify_resowner_scope(_ResOwner, Scope, _) ->
-    {ok, {[],Scope}}.
+    {ok, {[], Scope}}.
 
 verify_scope(_RegScope, Scope , _) ->
-    {ok, {[],Scope}}.
+    {ok, {[], Scope}}.
 
     
 % função criada pois a biblioteca OAuth2 não trata refresh_tokens
 authorize_refresh_token(Client, RefreshToken, Scope) ->
 	case resolve_refresh_token(RefreshToken, []) of
-		{error, _}= E -> E;
 		{ok, {_, [_, {_, ResourceOwner}, _, _]}} -> 
 			case verify_client_scope(Client, Scope, []) of
-				{error, _}           -> {error, invalid_scope};
+				{error, _} -> {error, invalid_scope};
 				{ok, {Ctx3, _}} ->
 					Result = {ok, {Ctx3, #a{client = Client,
 								   resowner = ResourceOwner,
 								   scope = Scope,
 								   ttl = oauth2_config:expiry_time(password_credentials)
 					}}},
-				Result
-			end
+					Result
+			end;
+		Error -> Error
 	end.
 
-
-    
 
 %%%===================================================================
 %%% Funções internas

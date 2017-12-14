@@ -90,7 +90,7 @@ new_from_map(Map, _Conf) ->
 				id = maps:get(<<"id">>, Map),
 				name = ?UTF8_STRING(maps:get(<<"name">>, Map)),
 				secret = ?UTF8_STRING(maps:get(<<"secret">>, Map, <<>>)),
-				redirect_uri = ?UTF8_STRING(maps:get(<<"redirect_uri">>, Map, <<>>)),
+				redirect_uri = ems_util:to_lower_and_remove_backslash(?UTF8_STRING(maps:get(<<"redirect_uri">>, Map, <<>>))),
 				description = ?UTF8_STRING(maps:get(<<"description">>, Map, <<>>)),
 				scope = ?UTF8_STRING(maps:get(<<"scope">>, Map, <<>>)),
 				active = ems_util:parse_bool(maps:get(<<"active">>, Map, true)),

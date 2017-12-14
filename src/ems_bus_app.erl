@@ -22,7 +22,7 @@ start(_StartType, StartArgs) ->
 			ems_dispatcher:start(),
 			ems_oauth2_backend:start(),
 			Ret = ems_bus_sup:start_link(StartArgs),
-			erlang:send_after(5000, spawn(fun() -> 
+			erlang:send_after(6000, spawn(fun() -> 
 					Conf = ems_config:getConfig(),
 					ems_logger:info("Hosts in the cluster: ~p.", [ case net_adm:host_file() of 
 																		{error, enoent} -> net_adm:localhost(); 
@@ -38,6 +38,7 @@ start(_StartType, StartArgs) ->
 						false -> ems_logger:info("Default authorization mode: ~p.", [AuthorizationMode])
 					end,
 					ems_logger:info("Server ~s (PID ~s) started in ~pms.", [?SERVER_NAME, os:getpid(), ems_util:get_milliseconds() - T1]),
+					ems_logger:info("Tcp servers startup delayed to wait for other essential services to load..."),
 					ems_logger:set_level(info)
 			end), set_level),
 			Ret;

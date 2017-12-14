@@ -167,26 +167,14 @@ Login.LoginSistemas = (function() {
 		}
 
 		e.preventDefault();
-
 		var urlBase = '';
-		
-		var protocol=window.location.protocol;
-		
-		/*var port = ":";
-		
-		if(document.referrer!= undefined && document.referrer != ""){
-			
-			var hostName =document.referrer.split('/')[2];
-			
-			port += hostName.split(':')[1];
-		}*/
-		
+		var protocol = window.location.protocol;
 		var baseUrl = protocol + '//' + window.location.hostname +':' + window.location.port; 
-		
+		var querystring = getQuerystring();
 		var url = baseUrl + '/code_request?'+
-				 'client_id='+getRedirectUri()['client_id']+
-				 '&state='+getRedirectUri()['state']+
-				 '&redirect_uri='+getRedirectUri()['redirect_uri'];
+				 'client_id=' + querystring['client_id']+
+				 '&state=' + querystring['state']+
+				 '&redirect_uri=' + querystring['redirect_uri'];
 		$.ajax({
 			url: url,
 			crossDomain: true,
@@ -194,28 +182,26 @@ Login.LoginSistemas = (function() {
 			beforeSend: function (xhr) {
 				xhr.setRequestHeader ("Authorization", "Basic " + btoa($('#username').val() + ":" + sha1($('#pass').val())));
 			},
-
-			headers: {
-				  'name-api-key':'ewf45r4435trge',
-				  'Content-Type':'application/x-www-form-urlencoded'
-		    },			
 			error: onErroSalvandoEstilo.bind(this),
 			success: function(data, textStatus, headers){
 				if (data.redirect) {
-					// data.redirect contains the string URL to redirect to
 					window.location.href = data.redirect;
 				}
 			},
 			complete: function(data, textStatus) {
 				if(textStatus == 'success'){
-					if (document.referrer != undefined && document.referrer != ""){
-						urlBase=document.referrer;
-						urlBase=urlBase.split('/');
-						url=urlBase[0]+'//'+urlBase[2]+''+data.getResponseHeader("Location");
+					var referrer = document.referrer;
+					if (referrer != undefined && referrer != ""){
+						baseUrlReferrer = referrer.split('/');
+						url = baseUrlReferrer[0] + '//' + baseUrlReferrer[2] + data.getResponseHeader("Location");
 					}else{
-						url=data.getResponseHeader("Location");
+						if (baseUrl.startsWith("/")){
+							url = baseUrl + data.getResponseHeader("Location");
+						}else{
+							url = data.getResponseHeader("Location")
+						}
 					}
-					window.location.href=url;
+					window.location.href = url;
 				}
 			}
 		});
@@ -233,21 +219,25 @@ Login.LoginSistemas = (function() {
 	}
 	
 	function onRemoveDiv() {
-		 var divElement = $("#validate");
-		
+		var divElement = $("#validate");
 		if(divElement != undefined){
 			divElement.remove("#validate");		
 		}
 	}
 	
-	function getRedirectUri(){
-		var vars = [], hash;
-		var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-		for(var i = 0; i < hashes.length; i++)
-		{
-			hash = hashes[i].split('=');
-			vars.push(hash[0]);
-			vars[hash[0]] = hash[1];
+	function getQuerystring(){
+		var vars = [], param;
+		var href = window.location.href;
+		var posQuerystring = href.indexOf('?');
+		if (posQuerystring > 0){
+			var hashes = href.slice(posQuerystring + 1).split('&');
+			for(var i = 0; i < hashes.length; i++)
+			{
+				param = hashes[i].split('=');
+				paramName = param[0];
+				vars.push(paramName);
+				vars[paramName] = param[1];
+			}
 		}
 		return vars;
 	}

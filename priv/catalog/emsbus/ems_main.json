@@ -31,11 +31,6 @@
 	},
 
 	{
-		"catalog": "/emsbus/tcp_servers", 
-		"file": "tcp_servers/ems_tcp_servers.json"
-	},
-
-	{
 		"catalog": "/emsbus/loaders", 
 		"file": "loaders/ems_loaders.json"
 	},
@@ -73,6 +68,11 @@
 	{
 		"catalog": "/emsbus/ems_stat_collector", 
 		"file": "ems_stat_collector.json"
+	},
+	
+	{
+		"catalog": "/emsbus/tcp_servers", 
+		"file": "tcp_servers/ems_tcp_servers.json"
 	}
 		
 ]

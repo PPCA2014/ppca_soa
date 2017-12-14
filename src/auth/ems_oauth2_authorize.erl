@@ -40,7 +40,7 @@ execute(Request = #request{type = Type,
 					ems_db:inc_counter(ems_oauth2_grant_type_refresh_token),
 					refresh_token_request(Request);	
 				 _ -> {error, access_denied}
-		end,  
+		end, 
 		case Result of
 			{ok, [{<<"access_token">>,AccessToken},
 				   {<<"expires_in">>, ExpireIn},
@@ -132,14 +132,13 @@ code_request(Request = #request{authorization = Authorization}) ->
 			true ->
 				case ems_util:parse_basic_authorization_header(Authorization) of
 					{ok, Username, Password} ->
-						RedirectUri = ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request),
-						State = ems_util:get_querystring(<<"state">>, <<>>, Request),
+						RedirectUri = ems_util:to_lower_and_remove_backslash(ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request)),
 						Scope = ems_util:get_querystring(<<"scope">>, <<>>, Request),
 						Authz = oauth2:authorize_code_request({Username, list_to_binary(Password)}, ClientId, RedirectUri, Scope, []),
 						case issue_code(Authz) of
 							{ok, Response} ->
 								Code = element(2, lists:nth(1, Response)),
-								LocationPath = <<RedirectUri/binary,"?code=", Code/binary,"&state=", State/binary>>,
+								LocationPath = iolist_to_binary([RedirectUri, <<"?code=">>, Code]),
 								{ok, Request#request{code = 200, 
 													 response_data = <<"{}">>,
 													 response_header = #{<<"location">> => LocationPath}}
@@ -233,7 +232,7 @@ authorization_request(Request) ->
 		case ClientId > 0 of
 			true ->
 				%State = ems_util:get_querystring(<<"state">>, <<>>, Request),
-				RedirectUri = ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request),
+				RedirectUri = ems_util:to_lower_and_remove_backslash(ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request)),
 				case ems_oauth2_backend:verify_redirection_uri(ClientId, RedirectUri, []) of
 					{ok, _} -> {redirect, ClientId, RedirectUri};
 					_ -> {error, access_denied}
@@ -296,7 +295,7 @@ access_token_request(Request = #request{authorization = Authorization}) ->
 	try
 		ClientId = parse_client_id(ems_util:get_querystring(<<"client_id">>, <<>>, Request)),
 		Code = ems_util:get_querystring(<<"code">>, <<>>, Request),
-		RedirectUri = ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request),
+		RedirectUri = ems_util:to_lower_and_remove_backslash(ems_util:get_querystring(<<"redirect_uri">>, <<>>, Request)),
 		case ClientId > 0 of
 			true -> 
 				ClientSecret = ems_util:get_querystring(<<"client_secret">>, <<>>, Request),

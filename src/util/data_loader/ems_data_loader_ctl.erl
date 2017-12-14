@@ -86,7 +86,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%====================================================================
 
-do_permission_to_execute(What2, ProcessName2, State = #state{what = What, process_name = ProcessName, 
+do_permission_to_execute(What2, ProcessName2, State = #state{process_name = ProcessName, 
 															 timestamp = Timestamp}) ->
 	Timestamp2 = ems_util:get_milliseconds(),
 	case ProcessName2 == ProcessName of

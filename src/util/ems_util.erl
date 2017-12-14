@@ -151,7 +151,8 @@
 		 print_int_map/1,
 		 print_str_map/1,
 		 parse_user_agent/1,
-		 user_agent_atom_to_binary/1
+		 user_agent_atom_to_binary/1,
+		 to_lower_and_remove_backslash/1
 		]).
 
 -spec version() -> string().
@@ -2444,3 +2445,17 @@ user_agent_atom_to_binary(browser_insomnia) -> <<"Insomnia">>;
 user_agent_atom_to_binary(browser_opera) -> <<"Opera">>;
 user_agent_atom_to_binary(browser_safari) -> <<"Safari">>;
 user_agent_atom_to_binary(_) -> <<"Other">>.
+
+
+-spec to_lower_and_remove_backslash(string() | binary()) -> binary().
+to_lower_and_remove_backslash(undefined) -> <<>>;
+to_lower_and_remove_backslash(<<>>) -> <<>>;
+to_lower_and_remove_backslash(<<"/">>) -> <<"/">>;
+to_lower_and_remove_backslash("/") -> <<"/">>;
+to_lower_and_remove_backslash(Uri) when is_binary(Uri) ->
+	to_lower_and_remove_backslash(binary_to_list(Uri));
+to_lower_and_remove_backslash(Uri) ->	
+	list_to_binary(string:to_lower(remove_ult_backslash_url(Uri))).
+	
+	
+

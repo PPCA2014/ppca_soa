@@ -15,5 +15,5 @@
 	"pool_size" : 1,
 	"pool_max" : 1,
 	"enable" : true,
-	"start_timeout" : 6500
+	"start_timeout" : 13000
 }
