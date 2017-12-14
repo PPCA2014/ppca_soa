@@ -134,20 +134,15 @@ get_redirection_uri(ClientId, _) ->
 
 
 verify_redirection_uri(#client{redirect_uri = RedirUri}, ClientUri, _) ->
-    io:format("passo 1  ~p = ~p\n", [RedirUri, ClientUri]),
     case ClientUri =:= RedirUri of
 		true -> 
-			io:format("ok, igual!!!\n"),
 			{ok, []};
 		_Error -> 
-			io:format("nao, igual!!!\n"),
 			{error, unauthorized_client}
     end;
 verify_redirection_uri(ClientId, ClientUri, _) ->
-   io:format("aqui1\n"),
     case get_client_identity(ClientId, []) of
         {ok, {_, #client{redirect_uri = RedirUri}}} -> 
-			io:format("passo 2  ~p = ~p\n", [RedirUri, ClientUri]),
 			case ClientUri =:= RedirUri of
 				true ->	{ok, []};
 				_ -> {error, unauthorized_client}
