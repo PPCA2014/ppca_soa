@@ -56,6 +56,17 @@ get_filename() ->
 	Conf = ems_config:getConfig(),
 	Conf#config.user_dados_funcionais_path_search.
 	
+
+update_dados_funcionais_tabela_users(DadosFuncionais, UserTable, IdUser) -> 
+	case ems_user:find(UserTable, IdUser) of
+		{ok, User} ->
+			User2 = User#user{type = DadosFuncionais#user_dados_funcionais.type,
+							  subtype = DadosFuncionais#user_dados_funcionais.subtype,
+							  active = DadosFuncionais#user_dados_funcionais.active,
+							  matricula = DadosFuncionais#user_dados_funcionais.matricula},
+			mnesia:dirty_write(UserTable, User2);
+		_ -> ok
+	end.
 	
 -spec insert_or_update(map() | tuple(), tuple(), #config{}, atom(), insert | update) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
 insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
@@ -66,25 +77,14 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 				case ems_user_dados_funcionais:find(Table, Id) of
 					{error, enoent} -> 
 						Record = NewRecord#user_dados_funcionais{ctrl_insert = CtrlDate},
+						update_dados_funcionais_tabela_users(Record, case SourceType of
+																		db -> user_db;
+																		fs -> user_fs
+																	 end, Id),
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_dados_funcionais{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
 							true ->
-								% Sincroniza alguns campos que estão na tabela user por conveniência
-								UserTable = 	case SourceType of
-												db -> user_db;
-												fs -> user_fs
-											end,
-								case ems_user:find(UserTable, Id) of
-									{ok, User} ->
-										User2 = User#user{type = CurrentRecord#user_dados_funcionais.type,
-														  subtype = CurrentRecord#user_dados_funcionais.subtype,
-														  active = CurrentRecord#user_dados_funcionais.active,
-														  matricula = CurrentRecord#user_dados_funcionais.matricula},
-										mnesia:dirty_write(UserTable, User2);
-									_ -> ok
-								end,
-								
 								?DEBUG("ems_user_dados_funcionais_loader_middleware update ~p from ~p.", [Map, SourceType]),
 								Record = CurrentRecord#user_dados_funcionais{
 												 type = NewRecord#user_dados_funcionais.type,
@@ -97,6 +97,10 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												 ctrl_modified = NewRecord#user_dados_funcionais.ctrl_modified,
 												 ctrl_hash = NewRecord#user_dados_funcionais.ctrl_hash
 											},
+								update_dados_funcionais_tabela_users(Record, case SourceType of
+																				db -> user_db;
+																				fs -> user_fs
+																			 end, Id),
 								{ok, Record, Table, update};
 							false -> {ok, skip}
 						end

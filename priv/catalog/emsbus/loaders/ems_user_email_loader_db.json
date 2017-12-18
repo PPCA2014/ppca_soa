@@ -18,29 +18,21 @@
 	"sql_load" : 
 				"select 
 				   em.EmaCodigo as id,
-				   p.PesCodigoPessoa as codigo,
-				   lower(rtrim(cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)))) as email 
-				from BDPessoa.dbo.TB_Pessoa p  
-						join BDPessoa.dbo.TB_PessoaFisicaEmail pfe  
-								on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
-						join BDPessoa.dbo.TB_Email em 
-								on pfe.PFmEmaCodigo = em.EmaCodigo 
-                ",
+				   pfe.PFmPesCodigoPessoa as codigo,
+				   lower(rtrim(em.EmaEmail)) as email 
+				from BDPessoa.dbo.TB_PessoaFisicaEmail pfe  
+					join BDPessoa.dbo.TB_Email em 
+						on pfe.PFmEmaCodigo = em.EmaCodigo",
 
 	"sql_update" : 
 				"select 
 				   em.EmaCodigo as id,
-				   p.PesCodigoPessoa as codigo,
-				   cast(coalesce(em.EmaEmail, p.PesEmail) as varchar(60)) as email 
-				from BDPessoa.dbo.TB_Pessoa p 
-						join BDPessoa.dbo.TB_PessoaFisicaEmail pfe  
-								on p.PesCodigoPessoa = pfe.PFmPesCodigoPessoa 
-						join BDPessoa.dbo.TB_Email em 
-								on pfe.PFmEmaCodigo = em.EmaCodigo 
-				where em.EmaDataAlteracao >= ? or em.EmaDataCadastramento >= ?
-                ",
-
-			
+				   pfe.PFmPesCodigoPessoa as codigo,
+				   lower(rtrim(em.EmaEmail)) as email 
+				from BDPessoa.dbo.TB_PessoaFisicaEmail pfe  
+					join BDPessoa.dbo.TB_Email em 
+						on pfe.PFmEmaCodigo = em.EmaCodigo 
+				where em.EmaDataAlteracao >= ? or em.EmaDataCadastramento >= ?",
 	"fields" : ["id", "codigo", "email"]
 				
 }

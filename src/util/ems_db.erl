@@ -87,6 +87,15 @@ create_database(Nodes) ->
 								  {attributes, record_info(fields, user_email)},
 								  {record_name, user_email}]),
 
+    mnesia:create_table(user_endereco_fs, [{type, set},
+ 								  {ram_copies, Nodes},
+								  {attributes, record_info(fields, user_endereco)},
+								  {record_name, user_endereco}]),
+
+    mnesia:create_table(user_endereco_db, [{type, set},
+								  {disc_copies, Nodes},
+								  {attributes, record_info(fields, user_endereco)},
+								  {record_name, user_endereco}]),
 
 	mnesia:create_table(user_perfil_fs, [{type, set},
 									    {ram_copies, Nodes},

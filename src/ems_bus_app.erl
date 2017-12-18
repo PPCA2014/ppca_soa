@@ -38,7 +38,7 @@ start(_StartType, StartArgs) ->
 						false -> ems_logger:info("Default authorization mode: ~p.", [AuthorizationMode])
 					end,
 					ems_logger:info("Server ~s (PID ~s) started in ~pms.", [?SERVER_NAME, os:getpid(), ems_util:get_milliseconds() - T1]),
-					ems_logger:info("Tcp servers startup delayed to wait for other essential services to load..."),
+					ems_logger:info("Tcp servers startup delayed to wait loading others essential services..."),
 					ems_logger:set_level(info)
 			end), set_level),
 			Ret;

@@ -14,7 +14,8 @@
 
 -export([to_record/2, to_list/1, to_list/2, to_json/1, new/1, new_/1, prop_list_to_json/1]).
 
--export_records([user, user_permission, user_perfil, user_email, user_dados_funcionais, 
+-export_records([user, user_permission, user_perfil, 
+				 user_email, user_dados_funcionais, user_endereco,
 				 catalog_schema, schema_type, produto, service, service_owner, 
 				 client, service_datasource, smon_stat]).
 
@@ -172,6 +173,7 @@ new(user) -> #user{};
 new(user_permission) -> #user_permission{};
 new(user_perfil) -> #user_perfil{};
 new(user_email) -> #user_email{};
+new(user_endereco) -> #user_endereco{};
 new(user_dados_funcionais) -> #user_dados_funcionais{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
@@ -187,6 +189,7 @@ new_(catalog_schema) -> #catalog_schema{_ = '_'};
 new_(user) -> #user{_ = '_'};
 new_(user_permission) -> #user_permission{_ = '_'};
 new_(user_email) -> #user_email{_ = '_'};
+new_(user_endereco) -> #user_endereco{_ = '_'};
 new_(user_dados_funcionais) -> #user_dados_funcionais{_ = '_'};
 new_(user_perfil) -> #user_perfil{_ = '_'};
 new_(client) -> #client{_ = '_'};

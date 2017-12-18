@@ -76,6 +76,25 @@
 			   ctrl_hash									%% Hash gerado para poder comparar dois registros
 		}).
 
+-record(user_endereco, {
+			   id :: non_neg_integer(), 					%% identificador do endereço (Na UnB é o campo TB_Endereco.EndCodigo)
+			   codigo :: non_neg_integer(),					%% código da pessoa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
+			   endereco :: binary(),
+			   complemento :: binary(),
+			   bairro :: binary(),
+			   cidade :: binary(),
+			   uf :: binary(),
+			   cep :: binary(),
+			   type :: non_neg_integer(),					%% 1 = residencial  2 = comercial 3 = exterior 4 = outro
+			   ctrl_path :: string(),
+			   ctrl_file :: string(),
+			   ctrl_insert,									%% Data que o serviço foi inserido no banco mnesia
+			   ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
+			   ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+			   ctrl_hash									%% Hash gerado para poder comparar dois registros
+		}).
+
+
 -record(user_permission, {id :: non_neg_integer(),			%% identificador do perfil (required) (Na UnB é o campo TB_Perfil_Transacao.PTrid)
 						  user_id :: non_neg_integer(),		%% identificador do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)
 						  client_id :: non_neg_integer(),	%% identificador do cliente (required) (Na UnB é o campo Tb_Sistemas.PerSisId)

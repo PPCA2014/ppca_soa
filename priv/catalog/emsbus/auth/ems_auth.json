@@ -26,6 +26,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/auth/auth_user_endereco", 
+		"file": "ems_auth_user_endereco.json"
+	},
+
+	{
 		"catalog": "/emsbus/auth/auth_oauth2", 
 		"file": "ems_oauth2.json"
 	},
