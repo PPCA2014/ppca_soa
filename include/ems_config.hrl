@@ -76,6 +76,9 @@
 % Caminho do arquivo de endereços dos usuários
 -define(USER_ENDERECO_PATH, ?CONF_PATH ++ "/auth/user_endereco.json").
 
+% Caminho do arquivo de telefones dos usuários
+-define(USER_TELEFONE_PATH, ?CONF_PATH ++ "/auth/user_telefone.json").
+
 % Caminho inicial para os arquivos estáticos
 -define(WEBAPPS_PATH, ?PRIV_PATH ++ "/www").
 
@@ -225,11 +228,13 @@
 				 user_permission_path_search :: string(),
 				 user_email_path_search :: string(),
 				 user_endereco_path_search :: string(),
+				 user_telefone_path_search :: string(),
 				 ssl_cacertfile :: binary(),
 				 ssl_certfile :: binary(),
 				 ssl_keyfile :: binary(),
 				 sufixo_email_institucional :: binary()
 		 }). 	
+
 
 
 

@@ -94,6 +94,20 @@
 			   ctrl_hash									%% Hash gerado para poder comparar dois registros
 		}).
 
+-record(user_telefone, {
+			   id :: non_neg_integer(), 					%% identificador do endereço (Na UnB é o campo TB_Telefone.TelCodigo)
+			   codigo :: non_neg_integer(),					%% código da pessoa. (Na UnB é o campo Tb_Pessoa.PesCodigoPessoa)
+			   numero :: binary(),
+			   ramal :: non_neg_integer(),
+			   ddd :: binary(),
+			   type :: non_neg_integer(),					%% 1 = celular  2 = comercial 3 = residencial
+			   ctrl_path :: string(),
+			   ctrl_file :: string(),
+			   ctrl_insert,									%% Data que o serviço foi inserido no banco mnesia
+			   ctrl_update, 								%% Data que o serviço foi atualiado no banco mnesia			
+			   ctrl_modified,								%% Data que o serviço foi modificado na fonte onde está cadastrado (em disco ou banco de dados externo)
+			   ctrl_hash									%% Hash gerado para poder comparar dois registros
+		}).
 
 -record(user_permission, {id :: non_neg_integer(),			%% identificador do perfil (required) (Na UnB é o campo TB_Perfil_Transacao.PTrid)
 						  user_id :: non_neg_integer(),		%% identificador do usuário (required) (Na UnB é o campo Tb_Usuario.UsuId)

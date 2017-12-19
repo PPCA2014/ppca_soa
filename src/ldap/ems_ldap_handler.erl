@@ -250,6 +250,7 @@ make_bind_response(ResultCode, MatchedDN, DiagnosticMessage) ->
 	}.
 
 make_result_entry(#user{id = UsuId, 
+                        codigo = CodigoPessoa,
 					    login = UsuLogin,	
 					    name = UsuName, 
 					    cpf = UsuCpf, 
@@ -278,8 +279,9 @@ make_result_entry(#user{id = UsuId,
 						nacionalidade = Nacionalidade
 }, 
 				  AdminLdap) ->
-	ObjectName = make_object_name(UsuLogin),
 	UsuId2 = format_user_field(UsuId),
+	ObjectName = make_object_name(UsuLogin),
+	CodigoPessoa2 = format_user_field(CodigoPessoa),
 	UsuLogin2 = format_user_field(UsuLogin),
 	UsuNome2 = format_user_field(UsuName),
 	UsuCpf2 = format_user_field(UsuCpf),
@@ -311,9 +313,10 @@ make_result_entry(#user{id = UsuId,
 	GivenName = format_user_field(hd(Names)),
 
 	{searchResEntry, #'SearchResultEntry'{objectName = ObjectName,
-										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [UsuId2]},
- 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [UsuId2]},
-														#'PartialAttribute'{type = <<"uidNumber">>, vals = [UsuId2]},
+										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [CodigoPessoa2]},
+ 														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [CodigoPessoa2]},
+														#'PartialAttribute'{type = <<"uidNumber">>, vals = [CodigoPessoa2]},
+														#'PartialAttribute'{type = <<"UsuId">>, vals = [UsuId2]},
 														
 														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"top">>]},
 														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"person">>]},

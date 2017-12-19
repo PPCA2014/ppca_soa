@@ -57,26 +57,32 @@ get_filename() ->
 	Conf#config.user_email_path_search.
 	
 
-update_email_tabela_users(Email, SourceType, CodigoPessoa) ->
+update_email_tabela_users(Email, SourceType, CodigoPessoa, Conf, ForceUpdate) ->
 	UserTable = ems_user:get_table(SourceType),
 	case ems_user:find_by_codigo_pessoa(UserTable, CodigoPessoa) of
 		{ok, Users} -> 
-			update_email_tabela_users_(Users, Email, UserTable);
+			update_email_tabela_users_(Users, Email, UserTable, Conf, ForceUpdate);
 		_ -> ok
 	end.
 
 
--spec update_email_tabela_users_(list(#user{}), #user_email{}, atom()) -> ok.
-update_email_tabela_users_([], _, _) -> ok;
+-spec update_email_tabela_users_(list(#user{}), #user_email{}, atom(), #config{}, boolean()) -> ok.
+update_email_tabela_users_([], _, _, _, _) -> ok;
 update_email_tabela_users_([ #user{type_email = 1}|UserT], 
 							 Email, 
-							 UserTable) -> 
-	update_email_tabela_users_(UserT, Email, UserTable);
-update_email_tabela_users_([User|UserT], Email, UserTable) ->
-	User2 = User#user{email = Email#user_email.email,
-					  type_email = Email#user_email.type},
-	mnesia:dirty_write(UserTable, User2),
-	update_email_tabela_users_(UserT, Email, UserTable).
+							 UserTable, 
+							 Conf,
+							 ForceUpdate) -> 
+	update_email_tabela_users_(UserT, Email, UserTable, Conf, ForceUpdate);
+update_email_tabela_users_([User|UserT], Email, UserTable, Conf, ForceUpdate) ->
+	case not ForceUpdate orelse ems_util:is_email_institucional(Conf#config.sufixo_email_institucional, User#user.email) of
+		true -> ok;
+		false ->
+			User2 = User#user{email = Email#user_email.email,
+							  type_email = Email#user_email.type},
+			mnesia:dirty_write(UserTable, User2),
+			update_email_tabela_users_(UserT, Email, UserTable, Conf, ForceUpdate)
+	end.
 	
 	
 -spec insert_or_update(map() | tuple(), tuple(), #config{}, atom(), insert | update) -> {ok, #service{}, atom(), insert | update} | {ok, skip} | {error, atom()}.
@@ -91,7 +97,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 						update_email_tabela_users(Record, case SourceType of
 																db -> user_db;
 																fs -> user_fs
-														  end, CodigoPessoa),
+														  end, CodigoPessoa, Conf, true),
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_email{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of
@@ -110,7 +116,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 								update_email_tabela_users(Record, case SourceType of
 																db -> user_db;
 																fs -> user_fs
-														  end, CodigoPessoa),
+														  end, CodigoPessoa, Conf, false),
 
 								{ok, Record, Table, update};
 							false -> {ok, skip}

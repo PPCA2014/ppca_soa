@@ -93,7 +93,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 						update_endereco_tabela_users(Record, case SourceType of
 																db -> user_db;
 																fs -> user_fs
-														  end, CodigoPessoa),
+															end, CodigoPessoa),
 						{ok, Record, Table, insert};
 					{ok, CurrentRecord = #user_endereco{ctrl_hash = CurrentCtrlHash}} ->
 						case CtrlHash =/= CurrentCtrlHash of

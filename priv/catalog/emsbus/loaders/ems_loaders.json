@@ -45,6 +45,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/loaders/ems_user_telefone_loader_fs", 
+		"file": "ems_user_telefone_loader_fs.json"
+	},
+
+	{
 		"catalog": "/emsbus/loaders/ems_catalog_loader_db", 
 		"file": "ems_catalog_loader_db.json"
 	},
@@ -82,6 +87,11 @@
 	{
 		"catalog": "/emsbus/loaders/ems_user_endereco_loader_db", 
 		"file": "ems_user_endereco_loader_db.json"
+	},
+
+	{
+		"catalog": "/emsbus/loaders/ems_user_telefone_loader_db", 
+		"file": "ems_user_telefone_loader_db.json"
 	},
 
 	{

@@ -97,6 +97,16 @@ create_database(Nodes) ->
 								  {attributes, record_info(fields, user_endereco)},
 								  {record_name, user_endereco}]),
 
+    mnesia:create_table(user_telefone_fs, [{type, set},
+ 								  {ram_copies, Nodes},
+								  {attributes, record_info(fields, user_telefone)},
+								  {record_name, user_telefone}]),
+
+    mnesia:create_table(user_telefone_db, [{type, set},
+								  {disc_copies, Nodes},
+								  {attributes, record_info(fields, user_telefone)},
+								  {record_name, user_telefone}]),
+
 	mnesia:create_table(user_perfil_fs, [{type, set},
 									    {ram_copies, Nodes},
 										{index, [#user_perfil.user_id, #user_perfil.client_id]},

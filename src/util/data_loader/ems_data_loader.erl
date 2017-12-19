@@ -219,7 +219,7 @@ handle_info(check_sync_full, State = #state{name = Name,
 								{noreply, State, TimeoutOnError}
 						end;
 					false ->
-						erlang:send_after(1000, self(), check_sync_full),
+						erlang:send_after(30000, self(), check_sync_full), % aguarda 30 segundos e tente novamente
 						{noreply, State, UpdateCheckpoint}
 				end;
 			_ -> 

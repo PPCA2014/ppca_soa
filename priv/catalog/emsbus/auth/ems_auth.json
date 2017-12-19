@@ -31,6 +31,11 @@
 	},
 
 	{
+		"catalog": "/emsbus/auth/auth_user_telefone", 
+		"file": "ems_auth_user_telefone.json"
+	},
+
+	{
 		"catalog": "/emsbus/auth/auth_oauth2", 
 		"file": "ems_oauth2.json"
 	},

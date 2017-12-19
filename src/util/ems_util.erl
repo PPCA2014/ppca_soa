@@ -152,7 +152,9 @@
 		 print_str_map/1,
 		 parse_user_agent/1,
 		 user_agent_atom_to_binary/1,
-		 to_lower_and_remove_backslash/1
+		 to_lower_and_remove_backslash/1,
+		 check_type_email/2,
+		 is_email_institucional/2
 		]).
 
 -spec version() -> string().
@@ -2458,4 +2460,19 @@ to_lower_and_remove_backslash(Uri) ->
 	list_to_binary(string:to_lower(remove_ult_backslash_url(Uri))).
 	
 	
+-spec check_type_email(binary(), binary()) -> 1 | 2.
+check_type_email("", _) -> 2;
+check_type_email(SufixoEmailInstitucional, Email) ->
+	case lists:suffix(SufixoEmailInstitucional, binary_to_list(Email)) of
+		true -> 1;
+		false -> 2
+	end.
+
+-spec is_email_institucional(binary(), binary()) -> boolean().
+is_email_institucional("", _) -> false;
+is_email_institucional(SufixoEmailInstitucional, Email) ->
+	case lists:suffix(SufixoEmailInstitucional, binary_to_list(Email)) of
+		true -> true;
+		false -> false
+	end.
 
