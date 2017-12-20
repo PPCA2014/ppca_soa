@@ -20,7 +20,7 @@
 		"tcp_backlog" : 1024,
 		"tcp_buffer" : 8000,
 		"tcp_delay_send" : false,
-		"start_timeout" : 15000
+		"start_timeout" : 3000
 	},
 
 	{
@@ -50,6 +50,6 @@
 			"keyfile" : "server.key",
 			"depth" : 0
 		},
-		"start_timeout" : 15000
+		"start_timeout" : 3000
 	}
 ]

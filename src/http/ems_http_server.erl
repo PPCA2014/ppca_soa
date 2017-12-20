@@ -65,11 +65,15 @@ handle_info(State) ->
 
 handle_info(timeout, State = #state{service = S = #service{name = Name, 
 														   tcp_listen_address_t = ListenAddress_t}}) ->
-	S2 = ems_config:get_port_offset(S),
- 	ServerName = binary_to_list(iolist_to_binary([Name, <<"_port_">>, integer_to_binary(S2#service.tcp_port)])),
-	case start_listeners(ListenAddress_t, S2, ServerName, 1, State) of
-		{ok, State2} ->	{noreply, State2};
-		{error, _Reason, State2} -> {noreply, State2}
+	case ems_data_loader_ctl:is_loading() of
+		false ->
+			S2 = ems_config:get_port_offset(S),
+			ServerName = binary_to_list(iolist_to_binary([Name, <<"_port_">>, integer_to_binary(S2#service.tcp_port)])),
+			case start_listeners(ListenAddress_t, S2, ServerName, 1, State) of
+				{ok, State2} ->	{noreply, State2};
+				{error, _Reason, State2} -> {noreply, State2}
+			end;
+		true -> {noreply, State, 2000}
 	end.
 
 terminate(_Reason, _State) ->

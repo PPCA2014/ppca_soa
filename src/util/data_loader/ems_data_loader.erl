@@ -151,7 +151,7 @@ init(#service{name = Name,
 				   skip_metric_name = SkipMetricName,
 				   source_type = SourceType,
 				   async = Async},
-	{ok, State, 4500 + StartTimeout}.
+	{ok, State, StartTimeout}.
     
 handle_cast(shutdown, State) ->
     {stop, normal, State};

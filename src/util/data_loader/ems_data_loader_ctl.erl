@@ -19,7 +19,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, terminate/2, code_change/3, 
-		 permission_to_execute/2, notify_finish_work/2, rand_next_interval/0]).
+		 permission_to_execute/2, notify_finish_work/2, rand_next_interval/0, is_loading/0]).
 
 % estado do servidor
 -record(state, {what,	
@@ -44,7 +44,18 @@ permission_to_execute(What, ProcessName) -> gen_server:call(?MODULE, {permission
 	
 notify_finish_work(What, ProcessName) -> gen_server:cast(?MODULE, {notify_finish_work, What, ProcessName}).
 
+-spec rand_next_interval() -> non_neg_integer().
 rand_next_interval() -> 1000 + rand:uniform(3000).
+
+% Retorna true/false se os loaders estão sendo executados
+-spec is_loading() -> boolean().
+is_loading() -> 
+	case gen_server:call(?MODULE, is_loading) of
+		true -> true;
+		false ->
+			ems_util:sleep(1000),
+			gen_server:call(?MODULE, is_loading)
+	end.
 
  
 %%====================================================================
@@ -69,6 +80,9 @@ handle_call({permission_to_execute, What, ProcessName}, _From, State) ->
 		{ok, State2} -> {reply, true, State2};
 		{error, State2} -> {reply, false, State2}
 	end;
+
+handle_call(is_loading, _From, State) ->
+	{reply, State#state.process_name =/= undefined, State};
 
 handle_call(Msg, _From, State) ->
 	{reply, Msg, State}.
