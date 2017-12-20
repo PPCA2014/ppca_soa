@@ -13,7 +13,8 @@ execute(Request = #request{type = Type,
 						   port = Port, 
 						   host = Host, 
 						   user_agent = UserAgent, 
-						   user_agent_version = UserAgentVersion}) -> 
+						   user_agent_version = UserAgentVersion,
+						   service  = #service{oauth2_allow_client_credentials = OAuth2AllowClientCredentials}}) -> 
 	try
 		case Type of
 			<<"GET">> -> GrantType = ems_util:get_querystring(<<"response_type">>, <<>>, Request);
@@ -25,8 +26,14 @@ execute(Request = #request{type = Type,
 					ems_db:inc_counter(ems_oauth2_grant_type_password),
 					password_grant(Request);
 				<<"client_credentials">> ->
-					ems_db:inc_counter(ems_oauth2_grant_type_client_credentials),
-					client_credentials_grant(Request);
+					case OAuth2AllowClientCredentials of
+						true ->
+							ems_db:inc_counter(ems_oauth2_grant_type_client_credentials),
+							client_credentials_grant(Request);
+						false ->
+							ems_db:inc_counter(ems_oauth2_client_credentials_denied),
+							{error, access_denied}	
+					end;
 				<<"token">> -> 
 					ems_db:inc_counter(ems_oauth2_grant_type_token),
 					authorization_request(Request);

@@ -8,8 +8,8 @@
 
 -module(ems_catalog_loader_middleware).
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([insert_or_update/5, is_empty/1, size_table/1, clear_table/1, reset_sequence/1, get_filename/0, check_remove_records/2]).
 
@@ -21,6 +21,7 @@ is_empty(db) ->
 	mnesia:table_info(catalog_put_db, size) == 0 andalso
 	mnesia:table_info(catalog_delete_db, size) == 0 andalso
 	mnesia:table_info(catalog_options_db, size) == 0 andalso
+	mnesia:table_info(catalog_re_db, size) == 0 andalso
 	mnesia:table_info(catalog_kernel_db, size) == 0;
 is_empty(fs) ->	
 	mnesia:table_info(catalog_get_fs, size) == 0 andalso
@@ -28,6 +29,7 @@ is_empty(fs) ->
 	mnesia:table_info(catalog_put_fs, size) == 0 andalso
 	mnesia:table_info(catalog_delete_fs, size) == 0 andalso
 	mnesia:table_info(catalog_options_fs, size) == 0 andalso
+	mnesia:table_info(catalog_re_fs, size) == 0 andalso
 	mnesia:table_info(catalog_kernel_fs, size) == 0.
 	
 
@@ -38,6 +40,7 @@ size_table(db) ->
 	mnesia:table_info(catalog_put_db, size) +
 	mnesia:table_info(catalog_delete_db, size) +
 	mnesia:table_info(catalog_options_db, size) +
+	mnesia:table_info(catalog_re_db, size) +
 	mnesia:table_info(catalog_kernel_db, size);
 size_table(fs) ->	
 	mnesia:table_info(catalog_get_fs, size) +
@@ -45,6 +48,7 @@ size_table(fs) ->
 	mnesia:table_info(catalog_put_fs, size) +
 	mnesia:table_info(catalog_delete_fs, size) +
 	mnesia:table_info(catalog_options_fs, size) +
+	mnesia:table_info(catalog_re_fs, size) +
 	mnesia:table_info(catalog_kernel_fs, size).
 	
 
@@ -60,8 +64,12 @@ clear_table(db) ->
 								{atomic, ok} -> 
 									case mnesia:clear_table(catalog_options_db) of
 										{atomic, ok} -> 									
-											case mnesia:clear_table(catalog_kernel_db) of
-												{atomic, ok} -> ok;
+											case mnesia:clear_table(catalog_re_db) of
+												{atomic, ok} -> 
+													case mnesia:clear_table(catalog_kernel_db) of
+														{atomic, ok} -> ok;
+														_ -> {error, efail_clear_ets_table}
+													end;
 												_ -> {error, efail_clear_ets_table}
 											end;
 										_ -> {error, efail_clear_ets_table}
@@ -85,8 +93,12 @@ clear_table(fs) ->
 								{atomic, ok} -> 
 									case mnesia:clear_table(catalog_options_fs) of
 										{atomic, ok} -> 									
-											case mnesia:clear_table(catalog_kernel_fs) of
-												{atomic, ok} -> ok;
+											case mnesia:clear_table(catalog_re_fs) of
+												{atomic, ok} -> 
+													case mnesia:clear_table(catalog_kernel_fs) of
+														{atomic, ok} -> ok;
+														_ -> {error, efail_clear_ets_table}
+													end;
 												_ -> {error, efail_clear_ets_table}
 											end;
 										_ -> {error, efail_clear_ets_table}
@@ -108,7 +120,7 @@ reset_sequence(db) ->
 	ems_db:init_sequence(catalog_put_db, 0),
 	ems_db:init_sequence(catalog_delete_db, 0),
 	ems_db:init_sequence(catalog_options_db, 0),
-	ems_db:init_sequence(catalog_options_db, 0),
+	ems_db:init_sequence(catalog_re_db, 0),
 	ems_db:init_sequence(catalog_kernel_db, 0),
 	ok;
 reset_sequence(fs) ->	
@@ -117,7 +129,7 @@ reset_sequence(fs) ->
 	ems_db:init_sequence(catalog_put_fs, 0),
 	ems_db:init_sequence(catalog_delete_fs, 0),
 	ems_db:init_sequence(catalog_options_fs, 0),
-	ems_db:init_sequence(catalog_options_fs, 0),
+	ems_db:init_sequence(catalog_re_fs, 0),
 	ems_db:init_sequence(catalog_kernel_fs, 0),
 	ok.
 	
@@ -202,6 +214,7 @@ insert_or_update(Map, CtrlDate, Conf, SourceType, _Operation) ->
 												tcp_ssl_keyfile = NewCatalog#service.tcp_ssl_keyfile,
 												oauth2_with_check_constraint = NewCatalog#service.oauth2_with_check_constraint,
 												oauth2_token_encrypt = NewCatalog#service.oauth2_token_encrypt,
+												oauth2_allow_client_credentials = NewCatalog#service.oauth2_allow_client_credentials,
 												authorization_public_check_credential = NewCatalog#service.authorization_public_check_credential,
 												protocol = NewCatalog#service.protocol,
 												filename = NewCatalog#service.filename,
