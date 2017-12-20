@@ -8,8 +8,8 @@
 
 -module(ems_redirect_url_service).
 
--include("../include/ems_schema.hrl").
--include("../include/ems_config.hrl").
+-include("include/ems_schema.hrl").
+-include("include/ems_config.hrl").
 
 -export([execute/1]).
   

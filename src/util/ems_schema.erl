@@ -17,7 +17,7 @@
 -export_records([user, user_permission, user_perfil, 
 				 user_email, user_dados_funcionais, user_endereco, user_telefone,
 				 catalog_schema, schema_type, produto, service, service_owner, 
-				 client, service_datasource, smon_stat]).
+				 client, service_datasource, stat_counter_hist]).
 
 
 % to_record
@@ -179,7 +179,7 @@ new(user_dados_funcionais) -> #user_dados_funcionais{};
 new(schema_type) -> #schema_type{};
 new(produto) -> #produto{};
 new(client) -> #client{};
-new(smon_stat) -> #smon_stat{};
+new(stat_counter_hist) -> #stat_counter_hist{};
 new(_) -> erlang:error(einvalid_type).
 
 new_(service) -> #service{_ = '_'};
@@ -195,7 +195,7 @@ new_(user_telefone) -> #user_telefone{_ = '_'};
 new_(user_dados_funcionais) -> #user_dados_funcionais{_ = '_'};
 new_(user_perfil) -> #user_perfil{_ = '_'};
 new_(client) -> #client{_ = '_'};
-new_(smon_stat) -> #smon_stat{_ = '_'};
+new_(stat_counter_hist) -> #stat_counter_hist{_ = '_'};
 new_(_) -> erlang:error(einvalid_type).
   
 	

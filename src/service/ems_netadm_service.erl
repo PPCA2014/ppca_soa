@@ -8,8 +8,8 @@
 
 -module(ems_netadm_service).
 
--include("../include/ems_config.hrl").
--include("../include/ems_schema.hrl").
+-include("include/ems_config.hrl").
+-include("include/ems_schema.hrl").
 
 -export([names/1, world/1, hostfile/1, hostname/1, localhost/1, memory/1, timestamp/1, 
 		 threads/1, info/1, config/1, restart/1, pid/1, uptime/1, tasks/1]).

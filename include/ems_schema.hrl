@@ -373,10 +373,10 @@
 				  name :: string(), 
 				  price :: non_neg_integer()}).
 
--record(smon_stat, {  id :: non_neg_integer(),
-					  stat_name :: atom(),
-					  stat_value :: non_neg_integer,
-					  stat_timestamp
-					}).
+-record(stat_counter_hist, {  id :: non_neg_integer(),
+							  stat_name :: atom(),
+							  stat_value :: non_neg_integer,
+							  stat_timestamp
+							}).
 
 

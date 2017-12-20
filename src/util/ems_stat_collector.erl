@@ -94,11 +94,11 @@ collect_stats(State) ->
 	
 persist_stats([], _) -> ok;
 persist_stats([{counter, StatName, StatValue}|T], Timestamp) ->
-	Record = #smon_stat{id = ems_db:sequence(smon_stat),
+	Record = #stat_counter_hist{id = ems_db:sequence(stat_counter_hist),
 						stat_name = StatName, 
 					    stat_value = StatValue,
 						stat_timestamp = Timestamp},
-	mnesia:dirty_write(smon_stat, Record),
+	mnesia:dirty_write(stat_counter_hist, Record),
 	persist_stats(T, Timestamp).
 	
 	

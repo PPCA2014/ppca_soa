@@ -104,13 +104,17 @@ do_permission_to_execute(What2, ProcessName2, State = #state{process_name = Proc
 								timestamp = Timestamp2}
 					};
 				Timestamp when Timestamp2 - Timestamp > 120000 -> 
-					ems_db:inc_counter(ems_data_loader_ctl_timestamp_expired),
+					MetricName = binary_to_atom(iolist_to_binary([<<"ems_data_loader_ctl_lock_expired_">>, ProcessName]), utf8),
+					ems_db:inc_counter(MetricName),
 					{ok, #state{what = What2, 
 								process_name = ProcessName2,
 								timestamp = Timestamp2}
 					};
 				_ -> 
-					ems_db:inc_counter(ems_data_loader_ctl_lock),
+					MetricName = binary_to_atom(iolist_to_binary([<<"ems_data_loader_ctl_lock_">>, ProcessName2]), utf8),
+					ems_db:inc_counter(MetricName),
+					MetricName2 = binary_to_atom(iolist_to_binary([<<"ems_data_loader_ctl_wait_">>, ProcessName]), utf8),
+					ems_db:inc_counter(MetricName2),
 					{error, State}
 			end
 	end.

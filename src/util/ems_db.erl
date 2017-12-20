@@ -145,10 +145,6 @@ create_database(Nodes) ->
 								   {disc_copies, Nodes},
 								   {attributes, record_info(fields, sequence)}]),
 
-    mnesia:create_table(counter, [{type, set},
-								  {ram_copies, Nodes},
-								  {attributes, record_info(fields, sequence)}]),
-
     mnesia:create_table(request, [{type, set},
 								  {ram_copies, Nodes},
 								  {attributes, record_info(fields, request)},
@@ -259,14 +255,22 @@ create_database(Nodes) ->
 										  {attributes, record_info(fields, service)},
 										  {record_name, service}]),
 
-    mnesia:create_table(smon_stat, [{type, set},
+    mnesia:create_table(counter, [{type, set},
+								  {ram_copies, Nodes},
+								  {attributes, record_info(fields, sequence)}]),
+
+    mnesia:create_table(stat_counter_hist, [{type, set},
 								    {disc_copies, Nodes},
-								    {attributes, record_info(fields, smon_stat)},
-								    {record_name, smon_stat}]),
+								    {attributes, record_info(fields, stat_counter_hist)},
+								    {record_name, stat_counter_hist}]),
 
-	% foi preciso aguardar um pouco a inicialização do banco
-	ems_util:sleep(4000),
-
+	
+	mnesia:wait_for_tables([service_datasource, user_fs, user_dados_funcionais_fs, 
+							client_fs, sequence, user_email_fs, counter, ctrl_params, 
+							user_permission_fs, user_endereco_fs, catalog_options_fs,
+							catalog_get_fs, catalog_post_fs, catalog_put_fs, catalog_delete_fs,
+							catalog_re_fs, catalog_kernel_fs, user_db, client_db], 15000),
+	
 	ok.
 
 

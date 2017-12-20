@@ -316,7 +316,7 @@ make_result_entry(#user{id = UsuId,
 										  attributes = [#'PartialAttribute'{type = <<"uid">>, vals = [CodigoPessoa2]},
  														#'PartialAttribute'{type = <<"employeeNumber">>, vals = [CodigoPessoa2]},
 														#'PartialAttribute'{type = <<"uidNumber">>, vals = [CodigoPessoa2]},
-														#'PartialAttribute'{type = <<"UsuId">>, vals = [UsuId2]},
+														#'PartialAttribute'{type = <<"usu_id">>, vals = [UsuId2]},
 														
 														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"top">>]},
 														#'PartialAttribute'{type = <<"objectClass">>, vals = [<<"person">>]},

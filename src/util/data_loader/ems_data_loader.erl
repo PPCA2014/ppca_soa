@@ -246,7 +246,7 @@ handle_info(check_count_records, State = #state{name = Name,
 					{noreply, State, TimeoutOnError}
 			end;
 		false ->
-			{noreply, State, 500}
+			{noreply, State, 6000}
 	end;
 
 handle_info({_Pid, {error, _Reason}}, State = #state{timeout_on_error = TimeoutOnError}) ->
@@ -279,7 +279,7 @@ handle_do_check_load_or_update_checkpoint(State = #state{name = Name,
 					{noreply, State, TimeoutOnError}
 			end;
 		false ->
-			{noreply, State, 500}	
+			{noreply, State, 1000}	
 	end.
 	
 
