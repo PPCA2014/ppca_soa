@@ -140,10 +140,9 @@ if [ "$1" = "configure" ]; then
 
 
   # systemd
+  systemctl enable /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service  > /dev/null 2>&1 || true
+  systemctl enable /usr/lib/ems-bus/priv/systemd/ems-bus.service  > /dev/null 2>&1 || true
   systemctl daemon-reload  > /dev/null 2>&1 || true
-  sleep 2
-  systemctl enable ems-bus.epmd.service  > /dev/null 2>&1 || true
-  systemctl enable ems-bus.service  > /dev/null 2>&1 || true
 fi
 
 sleep 2

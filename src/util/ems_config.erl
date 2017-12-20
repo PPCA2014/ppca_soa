@@ -255,7 +255,7 @@ parse_config(Json, NomeArqConfig) ->
  			 ssl_cacertfile = maps:get(<<"ssl_cacertfile">>, Json, undefined),
 			 ssl_certfile = maps:get(<<"ssl_certfile">>, Json, undefined),
 			 ssl_keyfile = maps:get(<<"ssl_keyfile">>, Json, undefined),
-			 sufixo_email_institucional = binary_to_list(maps:get(<<"sufixo_email_institucional">>, Json, ""))
+			 sufixo_email_institucional = binary_to_list(maps:get(<<"sufixo_email_institucional">>, Json, <<"">>))
 		}.
 
 % It generates a default configuration if there is no configuration file
