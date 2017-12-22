@@ -582,7 +582,7 @@ do_log_request(#request{rid = RID,
 											true -> 
 											   case ResultCache of 
 													true ->  [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)  <<RID: ">>, integer_to_binary(ResultCacheRid), <<">>">>];
-													false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"sms (">>, integer_to_binary(ResultCacheMin), <<"min)">>] 
+													false -> [<<"\n\tResult-Cache: ">>, integer_to_list(Service#service.result_cache), <<"ms (">>, integer_to_binary(ResultCacheMin), <<"min)">>] 
 												end;
 											false ->
 											   case ResultCacheSec > 0 of

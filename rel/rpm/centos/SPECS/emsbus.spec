@@ -180,13 +180,17 @@ by graduate student Everton Vargas Agilar.
   rm -rf /usr/lib/ems-bus/priv/db
 
   # systemd
-  systemctl daemon-reload  > /dev/null 2>&1 || true
   systemctl stop ems-bus.service  > /dev/null 2>&1 || true
   systemctl stop ems-bus.epmd.service  > /dev/null 2>&1 || true
-  systemctl enable ems-bus.service  > /dev/null 2>&1 || true
-  systemctl enable ems-bus.epmd.service  > /dev/null 2>&1 || true
+
+  # systemd
+  systemctl enable /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service  > /dev/null 2>&1 || true
+  systemctl enable /usr/lib/ems-bus/priv/systemd/ems-bus.service  > /dev/null 2>&1 || true
+  systemctl daemon-reload  > /dev/null 2>&1 || true
+
+  sleep 2
   systemctl start ems-bus.epmd.service  > /dev/null 2>&1 || true
-  sleep 1
+  sleep 2
   systemctl start ems-bus.service  > /dev/null 2>&1 || true
 
 %postun 
