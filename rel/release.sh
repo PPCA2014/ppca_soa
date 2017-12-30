@@ -392,10 +392,10 @@ done
 
 
 # check remove link to fix Unable to generate spec: read file info
-#if [ -L /usr/lib/erlang/man ]; then
-#	echo "Preciso de permissão para remover o link /usr/lib/erlang/man (fix Unable to generate spec: read file info)"
-#	sudo rm  /usr/lib/erlang/man
-#fi	
+if [ -L /usr/lib/erlang/man ]; then
+	echo "Preciso de permissão para remover o link /usr/lib/erlang/man (fix Unable to generate spec: read file info)"
+	sudo rm  /usr/lib/erlang/man
+fi	
 
 rm -f ../priv/scripts/*.tar
 clean
