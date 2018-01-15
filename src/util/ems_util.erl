@@ -2375,6 +2375,7 @@ json_field_strip_and_escape(Value) ->
 
 -spec parse_user_agent(binary() | string()) -> tuple().
 parse_user_agent(<<>>) -> {browser_other, ""};
+parse_user_agent(undefined) -> {browser_other, ""};
 parse_user_agent(UserAgent) when is_binary(UserAgent) ->
 	parse_user_agent(binary_to_list(UserAgent));
 parse_user_agent(UserAgent) ->
