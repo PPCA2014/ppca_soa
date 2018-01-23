@@ -7,4 +7,4 @@ rmdir /S /Q priv\log
 if not exist priv\db goto BuildWithRebar
 rmdir /S /Q priv\db
 :BuildWithRebar
-tools/rebar/rebar compile --config rebar_win.config
+tools\rebar\rebar clean get-deps compile --config rebar_win.config
