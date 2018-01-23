@@ -364,7 +364,7 @@ elif [ ! -z "$IMAGE" ]; then
 	fi
 	APP_VERSION=$(docker inspect $APP_NAME | sed -n '/"RepoTags/ , /],/p' | sed '$d' | sed '$d' | tail -1 | sed -r 's/[^0-9\.]//g')
 	
-	ID_IMAGE=$(docker ps -f name=erlangms_questionario | awk '{print $1}' | sed '1d')
+	ID_IMAGE=$(docker ps -f name=$APP_NAME | awk '{print $1}' | sed '1d')
 	if [ ! -z "$ID_IMAGE" ]; then
 		echo "docker stop $IMAGE"
 		docker stop $ID_IMAGE

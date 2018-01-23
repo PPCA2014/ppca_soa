@@ -19,6 +19,8 @@
 #
 ########################################################################################################
 
+clear
+
 CURRENT_DIR=$(pwd)
 VERSION_SCRIPT="1.0.0"
 
@@ -42,7 +44,7 @@ help() {
 	echo "  --docker_version             -> check docker version to this"
 	echo "  --git_user                   -> git user"
 	echo "  --git_passwd                 -> git passwd"
-	echo "  --cache_node_modules         -> cache node_modules for speed (development use only!)"
+	echo "  --cache_node_modules         -> cache node_modules for speed"
 	echo "  --keep_stage                 -> does not delete stage area after build"
 	echo "  --push                       -> push to registry. The same as --skip_push=false"
 	echo "  --mode_build                 -> build npm project in mode pass in variable"
@@ -119,7 +121,8 @@ ERLANGMS_RELEASE_URL="https://github.com/erlangms/releases/raw/master"
 ERLANGMS_DOCKER_GIT_URL="https://github.com/erlangMS/docker"
 
 # variável opcional para dizer qual modo de build da aplicação
-MODE_BUILD="dev"
+# deixa em branço para pedir na execução do build
+MODE_BUILD=""
 
 
 # Registry server daemon to catalog images
@@ -164,7 +167,7 @@ le_setting () {
 	KEY=$1
 	DEFAULT=$2
 	# Lê o valor configuração, remove espaços a esquerda e faz o unquoted das aspas duplas
-	RESULT=$(egrep -i "^$KEY" $CONFIG_ARQ | cut -d"=" -f2 | sed -r 's/^ *//' | sed -r 's/^\"?(\<.*\>\$?)\"?$/\1/')
+	RESULT=$(egrep -i "^$KEY" $CONFIG_ARQ 2> /dev/null | cut -d"=" -f2 | sed -r 's/^ *//' | sed -r 's/^\"?(\<.*\>\$?)\"?$/\1/')
 	if [ -z "$RESULT" ] ; then
 		echo $DEFAULT
 	else
@@ -320,7 +323,7 @@ build_image(){
 		# Quando o flag CACHE_NODE_MODULES for true, vamos usar uma pasta de cache para node_modules e 
 		# criar um hard link. Isso vai acelerar e muito!!! 
 		if [ "$CACHE_NODE_MODULES" = "true" ]; then
-			echo "node_modules cache enabled (development use only)"
+			echo "node_modules cache enabled"
 			NODE_MODULES_CACHE_PATH="/tmp/erlangms/build/node_modules"
 			if [ -d NODE_MODULES_CACHE_PATH ]; then
 				echo "Let go make drink, this will take time!!!"
@@ -671,6 +674,12 @@ if [ -z "$GIT_CHECKOUT_TAG" ]; then
 else
 	echo "Frontend version: $GIT_CHECKOUT_TAG"
 fi
+
+# Lê o modo de build
+while [[ ! $MODE_BUILD =~ (dev|prod) ]]; do
+	printf 'Build mode (dev|prod): '
+	read MODE_BUILD
+done
 
 
 prepare_project_to_build
