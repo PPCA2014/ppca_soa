@@ -353,10 +353,10 @@ if [ -z "$TAR_FILE" -a -z "$IMAGE" -a "$CURRENT_DIR_IS_DOCKER_PROJECT_GITLAB"="1
 	echo docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 					--network bridge -p $SERVER_ADDR:$SERVER_HTTPS_PORT_LISTENER:$SERVER_HTTPS_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
+			   -dit --restart always $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 	docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
+			   -dit --restart always $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 
 elif [ ! -z "$IMAGE" ]; then
 	if [ -z "$APP_NAME" ]; then
@@ -401,11 +401,11 @@ elif [ ! -z "$IMAGE" ]; then
 	echo docker run  --name erlangms_$APP_NAME \
 			   --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $IMAGE:$IMAGE_ID $ENTRYPOINT 
+			   -dit --restart always $IMAGE:$IMAGE_ID $ENTRYPOINT 
 	docker run --name erlangms_$APP_NAME \
 			   --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $IMAGE:$IMAGE_ID $ENTRYPOINT  
+			   -dit --restart always $IMAGE:$IMAGE_ID $ENTRYPOINT  
 else
 	if [ -z "$APP_NAME" ]; then
 		APP_NAME=$(echo $TAR_FILE | awk -F: '{ print $1 }')
@@ -439,9 +439,9 @@ else
 
 	echo docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
+			   -dit --restart always $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 	docker run --network bridge -p $SERVER_ADDR:$SERVER_HTTP_PORT_LISTENER:$SERVER_HTTP_PORT_LISTENER \
 			   -v $CLIENT_CONF:/app/$APP_NAME/barramento \
-			   -it $APP_NAME:$IMAGE_ID $ENTRYPOINT 
+			   -dit --restart always $APP_NAME:$IMAGE_ID $ENTRYPOINT 
 
 fi
