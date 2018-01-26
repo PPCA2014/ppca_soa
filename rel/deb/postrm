@@ -12,15 +12,12 @@
 if [ "$1" = "remove" -o "$1" = "purge" ] ; then
 	# pare e desative o serviço systemctl
 	systemctl stop ems-bus.service  > /dev/null 2>&1 || true
-	systemctl stop ems-bus.epmd.service  > /dev/null 2>&1 || true
 	systemctl disable ems-bus.service > /dev/null 2>&1 || true
-	systemctl disable ems-bus.epmd.service > /dev/null 2>&1 || true
 
 	# clean
 	rm -Rf /usr/lib/ems-bus > /dev/null 2>&1 || true
 	rm -Rf /usr/bin/ems-bus > /dev/null 2>&1 || true
 	rm -f /etc/systemd/system/ems-bus.service > /dev/null 2>&1 || true
-	rm -f /etc/systemd/system/ems-bus.epmd.service > /dev/null 2>&1 || true
 	rm -f /etc/ems-bus > /dev/null 2>&1 || true
 
 	# remove user

@@ -83,9 +83,7 @@ if [ "$1" = "configure" ]; then
   # Change owners to root:root
   chown root:root /etc/sudoers.d/ems-bus.sudoers > /dev/null 2>&1
   chown root:root /etc/systemd/system/ems-bus.service > /dev/null 2>&1
-  chown root:root /etc/systemd/system/ems-bus.epmd.service > /dev/null 2>&1
   chown -Rf root:root /etc/systemd/system/ems-bus.service.d > /dev/null 2>&1
-  chown -Rf root:root /etc/systemd/system/ems-bus.epmd.service.d > /dev/null 2>&1
 
 
   # Config /etc/odbcinst.ini if necessary for FreeTDS SQL-server driver
@@ -140,13 +138,10 @@ if [ "$1" = "configure" ]; then
 
 
   # systemd
-  systemctl enable /usr/lib/ems-bus/priv/systemd/ems-bus.epmd.service  > /dev/null 2>&1 || true
   systemctl enable /usr/lib/ems-bus/priv/systemd/ems-bus.service  > /dev/null 2>&1 || true
   systemctl daemon-reload  > /dev/null 2>&1 || true
 fi
 
-sleep 2
-systemctl start ems-bus.epmd.service  > /dev/null 2>&1 || true
 sleep 2
 systemctl start ems-bus.service  > /dev/null 2>&1 || true
 
