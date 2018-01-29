@@ -80,7 +80,6 @@
  		 is_range_valido/3,
 		 is_letter/1,
 		 is_letter_lower/1,
- 		 is_service_type/1,
 		 posix_error_description/1,
 		 parse_if_modified_since/1,
 		 parse_basic_authorization_header/1,
@@ -1462,8 +1461,8 @@ mime_type(".m4a") -> <<"audio/mpeg">>;
 mime_type(_) -> <<"application/octet-stream">>.
 
 
--spec encode_request_cowboy(tuple(), pid(), non_neg_integer()) -> {ok, #request{}} | {error, atom()}.
-encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
+-spec encode_request_cowboy(tuple(), pid(), map()) -> {ok, #request{}} | {error, atom()}.
+encode_request_cowboy(CowboyReq, WorkerSend, HttpHeaderDefault) ->
 	try
 		Url = cowboy_req:path(CowboyReq),
 		Url2 = remove_ult_backslash_url(binary_to_list(Url)),
@@ -1472,93 +1471,206 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 		Timestamp = calendar:local_time(),
 		T1 = trunc(RID / 1.0e6), % optimized: same that get_milliseconds()
 		Type = cowboy_req:method(CowboyReq),
-		case is_service_type(Type) of
-			true ->
-				{Ip, _} = cowboy_req:peer(CowboyReq),
-				IpBin = list_to_binary(inet_parse:ntoa(Ip)),
-				Host = cowboy_req:host(CowboyReq),
-				Version = cowboy_req:version(CowboyReq),
-				case cowboy_req:header(<<"content-type">>, CowboyReq) of
-					undefined -> ContentType = <<>>;
-					MimeType -> ContentType = MimeType
-				end,
-				ContentLength = cowboy_req:body_length(CowboyReq),
-				QuerystringBin = cowboy_req:qs(CowboyReq),
-				ProtocolBin = cowboy_req:scheme(CowboyReq),
-				Protocol = parse_protocol(ProtocolBin),
-				Port = cowboy_req:port(CowboyReq),
-				case QuerystringBin of
-					<<>> -> QuerystringMap = #{};
-					_ -> QuerystringMap = parse_querystring([binary_to_list(QuerystringBin)])
+		{Ip, _} = cowboy_req:peer(CowboyReq),
+		IpBin = list_to_binary(inet_parse:ntoa(Ip)),
+		Host = cowboy_req:host(CowboyReq),
+		Version = cowboy_req:version(CowboyReq),
+		case cowboy_req:header(<<"content-type">>, CowboyReq) of
+			undefined -> ContentType = <<>>;
+			MimeType -> ContentType = MimeType
+		end,
+		QuerystringBin = cowboy_req:qs(CowboyReq),
+		ProtocolBin = cowboy_req:scheme(CowboyReq),
+		Protocol = parse_protocol(ProtocolBin),
+		Port = cowboy_req:port(CowboyReq),
+		case QuerystringBin of
+			<<>> -> QuerystringMap0 = #{};
+			_ -> QuerystringMap0 = parse_querystring([binary_to_list(QuerystringBin)])
+		end,
+		case cowboy_req:header(<<"accept">>, CowboyReq) of
+			undefined -> Accept = <<"*/*">>;
+			AcceptValue -> Accept = AcceptValue
+		end,
+		case cowboy_req:header(<<"accept-encoding">>, CowboyReq) of
+			undefined -> Accept_Encoding = <<"*">>;
+			AcceptEncodingValue -> Accept_Encoding = AcceptEncodingValue
+		end,
+		{UserAgent, UserAgentVersion} = parse_user_agent(cowboy_req:header(<<"user-agent">>, CowboyReq)),
+		case cowboy_req:header(<<"cache-control">>, CowboyReq) of
+			undefined -> Cache_Control = <<>>;
+			CacheControlValue -> Cache_Control = CacheControlValue
+		end,
+		Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
+		IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
+		IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
+		Referer = cowboy_req:header(<<"referer">>, CowboyReq),
+		{Rowid, Params_url} = hashsym_and_params(Url2),
+		TypeLookup = case Type of
+					<<"OPTIONS">> -> 
+						ems_db:inc_counter(ems_dispatcher_options),
+						<<"GET">>;
+					<<"HEAD">> -> 
+						ems_db:inc_counter(ems_dispatcher_head),
+						<<"GET">>;
+					<<"GET">> -> 
+						ems_db:inc_counter(ems_dispatcher_get),
+						<<"GET">>;
+					<<"POST">> -> 
+						ems_db:inc_counter(ems_dispatcher_post),
+						<<"POST">>;
+					<<"PUT">> -> 
+						ems_db:inc_counter(ems_dispatcher_put),
+						<<"PUT">>;
+					<<"DELETE">> -> 
+						ems_db:inc_counter(ems_dispatcher_delete),
+						<<"DELETE">>;
+					_ ->
+						ems_db:inc_counter(ehttp_verb_not_supported),
+						erlang:error(ehttp_verb_not_supported)
+			   end,
+		Request = #request{
+			rid = RID,
+			rowid = Rowid,
+			type = TypeLookup,
+			uri = Uri,
+			url = Url2,
+			version = Version,
+			querystring = QuerystringBin,
+			querystring_map = QuerystringMap0,
+			params_url = Params_url,
+			accept = Accept,
+			user_agent = UserAgent,
+			user_agent_version = UserAgentVersion,
+			accept_encoding = Accept_Encoding,
+			cache_control = Cache_Control,
+			ip = Ip,
+			ip_bin = IpBin,
+			host = Host,
+			timestamp = Timestamp,
+			authorization = Authorization,
+			worker_send = WorkerSend,
+			if_modified_since = IfModifiedSince,
+			if_none_match = IfNoneMatch,
+			protocol = Protocol,
+			protocol_bin = ProtocolBin,
+			port = Port,
+			result_cache = false,
+			t1 = T1,
+			referer = Referer
+		},	
+		case ems_catalog_lookup:lookup(Request) of
+			{Service = #service{http_max_content_length = HttpMaxContentLengthService}, ParamsMap, QuerystringMap} -> 
+				case cowboy_req:body_length(CowboyReq) of
+					undefined -> ContentLength = 0; %% The value returned will be undefined if the length couldn't be figured out from the request headers. 
+					ContentLengthValue -> ContentLength = ContentLengthValue
 				end,
 				case ContentLength > 0 of
 					true ->
-						% limit Content-Type header length to avoid CVE-2014-0050
-						case ContentLength > HttpMaxContentLength of
-							true ->
-								ems_db:inc_counter(http_max_content_length_error),
-								erlang:error(ehttp_max_content_length_error);
+						case ContentLength > HttpMaxContentLengthService of
+							true ->	erlang:error(ehttp_max_content_length_error);
 							false -> ok
 						end,
 						case ContentType of
 							<<"application/json">> ->
 								ems_db:inc_counter(http_content_type_in_application_json),
 								ContentType2 = <<"application/json">>,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_json(Payload),
 								QuerystringMap2 = QuerystringMap;
 							<<"application/json; charset=utf-8">> ->
 								ems_db:inc_counter(http_content_type_in_application_json),
 								ContentType2 = <<"application/json">>,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_json(Payload),
 								QuerystringMap2 = QuerystringMap;
 							<<"application/json;charset=utf-8">> -> 
 								ems_db:inc_counter(http_content_type_in_application_json),
 								ContentType2 = <<"application/json">>,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_json(Payload),
 								QuerystringMap2 = QuerystringMap;
 							<<"application/x-www-form-urlencoded">> ->
 								ems_db:inc_counter(http_content_type_in_form_urlencode),
 								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
-								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_urlencoded_body(CowboyReq),
 								PayloadMap = maps:from_list(Payload),
 								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
 							<<"application/x-www-form-urlencoded; charset=UTF-8">> ->
 								ems_db:inc_counter(http_content_type_in_form_urlencode),
 								ContentType2 = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
-								{ok, Payload, _} = cowboy_req:read_urlencoded_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_urlencoded_body(CowboyReq),
 								PayloadMap = maps:from_list(Payload),
 								QuerystringMap2 = maps:merge(QuerystringMap, PayloadMap);
 							<<"application/xml">> ->
 								ems_db:inc_counter(http_content_type_in_application_xml),
 								ContentType2 = <<"application/xml">>,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = decode_payload_as_xml(Payload),
 								QuerystringMap2 = QuerystringMap;
 							<<"text/plain">> ->
 								ems_db:inc_counter(http_content_type_in_text_plain),
 								ContentType2 = ContentType,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = undefined,
 								QuerystringMap2 = QuerystringMap;
 							<<"text/csv">> ->
 								ems_db:inc_counter(http_content_type_in_text_csv),
 								ContentType2 = ContentType,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = undefined,
 								QuerystringMap2 = QuerystringMap;
 							<<"application/octet-stream">> ->
 								ems_db:inc_counter(http_content_type_in_octet_stream),
 								ContentType2 = ContentType,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"application/gzip">> ->
+								ems_db:inc_counter(http_content_type_in_application_gzip),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"application/pdf">> ->
+								ems_db:inc_counter(http_content_type_in_application_pdf),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"application/msword">> ->
+								ems_db:inc_counter(http_content_type_in_officedocument),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"application/vnd.openxmlformats-officedocument.wordprocessingml.document">> ->
+								ems_db:inc_counter(http_content_type_in_officedocument),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">> ->
+								ems_db:inc_counter(http_content_type_in_officedocument),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"image/png">> ->
+								ems_db:inc_counter(http_content_type_in_image_png),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
+								PayloadMap = undefined,
+								QuerystringMap2 = QuerystringMap;
+							<<"image/jpeg">> ->
+								ems_db:inc_counter(http_content_type_in_image_jpeg),
+								ContentType2 = ContentType,
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = undefined,
 								QuerystringMap2 = QuerystringMap;
 							_ -> 
 								ems_db:inc_counter(http_content_type_in_other),
 								ContentType2 = ContentType,
-								{ok, Payload, _} = cowboy_req:read_body(CowboyReq),
+								{ok, Payload, CowboyReq2} = cowboy_req:read_body(CowboyReq),
 								PayloadMap = undefined,
 								QuerystringMap2 = QuerystringMap
 						end;
@@ -1566,71 +1678,38 @@ encode_request_cowboy(CowboyReq, WorkerSend, HttpMaxContentLength) ->
 						ContentType2 = ContentType,						
 						Payload = <<>>,
 						PayloadMap = undefined,
-						QuerystringMap2 = QuerystringMap
+						QuerystringMap2 = QuerystringMap,
+						CowboyReq2 = CowboyReq
 				end,
-				case cowboy_req:header(<<"accept">>, CowboyReq) of
-					undefined -> Accept = <<"*/*">>;
-					AcceptValue -> Accept = AcceptValue
-				end,
-				case cowboy_req:header(<<"accept-encoding">>, CowboyReq) of
-					undefined -> Accept_Encoding = <<"*">>;
-					AcceptEncodingValue -> Accept_Encoding = AcceptEncodingValue
-				end,
-				{UserAgent, UserAgentVersion} = parse_user_agent(cowboy_req:header(<<"user-agent">>, CowboyReq)),
-				case cowboy_req:header(<<"cache-control">>, CowboyReq) of
-					undefined -> Cache_Control = <<>>;
-					CacheControlValue -> Cache_Control = CacheControlValue
-				end,
-				Authorization = cowboy_req:header(<<"authorization">>, CowboyReq),
-				IfModifiedSince = cowboy_req:header(<<"if-modified-since">>, CowboyReq),
-				IfNoneMatch = cowboy_req:header(<<"if-none-match">>, CowboyReq),
 				ReqHash = erlang:phash2([Url, QuerystringBin, ContentLength, ContentType2]),
-				Referer = cowboy_req:header(<<"referer">>, CowboyReq),
-				{Rowid, Params_url} = hashsym_and_params(Url2),
-				Request = #request{
-					rid = RID,
-					rowid = Rowid,
+				Request2 = Request#request{
 					type = Type,
-					uri = Uri,
-					url = Url2,
-					version = Version,
-					querystring = QuerystringBin,
 					querystring_map = QuerystringMap2,
-					params_url = Params_url,
-					content_length = ContentLength,
 					content_type_in = ContentType2,
 					content_type = ContentType2,
-					accept = Accept,
-					user_agent = UserAgent,
-					user_agent_version = UserAgentVersion,
-					accept_encoding = Accept_Encoding,
-					cache_control = Cache_Control,
-					ip = Ip,
-					ip_bin = IpBin,
-					host = Host,
+					content_length = ContentLength,
 					payload = Payload, 
 					payload_map = PayloadMap,
-					timestamp = Timestamp,
-					authorization = Authorization,
-					worker_send = WorkerSend,
-					if_modified_since = IfModifiedSince,
-					if_none_match = IfNoneMatch,
-					protocol = Protocol,
-					protocol_bin = ProtocolBin,
-					port = Port,
-					result_cache = false,
-					t1 = T1,
-					req_hash = ReqHash,
-					referer = Referer
+					params_url = ParamsMap,
+					req_hash = ReqHash
 				},	
-				{ok, Request};
-			false -> 
-				ems_db:inc_counter(http_unsupported_verb_error),
-				erlang:error(ehttp_unsupported_verb)
+				{ok, Request2, Service, CowboyReq2};
+			Error2 -> 
+				if 
+					Type =:= <<"OPTIONS">> orelse Type =:= "HEAD" ->
+							{ok, request, Request#request{code = 200, 
+														  reason = ok, 
+														  response_header = HttpHeaderDefault,
+														  latency = ems_util:get_milliseconds() - T1}
+							};
+					true ->
+						ems_db:inc_counter(ems_dispatcher_lookup_enoent),								
+						Error2
+				end			
 		end
 	catch
 		_Exception:Reason -> 
-			ems_db:inc_counter(http_invalid_encode_request_error),
+			ems_db:inc_counter(Reason),
 			ems_logger:error("ems_util invalid http request ~p. Reason: ~p.", [CowboyReq, Reason]),
 			{error, Reason}
 	end.
@@ -1759,17 +1838,6 @@ decode_payload_as_xml(undefined) -> #{};
 decode_payload_as_xml(<<>>) -> #{};
 decode_payload_as_xml(_) -> #{}.
 	
-
-
-%% @doc Retorna booleano se o método é suportado pelo servidor
--spec is_service_type(binary() | string()) -> boolean().
-is_service_type(<<"GET">>) -> true;
-is_service_type(<<"POST">>) -> true;
-is_service_type(<<"PUT">>) -> true;
-is_service_type(<<"DELETE">>) -> true;
-is_service_type(<<"OPTIONS">>) -> true;
-is_service_type(<<"HEAD">>) -> true;
-is_service_type(_) -> false.
 
 -spec is_url_valido(binary() | string()) -> boolean().
 is_url_valido(Url) when is_binary(Url) ->

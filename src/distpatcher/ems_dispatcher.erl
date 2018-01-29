@@ -12,7 +12,7 @@
 -include("../include/ems_schema.hrl").
 
 %% Client API
--export([start/0, dispatch_request/1, dispatch_service_work/2]).
+-export([start/0, dispatch_request/2]).
 
 
 start() -> 
@@ -31,136 +31,102 @@ dispatch_request(Request = #request{req_hash = ReqHash,
 								    ip = Ip,
 								    content_type = ContentTypeReq,
 								    type = Type,
-								    t1 = T1}) -> 
+								    t1 = T1,
+									params_url = ParamsMap,
+									querystring_map = QuerystringMap},
+				 Service = #service{content_type = ContentTypeService,
+									tcp_allowed_address_t = AllowedAddress,
+									result_cache = ResultCache,
+									service_exec_metric_name = ServiceExecMetricName,
+									service_result_cache_hit_metric_name = ServiceResultCacheHitMetricName,
+									service_host_denied_metric_name = ServiceHostDeniedMetricName,
+									service_auth_denied_metric_name = ServiceAuthDeniedMetricName}) -> 
 	?DEBUG("ems_dispatcher lookup request ~p.", [Request]),
-	RequestLookup = case Type of
+	ems_db:inc_counter(ServiceExecMetricName),								
+	case ems_util:allow_ip_address(Ip, AllowedAddress) of
+		true ->
+			case ems_auth_user:authenticate(Service, Request) of
+				{ok, Client, User, AccessToken, Scope} -> 
+					Request2 = Request#request{service = Service,
+												params_url = ParamsMap,
+												querystring_map = QuerystringMap,
+												client = Client,
+												user = User,
+												scope = Scope,
+												access_token = AccessToken,
+												content_type = 	case ContentTypeService of
+																	  undefined -> ContentTypeReq;
+																	  _ -> ContentTypeService
+																end},
+					case Type of
 						<<"OPTIONS">> -> 
-							ems_db:inc_counter(ems_dispatcher_options),
-							Request#request{type = <<"GET">>};
-						<<"HEAD">> -> 
-							ems_db:inc_counter(ems_dispatcher_head),
-							Request#request{type = <<"GET">>};
-						<<"GET">> -> 
-							ems_db:inc_counter(ems_dispatcher_get),
-							Request;
-						<<"POST">> -> 
-							ems_db:inc_counter(ems_dispatcher_post),
-							Request;
-						<<"PUT">> -> 
-							ems_db:inc_counter(ems_dispatcher_put),
-							Request;
-						<<"DELETE">> -> 
-							ems_db:inc_counter(ems_dispatcher_delete),
-							Request
-				   end,
-	case ems_catalog_lookup:lookup(RequestLookup) of
-		{Service = #service{content_type = ContentTypeService,
-							tcp_allowed_address_t = AllowedAddress,
-							result_cache = ResultCache,
-							service_exec_metric_name = ServiceExecMetricName,
-							service_result_cache_hit_metric_name = ServiceResultCacheHitMetricName,
-							service_host_denied_metric_name = ServiceHostDeniedMetricName,
-							service_auth_denied_metric_name = ServiceAuthDeniedMetricName}, 
-		 ParamsMap, 
-		 QuerystringMap} -> 
-			ems_db:inc_counter(ServiceExecMetricName),								
-			case ems_util:allow_ip_address(Ip, AllowedAddress) of
-				true ->
-					case ems_auth_user:authenticate(Service, Request) of
-						{ok, Client, User, AccessToken, Scope} -> 
-
-							Request2 = Request#request{service = Service,
-														params_url = ParamsMap,
-														querystring_map = QuerystringMap,
-														client = Client,
-														user = User,
-														scope = Scope,
-														access_token = AccessToken,
-														content_type = 	case ContentTypeService of
-																			  undefined -> ContentTypeReq;
-																			  _ -> ContentTypeService
-																		end},
-							case Type of
-								<<"OPTIONS">> -> 
-										{ok, request, Request2#request{code = 200, 
-																	   content_type = ?CONTENT_TYPE_JSON,
-																	   response_data = ems_catalog:get_metadata_json(Service),
-																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
-																	   latency = ems_util:get_milliseconds() - T1}
-										};
-								"HEAD" -> 
-										{ok, request, Request2#request{code = 200, 
-																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
-																	   latency = ems_util:get_milliseconds() - T1}
-										};
-								<<"GET">> ->
-									case ResultCache > 0 of
-										true ->
-											case check_result_cache(ReqHash, T1) of
-												{true, RequestCache} -> 
-													ems_db:inc_counter(ServiceResultCacheHitMetricName),								
-													{ok, request, Request2#request{result_cache = true,
-																				   code = RequestCache#request.code,
-																				   reason = RequestCache#request.reason,
-																				   content_type = RequestCache#request.content_type,
-																				   response_data = RequestCache#request.response_data,
-																				   response_header = RequestCache#request.response_header,
-																				   result_cache_rid = RequestCache#request.rid,
-																				   etag = RequestCache#request.etag,
-																				   filename = RequestCache#request.filename,
-																			   	   latency = ems_util:get_milliseconds() - T1}};
-												false -> dispatch_service_work(Request2, Service)
-											end;
+								{ok, request, Request2#request{code = 200, 
+															   content_type = ?CONTENT_TYPE_JSON,
+															   response_data = ems_catalog:get_metadata_json(Service),
+															   response_header = #{<<"ems-node">> => ems_util:node_binary()},
+															   latency = ems_util:get_milliseconds() - T1}
+								};
+						"HEAD" -> 
+								{ok, request, Request2#request{code = 200, 
+															   response_header = #{<<"ems-node">> => ems_util:node_binary()},
+															   latency = ems_util:get_milliseconds() - T1}
+								};
+						<<"GET">> ->
+							case ResultCache > 0 of
+								true ->
+									case check_result_cache(ReqHash, T1) of
+										{true, RequestCache} -> 
+											ems_db:inc_counter(ServiceResultCacheHitMetricName),								
+											{ok, request, Request2#request{result_cache = true,
+																		   code = RequestCache#request.code,
+																		   reason = RequestCache#request.reason,
+																		   content_type = RequestCache#request.content_type,
+																		   response_data = RequestCache#request.response_data,
+																		   response_header = RequestCache#request.response_header,
+																		   result_cache_rid = RequestCache#request.rid,
+																		   etag = RequestCache#request.etag,
+																		   filename = RequestCache#request.filename,
+																		   latency = ems_util:get_milliseconds() - T1}};
 										false -> dispatch_service_work(Request2, Service)
 									end;
-								_ ->
-									dispatch_service_work(Request2, Service)
+								false -> dispatch_service_work(Request2, Service)
 							end;
-						{error, Reason} = Error -> 
-							Request2 = Request#request{service = Service,
-													   params_url = ParamsMap,
-													   querystring_map = QuerystringMap},
-							case Type of
-								<<"OPTIONS">> -> 
-										{ok, request, Request2#request{code = 200, 
-																	   content_type = ?CONTENT_TYPE_JSON,
-																	   response_data = ems_catalog:get_metadata_json(Service),
-																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
-																	   latency = ems_util:get_milliseconds() - T1}
-										};
-								"HEAD" -> 
-										{ok, request, Request2#request{code = 200, 
-																	   response_header = #{<<"ems-node">> => ems_util:node_binary()},
-																	   latency = ems_util:get_milliseconds() - T1}
-										};
-								 _ -> 
-									ems_db:inc_counter(ServiceAuthDeniedMetricName),								
-									{error, request, Request2#request{code = 400, 
-																	  content_type = ?CONTENT_TYPE_JSON,
-					 											      reason = Reason, 
-																	  response_data = ems_schema:to_json(Error), 
-																	  response_header = #{<<"ems-node">> => ems_util:node_binary()},
-																	  latency = ems_util:get_milliseconds() - T1}
-									}
-							end
+						_ ->
+							dispatch_service_work(Request2, Service)
 					end;
-				false -> 
-					ems_db:inc_counter(ServiceHostDeniedMetricName),								
-					{error, host_denied}
+				{error, Reason} = Error -> 
+					Request2 = Request#request{service = Service,
+											   params_url = ParamsMap,
+											   querystring_map = QuerystringMap},
+					case Type of
+						<<"OPTIONS">> -> 
+								{ok, request, Request2#request{code = 200, 
+															   content_type = ?CONTENT_TYPE_JSON,
+															   response_data = ems_catalog:get_metadata_json(Service),
+															   response_header = #{<<"ems-node">> => ems_util:node_binary()},
+															   latency = ems_util:get_milliseconds() - T1}
+								};
+						"HEAD" -> 
+								{ok, request, Request2#request{code = 200, 
+															   response_header = #{<<"ems-node">> => ems_util:node_binary()},
+															   latency = ems_util:get_milliseconds() - T1}
+								};
+						 _ -> 
+							ems_db:inc_counter(ServiceAuthDeniedMetricName),								
+							{error, request, Request2#request{code = 400, 
+															  content_type = ?CONTENT_TYPE_JSON,
+															  reason = Reason, 
+															  response_data = ems_schema:to_json(Error), 
+															  response_header = #{<<"ems-node">> => ems_util:node_binary()},
+															  latency = ems_util:get_milliseconds() - T1}
+							}
+					end
 			end;
-		Error2 -> 
-			if 
-				Type =:= <<"OPTIONS">> orelse Type =:= "HEAD" ->
-						{ok, request, Request#request{code = 200, 
-													  reason = ok, 
-													  response_header = #{<<"ems-node">> => ems_util:node_binary()},
-													  latency = ems_util:get_milliseconds() - T1}
-						};
-				true ->
-					ems_db:inc_counter(ems_dispatcher_lookup_enoent),								
-					Error2
-			end
+		false -> 
+			ems_db:inc_counter(ServiceHostDeniedMetricName),								
+			{error, host_denied}
 	end.
+	
 
 
 dispatch_service_work(Request,

@@ -17,12 +17,18 @@
 				http_header_default}).
 
 
-init(CowboyReq, State = #state{http_max_content_length = HttpMaxContentLength,
-							   http_header_default = HttpHeaderDefault}) ->
+init(CowboyReq, State = #state{http_header_default = HttpHeaderDefault}) ->
 	?DEBUG("ems_http_handler new request: ~p.", [CowboyReq]),
-	case ems_util:encode_request_cowboy(CowboyReq, self(), HttpMaxContentLength) of
-		{ok, Request = #request{t1 = T1}} -> 
-			case ems_dispatcher:dispatch_request(Request) of
+	case ems_util:encode_request_cowboy(CowboyReq, self(), HttpHeaderDefault) of
+		{ok, request, #request{code = Code,
+									  response_header = ResponseHeader,
+									  response_data = ResponseData}, CowboyReq2} ->
+					Response = cowboy_req:reply(Code, 
+												ResponseHeader, 
+												ResponseData, 
+												CowboyReq2);
+		{ok, Request = #request{t1 = T1}, Service, CowboyReq2} -> 
+			case ems_dispatcher:dispatch_request(Request, Service) of
 				{ok, request, Request2 = #request{code = Code,
 												  response_header = ResponseHeader,
 												  response_data = ResponseData,
@@ -77,23 +83,14 @@ init(CowboyReq, State = #state{http_max_content_length = HttpMaxContentLength,
 													<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
 													<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS}, 
 												ResponseData, 
-												CowboyReq),
+												CowboyReq2),
 					ems_logger:log_request(Request2);
 				{error, request, Request2 = #request{code = Code,
-													 response_header = ResponseHeader,
-													 response_data = ResponseData,
-													 content_type = ContentType}} ->
+													 response_data = ResponseData}} ->
 					Response = cowboy_req:reply(Code, 
-												ResponseHeader#{<<"server">> => ?SERVER_NAME,
-																<<"content-type">> => ContentType,
-																<<"cache-control">> => ?CACHE_CONTROL_NO_CACHE,
-																<<"access-control-allow-origin">> => ?ACCESS_CONTROL_ALLOW_ORIGIN,
-																<<"access-control-max-age">> => ?ACCESS_CONTROL_MAX_AGE,
-																<<"access-control-allow-headers">> => ?ACCESS_CONTROL_ALLOW_HEADERS,
-																<<"access-control-allow-methods">> => ?ACCESS_CONTROL_ALLOW_METHODS,
-																<<"access-control-expose-headers">> => ?ACCESS_CONTROL_EXPOSE_HEADERS},
+												HttpHeaderDefault,
 												ResponseData, 
-												CowboyReq),
+												CowboyReq2),
 					ems_logger:log_request(Request2);
 				{error, Reason} = Error ->
 					Request2 = Request#request{code = 400, 
@@ -104,7 +101,7 @@ init(CowboyReq, State = #state{http_max_content_length = HttpMaxContentLength,
 											   latency = ems_util:get_milliseconds() - T1},
 					Response = cowboy_req:reply(Request2#request.code, 
 												Request2#request.response_header, 
-												Request2#request.response_data, CowboyReq),
+												Request2#request.response_data, CowboyReq2),
 					ems_logger:log_request(Request2)
 			end;
 		{error, Reason} = Error -> 

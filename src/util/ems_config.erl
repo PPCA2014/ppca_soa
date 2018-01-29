@@ -239,7 +239,7 @@ parse_config(Json, NomeArqConfig) ->
 			 tcp_listen_main_ip = TcpListenMainIp,
 			 tcp_listen_main_ip_t = TcpListenMainIp_t,
 			 tcp_allowed_address = parse_tcp_allowed_address(maps:get(<<"tcp_allowed_address">>, Json, all)),
-			 http_max_content_length = ems_util:parse_range(maps:get(<<"http_max_content_length">>, Json, ?HTTP_DEFAULT_CONTENT_LENGTH), 0, ?HTTP_MAX_CONTENT_LENGTH),
+			 http_max_content_length = ems_util:parse_range(maps:get(<<"http_max_content_length">>, Json, ?HTTP_MAX_CONTENT_LENGTH), 0, ?HTTP_MAX_CONTENT_LENGTH_BY_SERVICE),
 			 authorization = ems_util:parse_authorization_type(maps:get(<<"authorization">>, Json, ?AUTHORIZATION_TYPE_DEFAULT)),
 			 oauth2_with_check_constraint = ems_util:parse_bool(maps:get(<<"oauth2_with_check_constraint">>, Json, false)),
 			 config_file = NomeArqConfig,

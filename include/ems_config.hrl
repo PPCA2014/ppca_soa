@@ -182,8 +182,8 @@
 
 -define(HTTP_SERVER_PORT, 2381).
 -define(HTTP_MAX_CONNECTIONS, 100000).
--define(HTTP_MAX_CONTENT_LENGTH, 60000000).  % Limite default do conteúdo do payload é de 60MB
--define(HTTP_DEFAULT_CONTENT_LENGTH, 64000).  % Limite default do conteúdo do payload é de 64KB
+-define(HTTP_MAX_CONTENT_LENGTH, 65536).  % Limite default do conteúdo do payload é de 64KB
+-define(HTTP_MAX_CONTENT_LENGTH_BY_SERVICE, 102400000).  % Permite enviar até 100M se especificado no contrato de serviço
 
 
 -define(TCP_PORT_MIN, 1024).
